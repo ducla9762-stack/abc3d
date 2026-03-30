@@ -1,0 +1,111 @@
+# =========================
+
+# General build artifacts
+
+# =========================
+
+build/
+out/
+bin/
+lib/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# =========================
+
+# CMake
+
+# =========================
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# CMake user presets (optional: keep if you want shared presets)
+
+CMakeUserPresets.json
+
+# =========================
+
+# Visual Studio
+
+# =========================
+
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# If you ever generate solutions manually
+
+*.sln
+*.vcxproj
+
+# =========================
+
+# vcpkg
+
+# =========================
+
+# If vcpkg is a submodule, DO NOT ignore the whole folder
+
+# Ignore build artifacts instead:
+
+vcpkg/buildtrees/
+vcpkg/packages/
+vcpkg/downloads/
+vcpkg/installed/
+
+# Optional: keep vcpkg.json tracked
+
+vcpkg.json
+
+# =========================
+
+# Logs / temp files
+
+# =========================
+
+*.log
+*.tlog
+*.tmp
+*.cache
+
+# =========================
+
+# OS-specific
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# IDEs / Editors
+
+# =========================
+
+*.swp
+*.swo
+*.idea/
+
+# =========================
+
+# Debugging / profiling
+
+# =========================
+
+*.pdb
+*.ilk
+*.rsp
