@@ -2,7 +2,11 @@
 
 ## How To Install
 
-Run GENERATE_SLN.bat, this will prompt vcpkg to install all required packages, and then CMAKE will build a solution in a newly created build folder in the CMakeLists directory.
+Run GENERATE_SLN.bat, this will prompt vcpkg to install all required packages, and then CMAKE will build a solution in a newly created build folder in the CMakeLists directory. Ensure that vcpkg.json exists, without this file vcpkg will not install required packages, and the CMake build will fail.
+
+## Troubleshooting
+
+If any difficulty was encountered during the running of GENERATE_SLN.bat, delete the build folder before attempting to run again.
 
 ## Structure
 
