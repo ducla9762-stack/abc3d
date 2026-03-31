@@ -8,6 +8,9 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Native_File_Chooser.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Menu_Bar.H>
+#include <FL/Fl_Menu_Button.H>
+//#include <FL/Fl_Flex.H>
 
 #include <GL/glew.h>
 
@@ -435,12 +438,16 @@ void rotSpinnerCallback(Fl_Widget* spinner) {
 	viewport->setRot(component, spinnerVal);
 }
 
-void fileButtonCallback(Fl_Widget* fileButton) {
+void fileCallback(Fl_Widget* fileButton) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
 	fileChooser.directory("../assets/models/");
 	if (fileChooser.show() == 0) {
 		viewport->loadObj(fileChooser.filename());
 	}
+}
+
+void menuCallback(Fl_Menu_Bar topMenu) {
+	
 }
 
 const int VIEWPORT_W = 900;
@@ -449,21 +456,93 @@ const int RIGHT_PANEL_W = 1080 - VIEWPORT_W;
 const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
 const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
 
+const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
+
 int main(int argc, char* argv[]) {
 	Fl_Window* window = new Fl_Window(0, 0, 1080, 720, "ABC3D");
 
-	viewport = new Viewport(0, 0, VIEWPORT_W, VIEWPORT_H);
+	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H);
 	viewport->end();
 
+	// Side Toolbar
+	Fl_Window* sideToolbar = new Fl_Window(20, 70, 50, 500);
+	sideToolbar->color(7);
+
+	sideToolbar->end();
+
+	// Side Toolbar
+	Fl_Window* bottomToolbar = new Fl_Window(250, VIEWPORT_H - 60, VIEWPORT_W / 2, 50);
+	bottomToolbar->color(12);
+	bottomToolbar->end();
+
+
+	// Top toolbar
+	Fl_Window* topToolbar = new Fl_Window(0, 0, VIEWPORT_W,40);
+	topToolbar->color(30);
+	topToolbar->border(0);
+
+	Fl_Button* fileButton = new Fl_Button(0, 600, 30, 50, "Pick File");
+	fileButton->callback(fileCallback);		// Currently doesn't do anything
+
+	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(0, 0, VIEWPORT_W, 40);
+	topMenu->color(3);
+
+	// File Menu Button
+	topMenu->add("&File/&Import/&Model");
+	topMenu->add("&File/&Import/&Scene");
+	topMenu->add("&File/&Import/&Lesson");
+
+	topMenu->add("&File/&Export/&Model");
+	topMenu->add("&File/&Export/&Scene");
+	topMenu->add("&File/&Export/&Lesson");
+
+	topMenu->add("&File/&Save");
+	topMenu->add("&File/&Settings");
+	topMenu->add("&File/&Exit");
+	
+	// Edit Menu Button
+	topMenu->add("&Edit/&Delete");
+	topMenu->add("&Edit/&Duplicate");
+	topMenu->add("&Edit/&Undo");
+	topMenu->add("&Edit/&Redo");
+
+	//topMenu->add("|");
+
+	// Help Menu Button
+	topMenu->add("Help");
+
+	// Standard Mode Menu Button
+	topMenu->add("Standard Mode");
+
+	// Simple Mode Menu Button
+	topMenu->add("Simple Mode");
+
+	// Render Mode Menu Button
+	topMenu->add("Render");
+
+	// Tutorial View Menu Button
+	topMenu->add("Tutorials");
+
+	// Camera Modes Menu Button
+	topMenu->add("Camera");
+
+	// Lesson Editor Menu Button
+	topMenu->add("Lesson Editor");
+	
+	topToolbar->end();
+
+	// Right panel
 	Fl_Window* rightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, 650);
-	rightPanel->resizable(nullptr);
+	rightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
 	rightPanel->begin();
 
+	// Scale Widgets
 	Fl_Window* scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
 	scaleWidgets->begin();
 	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	scaleLabel->label("Scale");
 
+	// Scale Spinners
 	Fl_Spinner* scaleSpinners[3];
 	float yPos = 50;
 	for (int i = 0; i < 3; ++i) {
@@ -481,11 +560,13 @@ int main(int argc, char* argv[]) {
 
 	scaleWidgets->end();
 
+	// Position Widgets
 	Fl_Window* posWidgets = new Fl_Window(0, 200, RIGHT_PANEL_W, 200);
 	posWidgets->begin();
 	Fl_Box* posLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	posLabel->label("Position");
 
+	// Position Spinners
 	Fl_Spinner* posSpinners[3];
 	yPos = 50;
 	for (int i = 0; i < 3; ++i) {
@@ -503,11 +584,13 @@ int main(int argc, char* argv[]) {
 
 	posWidgets->end();
 
+	// Rotation Widgets
 	Fl_Window* rotWidgets = new Fl_Window(0, 400, RIGHT_PANEL_W, 200);
 	rotWidgets->begin();
 	Fl_Box* rotLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	rotLabel->label("Rotation");
 
+	// Rotation Spinners
 	Fl_Spinner* rotSpinners[3];
 	yPos = 50;
 	for (int i = 0; i < 3; ++i) {
@@ -524,10 +607,6 @@ int main(int argc, char* argv[]) {
 	rotSpinners[2]->callback(rotSpinnerCallback<2>);
 
 	rotWidgets->end();
-
-	Fl_Button* fileButton = new Fl_Button(0, 600, RIGHT_PANEL_W, 50, "Pick File");
-	fileButton->callback(fileButtonCallback);
-
 	rightPanel->end();
 
 	window->end();
