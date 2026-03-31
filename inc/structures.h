@@ -374,6 +374,63 @@ class HalfEdgeMesh {
 		return newPos;
 	}
 
+	cy::Vec3f faceCentroid(uint faceId) {
+		cy::Vec3f sum(0.0f);
+		float vertexCount = 0.0f;
+		uint first = faceEdges[faceId];
+		uint next = first;
+
+		do {
+			++vertexCount;
+			sum += vertPos[edges[next].orig];
+			next = edges[next].next;
+		} while (next != first);
+
+		return sum / vertexCount;
+	}
+
+	float approxFaceSurfaceArea(uint faceId) {
+		uint faceVertices[4];
+		GetFaceVertices(faceId, faceVertices);
+		cy::Vec3f vert0 = vertPos[faceVertices[0]];
+		cy::Vec3f vert1 = vertPos[faceVertices[1]];
+		cy::Vec3f vert2 = vertPos[faceVertices[2]];
+
+		cy::Vec3f seg01 = vert1 - vert0;
+		cy::Vec3f seg02 = vert2 - vert0;
+		float area = seg01.Cross(seg02).Length();
+
+		if (faceVertices[3] != MAX_UINT) {
+			vert1 = vertPos[faceVertices[3]];
+			seg01 = vert1 - vert0;
+			area += seg01.Cross(seg02).Length();
+		}
+
+		return area;
+	}
+
+	cy::Vec3f computeCentroid() {
+		uint faceCount = faceEdges.size();
+		if (faceCount == 0) return cy::Vec3f(0.0f);
+
+		cy::Vec3f weightedSum(0.0f);
+		float areaSum = 0.0f;
+
+		for (uint i = 0; i < faceCount; ++i) {
+			float area = approxFaceSurfaceArea(i);
+			areaSum += area;
+			weightedSum += faceCentroid(i) * area;
+		}
+
+		return weightedSum / areaSum;
+	}
+
+	void translateVertices(const cy::Vec3f& add) {
+		for (cy::Vec3f& vert : vertPos) {
+			vert += add;
+		}
+	}
+
 	std::vector<uint> faceEdges; // Each faces' first edge
 
 	std::vector<cy::Vec3f> vertPos; // Each vertices' position
@@ -739,16 +796,18 @@ public:
 			HalfEdge& edge = edges[i];
 
 			uint nextId = edge.twin;
-			HalfEdge& next = edges[nextId];
+			HalfEdge* next = &edges[nextId];
 
-			while (next.prev != MAX_UINT) {
-				nextId = edges[next.prev].twin;
-				next = edges[nextId];
+			while (next->prev != MAX_UINT) {
+				nextId = edges[next->prev].twin;
+				next = &edges[nextId];
 			}
 
 			edge.next = nextId;
-			next.prev = i;
+			next->prev = i;
 		}
+
+		translateVertices(-computeCentroid());
 	}
 };
 
