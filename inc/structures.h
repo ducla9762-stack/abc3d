@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include "cyVector.h"
 #include "cyMatrix.h"
+#include "helper.h"
 
 using std::string;
 using std::ifstream;
@@ -43,13 +44,6 @@ struct std::hash<cy::Vec2<T>> {
 		return val;
 	}
 };
-
-/// <summary> Convert degrees to radians. </summary>
-/// <param name="degrees"> An angle in degrees. </param>
-/// <returns> An equivalent angle in radians. </returns>
-float degreesToRadians(float degrees) {
-	return degrees * (cy::Pi<float>() / 180.0f);
-}
 
 class FaceList {
 
@@ -104,8 +98,8 @@ class FaceList {
 	}
 
 	void PrintFaceComponent(uint x) const {
-		if (x == MAX_UINT) { std::cout << "NONE" << " "; }
-		else { std::cout << x << " "; }
+		if (x == MAX_UINT)	{ std::cout << "NONE" << " "; }
+		else				{ std::cout << x << " "; }
 	}
 
 	void PrintFace(const Face& face) const {
@@ -158,49 +152,17 @@ public:
 	}
 };
 
-uint WrapDec(uint x, uint wrapTo, uint wrapFrom = 0) {
-	if (x == wrapFrom) {
-		return wrapTo;
-	}
-	return x - 1;
-}
-
-uint WrapSub(uint x, uint sub, uint wrapTo, uint wrapFrom = 0) {
-	uint range = wrapTo - wrapFrom + 1;
-	uint offset = (wrapTo - x + sub) % range;
-	return wrapTo - offset;
-}
-
-uint WrapInc(uint x, uint wrapFrom, uint wrapTo = 0) {
-	if (x == wrapFrom) {
-		return wrapTo;
-	}
-	return x + 1;
-}
-
-uint WrapAdd(uint x, uint add, uint wrapFrom) {
-	return (x + add) % (wrapFrom + 1);
-}
-
-uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
-	uint range = wrapFrom - wrapTo + 1;
-	uint offset = (x + add - wrapTo) % range;
-	return wrapTo + offset;
-}
-
 class HalfEdgeMesh {
 
 	struct HalfEdge {
 
-		HalfEdge() {}
+		HalfEdge(){}
 
 		HalfEdge(uint orig, uint dest)
-			: orig(orig), dest(dest) {
-		}
+			: orig(orig), dest(dest) {}
 
-		HalfEdge(uint orig, uint dest, uint face)
-			: orig(orig), dest(dest), face(face) {
-		}
+		HalfEdge(uint orig, uint dest, uint face) 
+			: orig(orig), dest(dest), face(face) {}
 
 		uint orig = MAX_UINT;
 		uint dest = MAX_UINT;
@@ -286,8 +248,8 @@ class HalfEdgeMesh {
 			next = edges[edge.twin].next;
 			++adjInfo.edgeCount;
 			if (edge.face == MAX_UINT) { continue; }
-			if (FaceEdgeCount(edge.face) == 3) { ++adjInfo.triCount; }
-			else { ++adjInfo.quadCount; }
+			if (FaceEdgeCount(edge.face) == 3)	{ ++adjInfo.triCount; }
+			else								{ ++adjInfo.quadCount; }
 		} while (next != first);
 
 		return adjInfo;
@@ -374,6 +336,63 @@ class HalfEdgeMesh {
 		return newPos;
 	}
 
+	cy::Vec3f faceCentroid(uint faceId) {
+		cy::Vec3f sum(0.0f);
+		float vertexCount = 0.0f;
+		uint first = faceEdges[faceId];
+		uint next = first;
+
+		do {
+			++vertexCount;
+			sum += vertPos[edges[next].orig];
+			next = edges[next].next;
+		} while (next != first);
+
+		return sum / vertexCount;
+	}
+
+	float approxFaceSurfaceArea(uint faceId) {
+		uint faceVertices[4];
+		GetFaceVertices(faceId, faceVertices);
+		cy::Vec3f vert0 = vertPos[faceVertices[0]];
+		cy::Vec3f vert1 = vertPos[faceVertices[1]];
+		cy::Vec3f vert2 = vertPos[faceVertices[2]];
+
+		cy::Vec3f seg01 = vert1 - vert0;
+		cy::Vec3f seg02 = vert2 - vert0;
+		float area = seg01.Cross(seg02).Length();
+
+		if (faceVertices[3] != MAX_UINT) {
+			vert1 = vertPos[faceVertices[3]];
+			seg01 = vert1 - vert0;
+			area += seg01.Cross(seg02).Length();
+		}
+
+		return area;
+	}
+
+	cy::Vec3f computeCentroid() {
+		uint faceCount = faceEdges.size();
+		if (faceCount == 0) return cy::Vec3f(0.0f);
+
+		cy::Vec3f weightedSum(0.0f);
+		float areaSum = 0.0f;
+
+		for (uint i = 0; i < faceCount; ++i) {
+			float area = approxFaceSurfaceArea(i);
+			areaSum += area;
+			weightedSum += faceCentroid(i) * area;
+		}
+
+		return weightedSum / areaSum;
+	}
+
+	void translateVertices(const cy::Vec3f& add) {
+		for (cy::Vec3f& vert : vertPos) {
+			vert += add;
+		}
+	}
+
 	std::vector<uint> faceEdges; // Each faces' first edge
 
 	std::vector<cy::Vec3f> vertPos; // Each vertices' position
@@ -382,6 +401,55 @@ class HalfEdgeMesh {
 	std::vector<HalfEdge> edges; // Each half-edge
 
 public:
+
+	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy::Vec3f>& norm, std::vector<cy::Vec3<uint>>& id, uint objId) {
+		uint faceCount = faceEdges.size();
+		uint vertices[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
+		for (int i = 0; i < faceCount; ++i) {
+			GetFaceVertices(i, vertices);
+
+			cy::Vec3f vert0 = vertPos[vertices[0]];
+			cy::Vec3f vert1 = vertPos[vertices[1]];
+			cy::Vec3f vert2 = vertPos[vertices[2]];
+
+			pos.push_back(vert0);
+			pos.push_back(vert1);
+			pos.push_back(vert2);
+
+			cy::Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
+
+			if (vertices[3] != MAX_UINT) {
+				cy::Vec3f vert3 = vertPos[vertices[3]];
+				pos.push_back(vert0);
+				pos.push_back(vert2);
+				pos.push_back(vert3);
+
+				cy::Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
+				float area1 = normal.Length();
+				float area2 = normal2.Length();
+				normal += normal2;
+				normal /= (area1 + area2);
+
+				norm.push_back(normal);
+				norm.push_back(normal);
+				norm.push_back(normal);
+			}
+
+			norm.push_back(normal);
+			norm.push_back(normal);
+			norm.push_back(normal);
+
+			id.push_back(cy::Vec3<uint>(objId, i, 0));
+			id.push_back(cy::Vec3<uint>(objId, i, 0));
+			id.push_back(cy::Vec3<uint>(objId, i, 0));
+
+			if (vertices[3] != MAX_UINT) {
+				id.push_back(cy::Vec3<uint>(objId, i, 1));
+				id.push_back(cy::Vec3<uint>(objId, i, 1));
+				id.push_back(cy::Vec3<uint>(objId, i, 1));
+			}
+		}
+	}
 
 	cy::Vec3f scale = cy::Vec3f(1.0f);
 	cy::Vec3f pos = cy::Vec3f(0.0f);
@@ -487,16 +555,16 @@ public:
 		hEdge.next = hEdge2Id;
 		hEdge.dest = midVert;
 		hEdge.twin = twin2Id;
-
+		
 		edges[twin.next].prev = twin2Id;
 		twin.next = twin2Id;
 		twin.dest = midVert;
 		twin.twin = hEdge2Id;
-
+		
 		hEdge2.prev = hEdgeId;
 		hEdge2.orig = midVert;
 		hEdge2.twin = twinId;
-
+		
 		hTwin2.prev = twinId;
 		hTwin2.orig = midVert;
 		hTwin2.twin = hEdgeId;
@@ -507,7 +575,7 @@ public:
 		uint prevMeshEdgeCount = edges.size();
 		for (uint edgeId = 0; edgeId < prevMeshEdgeCount; ++edgeId) {
 			if (edges[edgeId].next < prevMeshEdgeCount) { // If edge hasn't already been refined
-				refineEdge(edgeId);
+				refineEdge(edgeId); 
 			}
 		}
 
@@ -532,7 +600,7 @@ public:
 				++faceEdgeCount;
 				next = cornerEdge2.next;
 			}
-
+			
 			if (faceEdgeCount == 3) {
 				// Triangle
 
@@ -577,7 +645,7 @@ public:
 					twin.next = WrapInc(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
 					twin.prev = WrapDec(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
 				}
-			}
+			} 
 			else {
 				// Quad
 				cy::Vec3f positionSum = vertPos[faceEdge->orig];
@@ -591,7 +659,7 @@ public:
 				uint lastNewEdge = firstNewEdge + 7;
 
 				cy::Vec3f newVertexPos = positionSum / 4.0f;
-				uint newVertexId = NewVertex(newVertexPos, lastNewEdge);
+				uint newVertexId = NewVertex(newVertexPos,lastNewEdge);
 
 				next = faceEdgeId;
 				for (uint i = 0; i < 4; ++i) {
@@ -620,7 +688,7 @@ public:
 					newEdge.face = edge.face;
 					newEdge.prev = edgeId;
 					newEdge.next = WrapDec(newEdgeId, lastNewEdge, firstNewEdge);
-
+					
 					newEdgeTwin.dest = newEdge.orig;
 					newEdgeTwin.orig = newEdge.dest;
 					newEdgeTwin.face = nextEdge.face;
@@ -739,16 +807,18 @@ public:
 			HalfEdge& edge = edges[i];
 
 			uint nextId = edge.twin;
-			HalfEdge& next = edges[nextId];
+			HalfEdge* next = &edges[nextId];
 
-			while (next.prev != MAX_UINT) {
-				nextId = edges[next.prev].twin;
-				next = edges[nextId];
+			while (next->prev != MAX_UINT) {
+				nextId = edges[next->prev].twin;
+				next = &edges[nextId];
 			}
 
 			edge.next = nextId;
-			next.prev = i;
+			next->prev = i;
 		}
+
+		translateVertices(-computeCentroid());
 	}
 };
 
