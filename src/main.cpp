@@ -81,15 +81,15 @@ void moveCallback(Fl_Widget* w, void*) {
 }
 
 void rotateCallback(Fl_Widget* w, void*) {
-
+	;
 }
 
 void scaleCallback(Fl_Widget* w, void*) {
-
+	
 }
 
 void shapeCallback(Fl_Widget* w, void*) {
-
+	
 }
 
 void extrudeCallback(Fl_Widget* w, void*) {
@@ -97,7 +97,11 @@ void extrudeCallback(Fl_Widget* w, void*) {
 }
 
 void subdivisionCallback(Fl_Widget* w, void*) {
+	viewport->subdivision();
+}
 
+void tesselateCallback(Fl_Widget* w, void*) {
+	viewport->tesselate();
 }
 
 void bevelCallback(Fl_Widget* w, void*) {
@@ -240,9 +244,15 @@ int main(int argc, char* argv[]) {
 	Fl_Button* extrudeButton = new Fl_Button(0, 250, 50, 50, "Extrude");
 	extrudeButton->type(1);
 	extrudeButton->selection_color(0);
+
+	// Subdivision button
 	Fl_Button* subdivisionButton = new Fl_Button(0, 300, 50, 50, "Subdivision");
 	subdivisionButton->type(1);
 	subdivisionButton->selection_color(0);
+	subdivisionButton->callback(subdivisionCallback);
+	subdivisionButton->when(FL_WHEN_CHANGED);
+	// TODO: Figure out how to make it only change when selected, not unselected
+		
 	Fl_Button* bevelButton = new Fl_Button(0, 350, 50, 50, "Bevel");
 	bevelButton->type(1);
 	bevelButton->selection_color(0);
@@ -250,8 +260,17 @@ int main(int argc, char* argv[]) {
 	sideToolbar->end();
 
 
+	/* Top Right panel */
+	Fl_Window* topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, 325);
+	topRightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
+	topRightPanel->begin();
+	topRightPanel->color(5);
+
+	topRightPanel->end();
+
+
 	/* Right panel */
-	Fl_Window* rightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, 650);
+	Fl_Window* rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 2 , RIGHT_PANEL_W, 650);
 	rightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
 	rightPanel->begin();
 

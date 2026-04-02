@@ -117,14 +117,14 @@ class Viewport : public Fl_Gl_Window {
 		bool success = gridProgram.BuildFiles("../assets/shaders/Grid.vert", "../assets/shaders/Grid.frag");
 		if (!success) {
 			std::cout << "Failed to compile grid shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
 		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/BlinnPhong.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
@@ -134,7 +134,7 @@ class Viewport : public Fl_Gl_Window {
 		success = wireProgram.BuildFiles("../assets/shaders/Wireframe.vert", "../assets/shaders/Wireframe.frag");
 		if (!success) {
 			std::cout << "Failed to compile wireframe shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
@@ -496,6 +496,18 @@ public:
 	void setScale(int component, float scale) {
 		mesh.scale[component] = scale;
 		updateModelUniforms();
+		redraw();
+	}
+
+	void subdivision() {
+		mesh.subdivide();
+		updateRenderBuffers();
+		redraw();
+	}
+
+	void tesselate() {
+		mesh.tesselate();
+		updateRenderBuffers();
 		redraw();
 	}
 
