@@ -737,6 +737,11 @@ public:
 		build(faceList.Faces());
 	}
 
+	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {
+		vertPos = vertices;
+		build(faces); 
+	}
+
 	void build(const std::vector<cy::Vec4<uint>>& faces) {
 		vertEdge.clear();
 		faceEdges.clear();
