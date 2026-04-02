@@ -1,8 +1,13 @@
 #version 450 core
 
-in vec3 normalDir;
 in vec3 shadePos;
-out vec4 color;
+in vec3 localPos;
+in vec3 normalDir;
+flat in uvec3 ids;
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec3 selectPos;
+layout(location = 2) out uvec3 selectIds;
 
 uniform vec3 lightPosition;
 
@@ -30,12 +35,7 @@ void main(){
 
 	vec3 ambientTerm = AMBIENT_INTENSITY * SURFACE_COLOR;
 
-	// Display diffuse, ambient, and specular components
 	color = vec4(LIGHT_INTENSITY * (diffuseTerm + specularTerm) + ambientTerm, 1);
-
-	// Uncomment to just display specular component
-	//color = vec4(LIGHT_INTENSITY * specularTerm, 1);
-
-	// Uncomment to just display diffuse + ambient components
-	//color = vec4(LIGHT_INTENSITY * diffuseTerm + ambientTerm, 1);
+	selectPos = localPos;
+	selectIds = ids;
 }
