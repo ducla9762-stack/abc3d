@@ -152,36 +152,6 @@ public:
 	}
 };
 
-uint WrapDec(uint x, uint wrapTo, uint wrapFrom = 0) {
-	if (x == wrapFrom) {
-		return wrapTo;
-	}
-	return x - 1;
-}
-
-uint WrapSub(uint x, uint sub, uint wrapTo, uint wrapFrom = 0) {
-	uint range = wrapTo - wrapFrom + 1;
-	uint offset = (wrapTo - x + sub) % range;
-	return wrapTo - offset;
-}
-
-uint WrapInc(uint x, uint wrapFrom, uint wrapTo = 0) {
-	if (x == wrapFrom) {
-		return wrapTo;
-	}
-	return x + 1;
-}
-
-uint WrapAdd(uint x, uint add, uint wrapFrom) {
-	return (x + add) % (wrapFrom + 1);
-}
-
-uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
-	uint range = wrapFrom - wrapTo + 1;
-	uint offset = (x + add - wrapTo) % range;
-	return wrapTo + offset;
-}
-
 class HalfEdgeMesh {
 
 	struct HalfEdge {

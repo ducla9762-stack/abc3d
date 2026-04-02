@@ -47,4 +47,34 @@ inline void clamp(float& x, float left, float right) {
 	else if (x > right) { x = right; }
 }
 
+inline uint WrapDec(uint x, uint wrapTo, uint wrapFrom = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x - 1;
+}
+
+inline uint WrapSub(uint x, uint sub, uint wrapTo, uint wrapFrom = 0) {
+	uint range = wrapTo - wrapFrom + 1;
+	uint offset = (wrapTo - x + sub) % range;
+	return wrapTo - offset;
+}
+
+inline uint WrapInc(uint x, uint wrapFrom, uint wrapTo = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x + 1;
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom) {
+	return (x + add) % (wrapFrom + 1);
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
+	uint range = wrapFrom - wrapTo + 1;
+	uint offset = (x + add - wrapTo) % range;
+	return wrapTo + offset;
+}
+
 #endif
