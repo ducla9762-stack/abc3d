@@ -77,4 +77,29 @@ inline uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
 	return wrapTo + offset;
 }
 
+inline void combineHash(size_t& base, const size_t& newHash) {
+	base = (base << 1) + base + newHash;
+}
+
+template<typename T>
+struct std::hash<cy::Vec3<T>> {
+	size_t operator()(const cy::Vec3<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		combineHash(val, hash(vec.z));
+		return val;
+	}
+};
+
+template<typename T>
+struct std::hash<cy::Vec2<T>> {
+	size_t operator()(const cy::Vec2<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		return val;
+	}
+};
+
 #endif
