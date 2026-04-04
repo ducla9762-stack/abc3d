@@ -41,7 +41,7 @@ void rotSpinnerCallback(Fl_Widget* spinner) {
 
 void fileButtonCallback(Fl_Widget* fileButton) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
-	fileChooser.directory("../TestModels/");
+	fileChooser.directory("../assets/models/");
 	if (fileChooser.show() == 0) {
 		viewport->loadObj(fileChooser.filename());
 	}

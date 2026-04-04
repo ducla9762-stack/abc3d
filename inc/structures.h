@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <limits>
 #include <unordered_map>
 #include "cyVector.h"
@@ -93,12 +94,12 @@ class HalfEdgeMesh {
 	cy::Vec3f faceCentroid(uint faceId);
 	float approxFaceSurfaceArea(uint faceId);
 	cy::Vec3f computeCentroid();
-	void translateVertices(const cy::Vec3f& add);
-	void build(const std::vector<cy::Vec4<uint>>& faces);
+	void translateVertices(const Vec3f& add);
+	void build(const std::vector<Vec4u>& faces);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
-	std::vector<cy::Vec3f> vertPos; // Each vertices' position
+	std::vector<Vec3f> vertPos; // Each vertices' position
 	std::vector<uint> vertEdge; // Each vertices' first edge
 
 	std::vector<HalfEdge> edges; // Each half-edge
@@ -132,6 +133,9 @@ public:
 	void loadFromInput();
 	bool load(const char* obj);
 	void load(const FaceList& faceList);
+	//void build(const std::vector<Vec3f> vertices, const std::vector<Vec4u>& faces);
+	//template <typename
+	//void build(const std::array<Vec3f> vertices, const std::array<Vec4u>& faces);
 };
 
 #endif
