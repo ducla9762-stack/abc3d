@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <chrono>
 
 #include "cyGL.h"
 #include "cyMatrix.h"
@@ -28,6 +29,10 @@ const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
 const Vec3f ORIGIN = Vec3f(0.0f);
 
 bool initGlew = true;
+
+using std::chrono::steady_clock;
+using std::chrono::milliseconds;
+using std::chrono::duration_cast;
 
 class Viewport : public Fl_Gl_Window {
 	// Shader Program
@@ -45,14 +50,13 @@ class Viewport : public Fl_Gl_Window {
 	GLuint posTex;
 	GLuint idTex;
 
-	// Framebuffer and its depth buffer
-	GLuint fbo;
-	GLuint fboDepth;
-
-	// Render Buffers
-	GLuint meshVBO;
-	GLuint wireVBO;
-	GLuint wireElementBuffer;
+	// Buffers
+	GLuint meshVBO; // For mesh data
+	GLuint wireVBO; // For wireframe vertices
+	GLuint wireElementBuffer; // For wireframe elements
+	GLuint fbo; // Framebuffer
+	GLuint fboDepth; // Depth buffer
+	GLuint pbo; // Pixel Buffer Object for pixel streaming
 
 	// Transformations
 	Matrix4f viewTransform;
@@ -163,6 +167,8 @@ class Viewport : public Fl_Gl_Window {
 			initFramebuffer();
 		}
 
+		steady_clock::time_point start = steady_clock::now();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -205,6 +211,11 @@ class Viewport : public Fl_Gl_Window {
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireElementBuffer);
 			glDrawElements(GL_LINES, wireElementCount, GL_UNSIGNED_INT, 0);
 		}
+
+		glFlush();
+		steady_clock::time_point end = steady_clock::now();
+		milliseconds ms = duration_cast<milliseconds>(end - start);
+		std::cout << "Milliseconds: " << ms.count() << std::endl;
 	}
 
 	int handle(int event) {
