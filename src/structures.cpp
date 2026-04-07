@@ -407,27 +407,57 @@ void HalfEdgeMesh::build(const std::vector<cy::Vec4<uint>>& faces) {
 	translateVertices(-computeCentroid());
 }
 
-void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy::Vec3f>& norm, std::vector<cy::Vec3<uint>>& id, uint objId) {
+Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
+	return (v.Dot(u) / u.LengthSquared()) * u;
+}
+
+void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) {
 	uint faceCount = faceEdges.size();
 	uint vertices[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
+	uint edges[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
 	for (int i = 0; i < faceCount; ++i) {
-		GetFaceVertices(i, vertices);
+		GetFaceElements(i, vertices, edges);
 
-		cy::Vec3f vert0 = vertPos[vertices[0]];
-		cy::Vec3f vert1 = vertPos[vertices[1]];
-		cy::Vec3f vert2 = vertPos[vertices[2]];
+		Vec3f vert0 = vertPos[vertices[0]];
+		Vec3f vert1 = vertPos[vertices[1]];
+		Vec3f vert2 = vertPos[vertices[2]];
 
 		pos.push_back(vert0);
 		pos.push_back(vert1);
 		pos.push_back(vert2);
 
+		Vec3f seg01 = vert1 - vert0;
+		Vec3f seg12 = vert2 - vert1;
+		Vec3f seg20 = vert0 - vert2;
+
+		float dist0 = (seg01 - vectorProj(seg01, seg12)).Length();
+		float dist1 = (seg12 - vectorProj(seg12, seg20)).Length();
+		float dist2 = (seg20 - vectorProj(seg20, seg01)).Length();
+ 
+		edgeDist.push_back(dist0);
+		edgeDist.push_back(dist1);
+		edgeDist.push_back(dist2);
+
 		cy::Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
 
 		if (vertices[3] != MAX_UINT) {
 			cy::Vec3f vert3 = vertPos[vertices[3]];
+
 			pos.push_back(vert0);
 			pos.push_back(vert2);
 			pos.push_back(vert3);
+
+			Vec3f seg02 = -seg20;
+			Vec3f seg23 = vert3 - vert2;
+			Vec3f seg30 = vert0 - vert3;
+
+			dist0 = (seg02 - vectorProj(seg02, seg23)).Length();
+			dist1 = (seg23 - vectorProj(seg23, seg30)).Length();
+			dist2 = (seg30 - vectorProj(seg30, seg02)).Length();
+
+			edgeDist.push_back(dist0);
+			edgeDist.push_back(dist1);
+			edgeDist.push_back(dist2);
 
 			cy::Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
 			float area1 = normal.Length();
@@ -444,14 +474,32 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy:
 		norm.push_back(normal);
 		norm.push_back(normal);
 
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
+		Vec2u id(objId, i);
+		ids.push_back(id);
+		ids.push_back(id);
+		ids.push_back(id);
 
 		if (vertices[3] != MAX_UINT) {
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
+			ids.push_back(id);
+			ids.push_back(id);
+			ids.push_back(id);
+
+			Vec3u edgeId(edges[1], MAX_UINT, edges[0]);
+			std::cout << edgeId.x << ", " << edgeId.y << ", " << edgeId.z << std::endl;
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+
+			edgeId.Set(edges[2], edges[3], MAX_UINT);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+		}
+		else {
+			Vec3u edgeId(edges[1], edges[2], edges[0]);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
 		}
 	}
 }
@@ -494,6 +542,25 @@ void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) {
 		edge = &edges[edge->next];
 	}
 	vertices[3] = edge->dest != vertices[0] ? edge->dest : MAX_UINT;
+}
+
+void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) {
+	uint first = faceEdges[faceId];
+	uint next = first;
+	for (uint i = 0; i < 3; ++i) {
+		HalfEdge& edge = this->edges[next];
+		vertices[i] = edge.orig;
+		edges[i] = next;
+		next = edge.next;
+	}
+	if (next != first) {
+		vertices[3] = this->edges[next].orig;
+		edges[3] = next;
+	}
+	else {
+		vertices[3] = MAX_UINT;
+		edges[3] = MAX_UINT;
+	}
 }
 
 const cy::Vec3f* HalfEdgeMesh::VertexPositions() const {

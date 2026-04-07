@@ -75,7 +75,9 @@ class Viewport : public Fl_Gl_Window {
 
 	std::vector<Vec3f> meshPosData;
 	std::vector<Vec3f> meshNormData;
-	std::vector<Vec3u> meshIdData;
+	std::vector<Vec2u> meshIdData;
+	std::vector<float> meshDistData;
+	std::vector<Vec3u> meshEdgeIdData;
 
 	uint vertCount;
 
@@ -128,7 +130,7 @@ class Viewport : public Fl_Gl_Window {
 			return false;
 		}
 
-		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/BlinnPhong.frag");
+		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/Mesh.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
 			Fl::hide_all_windows();
@@ -181,13 +183,14 @@ class Viewport : public Fl_Gl_Window {
 		glDrawArrays(GL_TRIANGLES, 0, vertCount);
 
 		uint selectBufSize = pixel_w() * pixel_h();
-		uint pboOffset = selectBufSize * 3 * sizeof(float);
+		//uint pboOffset = selectBufSize * 3 * sizeof(float);
+
+		//glReadBuffer(GL_COLOR_ATTACHMENT1);
+		//glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, (void*)0);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, (void*)0);
-
-		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, (void*)pboOffset);
+		//glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, (void*)pboOffset);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -208,21 +211,23 @@ class Viewport : public Fl_Gl_Window {
 			glDepthMask(GL_TRUE);
 		}
 
-		if (displayWire) {
+		/*if (displayWire) {
 			glBindVertexArray(wireVAO);
 			wireProgram.Bind();
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireElementBuffer);
 			glDrawElements(GL_LINES, wireElementCount, GL_UNSIGNED_INT, 0);
-		}
+		}*/
 
 		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 		if (selectBuf) {
-			posSelectBuf.resize(0);
-			Vec3f* posSelectBuffer = (Vec3f*) selectBuf;
-			posSelectBuf.insert(posSelectBuf.begin(), posSelectBuffer, posSelectBuffer + selectBufSize);
+			//posSelectBuf.resize(0);
+			//Vec3f* posSelectBuffer = (Vec3f*) selectBuf;
+			//posSelectBuf.insert(posSelectBuf.begin(), posSelectBuffer, posSelectBuffer + selectBufSize);
 
 			idSelectBuf.resize(0);
-			Vec3u* idSelectBuffer = ((Vec3u*)selectBuf) + selectBufSize;
+			//Vec3u* idSelectBuffer = ((Vec3u*)selectBuf) + selectBufSize;
+			//idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
+			Vec3u* idSelectBuffer = (Vec3u*)selectBuf;
 			idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
 		}
 		else {
@@ -311,10 +316,10 @@ class Viewport : public Fl_Gl_Window {
 		uint x = (float(Fl::event_x()) / w()) * pixel_w();
 		uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
-		Vec3f pos = posSelectBuf.at(x + y * pixel_w());
+		//Vec3f pos = posSelectBuf.at(x + y * pixel_w());
 		Vec3u id = idSelectBuf.at(x + y * pixel_w());
 
-		std::cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+		//std::cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 		std::cout << "Object Id: " << id.x << std::endl;
 		std::cout << "Component Id: " << id.y << std::endl;
 		std::cout << "Sub-Component Id: " << id.z << std::endl;
@@ -422,8 +427,8 @@ class Viewport : public Fl_Gl_Window {
 		glBindTexture(GL_TEXTURE_2D, clrTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-		glBindTexture(GL_TEXTURE_2D, posTex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		//glBindTexture(GL_TEXTURE_2D, posTex);
+		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
 		glBindTexture(GL_TEXTURE_2D, idTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, texWidth, texHeight, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
@@ -437,12 +442,15 @@ class Viewport : public Fl_Gl_Window {
 		// Attach textures and depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboDepth);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, clrTex, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, posTex, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, idTex, 0);
+		//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, posTex, 0);
+		//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, idTex, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, idTex, 0);
 
 		// Enable all color attachments for drawing
-		GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, drawBuffers);
+		//GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		//glDrawBuffers(3, drawBuffers);
+		glDrawBuffers(2, drawBuffers);
 
 		// Make sure framebuffer is valid
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -502,13 +510,19 @@ class Viewport : public Fl_Gl_Window {
 		meshPosData.resize(0);
 		meshNormData.resize(0);
 		meshIdData.resize(0);
-		mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, 1);
+		meshEdgeIdData.resize(0);
+		meshDistData.resize(0);
+		mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, 1);
 
 		size_t meshPosDataSize = sizeof(float) * 3 * meshPosData.size();
 		size_t meshNormDataSize = sizeof(float) * 3 * meshNormData.size();
-		size_t meshIdDataSize = sizeof(uint) * 3 * meshIdData.size();
-		size_t meshFloatDataSize = meshPosDataSize + meshNormDataSize;
-		size_t size = meshFloatDataSize + meshIdDataSize;
+		size_t meshIdDataSize = sizeof(uint) * 2 * meshIdData.size();
+		size_t meshDistDataSize = sizeof(float) * meshDistData.size();
+		size_t meshEdgeIdDataSize = sizeof(uint) * 3 * meshEdgeIdData.size();
+		size_t bufOffset1 = meshPosDataSize + meshNormDataSize;
+		size_t bufOffset2 = bufOffset1 + meshIdDataSize;
+		size_t bufOffset3 = bufOffset2 + meshDistDataSize;
+		size_t size = bufOffset3 + meshEdgeIdDataSize;
 
 		vertCount = meshPosData.size();
 
@@ -519,7 +533,9 @@ class Viewport : public Fl_Gl_Window {
 
 		glBufferSubData(GL_ARRAY_BUFFER, 0, meshPosDataSize, meshPosData.data());
 		glBufferSubData(GL_ARRAY_BUFFER, meshPosDataSize, meshNormDataSize, meshNormData.data());
-		glBufferSubData(GL_ARRAY_BUFFER, meshFloatDataSize, meshIdDataSize, meshIdData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset1, meshIdDataSize, meshIdData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset2, meshDistDataSize, meshDistData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset3, meshEdgeIdDataSize, meshEdgeIdData.data());
 
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
@@ -528,7 +544,13 @@ class Viewport : public Fl_Gl_Window {
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)meshPosDataSize);
 
 		glEnableVertexAttribArray(2);
-		glVertexAttribIPointer(2, 3, GL_UNSIGNED_INT, 0, (GLvoid*)meshFloatDataSize);
+		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset1);
+
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)bufOffset2);
+
+		glEnableVertexAttribArray(4);
+		glVertexAttribIPointer(4, 3, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset3);
 	}
 
 public:

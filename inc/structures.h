@@ -110,11 +110,12 @@ public:
 	cy::Vec3f pos = cy::Vec3f(0.0f);
 	cy::Vec3f eulerRot = cy::Vec3f(0.0f); // Should later use quaternion instead of euler angles
 
-	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy::Vec3f>& norm, std::vector<cy::Vec3<uint>>& id, uint objId);
+	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId);
 	cy::Matrix4f getTransform();
 	void deform();
 	void GetFaceVertices(uint faceId, uint vertices[4]);
-	const cy::Vec3f* VertexPositions() const;
+	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]);
+	const Vec3f* VertexPositions() const;
 	uint VertexCount() const;
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
@@ -134,7 +135,6 @@ public:
 	bool load(const char* obj);
 	void load(const FaceList& faceList);
 	//void build(const std::vector<Vec3f> vertices, const std::vector<Vec4u>& faces);
-	//template <typename
 	//void build(const std::array<Vec3f> vertices, const std::array<Vec4u>& faces);
 };
 
