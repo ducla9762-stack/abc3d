@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <unordered_map>
+#include <fstream>
 #include "cyVector.h"
 #include "cyMatrix.h"
 #include "helper.h"
@@ -107,6 +108,35 @@ bool FaceList::LoadObj(const char* obj) {
 
 	if (objFile.fail() && !objFile.eof()) { return false; }
 	return true;
+}
+
+bool FaceList::isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const{
+	if (fileSize < 84) return false;
+
+	if (fileSize == (std::streamsize)84 + (numTriangles * 50)) return true; 
+
+	if (std::string(header) == "solid") return false; 
+
+	return true; 
+}
+
+bool FaceList::LoadSTL(const char* stl) {
+	//Aside: Should we start using exceptions?
+	//The exceptions for loading an STL file: 
+	//1) Can't open the file
+	//2) Invalid file size
+
+	ifstream stlFile(stl, std::ios::binary);
+	if (!stlFile) return false; //Ex. 1
+
+	stlFile.seekg(0, std::ios::end);
+	std::streamsize fileSize = stlFile.tellg();
+
+	stlFile.seekg(80, std::ios::beg);
+	uint32_t numTriangles = 0; 
+	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4); 
+
+	
 }
 
 // HalfEdgeMesh
