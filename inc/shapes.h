@@ -24,18 +24,33 @@ Vec4u(1,0,2,3),
 Vec4u(5,4,0,1) }; 
 
 const std::vector<Vec3f> PYRAMID_VERTICES = {
-	Vec3f(1.0f, 0.0f, 1.0f),
-	Vec3f(1.0f, 0.0f, -1.0f),
-	Vec3f(-1.0f, 0.0f, -1.0f),
 	Vec3f(-1.0f, 0.0f, 1.0f),
+	Vec3f(-1.0f, 0.0f, -1.0f),
+	Vec3f(1.0f, 0.0f, -1.0f),
+	Vec3f(1.0f, 0.0f, 1.0f),
 	Vec3f(0.0f, 2.0f, 0.0f)
 };
 
 const std::vector<Vec4u> PYRAMID_FACES = { 
-Vec4u(0, 3, 2, 1), 
-Vec4u(0, 4, 1, MAX_UINT), 
-Vec4u(1, 4, 2, MAX_UINT), 
-Vec4u(2, 4, 3, MAX_UINT), 
-Vec4u(3, 4, 1, MAX_UINT)};
+Vec4u(0, 1, 2, 3), 
+Vec4u(1, 0, 4, MAX_UINT), 
+Vec4u(0, 3, 4, MAX_UINT), 
+Vec4u(3, 2, 4, MAX_UINT), 
+Vec4u(1, 4, 2, MAX_UINT)};
+
+//const std::vector<Vec3f> PYRAMID_VERTICES = {
+//	Vec3f(1.0f, 0.0f, 1.0f),
+//	Vec3f(1.0f, 0.0f, -1.0f),
+//	Vec3f(-1.0f, 0.0f, -1.0f),
+//	Vec3f(-1.0f, 0.0f, 1.0f),
+//	Vec3f(0.0f, 2.0f, 0.0f)
+//};
+//
+//const std::vector<Vec4u> PYRAMID_FACES = { 
+//Vec4u(0, 3, 2, 1), 
+//Vec4u(0, 4, 1, MAX_UINT), 
+//Vec4u(1, 4, 2, MAX_UINT), 
+//Vec4u(2, 4, 3, MAX_UINT), 
+//Vec4u(3, 4, 1, MAX_UINT)};
 
 #endif //SHAPES_H
