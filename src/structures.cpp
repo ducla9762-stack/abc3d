@@ -737,3 +737,8 @@ void HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
 	build(faceList.Faces());
 }
+
+void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {
+	vertPos = vertices;
+	build(faces);
+}
