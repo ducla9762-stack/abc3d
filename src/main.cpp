@@ -6,6 +6,7 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Native_File_Chooser.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Radio_Button.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Menu_Button.H>
 //#include <FL/Fl_Flex.H>
@@ -171,7 +172,6 @@ int main(int argc, char* argv[]) {
 	// Top toolbar
 	Fl_Window* topToolbar = new Fl_Window(0, 0, VIEWPORT_W, 40);
 	topToolbar->color(12);
-	topToolbar->border(0);
 
 	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(0, 0, VIEWPORT_W, 40);
 	topMenu->selection_color(0);
@@ -226,35 +226,26 @@ int main(int argc, char* argv[]) {
 	Fl_Window* sideToolbar = new Fl_Window(20, 70, 50, 500);
 	sideToolbar->color(7);
 
-	Fl_Button* selectButton = new Fl_Button(0, 0, 50, 50, "Select");
-	selectButton->type(1);
+	Fl_Radio_Button* selectButton = new Fl_Radio_Button(0, 0, 50, 50, "Select");
 	selectButton->selection_color(0);
-	Fl_Button* moveButton = new Fl_Button(0, 50, 50, 50, "Move");
-	moveButton->type(1);
+	Fl_Radio_Button* moveButton = new Fl_Radio_Button(0, 50, 50, 50, "Move");
 	moveButton->selection_color(0);
-	Fl_Button* rotateButton = new Fl_Button(0, 100, 50, 50, "Rotate");
-	rotateButton->type(1);
+	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 100, 50, 50, "Rotate");
 	rotateButton->selection_color(0);
-	Fl_Button* scaleButton = new Fl_Button(0, 150, 50, 50, "Scale");
-	scaleButton->type(1);
+	Fl_Radio_Button* scaleButton = new Fl_Radio_Button(0, 150, 50, 50, "Scale");
 	scaleButton->selection_color(0);
-	Fl_Button* shapeButton = new Fl_Button(0, 200, 50, 50, "Shape");
-	shapeButton->type(1);
+	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 200, 50, 50, "Shape");
 	shapeButton->selection_color(0);
-	Fl_Button* extrudeButton = new Fl_Button(0, 250, 50, 50, "Extrude");
-	extrudeButton->type(1);
+	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 250, 50, 50, "Extrude");
 	extrudeButton->selection_color(0);
 
 	// Subdivision button
-	Fl_Button* subdivisionButton = new Fl_Button(0, 300, 50, 50, "Subdivision");
-	subdivisionButton->type(1);
+	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 300, 50, 50, "Subdivision");
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionCallback);
 	subdivisionButton->when(FL_WHEN_CHANGED);
-	// TODO: Figure out how to make it only change when selected, not unselected
 		
-	Fl_Button* bevelButton = new Fl_Button(0, 350, 50, 50, "Bevel");
-	bevelButton->type(1);
+	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 350, 50, 50, "Bevel");
 	bevelButton->selection_color(0);
 
 	sideToolbar->end();
@@ -264,7 +255,7 @@ int main(int argc, char* argv[]) {
 	Fl_Window* topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, 325);
 	topRightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
 	topRightPanel->begin();
-	topRightPanel->color(5);
+	topRightPanel->color(FL_DARK_RED);
 
 	topRightPanel->end();
 
@@ -352,17 +343,13 @@ int main(int argc, char* argv[]) {
 	Fl_Window* bottomToolbar = new Fl_Window(150, VIEWPORT_H - 70, 200, 50);
 	bottomToolbar->color(12);
 
-	Fl_Button* vertexButton = new Fl_Button(0, 0, 50, 50, "Vertex");
-	vertexButton->type(1);
+	Fl_Radio_Button* vertexButton = new Fl_Radio_Button(0, 0, 50, 50, "Vertex");
 	vertexButton->selection_color(0);
-	Fl_Button* edgeButton = new Fl_Button(50, 0, 50, 50, "Edge");
-	edgeButton->type(1);
+	Fl_Radio_Button* edgeButton = new Fl_Radio_Button(50, 0, 50, 50, "Edge");
 	edgeButton->selection_color(0);
-	Fl_Button* faceButton = new Fl_Button(100, 0, 50, 50, "Face");
-	faceButton->type(1);
+	Fl_Radio_Button* faceButton = new Fl_Radio_Button(100, 0, 50, 50, "Face");
 	faceButton->selection_color(0);
-	Fl_Button* objectButton = new Fl_Button(150, 0, 50, 50, "Object");
-	objectButton->type(1);
+	Fl_Radio_Button* objectButton = new Fl_Radio_Button(150, 0, 50, 50, "Object");
 	objectButton->selection_color(0);
 
 	bottomToolbar->end();
