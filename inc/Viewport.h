@@ -112,6 +112,9 @@ class Viewport : public Fl_Gl_Window {
 
 		updateRenderBuffers();
 
+		// Create pixel buffer object for pixel streaming
+		glGenBuffers(1, &pbo);
+
 		// Create textures
 		glGenTextures(1, &posTex);
 		glGenTextures(1, &idTex);
@@ -167,6 +170,7 @@ class Viewport : public Fl_Gl_Window {
 			initFramebuffer();
 		}
 
+		glFinish();
 		steady_clock::time_point start = steady_clock::now();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -176,15 +180,14 @@ class Viewport : public Fl_Gl_Window {
 		meshProgram.Bind();
 		glDrawArrays(GL_TRIANGLES, 0, vertCount);
 
-		int selectBufSize = pixel_w() * pixel_h();
+		uint selectBufSize = pixel_w() * pixel_h();
+		uint pboOffset = selectBufSize * 3 * sizeof(float);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		posSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, (void*)0);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		idSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, (void*)pboOffset);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -212,7 +215,34 @@ class Viewport : public Fl_Gl_Window {
 			glDrawElements(GL_LINES, wireElementCount, GL_UNSIGNED_INT, 0);
 		}
 
-		glFlush();
+		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		if (selectBuf) {
+			posSelectBuf.resize(0);
+			Vec3f* posSelectBuffer = (Vec3f*) selectBuf;
+			posSelectBuf.insert(posSelectBuf.begin(), posSelectBuffer, posSelectBuffer + selectBufSize);
+
+			idSelectBuf.resize(0);
+			Vec3u* idSelectBuffer = ((Vec3u*)selectBuf) + selectBufSize;
+			idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
+		}
+		else {
+			std::cout << "ERROR with mapping" << std::endl;
+		}
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+
+		/*int selectBufSize = pixel_w() * pixel_h();
+
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		posSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		idSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);*/
+
+		glFinish();
 		steady_clock::time_point end = steady_clock::now();
 		milliseconds ms = duration_cast<milliseconds>(end - start);
 		std::cout << "Milliseconds: " << ms.count() << std::endl;
@@ -397,6 +427,12 @@ class Viewport : public Fl_Gl_Window {
 
 		glBindTexture(GL_TEXTURE_2D, idTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, texWidth, texHeight, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
+
+		// Allocate pixel buffer objects for streaming
+		uint pboSize = texWidth * texHeight * 3 * (sizeof(float) + sizeof(uint));
+
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, pboSize, NULL, GL_STREAM_READ);
 
 		// Attach textures and depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboDepth);
