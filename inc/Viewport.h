@@ -124,14 +124,14 @@ class Viewport : public Fl_Gl_Window {
 		bool success = gridProgram.BuildFiles("../assets/shaders/Grid.vert", "../assets/shaders/Grid.frag");
 		if (!success) {
 			std::cout << "Failed to compile grid shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
 		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/BlinnPhong.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
@@ -141,7 +141,7 @@ class Viewport : public Fl_Gl_Window {
 		success = wireProgram.BuildFiles("../assets/shaders/Wireframe.vert", "../assets/shaders/Wireframe.frag");
 		if (!success) {
 			std::cout << "Failed to compile wireframe shader program!" << std::endl;
-			Fl::hide_all_windows();
+			//Fl::hide_all_windows();
 			return false;
 		}
 
@@ -151,6 +151,9 @@ class Viewport : public Fl_Gl_Window {
 		// Initialize Model-View uniform in mesh shader program.
 		// Other uniforms are initialized with setPerspectiveAndViewport callback.
 		initMeshModelViewUniform();
+		// Initialize the selection boolean for the mesh shader program.
+		// By default nothing should be selected.
+		initMeshModelSelectionBoolean();
 
 		// Set clear color & blend function
 		glClearColor(0, 0, 0, 1);
@@ -314,12 +317,24 @@ class Viewport : public Fl_Gl_Window {
 		Vec3f pos = posSelectBuf.at(x + y * pixel_w());
 		Vec3u id = idSelectBuf.at(x + y * pixel_w());
 
+		// If the object id is not 0, e.g. an object has been touched, set the selection bool.
+		if (id.x != 0)
+		{
+			setMeshSelectionBoolean(true);
+		}
+		// Else the object id is 0, no object has been touched, reset the selection bool.
+		else
+		{
+			setMeshSelectionBoolean(false);
+		}
+
 		std::cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 		std::cout << "Object Id: " << id.x << std::endl;
 		std::cout << "Component Id: " << id.y << std::endl;
 		std::cout << "Sub-Component Id: " << id.z << std::endl;
 
 		mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+		redraw();
 	}
 
 	void mouseWheel() {
@@ -385,6 +400,12 @@ class Viewport : public Fl_Gl_Window {
 		wireProgram.SetUniformMatrix4("mvp", data);
 	}
 
+	void setMeshSelectionBoolean(bool selected)
+	{
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", selected);
+	}
+
 	void initMeshModelViewUniform() {
 		Vec3f camera = sphericalToCartesian(camPos);
 		viewTransform.SetView(camera, ORIGIN, WORLD_Y);
@@ -400,6 +421,11 @@ class Viewport : public Fl_Gl_Window {
 		normalTransform.Transpose();
 		normalTransform.Get(data);
 		meshProgram.SetUniformMatrix3("normalTransform", data);
+	}
+
+	void initMeshModelSelectionBoolean() {
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", false);
 	}
 
 	void initFramebuffer() {
