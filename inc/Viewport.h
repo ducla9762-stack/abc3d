@@ -369,6 +369,11 @@ class Viewport : public Fl_Gl_Window {
 		case 'g':
 			displayGrid = !displayGrid;
 			break;
+		case FL_Delete:
+			mesh.deleteMesh();
+			std::cout << "mesh deleted" << std::endl;
+			updateRenderBuffers();
+			break;
 		default:
 			return;
 		}

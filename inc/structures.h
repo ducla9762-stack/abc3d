@@ -130,6 +130,7 @@ public:
 	void refineEdge(uint hEdgeId);
 	void tesselate();
 	void subdivide();
+	void deleteMesh();
 	void loadFromInput();
 	bool load(const char* obj);
 	void load(const FaceList& faceList);
