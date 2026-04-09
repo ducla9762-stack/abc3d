@@ -21,9 +21,9 @@ typedef unsigned uint;
 
 const uint MAX_UINT = std::numeric_limits<uint>::max();
 
-class FaceList {
+class FaceList{
 
-	typedef cy::Vec4<uint> Face;
+	typedef cy::Vec4<uint> Face; 
 	typedef cy::Vec3f Vertex;
 
 	std::vector<Vertex> vertices;
@@ -33,6 +33,7 @@ class FaceList {
 	void ProcessObjLine(const string& line);
 	void PrintFaceComponent(uint x) const;
 	void PrintFace(const Face& face) const;
+	bool isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const;
 
 public:
 
@@ -42,6 +43,7 @@ public:
 	std::vector<cy::Vec4<uint>>& Faces();
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
+	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
 };
 
 class HalfEdgeMesh {
@@ -103,7 +105,6 @@ class HalfEdgeMesh {
 	std::vector<uint> vertEdge; // Each vertices' first edge
 
 	std::vector<HalfEdge> edges; // Each half-edge
-
 public:
 
 	cy::Vec3f scale = cy::Vec3f(1.0f);
@@ -131,11 +132,19 @@ public:
 	void refineEdge(uint hEdgeId);
 	void tesselate();
 	void subdivide();
+	void deleteMesh();
 	void loadFromInput();
-	bool load(const char* obj);
+	bool load(const char* file);
 	void load(const FaceList& faceList);
+
+	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
+
+	
 	//void build(const std::vector<Vec3f> vertices, const std::vector<Vec4u>& faces);
+	//template <typename
 	//void build(const std::array<Vec3f> vertices, const std::array<Vec4u>& faces);
+	bool exportObj(const char* filePath) const;
+	bool exportSTL(const char* filePath, bool isBinary = true) const; 
 };
 
 #endif

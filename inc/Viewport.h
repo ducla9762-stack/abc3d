@@ -21,6 +21,7 @@
 
 #include "helper.h"
 #include "structures.h"
+#include "shapes.h"
 
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
@@ -359,6 +360,11 @@ class Viewport : public Fl_Gl_Window {
 		case 'g':
 			displayGrid = !displayGrid;
 			break;
+		case FL_Delete:
+			mesh.deleteMesh();
+			std::cout << "mesh deleted" << std::endl;
+			updateRenderBuffers();
+			break;
 		default:
 			return;
 		}
@@ -561,13 +567,26 @@ public:
 		: Fl_Gl_Window(x, y, w, h, label)
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-		backup.load("../assets/models/box.obj");
+
+		backup.load(CUBE_VERTICES, CUBE_FACES); 
 		mesh = backup;
 	}
 
 	void setScale(int component, float scale) {
 		mesh.scale[component] = scale;
 		updateModelUniforms();
+		redraw();
+	}
+
+	void subdivision() {
+		mesh.subdivide();
+		updateRenderBuffers();
+		redraw();
+	}
+
+	void tesselate() {
+		mesh.tesselate();
+		updateRenderBuffers();
 		redraw();
 	}
 
