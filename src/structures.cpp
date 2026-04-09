@@ -324,9 +324,9 @@ void HalfEdgeMesh::translateVertices(const cy::Vec3f& add) {
 }
 
 void HalfEdgeMesh::build(const std::vector<cy::Vec4<uint>>& faces) {
-	vertEdge.clear();
-	faceEdges.clear();
-	edges.clear();
+	vertEdge.resize(0);
+	faceEdges.resize(0);
+	edges.resize(0);
 	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
 	faceEdges.reserve(faces.size());
 

@@ -30,9 +30,12 @@ void main(){
 
 	selectIds = uvec3(ids, edgeId);
 
+	float AA = length(vec2(dFdx(edgeDists[minEdge]), dFdy(edgeDists[minEdge]))) * 1.5f;
+	float threshold = 0.07f;
+
 	vec3 color1 = vec3(1.0f, 1.0f, 0.0f);
 	vec3 color2 = vec3(abs(dot(normal, viewDir)) * SURFACE_BASE_COLOR);
-	float alpha = 1.0f - smoothstep(0.05f - 0.005f, 0.05 + 0.005f, edgeDist);
+	float alpha = 1.0f - smoothstep(threshold - AA, threshold + AA, edgeDist);
 
 	color = vec4(mix(color2, color1, alpha), 1.0f);
 }
