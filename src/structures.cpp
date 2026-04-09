@@ -748,7 +748,7 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 	///	This function will save the HalfEdgeMesh as an obj file. If it is unable to, it will return false. 
 	/// </summary>
 	/// <param name="filePath">
-	///		The file path to save to.
+	///		The file path for saving. 
 	/// </param>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
 	std::ofstream file(filePath); 
