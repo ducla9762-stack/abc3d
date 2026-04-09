@@ -495,6 +495,9 @@ public:
 		backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 
 		mesh = backup;
+
+		//Example usage for exporting obj files. Connect to UI after a button for "export" is added.
+		//mesh.exportObj("../assets/models/test.obj");
 	}
 
 	void setScale(int component, float scale) {

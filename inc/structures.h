@@ -134,8 +134,7 @@ public:
 	void load(const FaceList& faceList);
 
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
-
-	
+	bool exportObj(const char* filePath) const; 
 };
 
 #endif

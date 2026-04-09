@@ -742,3 +742,39 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 	vertPos = vertices;
 	build(faces);
 }
+
+
+/// <summary>
+	///	This function will save the HalfEdgeMesh as an obj file. If it is unable to, it will return false. 
+	/// </summary>
+	/// <param name="filePath">
+	///		The file path to save to.
+	/// </param>
+bool HalfEdgeMesh::exportObj(const char* filePath) const {
+	std::ofstream file(filePath); 
+
+	if (!file.is_open()) return false; 
+	
+	for (const cy::Vec3f& v : vertPos) {
+		file << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
+	}
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		file << "f"; 
+
+		uint first = faceEdges[faceId]; 
+		uint next = first; 
+
+		do {
+			file << " " << (edges[next].orig + 1); 
+			next = edges[next].next; 
+		} while (next != first); 
+		
+		file << "\n"; 
+	}
+
+	if (file.fail()) return false; 
+
+	return true; 
+}
