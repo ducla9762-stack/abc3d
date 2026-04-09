@@ -145,6 +145,8 @@ public:
 	//void build(const std::array<Vec3f> vertices, const std::array<Vec4u>& faces);
 	bool exportObj(const char* filePath) const;
 	bool exportSTL(const char* filePath, bool isBinary = true) const; 
+
+	void normalizeAllVertices();
 };
 
 #endif
