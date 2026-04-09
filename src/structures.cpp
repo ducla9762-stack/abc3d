@@ -5,6 +5,9 @@
 #include <vector>
 #include <limits>
 #include <unordered_map>
+#include <fstream>
+#include <cstring>
+
 #include "cyVector.h"
 #include "cyMatrix.h"
 #include "helper.h"
@@ -107,6 +110,105 @@ bool FaceList::LoadObj(const char* obj) {
 
 	if (objFile.fail() && !objFile.eof()) { return false; }
 	return true;
+}
+
+/// <summary>
+/// This function attempts to load an STL file into a FaceList object
+/// </summary>
+/// <param name="stl">The file name for the STL file</param>
+/// <returns>
+/// true: if the function successfully loads the STL file into the FaceList
+/// false: if the function fails to load the STL file. This could happen because: 
+///	1) Can't open file
+/// 2) Invalid file size
+/// 3) Neither a binary or ASCII stl file
+/// </returns>
+bool FaceList::LoadSTL(const char* stl) {
+	//Aside: Should we start using exceptions?
+
+	ifstream stlFile(stl, std::ios::binary | std::ios::ate);
+	if (!stlFile) return false; 
+	
+	std::streamsize fileSize = stlFile.tellg();
+	stlFile.seekg(0, std::ios::beg);
+	
+	if (fileSize < 84) return false; 
+
+	char header[80]; 
+	stlFile.read(header, 80);
+
+	uint32_t numTriangles = 0; 
+	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4); 
+	
+	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50)); 
+	
+	if (isBinary) {
+		vertices.reserve(vertices.size() + numTriangles * 3); 
+		faces.reserve(faces.size() + numTriangles); 
+
+		for (uint32_t i = 0; i < numTriangles; ++i) {
+			stlFile.seekg(12, std::ios::cur); 
+
+			uint baseVertIndex = static_cast<uint>(vertices.size()); 
+
+			for (int v = 0; v < 3; ++v) {
+				Vertex vertex(0.0f); 
+				stlFile.read(reinterpret_cast<char*>(&vertex.x), 4);
+				stlFile.read(reinterpret_cast<char*>(&vertex.y), 4);
+				stlFile.read(reinterpret_cast<char*>(&vertex.z), 4);
+				vertices.push_back(vertex); 
+			}
+
+			stlFile.seekg(2, std::ios::cur); 
+
+			Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT); 
+			faces.push_back(face); 
+		}
+		
+		return stlFile.good() || stlFile.eof();
+	}
+	else {
+		stlFile.close(); 
+		ifstream asciiFile(stl); 
+		if (!asciiFile) return false; 
+
+		string line; 
+		uint loopVertCount = 0; 
+		uint baseVertIndex = 0; 
+
+		while (std::getline(asciiFile, line)) {
+			size_t start = line.find_first_not_of(" \t"); 
+			if (start == string::npos) continue; 
+			line = line.substr(start); 
+
+			if (line.substr(0, 6) == "vertex") {
+				Vertex vertex(0.0f); 
+
+				const char* segStart = line.c_str() + 6; 
+				char* segEnd; 
+
+				for (int i = 0; i < 3; ++i) {
+					vertex[i] = std::strtof(segStart, &segEnd);
+					segStart = segEnd; 
+				}
+
+				vertices.push_back(vertex); 
+				++loopVertCount; 
+			}
+			else if (line.substr(0, 9) == "outer loop") {
+				loopVertCount = 0; 
+				baseVertIndex = static_cast<uint>(vertices.size());
+			}
+			else if (line.substr(0, 7) == "endloop") {
+				if (loopVertCount == 3) {
+					Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT);
+					faces.push_back(face); 
+				}
+			}
+		}
+
+		return asciiFile.good() || asciiFile.eof();
+	}
 }
 
 // HalfEdgeMesh
@@ -324,9 +426,9 @@ void HalfEdgeMesh::translateVertices(const cy::Vec3f& add) {
 }
 
 void HalfEdgeMesh::build(const std::vector<cy::Vec4<uint>>& faces) {
-	vertEdge.clear();
-	faceEdges.clear();
-	edges.clear();
+	vertEdge.resize(0);
+	faceEdges.resize(0);
+	edges.resize(0);
 	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
 	faceEdges.reserve(faces.size());
 
@@ -407,27 +509,57 @@ void HalfEdgeMesh::build(const std::vector<cy::Vec4<uint>>& faces) {
 	translateVertices(-computeCentroid());
 }
 
-void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy::Vec3f>& norm, std::vector<cy::Vec3<uint>>& id, uint objId) {
+Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
+	return (v.Dot(u) / u.LengthSquared()) * u;
+}
+
+void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) {
 	uint faceCount = faceEdges.size();
 	uint vertices[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
+	uint edges[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
 	for (int i = 0; i < faceCount; ++i) {
-		GetFaceVertices(i, vertices);
+		GetFaceElements(i, vertices, edges);
 
-		cy::Vec3f vert0 = vertPos[vertices[0]];
-		cy::Vec3f vert1 = vertPos[vertices[1]];
-		cy::Vec3f vert2 = vertPos[vertices[2]];
+		Vec3f vert0 = vertPos[vertices[0]];
+		Vec3f vert1 = vertPos[vertices[1]];
+		Vec3f vert2 = vertPos[vertices[2]];
 
 		pos.push_back(vert0);
 		pos.push_back(vert1);
 		pos.push_back(vert2);
 
+		Vec3f seg01 = vert1 - vert0;
+		Vec3f seg12 = vert2 - vert1;
+		Vec3f seg20 = vert0 - vert2;
+
+		float dist0 = (seg01 - vectorProj(seg01, seg12)).Length();
+		float dist1 = (seg12 - vectorProj(seg12, seg20)).Length();
+		float dist2 = (seg20 - vectorProj(seg20, seg01)).Length();
+ 
+		edgeDist.push_back(dist0);
+		edgeDist.push_back(dist1);
+		edgeDist.push_back(dist2);
+
 		cy::Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
 
 		if (vertices[3] != MAX_UINT) {
 			cy::Vec3f vert3 = vertPos[vertices[3]];
+
 			pos.push_back(vert0);
 			pos.push_back(vert2);
 			pos.push_back(vert3);
+
+			Vec3f seg02 = -seg20;
+			Vec3f seg23 = vert3 - vert2;
+			Vec3f seg30 = vert0 - vert3;
+
+			dist0 = (seg02 - vectorProj(seg02, seg23)).Length();
+			dist1 = (seg23 - vectorProj(seg23, seg30)).Length();
+			dist2 = (seg30 - vectorProj(seg30, seg02)).Length();
+
+			edgeDist.push_back(dist0);
+			edgeDist.push_back(dist1);
+			edgeDist.push_back(dist2);
 
 			cy::Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
 			float area1 = normal.Length();
@@ -444,14 +576,32 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy:
 		norm.push_back(normal);
 		norm.push_back(normal);
 
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
-		id.push_back(cy::Vec3<uint>(objId, i, 0));
+		Vec2u id(objId, i);
+		ids.push_back(id);
+		ids.push_back(id);
+		ids.push_back(id);
 
 		if (vertices[3] != MAX_UINT) {
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
-			id.push_back(cy::Vec3<uint>(objId, i, 1));
+			ids.push_back(id);
+			ids.push_back(id);
+			ids.push_back(id);
+
+			Vec3u edgeId(edges[1], MAX_UINT, edges[0]);
+			std::cout << edgeId.x << ", " << edgeId.y << ", " << edgeId.z << std::endl;
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+
+			edgeId.Set(edges[2], edges[3], MAX_UINT);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+		}
+		else {
+			Vec3u edgeId(edges[1], edges[2], edges[0]);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
+			edgeIds.push_back(edgeId);
 		}
 	}
 }
@@ -494,6 +644,25 @@ void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) {
 		edge = &edges[edge->next];
 	}
 	vertices[3] = edge->dest != vertices[0] ? edge->dest : MAX_UINT;
+}
+
+void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) {
+	uint first = faceEdges[faceId];
+	uint next = first;
+	for (uint i = 0; i < 3; ++i) {
+		HalfEdge& edge = this->edges[next];
+		vertices[i] = edge.orig;
+		edges[i] = next;
+		next = edge.next;
+	}
+	if (next != first) {
+		vertices[3] = this->edges[next].orig;
+		edges[3] = next;
+	}
+	else {
+		vertices[3] = MAX_UINT;
+		edges[3] = MAX_UINT;
+	}
 }
 
 const cy::Vec3f* HalfEdgeMesh::VertexPositions() const {
@@ -728,9 +897,26 @@ void HalfEdgeMesh::loadFromInput() {
 	std::cout << "Loaded data successfully!" << std::endl;
 }
 
-bool HalfEdgeMesh::load(const char* obj) {
+/// <summary>
+/// This function tries to load a file format into the STL file
+/// </summary>
+/// <param name="file">
+/// The file to load
+/// </param>
+/// <returns>
+/// return true: the file is loaded sucessfully into the HalfEdgeMesh
+/// return false: the file was not loaded sucessfully and there was some file I/O error most likely
+/// </returns>
+bool HalfEdgeMesh::load(const char* file) {
 	FaceList faceList;
-	bool success = faceList.LoadObj(obj);
+
+	bool success = false; 
+
+	if (strstr(file, ".obj"))
+		success = faceList.LoadObj(file);
+
+	else if (strstr(file, ".stl"))
+		success = faceList.LoadSTL(file);
 
 	if (!success) { return false; }
 
@@ -748,4 +934,124 @@ void HalfEdgeMesh::load(const FaceList& faceList) {
 void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {
 	vertPos = vertices;
 	build(faces);
+}
+
+
+/// <summary>
+/// This function will save the HalfEdgeMesh as an obj file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an obj file
+/// false: if the function failed to save the mesh as an obj file
+/// </returns>
+bool HalfEdgeMesh::exportObj(const char* filePath) const {
+	std::ofstream file(filePath); 
+
+	if (!file.is_open()) return false; 
+	
+	for (const cy::Vec3f& v : vertPos) {
+		file << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
+	}
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		file << "f"; 
+
+		uint first = faceEdges[faceId]; 
+		uint next = first; 
+
+		do {
+			file << " " << (edges[next].orig + 1); 
+			next = edges[next].next; 
+		} while (next != first); 
+		
+		file << "\n"; 
+	}
+
+	if (file.fail()) return false; 
+
+	return true; 
+}
+
+/// <summary>
+/// This function will save the HalfEdgeMesh as an stl file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="isBinary">
+/// true: if the user wishes to save in binary stl format (more optimal for space)
+/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// </param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an stl file
+/// false: if the function failed to save the mesh as an stl file
+/// </returns>
+bool HalfEdgeMesh::exportSTL(const char* filePath, bool isBinary) const{
+	struct Triangle { cy::Vec3f v0, v1, v2; };
+	std::vector<Triangle> tris; 
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		uint verts[4]; 
+		const_cast<HalfEdgeMesh*>(this)->GetFaceVertices(faceId, verts); 
+		
+		cy::Vec3f v0 = vertPos[verts[0]]; 
+		cy::Vec3f v1 = vertPos[verts[1]];
+		cy::Vec3f v2 = vertPos[verts[2]];
+
+		tris.push_back({ v0, v1, v2 });
+
+		if (verts[3] != MAX_UINT)
+			tris.push_back({ v0, v2, vertPos[verts[3]] });
+	}
+
+	if (isBinary) {
+		std::ofstream file(filePath, std::ios::binary); 
+		if (!file.is_open()) return false; 
+
+		char header[80] = {}; 
+		file.write(header, 80); 
+
+		uint32_t triCount = static_cast<uint32_t>(tris.size()); 
+		file.write(reinterpret_cast<const char*>(&triCount), 4);
+
+		for (const Triangle& tri : tris) {
+			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0); 
+			normal.Normalize(); 
+
+			file.write(reinterpret_cast<const char*>(&normal), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v0), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v1), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v2), 12);
+			uint16_t attr = 0; 
+			file.write(reinterpret_cast<const char*>(&attr), 2);
+		}
+
+		return !file.fail(); 
+	}
+
+	else {
+		std::ofstream file(filePath); 
+		if (!file.is_open()) return false; 
+		
+
+		file << "solid mesh\n"; 
+
+		for (const Triangle& tri : tris) {
+			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
+			normal.Normalize(); 
+
+			file << "  facet normal " << normal.x << " " << normal.y << " " << normal.z << "\n";
+			file << "    outer loop\n";
+			file << "      vertex " << tri.v0.x << " " << tri.v0.y << " " << tri.v0.z << "\n";
+			file << "      vertex " << tri.v1.x << " " << tri.v1.y << " " << tri.v1.z << "\n";
+			file << "      vertex " << tri.v2.x << " " << tri.v2.y << " " << tri.v2.z << "\n";
+			file << "    endloop\n";
+			file << "  endfacet\n";
+		}
+
+		file << "endsolid mesh\n";
+
+		return !file.fail();
+	}
 }
