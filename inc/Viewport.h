@@ -647,14 +647,24 @@ public:
 		redraw();
 	}
 
-	bool loadObj(const char* filepath) {
-		HalfEdgeMesh mesh;
-		bool success = mesh.load(filepath);
-		sceneMeshes.push_back(mesh);
+	bool loadFile(const char* filepath) {
+		bool success = backup.load(filepath);
 		if (!success) return false;
 		//sceneMeshes = sceneBackup;
 		updateRenderBuffers();
 		redraw();
+		return true;
+	}
+
+	bool exportObj(const char* filepath) {
+		bool success = mesh.exportObj(filepath);
+		if (!success) return false;
+		return true;
+	}
+
+	bool exportStl(const char* filepath) {
+		bool success = mesh.exportStl(filepath);
+		if (!success) return false;
 		return true;
 	}
 };
