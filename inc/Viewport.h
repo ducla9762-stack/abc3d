@@ -52,6 +52,7 @@ class Viewport : public Fl_Gl_Window {
 	// Buffers
 	GLuint meshVBO; // For mesh data (positions, normals, ids, etc.)
 	GLuint pointVBO; // Holds unique mesh vertex positions for rendering vertex points
+	GLuint pointIdVBO; // Holds mesh id and offset for rendering vertex points
 	GLuint fbo; // Framebuffer
 	GLuint fboDepth; // Depth buffer
 	GLuint pbo; // Pixel Buffer Object for pixel streaming
@@ -98,6 +99,12 @@ class Viewport : public Fl_Gl_Window {
 
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+
+		glGenBuffers(1, &pointIdVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, pointIdVBO);
+
+		glEnableVertexAttribArray(1);
+		glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, 0, (GLvoid*)0);
 
 		// Create VAO for mesh
 		glGenVertexArrays(1, &meshVAO);
@@ -179,6 +186,12 @@ class Viewport : public Fl_Gl_Window {
 		meshProgram.Bind();
 		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
+		if (displayPoints) {
+			glBindVertexArray(pointVAO);
+			pointProgram.Bind();
+			glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
+		}
+
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
 		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -198,12 +211,6 @@ class Viewport : public Fl_Gl_Window {
 
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
-		}
-
-		if (displayPoints) {
-			glBindVertexArray(pointVAO);
-			pointProgram.Bind();
-			glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
 		}
 
 		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
@@ -493,10 +500,14 @@ class Viewport : public Fl_Gl_Window {
 
 	void updateRenderBuffers() {
 		// Unique vertex data for drawing vertex points
+		std::vector<Vec2u> vertObjData;
+		vertObjData.insert(vertObjData.begin(), mesh.VertexCount(), Vec2u(1, 0));
 		pointVertDrawCount = mesh.VertexCount();
 		glBindVertexArray(pointVAO);
 		glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pointVertDrawCount * 3, mesh.VertexPositions(), GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, pointIdVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(uint) * pointVertDrawCount * 2, vertObjData.data(), GL_DYNAMIC_DRAW);
 
 		// Mesh Data
 		meshPosData.resize(0);
