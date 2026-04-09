@@ -347,7 +347,6 @@ class Viewport : public Fl_Gl_Window {
 	void keyDown() {
 		switch (Fl::event_key()) {
 		case 's':
-			//mesh.subdivide();
 			for (HalfEdgeMesh& mesh : sceneMeshes)
 			{
 				mesh.subdivide();
@@ -356,7 +355,6 @@ class Viewport : public Fl_Gl_Window {
 			updateRenderBuffers();
 			break;
 		case 't':
-			//mesh.tesselate();
 			for (HalfEdgeMesh& mesh : sceneMeshes)
 			{
 				mesh.tesselate();
@@ -365,7 +363,6 @@ class Viewport : public Fl_Gl_Window {
 			updateRenderBuffers();
 			break;
 		case 'r':
-			//mesh = backup;
 			sceneMeshes = sceneBackup;
 			updateRenderBuffers();
 			break;
@@ -376,11 +373,8 @@ class Viewport : public Fl_Gl_Window {
 			displayGrid = !displayGrid;
 			break;
 		case FL_Delete:
-			//mesh.deleteMesh();
-			for (HalfEdgeMesh& mesh : sceneMeshes)
-			{
-				mesh.deleteMesh();
-			}
+			sceneMeshes.resize(0);
+			sceneBackup.resize(0);
 			std::cout << "mesh deleted" << std::endl;
 			updateRenderBuffers();
 			break;
@@ -392,7 +386,6 @@ class Viewport : public Fl_Gl_Window {
 
 	void setPerspectiveAndViewport() {
 		projection.SetPerspective(degreesToRadians(fov), float(pixel_w()) / float(pixel_h()), 0.1f, 1000.0f);
-		//updateProjectionUniforms();
 		for (HalfEdgeMesh& mesh : sceneMeshes) {
 			updateProjectionUniforms(mesh);
 		}
@@ -429,7 +422,6 @@ class Viewport : public Fl_Gl_Window {
 		viewTransform.SetView(camera, ORIGIN, WORLD_Y);
 
 		float data[16];
-		//Matrix4f modelView = viewTransform * mesh.getTransform();
 		Matrix4f modelView = viewTransform * sceneMeshes[0].getTransform();
 		modelView.Get(data);
 		meshProgram.Bind();
@@ -656,13 +648,11 @@ public:
 	}
 
 	bool loadObj(const char* filepath) {
-		bool success = true;
-		for (HalfEdgeMesh& mesh : sceneBackup)
-		{
-			success = mesh.load(filepath);
-		}
+		HalfEdgeMesh mesh;
+		bool success = mesh.load(filepath);
+		sceneMeshes.push_back(mesh);
 		if (!success) return false;
-		sceneMeshes = sceneBackup;
+		//sceneMeshes = sceneBackup;
 		updateRenderBuffers();
 		redraw();
 		return true;
