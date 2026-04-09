@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <chrono>
 
 #include "cyGL.h"
 #include "cyMatrix.h"
@@ -30,37 +31,37 @@ const Vec3f ORIGIN = Vec3f(0.0f);
 
 bool initGlew = true;
 
+using std::chrono::steady_clock;
+using std::chrono::milliseconds;
+using std::chrono::duration_cast;
+
 class Viewport : public Fl_Gl_Window {
 	// Shader Program
 	GLSLProgram meshProgram;
-	GLSLProgram wireProgram;
+	GLSLProgram pointProgram;
 	GLSLProgram gridProgram;
 
 	// Vertex Array Objects
 	GLuint meshVAO;
-	GLuint wireVAO;
+	GLuint pointVAO;
 	GLuint gridVAO;
 
 	// Textures
 	GLuint clrTex;
-	GLuint posTex;
 	GLuint idTex;
 
-	// Framebuffer and its depth buffer
-	GLuint fbo;
-	GLuint fboDepth;
-
-	// Render Buffers
-	GLuint meshVBO;
-	GLuint wireVBO;
-	GLuint wireElementBuffer;
+	// Buffers
+	GLuint meshVBO; // For mesh data (positions, normals, ids, etc.)
+	GLuint pointVBO; // Holds unique mesh vertex positions for rendering vertex points
+	GLuint fbo; // Framebuffer
+	GLuint fboDepth; // Depth buffer
+	GLuint pbo; // Pixel Buffer Object for pixel streaming
 
 	// Transformations
 	Matrix4f viewTransform;
 	Matrix4f projection;
 
 	// Global State Data
-	//int lastClickedButton = GLUT_LEFT_BUTTON;
 	Vec2i mouseDragPrevPos = Vec2i(0);
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
@@ -68,37 +69,36 @@ class Viewport : public Fl_Gl_Window {
 
 	HalfEdgeMesh backup;
 	HalfEdgeMesh mesh;
-	uint wireElementCount = 0;
 
 	std::vector<Vec3f> meshPosData;
 	std::vector<Vec3f> meshNormData;
-	std::vector<Vec3u> meshIdData;
+	std::vector<Vec2u> meshIdData;
+	std::vector<float> meshDistData;
+	std::vector<Vec3u> meshEdgeIdData;
 
-	uint vertCount;
+	uint meshVertDrawCount = 0;
+	uint pointVertDrawCount = 0;
 
-	float wireframeScale = 1.001f;
+	float pointScale = 1.02f; // For rendering vertex points
 
-	bool displayWire = true;
+	bool displayPoints = true;
 	bool displayGrid = true;
 
-	std::vector<Vec3f> posSelectBuf;
 	std::vector<Vec3u> idSelectBuf;
 
 	bool initialize() {
 		// Create VAO for grid
 		glGenVertexArrays(1, &gridVAO);
 
-		// Create VAO for wire
-		glGenVertexArrays(1, &wireVAO);
-		glBindVertexArray(wireVAO);
+		// Create VAO for vertex points
+		glGenVertexArrays(1, &pointVAO);
+		glBindVertexArray(pointVAO);
 
-		glGenBuffers(1, &wireVBO);
-		glBindBuffer(GL_ARRAY_BUFFER, wireVBO);
+		glGenBuffers(1, &pointVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
 
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-
-		glGenBuffers(1, &wireElementBuffer);
 
 		// Create VAO for mesh
 		glGenVertexArrays(1, &meshVAO);
@@ -109,8 +109,10 @@ class Viewport : public Fl_Gl_Window {
 
 		updateRenderBuffers();
 
+		// Create pixel buffer object for pixel streaming
+		glGenBuffers(1, &pbo);
+
 		// Create textures
-		glGenTextures(1, &posTex);
 		glGenTextures(1, &idTex);
 		glGenTextures(1, &clrTex);
 
@@ -122,7 +124,7 @@ class Viewport : public Fl_Gl_Window {
 			return false;
 		}
 
-		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/BlinnPhong.frag");
+		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/Mesh.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
 			//Fl::hide_all_windows();
@@ -132,24 +134,28 @@ class Viewport : public Fl_Gl_Window {
 		meshProgram.Bind();
 		meshProgram.SetUniform("lightPosition", 0.0f, 0.0f, 0.0f);
 
-		success = wireProgram.BuildFiles("../assets/shaders/Wireframe.vert", "../assets/shaders/Wireframe.frag");
+		success = pointProgram.BuildFiles("../assets/shaders/PointDrawing.vert", "../assets/shaders/StaticColor.frag");
 		if (!success) {
 			std::cout << "Failed to compile wireframe shader program!" << std::endl;
 			//Fl::hide_all_windows();
 			return false;
 		}
 
-		wireProgram.Bind();
-		wireProgram.SetUniform("scale", wireframeScale);
+		pointProgram.Bind();
+		pointProgram.SetUniform("scale", pointScale);
 
 		// Initialize Model-View uniform in mesh shader program.
 		// Other uniforms are initialized with setPerspectiveAndViewport callback.
 		initMeshModelViewUniform();
+		// Initialize the selection boolean for the mesh shader program.
+		// By default nothing should be selected.
+		initMeshModelSelectionBoolean();
 
 		// Set clear color & blend function
 		glClearColor(0, 0, 0, 1);
 		glEnable(GL_DEPTH_TEST);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glPointSize(20.0f);
 
 		return true;
 	}
@@ -164,23 +170,18 @@ class Viewport : public Fl_Gl_Window {
 			initFramebuffer();
 		}
 
+		glFinish();
+		steady_clock::time_point start = steady_clock::now();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glBindVertexArray(meshVAO);
 		meshProgram.Bind();
-		glDrawArrays(GL_TRIANGLES, 0, vertCount);
-
-		int selectBufSize = pixel_w() * pixel_h();
+		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		posSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
-
-		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		idSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
-
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -200,12 +201,40 @@ class Viewport : public Fl_Gl_Window {
 			glDepthMask(GL_TRUE);
 		}
 
-		if (displayWire) {
-			glBindVertexArray(wireVAO);
-			wireProgram.Bind();
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireElementBuffer);
-			glDrawElements(GL_LINES, wireElementCount, GL_UNSIGNED_INT, 0);
+		if (displayPoints) {
+			glBindVertexArray(pointVAO);
+			pointProgram.Bind();
+			glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
 		}
+
+		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		if (selectBuf) {
+			uint selectBufSize = pixel_w() * pixel_h();
+			idSelectBuf.resize(0);
+			Vec3u* idSelectBuffer = (Vec3u*)selectBuf;
+			idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
+		}
+		else {
+			std::cout << "ERROR with mapping" << std::endl;
+		}
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+
+		/*int selectBufSize = pixel_w() * pixel_h();
+
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		posSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		idSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);*/
+
+		glFinish();
+		steady_clock::time_point end = steady_clock::now();
+		milliseconds ms = duration_cast<milliseconds>(end - start);
+		std::cout << "Milliseconds: " << ms.count() << std::endl;
 	}
 
 	int handle(int event) {
@@ -271,15 +300,25 @@ class Viewport : public Fl_Gl_Window {
 		uint x = (float(Fl::event_x()) / w()) * pixel_w();
 		uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
-		Vec3f pos = posSelectBuf.at(x + y * pixel_w());
 		Vec3u id = idSelectBuf.at(x + y * pixel_w());
 
-		std::cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+		// If the object id is not 0, e.g. an object has been touched, set the selection bool.
+		if (id.x != 0)
+		{
+			setMeshSelectionBoolean(true);
+		}
+		// Else the object id is 0, no object has been touched, reset the selection bool.
+		else
+		{
+			setMeshSelectionBoolean(false);
+		}
+
 		std::cout << "Object Id: " << id.x << std::endl;
 		std::cout << "Component Id: " << id.y << std::endl;
 		std::cout << "Sub-Component Id: " << id.z << std::endl;
 
 		mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+		redraw();
 	}
 
 	void mouseWheel() {
@@ -308,8 +347,8 @@ class Viewport : public Fl_Gl_Window {
 			mesh = backup;
 			updateRenderBuffers();
 			break;
-		case 'w':
-			displayWire = !displayWire;
+		case 'p':
+			displayPoints = !displayPoints;
 			break;
 		case 'g':
 			displayGrid = !displayGrid;
@@ -341,8 +380,14 @@ class Viewport : public Fl_Gl_Window {
 
 		Matrix4f mvp = viewProj * mesh.getTransform();
 		mvp.Get(data);
-		wireProgram.Bind();
-		wireProgram.SetUniformMatrix4("mvp", data);
+		pointProgram.Bind();
+		pointProgram.SetUniformMatrix4("mvp", data);
+	}
+
+	void setMeshSelectionBoolean(bool selected)
+	{
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", selected);
 	}
 
 	void initMeshModelViewUniform() {
@@ -360,6 +405,11 @@ class Viewport : public Fl_Gl_Window {
 		normalTransform.Transpose();
 		normalTransform.Get(data);
 		meshProgram.SetUniformMatrix3("normalTransform", data);
+	}
+
+	void initMeshModelSelectionBoolean() {
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", false);
 	}
 
 	void initFramebuffer() {
@@ -382,21 +432,23 @@ class Viewport : public Fl_Gl_Window {
 		glBindTexture(GL_TEXTURE_2D, clrTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-		glBindTexture(GL_TEXTURE_2D, posTex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-
 		glBindTexture(GL_TEXTURE_2D, idTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, texWidth, texHeight, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
+
+		// Allocate pixel buffer objects for streaming
+		uint pboSize = texWidth * texHeight * 3 * (sizeof(float) + sizeof(uint));
+
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, pboSize, NULL, GL_STREAM_READ);
 
 		// Attach textures and depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboDepth);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, clrTex, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, posTex, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, idTex, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, idTex, 0);
 
 		// Enable all color attachments for drawing
-		GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, drawBuffers);
+		GLenum drawBuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, drawBuffers);
 
 		// Make sure framebuffer is valid
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -423,8 +475,8 @@ class Viewport : public Fl_Gl_Window {
 
 		Matrix4f mvp = projection * modelView;
 		mvp.Get(data);
-		wireProgram.Bind();
-		wireProgram.SetUniformMatrix4("mvp", data);
+		pointProgram.Bind();
+		pointProgram.SetUniformMatrix4("mvp", data);
 	}
 
 	void updateViewUniforms() {
@@ -441,30 +493,31 @@ class Viewport : public Fl_Gl_Window {
 	}
 
 	void updateRenderBuffers() {
-		std::vector<uint> edgeElements;
-		mesh.GetEdgeElementBuffer(edgeElements);
-		wireElementCount = edgeElements.size();
+		// Unique vertex data for drawing vertex points
+		pointVertDrawCount = mesh.VertexCount();
+		glBindVertexArray(pointVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pointVertDrawCount * 3, mesh.VertexPositions(), GL_DYNAMIC_DRAW);
 
-		glBindVertexArray(wireVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, wireVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh.VertexCount() * 3, mesh.VertexPositions(), GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireElementBuffer);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * edgeElements.size(), edgeElements.data(), GL_DYNAMIC_DRAW);
-
+		// Mesh Data
 		meshPosData.resize(0);
 		meshNormData.resize(0);
 		meshIdData.resize(0);
-		mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, 1);
+		meshEdgeIdData.resize(0);
+		meshDistData.resize(0);
+		mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, 1);
 
 		size_t meshPosDataSize = sizeof(float) * 3 * meshPosData.size();
 		size_t meshNormDataSize = sizeof(float) * 3 * meshNormData.size();
-		size_t meshIdDataSize = sizeof(uint) * 3 * meshIdData.size();
-		size_t meshFloatDataSize = meshPosDataSize + meshNormDataSize;
-		size_t size = meshFloatDataSize + meshIdDataSize;
+		size_t meshIdDataSize = sizeof(uint) * 2 * meshIdData.size();
+		size_t meshDistDataSize = sizeof(float) * meshDistData.size();
+		size_t meshEdgeIdDataSize = sizeof(uint) * 3 * meshEdgeIdData.size();
+		size_t bufOffset1 = meshPosDataSize + meshNormDataSize;
+		size_t bufOffset2 = bufOffset1 + meshIdDataSize;
+		size_t bufOffset3 = bufOffset2 + meshDistDataSize;
+		size_t size = bufOffset3 + meshEdgeIdDataSize;
 
-		vertCount = meshPosData.size();
+		meshVertDrawCount = meshPosData.size();
 
 		glBindVertexArray(meshVAO);
 
@@ -473,7 +526,9 @@ class Viewport : public Fl_Gl_Window {
 
 		glBufferSubData(GL_ARRAY_BUFFER, 0, meshPosDataSize, meshPosData.data());
 		glBufferSubData(GL_ARRAY_BUFFER, meshPosDataSize, meshNormDataSize, meshNormData.data());
-		glBufferSubData(GL_ARRAY_BUFFER, meshFloatDataSize, meshIdDataSize, meshIdData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset1, meshIdDataSize, meshIdData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset2, meshDistDataSize, meshDistData.data());
+		glBufferSubData(GL_ARRAY_BUFFER, bufOffset3, meshEdgeIdDataSize, meshEdgeIdData.data());
 
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
@@ -482,7 +537,13 @@ class Viewport : public Fl_Gl_Window {
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)meshPosDataSize);
 
 		glEnableVertexAttribArray(2);
-		glVertexAttribIPointer(2, 3, GL_UNSIGNED_INT, 0, (GLvoid*)meshFloatDataSize);
+		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset1);
+
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 0, (GLvoid*)bufOffset2);
+
+		glEnableVertexAttribArray(4);
+		glVertexAttribIPointer(4, 3, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset3);
 	}
 
 public:

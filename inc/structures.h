@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <limits>
 #include <unordered_map>
 #include "cyVector.h"
@@ -95,12 +96,12 @@ class HalfEdgeMesh {
 	cy::Vec3f faceCentroid(uint faceId);
 	float approxFaceSurfaceArea(uint faceId);
 	cy::Vec3f computeCentroid();
-	void translateVertices(const cy::Vec3f& add);
-	void build(const std::vector<cy::Vec4<uint>>& faces);
+	void translateVertices(const Vec3f& add);
+	void build(const std::vector<Vec4u>& faces);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
-	std::vector<cy::Vec3f> vertPos; // Each vertices' position
+	std::vector<Vec3f> vertPos; // Each vertices' position
 	std::vector<uint> vertEdge; // Each vertices' first edge
 
 	std::vector<HalfEdge> edges; // Each half-edge
@@ -110,11 +111,12 @@ public:
 	cy::Vec3f pos = cy::Vec3f(0.0f);
 	cy::Vec3f eulerRot = cy::Vec3f(0.0f); // Should later use quaternion instead of euler angles
 
-	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<cy::Vec3f>& norm, std::vector<cy::Vec3<uint>>& id, uint objId);
+	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId);
 	cy::Matrix4f getTransform();
 	void deform();
 	void GetFaceVertices(uint faceId, uint vertices[4]);
-	const cy::Vec3f* VertexPositions() const;
+	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]);
+	const Vec3f* VertexPositions() const;
 	uint VertexCount() const;
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
