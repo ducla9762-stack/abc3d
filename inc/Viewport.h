@@ -491,14 +491,16 @@ public:
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 		//backup.load("../assets/models/test.obj"); //EXPORT OBJ TEST
-		// backup.load("../assets/models/Cube.stl"); //IMPORT STL TEST
+		//backup.load("../assets/models/Cube.stl"); //IMPORT STL TEST
+		backup.load("../assets/models/test.stl"); //IMPORT STL TEST
 
 		//backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 
 		mesh = backup;
 
 		//Example usage for exporting obj files. Connect to UI after a button for "export" is added.
-		mesh.exportObj("../assets/models/test.obj");
+		//mesh.exportObj("../assets/models/test.obj"); //EXPORT OBJ TEST
+		mesh.exportSTL("../assets/models/test.stl");
 	}
 
 	void setScale(int component, float scale) {

@@ -104,7 +104,6 @@ class HalfEdgeMesh {
 	std::vector<uint> vertEdge; // Each vertices' first edge
 
 	std::vector<HalfEdge> edges; // Each half-edge
-
 public:
 
 	cy::Vec3f scale = cy::Vec3f(1.0f);
@@ -136,7 +135,8 @@ public:
 	void load(const FaceList& faceList);
 
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
-	bool exportObj(const char* filePath) const; 
+	bool exportObj(const char* filePath) const;
+	bool exportSTL(const char* filePath, bool isBinary = true) const; 
 };
 
 #endif

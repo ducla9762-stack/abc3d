@@ -864,11 +864,13 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 
 
 /// <summary>
-	///	This function will save the HalfEdgeMesh as an obj file. If it is unable to, it will return false. 
-	/// </summary>
-	/// <param name="filePath">
-	///		The file path for saving. 
-	/// </param>
+/// This function will save the HalfEdgeMesh as an obj file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an obj file
+/// false: if the function failed to save the mesh as an obj file
+/// </returns>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
 	std::ofstream file(filePath); 
 
@@ -896,4 +898,86 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 	if (file.fail()) return false; 
 
 	return true; 
+}
+
+/// <summary>
+/// This function will save the HalfEdgeMesh as an stl file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="isBinary">
+/// true: if the user wishes to save in binary stl format (more optimal for space)
+/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// </param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an stl file
+/// false: if the function failed to save the mesh as an stl file
+/// </returns>
+bool HalfEdgeMesh::exportSTL(const char* filePath, bool isBinary) const{
+	struct Triangle { cy::Vec3f v0, v1, v2; };
+	std::vector<Triangle> tris; 
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		uint verts[4]; 
+		const_cast<HalfEdgeMesh*>(this)->GetFaceVertices(faceId, verts); 
+		
+		cy::Vec3f v0 = vertPos[verts[0]]; 
+		cy::Vec3f v1 = vertPos[verts[1]];
+		cy::Vec3f v2 = vertPos[verts[2]];
+
+		tris.push_back({ v0, v1, v2 });
+
+		if (verts[3] != MAX_UINT)
+			tris.push_back({ v0, v2, vertPos[verts[3]] });
+	}
+
+	if (isBinary) {
+		std::ofstream file(filePath, std::ios::binary); 
+		if (!file.is_open()) return false; 
+
+		char header[80] = {}; 
+		file.write(header, 80); 
+
+		uint32_t triCount = static_cast<uint32_t>(tris.size()); 
+		file.write(reinterpret_cast<const char*>(&triCount), 4);
+
+		for (const Triangle& tri : tris) {
+			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0); 
+			normal.Normalize(); 
+
+			file.write(reinterpret_cast<const char*>(&normal), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v0), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v1), 12);
+			file.write(reinterpret_cast<const char*>(&tri.v2), 12);
+			uint16_t attr = 0; 
+			file.write(reinterpret_cast<const char*>(&attr), 2);
+		}
+
+		return !file.fail(); 
+	}
+
+	else {
+		std::ofstream file(filePath); 
+		if (!file.is_open()) return false; 
+		
+
+		file << "solid mesh\n"; 
+
+		for (const Triangle& tri : tris) {
+			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
+			normal.Normalize(); 
+
+			file << "  facet normal " << normal.x << " " << normal.y << " " << normal.z << "\n";
+			file << "    outer loop\n";
+			file << "      vertex " << tri.v0.x << " " << tri.v0.y << " " << tri.v0.z << "\n";
+			file << "      vertex " << tri.v1.x << " " << tri.v1.y << " " << tri.v1.z << "\n";
+			file << "      vertex " << tri.v2.x << " " << tri.v2.y << " " << tri.v2.z << "\n";
+			file << "    endloop\n";
+			file << "  endfacet\n";
+		}
+
+		file << "endsolid mesh\n";
+
+		return !file.fail();
+	}
 }
