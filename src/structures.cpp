@@ -587,7 +587,6 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec
 			ids.push_back(id);
 
 			Vec3u edgeId(edges[1], MAX_UINT, edges[0]);
-			std::cout << edgeId.x << ", " << edgeId.y << ", " << edgeId.z << std::endl;
 			edgeIds.push_back(edgeId);
 			edgeIds.push_back(edgeId);
 			edgeIds.push_back(edgeId);
