@@ -20,7 +20,6 @@
 
 #include "helper.h"
 #include "structures.h"
-#include "shapes.h"
 
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
@@ -118,14 +117,14 @@ class Viewport : public Fl_Gl_Window {
 		bool success = gridProgram.BuildFiles("../assets/shaders/Grid.vert", "../assets/shaders/Grid.frag");
 		if (!success) {
 			std::cout << "Failed to compile grid shader program!" << std::endl;
-			//Fl::hide_all_windows();
+			Fl::hide_all_windows();
 			return false;
 		}
 
 		success = meshProgram.BuildFiles("../assets/shaders/Mesh.vert", "../assets/shaders/BlinnPhong.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
-			//Fl::hide_all_windows();
+			Fl::hide_all_windows();
 			return false;
 		}
 
@@ -135,7 +134,7 @@ class Viewport : public Fl_Gl_Window {
 		success = wireProgram.BuildFiles("../assets/shaders/Wireframe.vert", "../assets/shaders/Wireframe.frag");
 		if (!success) {
 			std::cout << "Failed to compile wireframe shader program!" << std::endl;
-			//Fl::hide_all_windows();
+			Fl::hide_all_windows();
 			return false;
 		}
 
@@ -490,14 +489,8 @@ public:
 		: Fl_Gl_Window(x, y, w, h, label)
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-		backup.load("../assets/models/test.obj");
-
-		//backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
-		//backup.load(CUBE_VERTICES, CUBE_FACES); 
+		backup.load("../assets/models/box.obj");
 		mesh = backup;
-
-		//Example usage for exporting obj files. Connect to UI after a button for "export" is added.
-		mesh.exportObj("../assets/models/test.obj");
 	}
 
 	void setScale(int component, float scale) {
