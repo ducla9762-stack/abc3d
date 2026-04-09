@@ -47,4 +47,59 @@ inline void clamp(float& x, float left, float right) {
 	else if (x > right) { x = right; }
 }
 
+inline uint WrapDec(uint x, uint wrapTo, uint wrapFrom = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x - 1;
+}
+
+inline uint WrapSub(uint x, uint sub, uint wrapTo, uint wrapFrom = 0) {
+	uint range = wrapTo - wrapFrom + 1;
+	uint offset = (wrapTo - x + sub) % range;
+	return wrapTo - offset;
+}
+
+inline uint WrapInc(uint x, uint wrapFrom, uint wrapTo = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x + 1;
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom) {
+	return (x + add) % (wrapFrom + 1);
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
+	uint range = wrapFrom - wrapTo + 1;
+	uint offset = (x + add - wrapTo) % range;
+	return wrapTo + offset;
+}
+
+inline void combineHash(size_t& base, const size_t& newHash) {
+	base = (base << 1) + base + newHash;
+}
+
+template<typename T>
+struct std::hash<cy::Vec3<T>> {
+	size_t operator()(const cy::Vec3<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		combineHash(val, hash(vec.z));
+		return val;
+	}
+};
+
+template<typename T>
+struct std::hash<cy::Vec2<T>> {
+	size_t operator()(const cy::Vec2<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		return val;
+	}
+};
+
 #endif
