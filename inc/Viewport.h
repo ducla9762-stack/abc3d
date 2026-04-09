@@ -591,12 +591,24 @@ public:
 		redraw();
 	}
 
-	bool loadObj(const char* filepath) {
+	bool loadFile(const char* filepath) {
 		bool success = backup.load(filepath);
 		if (!success) return false;
 		mesh = backup;
 		updateRenderBuffers();
 		redraw();
+		return true;
+	}
+
+	bool exportObj(const char* filepath) {
+		bool success = mesh.exportObj(filepath);
+		if (!success) return false;
+		return true;
+	}
+
+	bool exportStl(const char* filepath) {
+		bool success = mesh.exportStl(filepath);
+		if (!success) return false;
 		return true;
 	}
 };

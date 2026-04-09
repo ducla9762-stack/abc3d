@@ -884,19 +884,6 @@ void HalfEdgeMesh::deleteMesh() {
 	edges.clear();
 }
 
-void HalfEdgeMesh::loadFromInput() {
-	std::string filePath;
-	std::cout << "Path to .obj file: ";
-	std::getline(std::cin, filePath);
-
-	while (!load(filePath.data())) {
-		std::cout << "Failed to load .obj file.\nRetry: ";
-		std::getline(std::cin, filePath);
-	}
-
-	std::cout << "Loaded data successfully!" << std::endl;
-}
-
 /// <summary>
 /// This function tries to load a file format into the STL file
 /// </summary>
@@ -946,8 +933,7 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 /// false: if the function failed to save the mesh as an obj file
 /// </returns>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
-	std::ofstream file(filePath); 
-
+	std::ofstream file(filePath, std::ios::app); 
 	if (!file.is_open()) return false; 
 	
 	for (const cy::Vec3f& v : vertPos) {
@@ -986,7 +972,7 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 /// true: if the function can sucessfully save the mesh as an stl file
 /// false: if the function failed to save the mesh as an stl file
 /// </returns>
-bool HalfEdgeMesh::exportSTL(const char* filePath, bool isBinary) const{
+bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 	struct Triangle { cy::Vec3f v0, v1, v2; };
 	std::vector<Triangle> tris; 
 
