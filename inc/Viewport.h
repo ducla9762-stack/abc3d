@@ -14,6 +14,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <chrono>
 
 #include "cyGL.h"
 #include "cyMatrix.h"
@@ -29,6 +30,10 @@ const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
 const Vec3f ORIGIN = Vec3f(0.0f);
 
 bool initGlew = true;
+
+using std::chrono::steady_clock;
+using std::chrono::milliseconds;
+using std::chrono::duration_cast;
 
 class Viewport : public Fl_Gl_Window {
 	// Shader Program
@@ -46,14 +51,13 @@ class Viewport : public Fl_Gl_Window {
 	GLuint posTex;
 	GLuint idTex;
 
-	// Framebuffer and its depth buffer
-	GLuint fbo;
-	GLuint fboDepth;
-
-	// Render Buffers
-	GLuint meshVBO;
-	GLuint wireVBO;
-	GLuint wireElementBuffer;
+	// Buffers
+	GLuint meshVBO; // For mesh data
+	GLuint wireVBO; // For wireframe vertices
+	GLuint wireElementBuffer; // For wireframe elements
+	GLuint fbo; // Framebuffer
+	GLuint fboDepth; // Depth buffer
+	GLuint pbo; // Pixel Buffer Object for pixel streaming
 
 	// Transformations
 	Matrix4f viewTransform;
@@ -109,6 +113,9 @@ class Viewport : public Fl_Gl_Window {
 
 		updateRenderBuffers();
 
+		// Create pixel buffer object for pixel streaming
+		glGenBuffers(1, &pbo);
+
 		// Create textures
 		glGenTextures(1, &posTex);
 		glGenTextures(1, &idTex);
@@ -145,6 +152,9 @@ class Viewport : public Fl_Gl_Window {
 		// Initialize Model-View uniform in mesh shader program.
 		// Other uniforms are initialized with setPerspectiveAndViewport callback.
 		initMeshModelViewUniform();
+		// Initialize the selection boolean for the mesh shader program.
+		// By default nothing should be selected.
+		initMeshModelSelectionBoolean();
 
 		// Set clear color & blend function
 		glClearColor(0, 0, 0, 1);
@@ -164,6 +174,9 @@ class Viewport : public Fl_Gl_Window {
 			initFramebuffer();
 		}
 
+		glFinish();
+		steady_clock::time_point start = steady_clock::now();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -171,15 +184,14 @@ class Viewport : public Fl_Gl_Window {
 		meshProgram.Bind();
 		glDrawArrays(GL_TRIANGLES, 0, vertCount);
 
-		int selectBufSize = pixel_w() * pixel_h();
+		uint selectBufSize = pixel_w() * pixel_h();
+		uint pboOffset = selectBufSize * 3 * sizeof(float);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		posSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, (void*)0);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		idSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, (void*)pboOffset);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -206,6 +218,38 @@ class Viewport : public Fl_Gl_Window {
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wireElementBuffer);
 			glDrawElements(GL_LINES, wireElementCount, GL_UNSIGNED_INT, 0);
 		}
+
+		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		if (selectBuf) {
+			posSelectBuf.resize(0);
+			Vec3f* posSelectBuffer = (Vec3f*) selectBuf;
+			posSelectBuf.insert(posSelectBuf.begin(), posSelectBuffer, posSelectBuffer + selectBufSize);
+
+			idSelectBuf.resize(0);
+			Vec3u* idSelectBuffer = ((Vec3u*)selectBuf) + selectBufSize;
+			idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
+		}
+		else {
+			std::cout << "ERROR with mapping" << std::endl;
+		}
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+
+		/*int selectBufSize = pixel_w() * pixel_h();
+
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		posSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		idSelectBuf.resize(selectBufSize);
+		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
+
+		glReadBuffer(GL_COLOR_ATTACHMENT0);*/
+
+		glFinish();
+		steady_clock::time_point end = steady_clock::now();
+		milliseconds ms = duration_cast<milliseconds>(end - start);
+		std::cout << "Milliseconds: " << ms.count() << std::endl;
 	}
 
 	int handle(int event) {
@@ -274,12 +318,24 @@ class Viewport : public Fl_Gl_Window {
 		Vec3f pos = posSelectBuf.at(x + y * pixel_w());
 		Vec3u id = idSelectBuf.at(x + y * pixel_w());
 
+		// If the object id is not 0, e.g. an object has been touched, set the selection bool.
+		if (id.x != 0)
+		{
+			setMeshSelectionBoolean(true);
+		}
+		// Else the object id is 0, no object has been touched, reset the selection bool.
+		else
+		{
+			setMeshSelectionBoolean(false);
+		}
+
 		std::cout << "Position: " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
 		std::cout << "Object Id: " << id.x << std::endl;
 		std::cout << "Component Id: " << id.y << std::endl;
 		std::cout << "Sub-Component Id: " << id.z << std::endl;
 
 		mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+		redraw();
 	}
 
 	void mouseWheel() {
@@ -314,6 +370,11 @@ class Viewport : public Fl_Gl_Window {
 		case 'g':
 			displayGrid = !displayGrid;
 			break;
+		case FL_Delete:
+			mesh.deleteMesh();
+			std::cout << "mesh deleted" << std::endl;
+			updateRenderBuffers();
+			break;
 		default:
 			return;
 		}
@@ -345,6 +406,12 @@ class Viewport : public Fl_Gl_Window {
 		wireProgram.SetUniformMatrix4("mvp", data);
 	}
 
+	void setMeshSelectionBoolean(bool selected)
+	{
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", selected);
+	}
+
 	void initMeshModelViewUniform() {
 		Vec3f camera = sphericalToCartesian(camPos);
 		viewTransform.SetView(camera, ORIGIN, WORLD_Y);
@@ -360,6 +427,11 @@ class Viewport : public Fl_Gl_Window {
 		normalTransform.Transpose();
 		normalTransform.Get(data);
 		meshProgram.SetUniformMatrix3("normalTransform", data);
+	}
+
+	void initMeshModelSelectionBoolean() {
+		meshProgram.Bind();
+		meshProgram.SetUniform("selected", false);
 	}
 
 	void initFramebuffer() {
@@ -387,6 +459,12 @@ class Viewport : public Fl_Gl_Window {
 
 		glBindTexture(GL_TEXTURE_2D, idTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, texWidth, texHeight, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
+
+		// Allocate pixel buffer objects for streaming
+		uint pboSize = texWidth * texHeight * 3 * (sizeof(float) + sizeof(uint));
+
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, pboSize, NULL, GL_STREAM_READ);
 
 		// Attach textures and depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fboDepth);

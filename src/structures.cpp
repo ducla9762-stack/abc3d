@@ -708,6 +708,13 @@ void HalfEdgeMesh::subdivide() {
 	return;
 }
 
+void HalfEdgeMesh::deleteMesh() {
+	faceEdges.clear();
+	vertPos.clear();
+	vertEdge.clear();
+	edges.clear();
+}
+
 void HalfEdgeMesh::loadFromInput() {
 	std::string filePath;
 	std::cout << "Path to .obj file: ";
