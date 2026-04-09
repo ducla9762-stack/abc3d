@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "helper.h"
+#include <cmath>
 
 #define MAX_UINT std::numeric_limits<uint>::max()
 
@@ -74,4 +75,36 @@ Vec4u(8, 7, 11, MAX_UINT),
 Vec4u(9, 8, 11, MAX_UINT),
 Vec4u(10, 9, 11, MAX_UINT)
 };
+
+/// <summary>
+/// This method generates a unit cylinder by modifying the vertices passed in by reference and the faces passed in by reference. 
+/// n = resolution. This is for ease of notation in the documentation below.
+/// </summary>
+/// <typeparam name="F">The number of faces. F = 2*(n - 2) + n</typeparam>
+/// <typeparam name="V">The number of vertices. V = n * 2 ALWAYS</typeparam>
+/// <param name="vertices">The array for vertices</param>
+/// <param name="faces">The array for faces</param>
+/// <param name="resolution"> resolution >= 3 ALWAYS. The number of vertices to split the circles for the cylinders into. </param>
+template <size_t V, size_t F>
+void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4u, F>& faces, uint resolution) {
+	float theta = cy::Pi() * 2;
+	for (int i = 0; i < resolution; ++i) {
+		theta = cy::Pi() * 2 * i / resolution;
+		vertices[i] = Vec3f(std::cos(theta), -1, std::sin(theta));
+	}
+
+	for (int j = 0; j < resolution; ++j) {
+		theta = cy::Pi() * 2 * j / resolution;
+		vertices[i + j] = Vec3f(std::cos(theta), 1, std::sin(theta));
+	}
+
+	for (int i = 0; i < resolution - 2; ++i)
+		faces[i] = Vec4u(vertices[i], vertices[i + 1], vertices[i + 2], MAX_UINT);
+
+	for (int j = 0; j < resolution - 2; ++j)
+		faces[i + j] = Vec4u(vertices[j], vertices[j + 2], vertices[j + 1], MAX_UINT);
+	
+	for (int k = 0; k < resolution; ++k)
+		faces[k + i + j] = Vec4u(vertices[k], vertices[k + 1], vertices[k + resolution + 1], vertices[k + resolution]);
+}
 #endif //SHAPES_H
