@@ -490,7 +490,8 @@ public:
 		: Fl_Gl_Window(x, y, w, h, label)
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-		backup.load("../assets/models/test.obj");
+		//backup.load("../assets/models/test.obj"); //EXPORT OBJ TEST
+		// backup.load("../assets/models/Cube.stl"); //IMPORT STL TEST
 
 		//backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 

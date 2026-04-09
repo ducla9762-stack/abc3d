@@ -20,9 +20,9 @@ typedef unsigned uint;
 
 const uint MAX_UINT = std::numeric_limits<uint>::max();
 
-class FaceList {
+class FaceList{
 
-	typedef cy::Vec4<uint> Face;
+	typedef cy::Vec4<uint> Face; 
 	typedef cy::Vec3f Vertex;
 
 	std::vector<Vertex> vertices;
@@ -32,6 +32,7 @@ class FaceList {
 	void ProcessObjLine(const string& line);
 	void PrintFaceComponent(uint x) const;
 	void PrintFace(const Face& face) const;
+	bool isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const;
 
 public:
 
@@ -41,6 +42,7 @@ public:
 	std::vector<cy::Vec4<uint>>& Faces();
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
+	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
 };
 
 class HalfEdgeMesh {
@@ -130,7 +132,7 @@ public:
 	void tesselate();
 	void subdivide();
 	void loadFromInput();
-	bool load(const char* obj);
+	bool load(const char* file);
 	void load(const FaceList& faceList);
 
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
