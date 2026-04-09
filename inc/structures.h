@@ -132,7 +132,7 @@ public:
 	void tesselate();
 	void subdivide();
 	void loadFromInput();
-	bool load(const char* obj);
+	bool load(const char* file);
 	void load(const FaceList& faceList);
 
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);

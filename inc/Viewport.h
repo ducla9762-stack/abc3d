@@ -490,9 +490,9 @@ public:
 		: Fl_Gl_Window(x, y, w, h, label)
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-		//backup.load("../assets/models/box.obj");
+		backup.load("../assets/models/Cube.stl");
 
-		backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
+		//backup.load(PYRAMID_VERTICES, PYRAMID_FACES);
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 
 		mesh = backup;
 	}

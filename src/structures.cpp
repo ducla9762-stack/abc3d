@@ -112,14 +112,22 @@ bool FaceList::LoadObj(const char* obj) {
 	return true;
 }
 
+/// <summary>
+/// This function attempts to load an STL file into a FaceList object
+/// </summary>
+/// <param name="stl">The file name for the STL file</param>
+/// <returns>
+/// true: if the function successfully loads the STL file into the FaceList
+/// false: if the function fails to load the STL file. This could happen because: 
+///	1) Can't open file
+/// 2) Invalid file size
+/// 3) Neither a binary or ASCII stl file
+/// </returns>
 bool FaceList::LoadSTL(const char* stl) {
 	//Aside: Should we start using exceptions?
-	//The exceptions for loading an STL file: 
-	//1) Can't open the file
-	//2) Invalid file size
 
 	ifstream stlFile(stl, std::ios::binary | std::ios::ate);
-	if (!stlFile) return false; //Ex. 1
+	if (!stlFile) return false; 
 	
 	std::streamsize fileSize = stlFile.tellg();
 	stlFile.seekg(0, std::ios::beg);
@@ -815,6 +823,16 @@ void HalfEdgeMesh::loadFromInput() {
 	std::cout << "Loaded data successfully!" << std::endl;
 }
 
+/// <summary>
+/// This function tries to load a file format into the STL file
+/// </summary>
+/// <param name="file">
+/// The file to load
+/// </param>
+/// <returns>
+/// return true: the file is loaded sucessfully into the HalfEdgeMesh
+/// return false: the file was not loaded sucessfully and there was some file I/O error most likely
+/// </returns>
 bool HalfEdgeMesh::load(const char* file) {
 	FaceList faceList;
 
