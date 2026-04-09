@@ -6,6 +6,8 @@
 #include <limits>
 #include <unordered_map>
 #include <fstream>
+#include <cstring>
+
 #include "cyVector.h"
 #include "cyMatrix.h"
 #include "helper.h"
@@ -110,33 +112,95 @@ bool FaceList::LoadObj(const char* obj) {
 	return true;
 }
 
-bool FaceList::isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const{
-	if (fileSize < 84) return false;
-
-	if (fileSize == (std::streamsize)84 + (numTriangles * 50)) return true; 
-
-	if (std::string(header) == "solid") return false; 
-
-	return true; 
-}
-
 bool FaceList::LoadSTL(const char* stl) {
 	//Aside: Should we start using exceptions?
 	//The exceptions for loading an STL file: 
 	//1) Can't open the file
 	//2) Invalid file size
 
-	ifstream stlFile(stl, std::ios::binary);
+	ifstream stlFile(stl, std::ios::binary | std::ios::ate);
 	if (!stlFile) return false; //Ex. 1
-
-	stlFile.seekg(0, std::ios::end);
+	
 	std::streamsize fileSize = stlFile.tellg();
+	stlFile.seekg(0, std::ios::beg);
+	
+	if (fileSize < 84) return false; 
 
-	stlFile.seekg(80, std::ios::beg);
+	char header[80]; 
+	stlFile.read(header, 80);
+
 	uint32_t numTriangles = 0; 
 	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4); 
-
 	
+	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50)); 
+	
+	if (isBinary) {
+		vertices.reserve(vertices.size() + numTriangles * 3); 
+		faces.reserve(faces.size() + numTriangles); 
+
+		for (uint32_t i = 0; i < numTriangles; ++i) {
+			stlFile.seekg(12, std::ios::cur); 
+
+			uint baseVertIndex = static_cast<uint>(vertices.size()); 
+
+			for (int v = 0; v < 3; ++v) {
+				Vertex vertex(0.0f); 
+				stlFile.read(reinterpret_cast<char*>(&vertex.x), 4);
+				stlFile.read(reinterpret_cast<char*>(&vertex.y), 4);
+				stlFile.read(reinterpret_cast<char*>(&vertex.z), 4);
+				vertices.push_back(vertex); 
+			}
+
+			stlFile.seekg(2, std::ios::cur); 
+
+			Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT); 
+			faces.push_back(face); 
+		}
+		
+		return stlFile.good() || stlFile.eof();
+	}
+	else {
+		stlFile.close(); 
+		ifstream asciiFile(stl); 
+		if (!asciiFile) return false; 
+
+		string line; 
+		uint loopVertCount = 0; 
+		uint baseVertIndex = 0; 
+
+		while (std::getline(asciiFile, line)) {
+			size_t start = line.find_first_not_of(" \t"); 
+			if (start == string::npos) continue; 
+			line = line.substr(start); 
+
+			if (line.substr(0, 6) == "vertex") {
+				Vertex vertex(0.0f); 
+
+				const char* segStart = line.c_str() + 6; 
+				char* segEnd; 
+
+				for (int i = 0; i < 3; ++i) {
+					vertex[i] = std::strtof(segStart, &segEnd);
+					segStart = segEnd; 
+				}
+
+				vertices.push_back(vertex); 
+				++loopVertCount; 
+			}
+			else if (line.substr(0, 9) == "outer loop") {
+				loopVertCount = 0; 
+				baseVertIndex = static_cast<uint>(vertices.size());
+			}
+			else if (line.substr(0, 7) == "endloop") {
+				if (loopVertCount == 3) {
+					Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT);
+					faces.push_back(face); 
+				}
+			}
+		}
+
+		return asciiFile.good() || asciiFile.eof();
+	}
 }
 
 // HalfEdgeMesh
@@ -751,9 +815,16 @@ void HalfEdgeMesh::loadFromInput() {
 	std::cout << "Loaded data successfully!" << std::endl;
 }
 
-bool HalfEdgeMesh::load(const char* obj) {
+bool HalfEdgeMesh::load(const char* file) {
 	FaceList faceList;
-	bool success = faceList.LoadObj(obj);
+
+	bool success = false; 
+
+	if (strstr(file, ".obj"))
+		success = faceList.LoadObj(file);
+
+	else if (strstr(file, ".stl"))
+		success = faceList.LoadSTL(file);
 
 	if (!success) { return false; }
 
