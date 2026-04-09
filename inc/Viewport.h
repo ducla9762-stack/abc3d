@@ -648,7 +648,9 @@ public:
 	}
 
 	bool loadFile(const char* filepath) {
-		bool success = backup.load(filepath);
+		HalfEdgeMesh mesh;
+		bool success = mesh.load(filepath);
+		sceneMeshes.push_back(mesh);
 		if (!success) return false;
 		//sceneMeshes = sceneBackup;
 		updateRenderBuffers();
@@ -656,16 +658,22 @@ public:
 		return true;
 	}
 
+	// TODO: Fix export
 	bool exportObj(const char* filepath) {
-		bool success = mesh.exportObj(filepath);
-		if (!success) return false;
-		return true;
+		bool success = true;
+		for (HalfEdgeMesh mesh : sceneMeshes) {
+			success = mesh.exportObj(filepath);
+		}
+		return success;
 	}
 
 	bool exportStl(const char* filepath) {
-		bool success = mesh.exportStl(filepath);
-		if (!success) return false;
-		return true;
+		bool success = true;
+		for (HalfEdgeMesh mesh : sceneMeshes) {
+			success = mesh.exportStl(filepath);
+		}
+
+		return success;
 	}
 };
 
