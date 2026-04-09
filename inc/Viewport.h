@@ -575,6 +575,18 @@ public:
 		redraw();
 	}
 
+	void subdivision() {
+		mesh.subdivide();
+		updateRenderBuffers();
+		redraw();
+	}
+
+	void tesselate() {
+		mesh.tesselate();
+		updateRenderBuffers();
+		redraw();
+	}
+
 	void setRot(int component, float angle) {
 		mesh.eulerRot[component] = angle;
 		updateModelUniforms();
