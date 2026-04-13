@@ -147,7 +147,7 @@ public:
 	void load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces);
 
 	bool exportObj(const char* filePath) const;
-	bool exportSTL(const char* filePath, bool isBinary = true) const; 
+	bool exportStl(const char* filePath, bool isBinary = true) const; 
 };
 
 template<typename T>

@@ -68,8 +68,14 @@ class Viewport : public Fl_Gl_Window {
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	float fov = 90.0f;
 
-	HalfEdgeMesh backup;
-	HalfEdgeMesh mesh;
+	//HalfEdgeMesh backup;
+	//HalfEdgeMesh mesh;
+
+	std::vector<HalfEdgeMesh> sceneMeshes;
+	std::vector<HalfEdgeMesh> sceneBackup;
+	std::vector<HalfEdgeMesh> selectedMeshes;
+	std::vector<Vec3f> sceneVertices;
+	std::vector<Vec2u> vertObjData;
 
 	std::vector<Vec3f> meshPosData;
 	std::vector<Vec3f> meshNormData;
@@ -341,17 +347,23 @@ class Viewport : public Fl_Gl_Window {
 	void keyDown() {
 		switch (Fl::event_key()) {
 		case 's':
-			mesh.subdivide();
+			for (HalfEdgeMesh& mesh : sceneMeshes)
+			{
+				mesh.subdivide();
+			}
 			std::cout << "subdivided underlying mesh" << std::endl;
 			updateRenderBuffers();
 			break;
 		case 't':
-			mesh.tesselate();
+			for (HalfEdgeMesh& mesh : sceneMeshes)
+			{
+				mesh.tesselate();
+			}
 			std::cout << "tesselated underlying mesh" << std::endl;
 			updateRenderBuffers();
 			break;
 		case 'r':
-			mesh = backup;
+			sceneMeshes = sceneBackup;
 			updateRenderBuffers();
 			break;
 		case 'p':
@@ -361,7 +373,8 @@ class Viewport : public Fl_Gl_Window {
 			displayGrid = !displayGrid;
 			break;
 		case FL_Delete:
-			mesh.deleteMesh();
+			sceneMeshes.resize(0);
+			sceneBackup.resize(0);
 			std::cout << "mesh deleted" << std::endl;
 			updateRenderBuffers();
 			break;
@@ -373,12 +386,14 @@ class Viewport : public Fl_Gl_Window {
 
 	void setPerspectiveAndViewport() {
 		projection.SetPerspective(degreesToRadians(fov), float(pixel_w()) / float(pixel_h()), 0.1f, 1000.0f);
-		updateProjectionUniforms();
+		for (HalfEdgeMesh& mesh : sceneMeshes) {
+			updateProjectionUniforms(mesh);
+		}
 
 		glViewport(0, 0, pixel_w(), pixel_h());
 	}
 
-	void updateProjectionUniforms() {
+	void updateProjectionUniforms(HalfEdgeMesh& mesh) {
 		float data[16];
 
 		projection.Get(data);
@@ -407,7 +422,7 @@ class Viewport : public Fl_Gl_Window {
 		viewTransform.SetView(camera, ORIGIN, WORLD_Y);
 
 		float data[16];
-		Matrix4f modelView = viewTransform * mesh.getTransform();
+		Matrix4f modelView = viewTransform * sceneMeshes[0].getTransform();
 		modelView.Get(data);
 		meshProgram.Bind();
 		meshProgram.SetUniformMatrix4("modelView", data);
@@ -471,7 +486,7 @@ class Viewport : public Fl_Gl_Window {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void updateModelUniforms() {
+	void updateModelUniforms(HalfEdgeMesh& mesh) {
 		float data[16];
 
 		Matrix4f modelView = viewTransform * mesh.getTransform();
@@ -495,7 +510,10 @@ class Viewport : public Fl_Gl_Window {
 		Vec3f camera = sphericalToCartesian(camPos);
 		viewTransform.SetView(camera, ORIGIN, WORLD_Y);
 
-		updateModelUniforms();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			updateModelUniforms(mesh);
+		}
 
 		float data[16];
 		Matrix4f viewProj = projection * viewTransform;
@@ -506,12 +524,18 @@ class Viewport : public Fl_Gl_Window {
 
 	void updateRenderBuffers() {
 		// Unique vertex data for drawing vertex points
-		std::vector<Vec2u> vertObjData;
-		vertObjData.insert(vertObjData.begin(), mesh.VertexCount(), Vec2u(1, 0));
-		pointVertDrawCount = mesh.VertexCount();
+		sceneVertices.resize(0);
+		pointVertDrawCount = 0;
+		for (unsigned int i = 0; i < sceneMeshes.size(); i++)
+		{
+			HalfEdgeMesh& mesh = sceneMeshes[i];
+			vertObjData.insert(vertObjData.begin(), mesh.VertexCount(), Vec2u(i, pointVertDrawCount));
+			pointVertDrawCount += mesh.VertexCount();
+			sceneVertices.insert(sceneVertices.end(), mesh.VertexPositions(), mesh.VertexPositions() + mesh.VertexCount());
+		}
 		glBindVertexArray(pointVAO);
 		glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pointVertDrawCount * 3, mesh.VertexPositions(), GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pointVertDrawCount * 3, sceneVertices.data(), GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, pointIdVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(uint) * pointVertDrawCount * 2, vertObjData.data(), GL_DYNAMIC_DRAW);
 
@@ -521,7 +545,11 @@ class Viewport : public Fl_Gl_Window {
 		meshIdData.resize(0);
 		meshEdgeIdData.resize(0);
 		meshDistData.resize(0);
-		mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, 1);
+		for (unsigned int i = 0; i < sceneMeshes.size(); i++)
+		{
+			HalfEdgeMesh& mesh = sceneMeshes[i];
+			mesh.getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, i);
+		}
 
 		size_t meshPosDataSize = sizeof(float) * 3 * meshPosData.size();
 		size_t meshNormDataSize = sizeof(float) * 3 * meshNormData.size();
@@ -568,47 +596,84 @@ public:
 	{
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 
-		backup.load(CUBE_VERTICES, CUBE_FACES); 
-		mesh = backup;
+		HalfEdgeMesh backup;
+		backup.load(CUBE_VERTICES, CUBE_FACES);
+		sceneBackup.push_back(backup);
+		sceneMeshes = sceneBackup;
 	}
 
 	void setScale(int component, float scale) {
-		mesh.scale[component] = scale;
-		updateModelUniforms();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			mesh.scale[component] = scale;
+			updateModelUniforms(mesh);
+		}
 		redraw();
 	}
 
 	void subdivision() {
-		mesh.subdivide();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			mesh.subdivide();
+		}
 		updateRenderBuffers();
 		redraw();
 	}
 
 	void tesselate() {
-		mesh.tesselate();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			mesh.tesselate();
+		}
 		updateRenderBuffers();
 		redraw();
 	}
 
 	void setRot(int component, float angle) {
-		mesh.eulerRot[component] = angle;
-		updateModelUniforms();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			mesh.eulerRot[component] = angle;
+			updateModelUniforms(mesh);
+		}
 		redraw();
 	}
 
 	void setPos(int component, float pos) {
-		mesh.pos[component] = pos;
-		updateModelUniforms();
+		for (HalfEdgeMesh& mesh : sceneMeshes)
+		{
+			mesh.pos[component] = pos;
+			updateModelUniforms(mesh);
+		}
 		redraw();
 	}
 
-	bool loadObj(const char* filepath) {
-		bool success = backup.load(filepath);
+	bool loadFile(const char* filepath) {
+		HalfEdgeMesh mesh;
+		bool success = mesh.load(filepath);
+		sceneMeshes.push_back(mesh);
 		if (!success) return false;
-		mesh = backup;
+		//sceneMeshes = sceneBackup;
 		updateRenderBuffers();
 		redraw();
 		return true;
+	}
+
+	// TODO: Fix export
+	bool exportObj(const char* filepath) {
+		bool success = true;
+		for (HalfEdgeMesh mesh : sceneMeshes) {
+			success = mesh.exportObj(filepath);
+		}
+		return success;
+	}
+
+	bool exportStl(const char* filepath) {
+		bool success = true;
+		for (HalfEdgeMesh mesh : sceneMeshes) {
+			success = mesh.exportStl(filepath);
+		}
+
+		return success;
 	}
 };
 
