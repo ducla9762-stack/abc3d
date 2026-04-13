@@ -22,7 +22,7 @@
 #include "cyGL.h"
 #include "cyMatrix.h"
 
-#include "Viewport.h"
+#include "viewport.h"
 
 const char* AXIS_LETTERS[3] = { "x", "y", "z" };
 

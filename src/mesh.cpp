@@ -10,8 +10,9 @@
 
 #include "cyVector.h"
 #include "cyMatrix.h"
+
 #include "helper.h"
-#include "structures.h"
+#include "mesh.h"
 
 using std::string;
 using std::ifstream;
@@ -76,17 +77,17 @@ void FaceList::PrintFace(const Face& face) const {
 	std::cout << std::endl;
 }
 
-const std::vector<cy::Vec3f>& FaceList::Vertices() const {
+const std::vector<Vec3f>& FaceList::Vertices() const {
 	return vertices;
 }
 
-const std::vector<cy::Vec4<uint>>& FaceList::Faces() const {
+const std::vector<Vec4<uint>>& FaceList::Faces() const {
 	return faces;
 }
 
-std::vector<cy::Vec3f>& FaceList::Vertices() { return vertices; }
+std::vector<Vec3f>& FaceList::Vertices() { return vertices; }
 
-std::vector<cy::Vec4<uint>>& FaceList::Faces() { return faces; }
+std::vector<Vec4<uint>>& FaceList::Faces() { return faces; }
 
 void FaceList::PrintContents() const {
 	for (const Vertex& vertex : vertices) {
@@ -218,7 +219,7 @@ uint HalfEdgeMesh::NewFace(uint faceEdge) {
 	return face;
 }
 
-uint HalfEdgeMesh::NewVertex(const cy::Vec3f& pos, uint firstEdgeId) {
+uint HalfEdgeMesh::NewVertex(const Vec3f& pos, uint firstEdgeId) {
 	uint newVertexId = VertexCount();
 
 	vertPos.push_back(pos);
@@ -287,13 +288,13 @@ HalfEdgeMesh::VertexAdjacentInfo HalfEdgeMesh::GetVertexAdjacentInfo(uint vertId
 	return adjInfo;
 }
 
-cy::Vec3f HalfEdgeMesh::ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount) {
+Vec3f HalfEdgeMesh::ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount) {
 	float edgeCountSqrd = edgeCount * edgeCount;
 	float e = 1.0f / edgeCountSqrd;
 	float d = 2.0f * e;
 	float c = (edgeCount - 3.0f) / float(edgeCount);
 
-	cy::Vec3f newPos(0.0f);
+	Vec3f newPos(0.0f);
 
 	uint first = vertEdge[vertId];
 	uint next = first;
@@ -314,13 +315,13 @@ cy::Vec3f HalfEdgeMesh::ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint 
 	return newPos;
 }
 
-cy::Vec3f HalfEdgeMesh::ApplyLoopMask(uint vertId, uint edgeCount) {
-	constexpr float TWO_PI = 2.0f * cy::Pi<float>();
+Vec3f HalfEdgeMesh::ApplyLoopMask(uint vertId, uint edgeCount) {
+	constexpr float TWO_PI = 2.0f * Pi<float>();
 	float a = (0.375f + 0.25f * std::cos(TWO_PI / float(edgeCount)));
 	a = (a * a * 2.0f) - 0.25f;
 	float b = (1.0f - a) / float(edgeCount);
 
-	cy::Vec3f newPos(0.0f);
+	Vec3f newPos(0.0f);
 	uint first = vertEdge[vertId];
 	uint next = first;
 
@@ -336,14 +337,14 @@ cy::Vec3f HalfEdgeMesh::ApplyLoopMask(uint vertId, uint edgeCount) {
 	return newPos;
 }
 
-cy::Vec3f HalfEdgeMesh::ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount) {
+Vec3f HalfEdgeMesh::ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount) {
 	float halfEdgeCount = float(edgeCount) / 2.0f;
 	float quarterQuadCount = float(quadCount) / 4.0f;
 	float alpha = 1.0f / (1.0f + halfEdgeCount + quarterQuadCount);
 	float beta = alpha / 2.0f;
 	float gamma = alpha / 4.0f;
 
-	cy::Vec3f newPos(0.0f);
+	Vec3f newPos(0.0f);
 	uint first = vertEdge[vertId];
 	uint next = first;
 
@@ -368,8 +369,8 @@ cy::Vec3f HalfEdgeMesh::ApplyHybridMask(uint vertId, uint edgeCount, uint quadCo
 	return newPos;
 }
 
-cy::Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
-	cy::Vec3f sum(0.0f);
+Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
+	Vec3f sum(0.0f);
 	float vertexCount = 0.0f;
 	uint first = faceEdges[faceId];
 	uint next = first;
@@ -386,12 +387,12 @@ cy::Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
 float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
 	uint faceVertices[4];
 	GetFaceVertices(faceId, faceVertices);
-	cy::Vec3f vert0 = vertPos[faceVertices[0]];
-	cy::Vec3f vert1 = vertPos[faceVertices[1]];
-	cy::Vec3f vert2 = vertPos[faceVertices[2]];
+	Vec3f vert0 = vertPos[faceVertices[0]];
+	Vec3f vert1 = vertPos[faceVertices[1]];
+	Vec3f vert2 = vertPos[faceVertices[2]];
 
-	cy::Vec3f seg01 = vert1 - vert0;
-	cy::Vec3f seg02 = vert2 - vert0;
+	Vec3f seg01 = vert1 - vert0;
+	Vec3f seg02 = vert2 - vert0;
 	float area = seg01.Cross(seg02).Length();
 
 	if (faceVertices[3] != MAX_UINT) {
@@ -403,11 +404,11 @@ float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
 	return area;
 }
 
-cy::Vec3f HalfEdgeMesh::computeCentroid() {
+Vec3f HalfEdgeMesh::computeCentroid() {
 	uint faceCount = faceEdges.size();
-	if (faceCount == 0) return cy::Vec3f(0.0f);
+	if (faceCount == 0) return Vec3f(0.0f);
 
-	cy::Vec3f weightedSum(0.0f);
+	Vec3f weightedSum(0.0f);
 	float areaSum = 0.0f;
 
 	for (uint i = 0; i < faceCount; ++i) {
@@ -426,8 +427,8 @@ void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 	vertPos.at(vertId) = pos;
 }
 
-void HalfEdgeMesh::translateVertices(const cy::Vec3f& add) {
-	for (cy::Vec3f& vert : vertPos) {
+void HalfEdgeMesh::translateVertices(const Vec3f& add) {
+	for (Vec3f& vert : vertPos) {
 		vert += add;
 	}
 }
@@ -436,16 +437,17 @@ Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
 	return (v.Dot(u) / u.LengthSquared()) * u;
 }
 
-void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) {
+void HalfEdgeMesh::getRenderBuffers(std::vector<Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) const {
 	uint faceCount = faceEdges.size();
 	uint vertices[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
 	uint edges[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
+	Matrix3f transform = getTransform3x3();
 	for (int i = 0; i < faceCount; ++i) {
 		GetFaceElements(i, vertices, edges);
 
-		Vec3f vert0 = vertPos[vertices[0]];
-		Vec3f vert1 = vertPos[vertices[1]];
-		Vec3f vert2 = vertPos[vertices[2]];
+		Vec3f vert0 = (transform * vertPos[vertices[0]]) + this->pos;
+		Vec3f vert1 = (transform * vertPos[vertices[1]]) + this->pos;
+		Vec3f vert2 = (transform * vertPos[vertices[2]]) + this->pos;
 
 		pos.push_back(vert0);
 		pos.push_back(vert1);
@@ -463,10 +465,10 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec
 		edgeDist.push_back(dist1);
 		edgeDist.push_back(dist2);
 
-		cy::Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
+		Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
 
 		if (vertices[3] != MAX_UINT) {
-			cy::Vec3f vert3 = vertPos[vertices[3]];
+			Vec3f vert3 = (transform * vertPos[vertices[3]]) + this->pos;
 
 			pos.push_back(vert0);
 			pos.push_back(vert2);
@@ -484,7 +486,7 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec
 			edgeDist.push_back(dist1);
 			edgeDist.push_back(dist2);
 
-			cy::Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
+			Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
 			float area1 = normal.Length();
 			float area2 = normal2.Length();
 			normal += normal2;
@@ -528,8 +530,8 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec
 	}
 }
 
-cy::Matrix4f HalfEdgeMesh::getTransform() {
-	cy::Matrix4f transform;
+Matrix4f HalfEdgeMesh::getTransform() const {
+	Matrix4f transform;
 	transform.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 	transform.cell[0] *= scale.x; transform.cell[1] *= scale.x; transform.cell[2] *= scale.x;
 	transform.cell[4] *= scale.y; transform.cell[5] *= scale.y; transform.cell[6] *= scale.y;
@@ -538,10 +540,19 @@ cy::Matrix4f HalfEdgeMesh::getTransform() {
 	return transform;
 }
 
+Matrix3f HalfEdgeMesh::getTransform3x3() const {
+	Matrix3f transform;
+	transform.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+	transform.cell[0] *= scale.x; transform.cell[1] *= scale.x; transform.cell[2] *= scale.x;
+	transform.cell[3] *= scale.y; transform.cell[4] *= scale.y; transform.cell[5] *= scale.y;
+	transform.cell[6] *= scale.z; transform.cell[7] *= scale.z; transform.cell[8] *= scale.z;
+	return transform;
+}
+
 void HalfEdgeMesh::deform() {
 	uint vertCount = VertexCount();
-	std::vector<cy::Vec3f> newPositions;
-	newPositions.insert(newPositions.begin(), VertexCount(), cy::Vec3f(0.0f));
+	std::vector<Vec3f> newPositions;
+	newPositions.insert(newPositions.begin(), VertexCount(), Vec3f(0.0f));
 	for (uint vertId = 0; vertId < vertCount; ++vertId) {
 		VertexAdjacentInfo adjInfo = GetVertexAdjacentInfo(vertId);
 		if (adjInfo.triCount == 0) {
@@ -559,8 +570,8 @@ void HalfEdgeMesh::deform() {
 	return;
 }
 
-void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) {
-	HalfEdge* edge = &edges[faceEdges[faceId]];
+void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) const {
+	const HalfEdge* edge = &edges[faceEdges[faceId]];
 	for (uint i = 0; i < 3; ++i) {
 		vertices[i] = edge->dest;
 		edge = &edges[edge->next];
@@ -568,11 +579,11 @@ void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) {
 	vertices[3] = edge->dest != vertices[0] ? edge->dest : MAX_UINT;
 }
 
-void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) {
+void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const {
 	uint first = faceEdges[faceId];
 	uint next = first;
 	for (uint i = 0; i < 3; ++i) {
-		HalfEdge& edge = this->edges[next];
+		const HalfEdge& edge = this->edges[next];
 		vertices[i] = edge.orig;
 		edges[i] = next;
 		next = edge.next;
@@ -587,8 +598,15 @@ void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4])
 	}
 }
 
-const cy::Vec3f* HalfEdgeMesh::VertexPositions() const {
+const Vec3f* HalfEdgeMesh::VertexPositions() const {
 	return vertPos.data();
+}
+
+const void HalfEdgeMesh::GetWorldVertexPositions(std::vector<Vec3f>& vertices) const {
+	Matrix3f transform = getTransform3x3();
+	for (const Vec3f& vertex : vertPos) {
+		vertices.push_back((transform * vertex) + pos);
+	}
 }
 
 uint HalfEdgeMesh::VertexCount() const {
@@ -640,7 +658,7 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	HalfEdge& hEdge2 = edges[hEdge2Id];
 	HalfEdge& hTwin2 = edges[twin2Id];
 
-	cy::Vec3 midVertPos = (vertPos[hEdge.orig] + vertPos[hEdge.dest]) / 2.0f;
+	Vec3 midVertPos = (vertPos[hEdge.orig] + vertPos[hEdge.dest]) / 2.0f;
 	uint midVert = NewVertex(midVertPos, hEdge2Id);
 
 	edges[hEdge.next].prev = hEdge2Id;
@@ -740,7 +758,7 @@ void HalfEdgeMesh::tesselate() {
 		}
 		else {
 			// Quad
-			cy::Vec3f positionSum = vertPos[faceEdge->orig];
+			Vec3f positionSum = vertPos[faceEdge->orig];
 			next = faceEdge->next;
 			for (uint i = 0; i < 3; ++i) {
 				positionSum += vertPos[edges[next].dest];
@@ -750,7 +768,7 @@ void HalfEdgeMesh::tesselate() {
 			uint firstNewEdge = edges.size();
 			uint lastNewEdge = firstNewEdge + 7;
 
-			cy::Vec3f newVertexPos = positionSum / 4.0f;
+			Vec3f newVertexPos = positionSum / 4.0f;
 			uint newVertexId = NewVertex(newVertexPos, lastNewEdge);
 
 			next = faceEdgeId;
@@ -799,11 +817,11 @@ void HalfEdgeMesh::subdivide() {
 	return;
 }
 
-void HalfEdgeMesh::deleteMesh() {
-	faceEdges.clear();
-	vertPos.clear();
-	vertEdge.clear();
-	edges.clear();
+void HalfEdgeMesh::Clear() {
+	faceEdges.resize(0);
+	vertPos.resize(0);
+	vertEdge.resize(0);
+	edges.resize(0);
 }
 
 /// <summary>
@@ -858,7 +876,7 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 	std::ofstream file(filePath, std::ios::app); 
 	if (!file.is_open()) return false; 
 	
-	for (const cy::Vec3f& v : vertPos) {
+	for (const Vec3f& v : vertPos) {
 		file << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
 	}
 
@@ -895,7 +913,7 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 /// false: if the function failed to save the mesh as an stl file
 /// </returns>
 bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
-	struct Triangle { cy::Vec3f v0, v1, v2; };
+	struct Triangle { Vec3f v0, v1, v2; };
 	std::vector<Triangle> tris; 
 
 	uint faceCount = faceEdges.size(); 
@@ -903,9 +921,9 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 		uint verts[4]; 
 		const_cast<HalfEdgeMesh*>(this)->GetFaceVertices(faceId, verts); 
 		
-		cy::Vec3f v0 = vertPos[verts[0]]; 
-		cy::Vec3f v1 = vertPos[verts[1]];
-		cy::Vec3f v2 = vertPos[verts[2]];
+		Vec3f v0 = vertPos[verts[0]]; 
+		Vec3f v1 = vertPos[verts[1]];
+		Vec3f v2 = vertPos[verts[2]];
 
 		tris.push_back({ v0, v1, v2 });
 
@@ -924,7 +942,7 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 		file.write(reinterpret_cast<const char*>(&triCount), 4);
 
 		for (const Triangle& tri : tris) {
-			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0); 
+			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0); 
 			normal.Normalize(); 
 
 			file.write(reinterpret_cast<const char*>(&normal), 12);
@@ -946,7 +964,7 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 		file << "solid mesh\n"; 
 
 		for (const Triangle& tri : tris) {
-			cy::Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
+			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
 			normal.Normalize(); 
 
 			file << "  facet normal " << normal.x << " " << normal.y << " " << normal.z << "\n";

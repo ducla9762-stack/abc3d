@@ -1,8 +1,11 @@
 #ifndef _ABC3D_HELPER_H_
 #define _ABC3D_HELPER_H_
 
+#undef max
+
 #include <iostream>
 #include <vector>
+#include <limits>
 #include "cyMatrix.h"
 
 using namespace cy;
@@ -16,6 +19,14 @@ typedef Vec3<int> Vec3i;
 typedef Vec3<uint> Vec3u;
 typedef Vec4<int> Vec4i;
 typedef Vec4<uint> Vec4u;
+
+#define MAX_UINT std::numeric_limits<uint>::max()
+
+// Useful constants
+const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
+const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);
+const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
+const Vec3f ORIGIN = Vec3f(0.0f);
 
 /// <summary> Convert degrees to radians. </summary>
 /// <param name="degrees"> An angle in degrees. </param>
