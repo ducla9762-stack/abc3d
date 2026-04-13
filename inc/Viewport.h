@@ -325,7 +325,7 @@ class Viewport : public Fl_Gl_Window {
 		std::cout << "Sub-Component Id: " << id.z << std::endl;
 
 		mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
-		redraw();
+		//redraw();
 	}
 
 	void mouseWheel() {

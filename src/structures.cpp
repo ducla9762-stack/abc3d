@@ -419,94 +419,17 @@ cy::Vec3f HalfEdgeMesh::computeCentroid() {
 	return weightedSum / areaSum;
 }
 
+void HalfEdgeMesh::TranslateVertex(uint vertId, const Vec3f& translation) {
+	vertPos.at(vertId) += translation;
+}
+void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
+	vertPos.at(vertId) = pos;
+}
+
 void HalfEdgeMesh::translateVertices(const cy::Vec3f& add) {
 	for (cy::Vec3f& vert : vertPos) {
 		vert += add;
 	}
-}
-
-void HalfEdgeMesh::build(const std::vector<cy::Vec4<uint>>& faces) {
-	vertEdge.resize(0);
-	faceEdges.resize(0);
-	edges.resize(0);
-	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
-	faceEdges.reserve(faces.size());
-
-	// Build
-	std::unordered_map<cy::Vec2<uint>, uint> edgeIndices;
-
-	for (uint i = 0; i < faces.size(); ++i) {
-		const cy::Vec4<uint>& face = faces[i];
-
-		uint firstEdge = edges.size();
-		faceEdges.push_back(firstEdge);
-
-		uint vertCount = 4;
-		if (face[3] == MAX_UINT) {
-			vertCount = 3;
-		}
-
-		for (uint j = 0; j < vertCount; ++j) {
-			uint next = WrapInc(j, vertCount - 1);
-			uint prev = WrapDec(j, vertCount - 1);
-
-			uint edgeId;
-			HalfEdge& edge = NewEdge(edgeId);
-
-			cy::Vec2<uint> edgeVertices(face[j], face[next]);
-			edgeIndices[edgeVertices] = edgeId;
-
-			edge.orig = edgeVertices[0];
-			edge.dest = edgeVertices[1];
-			edge.next = firstEdge + next;
-			edge.prev = firstEdge + prev;
-			edge.face = i;
-
-			vertEdge[edgeVertices[0]] = edgeId;
-		}
-	}
-
-	// Connect Twins and Build Exterior Twins
-	uint interiorEdgeCount = edges.size();
-
-	for (uint i = 0; i < interiorEdgeCount; ++i) {
-		HalfEdge& edge = edges[i];
-		cy::Vec2<uint> twinVertices(edge.dest, edge.orig);
-
-		if (edgeIndices.count(twinVertices) != 0) {
-			edge.twin = edgeIndices[twinVertices];
-		}
-		else {
-			uint twinIndex;
-			HalfEdge& twin = NewEdge(twinIndex);
-
-			twin.orig = edge.dest;
-			twin.dest = edge.orig;
-			twin.twin = i;
-
-			edges[i].twin = twinIndex;
-		}
-	}
-
-	int i = 0;
-
-	// Connect exterior twins to each other (if any)
-	for (uint i = interiorEdgeCount; i < edges.size(); ++i) {
-		HalfEdge& edge = edges[i];
-
-		uint nextId = edge.twin;
-		HalfEdge* next = &edges[nextId];
-
-		while (next->prev != MAX_UINT) {
-			nextId = edges[next->prev].twin;
-			next = &edges[nextId];
-		}
-
-		edge.next = nextId;
-		next->prev = i;
-	}
-
-	translateVertices(-computeCentroid());
 }
 
 Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {

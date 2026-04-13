@@ -97,7 +97,8 @@ class HalfEdgeMesh {
 	float approxFaceSurfaceArea(uint faceId);
 	cy::Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
-	void build(const std::vector<Vec4u>& faces);
+	template<typename T>
+	void build(const T& faces);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -121,6 +122,10 @@ public:
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
 
+	void TranslateVertex(uint vertId, const Vec3f& translation);
+	void SetVertexPosition(uint vertId, const Vec3f& pos);
+	//void 
+
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
 	///		half-edge (one with the vertex as it's origin). Additionally, adjacent faces
@@ -136,15 +141,104 @@ public:
 	void loadFromInput();
 	bool load(const char* file);
 	void load(const FaceList& faceList);
-
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
 
-	
-	//void build(const std::vector<Vec3f> vertices, const std::vector<Vec4u>& faces);
-	//template <typename
-	//void build(const std::array<Vec3f> vertices, const std::array<Vec4u>& faces);
+	template <size_t V, size_t F>
+	void load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces);
+
 	bool exportObj(const char* filePath) const;
 	bool exportSTL(const char* filePath, bool isBinary = true) const; 
 };
+
+template<typename T>
+void HalfEdgeMesh::build(const T& faces) {
+	vertEdge.resize(0);
+	faceEdges.resize(0);
+	edges.resize(0);
+	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
+	faceEdges.reserve(faces.size());
+
+	// Build
+	std::unordered_map<cy::Vec2<uint>, uint> edgeIndices;
+
+	for (uint i = 0; i < faces.size(); ++i) {
+		const cy::Vec4<uint>& face = faces[i];
+
+		uint firstEdge = edges.size();
+		faceEdges.push_back(firstEdge);
+
+		uint vertCount = 4;
+		if (face[3] == MAX_UINT) {
+			vertCount = 3;
+		}
+
+		for (uint j = 0; j < vertCount; ++j) {
+			uint next = WrapInc(j, vertCount - 1);
+			uint prev = WrapDec(j, vertCount - 1);
+
+			uint edgeId;
+			HalfEdge& edge = NewEdge(edgeId);
+
+			cy::Vec2<uint> edgeVertices(face[j], face[next]);
+			edgeIndices[edgeVertices] = edgeId;
+
+			edge.orig = edgeVertices[0];
+			edge.dest = edgeVertices[1];
+			edge.next = firstEdge + next;
+			edge.prev = firstEdge + prev;
+			edge.face = i;
+
+			vertEdge[edgeVertices[0]] = edgeId;
+		}
+	}
+
+	// Connect Twins and Build Exterior Twins
+	uint interiorEdgeCount = edges.size();
+
+	for (uint i = 0; i < interiorEdgeCount; ++i) {
+		HalfEdge& edge = edges[i];
+		cy::Vec2<uint> twinVertices(edge.dest, edge.orig);
+
+		if (edgeIndices.count(twinVertices) != 0) {
+			edge.twin = edgeIndices[twinVertices];
+		}
+		else {
+			uint twinIndex;
+			HalfEdge& twin = NewEdge(twinIndex);
+
+			twin.orig = edge.dest;
+			twin.dest = edge.orig;
+			twin.twin = i;
+
+			edges[i].twin = twinIndex;
+		}
+	}
+
+	int i = 0;
+
+	// Connect exterior twins to each other (if any)
+	for (uint i = interiorEdgeCount; i < edges.size(); ++i) {
+		HalfEdge& edge = edges[i];
+
+		uint nextId = edge.twin;
+		HalfEdge* next = &edges[nextId];
+
+		while (next->prev != MAX_UINT) {
+			nextId = edges[next->prev].twin;
+			next = &edges[nextId];
+		}
+
+		edge.next = nextId;
+		next->prev = i;
+	}
+
+	translateVertices(-computeCentroid());
+}
+
+template <size_t V, size_t F>
+void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces) {
+	vertPos.insert(vertPos.end(), vertices.begin(), vertices.end());
+	build(faces);
+}
 
 #endif
