@@ -923,9 +923,6 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 /// false: if the function failed to save the mesh as an stl file
 /// </returns>
 bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
-<<<<<<< Updated upstream:src/structures.cpp
-	struct Triangle { cy::Vec3f v0, v1, v2; };
-=======
 
 	// Ensure that the filename includes the filetype extenstion.
 	std::string filename(filePath);
@@ -937,7 +934,6 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 	}
 
 	struct Triangle { Vec3f v0, v1, v2; };
->>>>>>> Stashed changes:src/mesh.cpp
 	std::vector<Triangle> tris; 
 
 	uint faceCount = faceEdges.size(); 
