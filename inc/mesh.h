@@ -124,9 +124,9 @@ public:
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
 
+	Vec3f GetVertexNormal(uint vertId);
 	void TranslateVertex(uint vertId, const Vec3f& translation);
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
-	//void 
 
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 

@@ -134,6 +134,11 @@ void Viewport::keyDown() {
 	case FL_Delete:
 		std::cout << "mesh deleted" << std::endl;
 		break;
+	case 'v':
+		Vec3f normal = scene[0]->GetVertexNormal(0);
+		scene[0]->TranslateVertex(0, normal);
+		modelingRenderer.UpdateRenderBuffers(scene);
+		break;
 	default:
 		return;
 	}
