@@ -132,7 +132,7 @@ void Viewport::keyDown() {
 		modelingRenderer.ToggleGrid();
 		break;
 	case FL_Delete:
-		std::cout << "mesh deleted" << std::endl;
+		deleteMesh();
 		break;
 	default:
 		return;
@@ -183,6 +183,15 @@ void Viewport::tesselate() {
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
+}
+
+void Viewport::deleteMesh() {
+	for (uint i = 0; i < scene.MeshCount(); i++)
+	{
+		scene.DeleteMesh(i);
+	}
+	std::cout << "mesh deleted" << std::endl;
+	modelingRenderer.UpdateRenderBuffers(scene);
 }
 
 void Viewport::setRot(int component, float angle) {

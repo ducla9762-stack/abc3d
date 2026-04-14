@@ -11,7 +11,7 @@ Scene::~Scene() {
 void Scene::DeleteMesh(uint id) {
 	HalfEdgeMesh* mesh = meshes.at(id);
 	if (mesh) {
-		delete mesh;
+		meshes.at(id)->Clear();
 		idStack.push_back(id);
 	}
 }

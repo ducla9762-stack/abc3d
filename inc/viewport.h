@@ -55,6 +55,8 @@ public:
 
 	void tesselate();
 
+	void deleteMesh();
+
 	void setRot(int component, float angle);
 
 	void setPos(int component, float pos);
