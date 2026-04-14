@@ -276,7 +276,7 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	for (unsigned int i = 0; i < scene.MeshCount(); i++)
 	{
 		const HalfEdgeMesh* mesh = scene[i];
-		vertObjData.insert(vertObjData.begin(), mesh->VertexCount(), Vec2u(i, pointVertDrawCount));
+		vertObjData.insert(vertObjData.begin(), mesh->VertexCount(), Vec2u(i + 1, pointVertDrawCount));
 		pointVertDrawCount += mesh->VertexCount();
 		mesh->GetWorldVertexPositions(sceneVertices);
 	}
@@ -295,7 +295,7 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	for (unsigned int i = 0; i < scene.MeshCount(); i++)
 	{
 		const HalfEdgeMesh* mesh = scene[i];
-		mesh->getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, i);
+		mesh->getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, i + 1);
 	}
 
 	size_t meshPosDataSize = sizeof(float) * 3 * meshPosData.size();

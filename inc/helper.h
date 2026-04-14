@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <limits>
+
+#include "cyVector.h"
 #include "cyMatrix.h"
 
 using namespace cy;

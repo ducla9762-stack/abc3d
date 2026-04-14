@@ -5,18 +5,10 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Gl_Window.H>
 #include <FL/names.h>
-#include <FL/Fl_Spinner.H>
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Native_File_Chooser.H>
-#include <FL/Fl_Button.H>
 
 #include <GL/glew.h>
 
 #include <iostream>
-#include <chrono>
-
-#include "cyGL.h"
-#include "cyMatrix.h"
 
 #include "helper.h"
 #include "mesh.h"
