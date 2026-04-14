@@ -39,7 +39,7 @@
 #ifndef _CY_GL_H_INCLUDED_
 #define _CY_GL_H_INCLUDED_
 
-#include <gl/GLU.h>
+#include <GL/glew.h>
 
 //-------------------------------------------------------------------------------
 #if !defined(__gl_h_) && !defined(__GL_H__) && !defined(_GL_H) && !defined(__X_GL_H)
@@ -1369,7 +1369,7 @@ inline void GL::CheckError( char const *sourcefile, int line, char const *call, 
 	while ( (error = glGetError()) != GL_NO_ERROR) {
 		*outStream << "OpenGL ERROR: " << sourcefile << " (line " << line << "): ";
 		if ( call ) *outStream << call << " triggered ";
-		*outStream << gluErrorString(error) << std::endl;
+		*outStream << error << std::endl;
 	}
 }
 

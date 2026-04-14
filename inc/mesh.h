@@ -9,8 +9,10 @@
 #include <array>
 #include <limits>
 #include <unordered_map>
+
 #include "cyVector.h"
 #include "cyMatrix.h"
+
 #include "helper.h"
 
 using std::string;
@@ -19,12 +21,10 @@ using std::ostream;
 
 typedef unsigned uint;
 
-const uint MAX_UINT = std::numeric_limits<uint>::max();
-
 class FaceList{
 
-	typedef cy::Vec4<uint> Face; 
-	typedef cy::Vec3f Vertex;
+	typedef Vec4<uint> Face; 
+	typedef Vec3f Vertex;
 
 	std::vector<Vertex> vertices;
 	std::vector<Face> faces;
@@ -37,10 +37,10 @@ class FaceList{
 
 public:
 
-	const std::vector<cy::Vec3f>& Vertices() const;
-	const std::vector<cy::Vec4<uint>>& Faces() const;
-	std::vector<cy::Vec3f>& Vertices();
-	std::vector<cy::Vec4<uint>>& Faces();
+	const std::vector<Vec3f>& Vertices() const;
+	const std::vector<Vec4<uint>>& Faces() const;
+	std::vector<Vec3f>& Vertices();
+	std::vector<Vec4<uint>>& Faces();
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
@@ -75,7 +75,7 @@ class HalfEdgeMesh {
 	};
 
 	uint NewFace(uint faceEdge);
-	uint NewVertex(const cy::Vec3f& pos, uint firstEdgeId);
+	uint NewVertex(const Vec3f& pos, uint firstEdgeId);
 
 	// Invalidates previous edge references/pointers
 	uint NewEdge();
@@ -90,12 +90,12 @@ class HalfEdgeMesh {
 	HalfEdge& NewEdge(const HalfEdge hEdge, uint& id);
 	uint FaceEdgeCount(uint faceId);
 	VertexAdjacentInfo GetVertexAdjacentInfo(uint vertId);
-	cy::Vec3f ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount);
-	cy::Vec3f ApplyLoopMask(uint vertId, uint edgeCount);
-	cy::Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
-	cy::Vec3f faceCentroid(uint faceId);
+	Vec3f ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount);
+	Vec3f ApplyLoopMask(uint vertId, uint edgeCount);
+	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
+	Vec3f faceCentroid(uint faceId);
 	float approxFaceSurfaceArea(uint faceId);
-	cy::Vec3f computeCentroid();
+	Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
 	template<typename T>
 	void build(const T& faces);
@@ -108,16 +108,18 @@ class HalfEdgeMesh {
 	std::vector<HalfEdge> edges; // Each half-edge
 public:
 
-	cy::Vec3f scale = cy::Vec3f(1.0f);
-	cy::Vec3f pos = cy::Vec3f(0.0f);
-	cy::Vec3f eulerRot = cy::Vec3f(0.0f); // Should later use quaternion instead of euler angles
+	Vec3f scale = Vec3f(1.0f);
+	Vec3f pos = Vec3f(0.0f);
+	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
 
-	void getRenderBuffers(std::vector<cy::Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId);
-	cy::Matrix4f getTransform();
+	void getRenderBuffers(std::vector<Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) const;
+	Matrix4f getTransform() const;
+	Matrix3f getTransform3x3() const;
 	void deform();
-	void GetFaceVertices(uint faceId, uint vertices[4]);
-	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]);
+	void GetFaceVertices(uint faceId, uint vertices[4]) const;
+	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const;
 	const Vec3f* VertexPositions() const;
+	const void GetWorldVertexPositions(std::vector<Vec3f>& vertices) const;
 	uint VertexCount() const;
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
@@ -137,8 +139,7 @@ public:
 	void refineEdge(uint hEdgeId);
 	void tesselate();
 	void subdivide();
-	void deleteMesh();
-	void loadFromInput();
+	void Clear();
 	bool load(const char* file);
 	void load(const FaceList& faceList);
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
@@ -159,10 +160,10 @@ void HalfEdgeMesh::build(const T& faces) {
 	faceEdges.reserve(faces.size());
 
 	// Build
-	std::unordered_map<cy::Vec2<uint>, uint> edgeIndices;
+	std::unordered_map<Vec2<uint>, uint> edgeIndices;
 
 	for (uint i = 0; i < faces.size(); ++i) {
-		const cy::Vec4<uint>& face = faces[i];
+		const Vec4<uint>& face = faces[i];
 
 		uint firstEdge = edges.size();
 		faceEdges.push_back(firstEdge);
@@ -179,7 +180,7 @@ void HalfEdgeMesh::build(const T& faces) {
 			uint edgeId;
 			HalfEdge& edge = NewEdge(edgeId);
 
-			cy::Vec2<uint> edgeVertices(face[j], face[next]);
+			Vec2<uint> edgeVertices(face[j], face[next]);
 			edgeIndices[edgeVertices] = edgeId;
 
 			edge.orig = edgeVertices[0];
@@ -197,7 +198,7 @@ void HalfEdgeMesh::build(const T& faces) {
 
 	for (uint i = 0; i < interiorEdgeCount; ++i) {
 		HalfEdge& edge = edges[i];
-		cy::Vec2<uint> twinVertices(edge.dest, edge.orig);
+		Vec2<uint> twinVertices(edge.dest, edge.orig);
 
 		if (edgeIndices.count(twinVertices) != 0) {
 			edge.twin = edgeIndices[twinVertices];
