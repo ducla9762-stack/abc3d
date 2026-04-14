@@ -18,10 +18,15 @@
 
 inline bool initGlew = true;
 
+enum Mode { MODEL, SIMPLE, RENDER };
+enum Element { OBJECT, FACE, EDGE, VERTEX };
+enum Action { SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL };
+
 class Viewport : public Fl_Gl_Window {
 
-	enum Mode { MODEL, SIMPLE, RENDER };
 	Mode activeMode = MODEL;
+	Element activeElement = OBJECT;
+	Action activeAction = SELECT;
 
 	ModelingRenderer modelingRenderer;
 
@@ -64,6 +69,18 @@ public:
 	bool exportObj(const char* filepath);
 
 	bool exportStl(const char* filepath);
+
+	Mode getActiveMode();
+
+	Element getActiveElement();
+
+	Action getActiveAction();
+
+	void setActiveMode(Mode mode);
+
+	void setActiveElement(Element element);
+
+	void setActiveAction(Action action);
 };
 
 #endif
