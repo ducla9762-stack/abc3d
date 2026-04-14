@@ -234,3 +234,15 @@ bool Viewport::exportStl(const char* filepath) {
 	scene[0]->exportStl(filepath);
 	return true;
 }
+
+Mode Viewport::getActiveMode() { return activeMode;  }
+
+Element Viewport::getActiveElement() { return activeElement; }
+
+Action Viewport::getActiveAction() { return activeAction; }
+
+void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
+
+void Viewport::setActiveElement(Element element) { activeElement = element; }
+
+void Viewport::setActiveAction(Action action) { activeAction = action; }
