@@ -89,6 +89,10 @@ int Viewport::mousePush() {
 
 	Vec3u id = modelingRenderer.SelectionIds(x, y);
 
+	if (id.x != 0) {
+		selectMesh(id.x - 1);
+	}
+
 	std::cout << "Object Id: " << id.x << std::endl;
 	std::cout << "Component Id: " << id.y << std::endl;
 	std::cout << "Sub-Component Id: " << id.z << std::endl;
@@ -192,6 +196,15 @@ void Viewport::deleteMesh() {
 	}
 	std::cout << "mesh deleted" << std::endl;
 	modelingRenderer.UpdateRenderBuffers(scene);
+}
+
+void Viewport::selectMesh(uint id) {
+	if (!scene.IsMeshSelected(id)) {
+		scene.AddToSelectedMeshes(id);
+	}
+	else {
+		scene.RemoveFromSelectedMeshes(id);
+	}
 }
 
 void Viewport::setRot(int component, float angle) {

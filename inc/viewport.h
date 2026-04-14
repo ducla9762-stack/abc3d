@@ -57,6 +57,8 @@ public:
 
 	void deleteMesh();
 
+	void selectMesh(uint id);
+
 	void setRot(int component, float angle);
 
 	void setPos(int component, float pos);

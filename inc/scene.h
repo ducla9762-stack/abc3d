@@ -8,7 +8,7 @@
 
 class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
-	std::vector<uint> selectedMeshes;
+	std::vector<bool> selectedMeshes;
 	std::vector<uint> idStack;
 
 public:
@@ -19,8 +19,14 @@ public:
 	HalfEdgeMesh* operator[](uint index);
 	const HalfEdgeMesh* operator[](uint index) const;
 	const std::vector<HalfEdgeMesh*>& Meshes() const;
+	const std::vector<bool>& SelectedMeshes() const;
 	std::vector<HalfEdgeMesh*>& Meshes();
+	std::vector<bool>& SelectedMeshes();
 	uint MeshCount() const;
+	uint SelectedMeshCount() const;
+	void AddToSelectedMeshes(uint id);
+	void RemoveFromSelectedMeshes(uint id);
+	bool IsMeshSelected(uint id);
 };
 
 #endif
