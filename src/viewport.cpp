@@ -89,7 +89,9 @@ int Viewport::mousePush() {
 
 	Vec3u id = modelingRenderer.SelectionIds(x, y);
 
+	// Check if there is a valid object-level id.
 	if (id.x != 0) {
+		// Use the 0 indexed id.
 		selectMesh(id.x - 1);
 	}
 
