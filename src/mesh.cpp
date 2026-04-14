@@ -909,7 +909,17 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 /// false: if the function failed to save the mesh as an obj file
 /// </returns>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
-	std::ofstream file(filePath, std::ios::app); 
+
+	// Ensure that the filename includes the filetype extension.
+	std::string filename(filePath);
+	std::string filetype = ".obj";
+
+	if (filename.find(filetype) == std::string::npos)
+	{
+		filename.append(filetype);
+	}
+
+	std::ofstream file(filename, std::ios::app); 
 	if (!file.is_open()) return false; 
 	
 	for (const Vec3f& v : vertPos) {
@@ -949,6 +959,16 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 /// false: if the function failed to save the mesh as an stl file
 /// </returns>
 bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
+
+	// Ensure that the filename includes the filetype extenstion.
+	std::string filename(filePath);
+	std::string filetype = ".stl";
+
+	if (filename.find(filetype) == std::string::npos)
+	{
+		filename.append(filetype);
+	}
+
 	struct Triangle { Vec3f v0, v1, v2; };
 	std::vector<Triangle> tris; 
 
@@ -968,7 +988,7 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 	}
 
 	if (isBinary) {
-		std::ofstream file(filePath, std::ios::binary); 
+		std::ofstream file(filename, std::ios::binary); 
 		if (!file.is_open()) return false; 
 
 		char header[80] = {}; 
