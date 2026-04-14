@@ -176,6 +176,22 @@ void Viewport::subdivision() {
 	redraw();
 }
 
+void Viewport::displayCube() {
+	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
+void Viewport::displayPyramid() {
+	scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
+void Viewport::displaySphere() {
+	//scene.NewMesh()->load()
+}
+
 void Viewport::tesselate() {
 	for (HalfEdgeMesh* mesh : scene.Meshes())
 	{

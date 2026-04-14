@@ -19,11 +19,14 @@
 
 #include <iostream>
 
+#include "customSlider.h"
 #include "viewport.h"
 
 const char* AXIS_LETTERS[3] = { "x", "y", "z" };
 
-Viewport* viewport;
+Viewport* viewport; Fl_Window* topRightPanel; 
+Fl_Window* rightPanel;
+customSlider* slider;
 
 
 // Top Menu Callbacks
@@ -52,7 +55,6 @@ void exportObjCallback(Fl_Widget* w, void*) {
 }
 
 void saveCallback(Fl_Widget* w, void*) {
-
 }
 
 void editCallback(Fl_Widget* w, void*) {
@@ -90,39 +92,41 @@ void lessonEditorCallback(Fl_Widget* w, void* v) {
 
 // Left Toolbar Callbacks
 void selectCallback(Fl_Widget* w, void*) {
-
+	rightPanel->clear();
 }
 
 void moveCallback(Fl_Widget* w, void*) {
-
+	rightPanel->clear();
 }
 
 void rotateCallback(Fl_Widget* w, void*) {
-	
+	rightPanel->clear();
 }
 
 void scaleCallback(Fl_Widget* w, void*) {
-	
+	rightPanel->clear();
 }
 
 void shapeCallback(Fl_Widget* w, void*) {
-	
+	rightPanel->clear();
 }
 
-void extrudeCallback(Fl_Widget* w, void*) {
-
+void extrudeCallback(Fl_Widget* w, void* data) {
+	rightPanel->clear();
 }
 
 void subdivisionCallback(Fl_Widget* w, void*) {
+	rightPanel->clear();
 	viewport->subdivision();
 }
 
 void tesselateCallback(Fl_Widget* w, void*) {
+	rightPanel->clear();
 	viewport->tesselate();
 }
 
 void bevelCallback(Fl_Widget* w, void*) {
-
+	rightPanel->clear();
 }
 
 
@@ -143,7 +147,7 @@ void objectCallback(Fl_Widget* w, void*) {
 }
 
 
-// Right Toolbar Callbacks
+// Bottom Right Panel Callbacks
 template <int component>
 void scaleSpinnerCallback(Fl_Widget* spinner) {
 	float spinnerVal = ((Fl_Simple_Counter*)spinner)->value();
@@ -201,7 +205,7 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&File/&Export/&Scene", 0, importStlCallback);
 	topMenu->add("&File/&Export/&Lesson");
 
-	topMenu->add("&File/&Save/", "^s", saveCallback);
+	topMenu->add("&File/&Save", "^s", saveCallback);
 	topMenu->add("&File/&Settings");
 	topMenu->add("&File/&Exit");
 
@@ -283,30 +287,36 @@ int main(int argc, char* argv[]) {
 
 	Fl_Radio_Button* selectButton = new Fl_Radio_Button(0, 0, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Select");
 	selectButton->selection_color(0);
+	selectButton->callback(selectCallback);
 
 	Fl_Radio_Button* moveButton = new Fl_Radio_Button(0, LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Move");
 	moveButton->selection_color(0);
+	moveButton->callback(moveCallback);
 
 	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 2 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Rotate");
 	rotateButton->selection_color(0);
+	rotateButton->callback(rotateCallback);
 
 	Fl_Radio_Button* scaleButton = new Fl_Radio_Button(0, 3 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Scale");
 	scaleButton->selection_color(0);
+	scaleButton->callback(scaleCallback);
 
 	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 4 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Shape");
 	shapeButton->selection_color(0);
+	shapeButton->callback(shapeCallback);
 
 	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 5 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Extrude");
 	extrudeButton->selection_color(0);
+	extrudeButton->callback(extrudeCallback, rightPanel);
 
 	// Subdivision button
 	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivision");
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionCallback);
-	subdivisionButton->when(FL_WHEN_CHANGED);
 		
 	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Bevel");
 	bevelButton->selection_color(0);
+	bevelButton->callback(bevelCallback);
 
 
 	sideToolbar->resizable(sideToolbar);
@@ -314,16 +324,15 @@ int main(int argc, char* argv[]) {
 
 
 	/* Top Right panel */
-	Fl_Window* topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
+	topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
 	topRightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
-	topRightPanel->begin();
 	topRightPanel->color(FL_DARK_RED);
-
+	topRightPanel->begin();
 	topRightPanel->end();
 
 
 	/* Right panel */
-	Fl_Window* rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3 , RIGHT_PANEL_W, 650);
+	rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3 , RIGHT_PANEL_W, 650);
 	rightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
 	rightPanel->begin();
 
@@ -363,6 +372,8 @@ int main(int argc, char* argv[]) {
 	yPos = 50;
 	for (int i = 0; i < 3; ++i) {
 		posSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
+		posSpinners[i]->value(1);
+		posSpinners[i]->step(.2);
 		posSpinners[i]->label(AXIS_LETTERS[i]);
 		posSpinners[i]->type(FL_FLOAT_INPUT);
 		posSpinners[i]->range(-1000000000, 1000000000);
@@ -386,6 +397,8 @@ int main(int argc, char* argv[]) {
 	yPos = 50;
 	for (int i = 0; i < 3; ++i) {
 		rotSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
+		rotSpinners[i]->value(1);
+		rotSpinners[i]->step(2);
 		rotSpinners[i]->label(AXIS_LETTERS[i]);
 		rotSpinners[i]->type(FL_FLOAT_INPUT);
 		rotSpinners[i]->range(-1000000000, 1000000000);

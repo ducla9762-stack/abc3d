@@ -55,6 +55,12 @@ public:
 
 	void tesselate();
 
+	void displayCube();
+
+	void displayPyramid();
+
+	void displaySphere();
+
 	void setRot(int component, float angle);
 
 	void setPos(int component, float pos);
