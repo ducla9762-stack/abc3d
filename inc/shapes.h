@@ -74,4 +74,44 @@ Vec4u(8, 7, 11, MAX_UINT),
 Vec4u(9, 8, 11, MAX_UINT),
 Vec4u(10, 9, 11, MAX_UINT)
 };
+
+std::vector<Vec3f> generateUVSphereVertices(uint latSegments, uint lonSegments) {
+	std::vector<Vec3f> vertices; 
+	vertices.reserve((latSegments + 1) * (lonSegments + 1));
+
+	for (int i = 0; i <= latSegments; i++) {
+		float v = float(i) / latSegments; 
+		float phi = v * cy::Pi<float>();
+
+		for (int j = 0; j <= lonSegments; j++) {
+			float u = (float)j / lonSegments; 
+			float theta = u * 2.0f * cy::Pi<float>(); 
+
+			float x = std::sin(phi) * std::cos(theta); 
+			float y = std::cos(phi); 
+			float z = std::sin(phi) * std::sin(theta);
+
+			vertices.push_back(Vec3f(x, y, z)); 
+		}
+	}
+
+	return vertices; 
+}
+
+std::vector<Vec4u> generateUVSphereFaces(uint latSegments, uint lonSegments) {
+	std::vector<Vec4u> faces; 
+	faces.reserve(latSegments * lonSegments * 2);
+
+	for (int i = 0; i < latSegments; i++) {
+		for (int j = 0; j < lonSegments; j++) {
+			int first = i * (lonSegments + 1) + j; 
+			int second = first + lonSegments + 1; 
+
+			faces.push_back(Vec4u(first, second, first + 1, MAX_UINT)); 
+			faces.push_back(Vec4u(second, second + 1, first + 1, MAX_UINT));
+		}
+	}
+
+	return faces; 
+}
 #endif //SHAPES_H

@@ -558,11 +558,12 @@ public:
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 		//backup.load("../assets/models/ico_sphere_sub_1.obj");
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 
-		backup.load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
+		/*backup.load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
 		backup.tesselate();
 		backup.tesselate(); 
-		backup.normalizeAllVertices();
-
+		backup.normalizeAllVertices();*/
+		
+		backup.load(generateUVSphereVertices(16, 32), generateUVSphereFaces(16, 32));
 		mesh = backup;
 	}
 
