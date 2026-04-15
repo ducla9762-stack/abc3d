@@ -76,6 +76,8 @@ Vec4u(9, 8, 11, MAX_UINT),
 Vec4u(10, 9, 11, MAX_UINT)
 };
 
+
+
 /// <summary>
 /// This method generates a unit cylinder by modifying the vertices passed in by reference and the faces passed in by reference. 
 /// n = resolution. This is for ease of notation in the documentation below.
@@ -87,24 +89,90 @@ Vec4u(10, 9, 11, MAX_UINT)
 /// <param name="resolution"> resolution >= 3 ALWAYS. The number of vertices to split the circles for the cylinders into. </param>
 template <size_t V, size_t F>
 void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4u, F>& faces, uint resolution) {
-	float theta = cy::Pi() * 2;
+	float theta;
+	
+	assert(resolution >= 3);
+	assert(V == 2 * resolution);
+	assert(F == 2 * (resolution - 2) + resolution);
+
+	//Bottom Ring
 	for (int i = 0; i < resolution; ++i) {
-		theta = cy::Pi() * 2 * i / resolution;
+		theta = cy::Pi<float>() * 2 * i / resolution;
 		vertices[i] = Vec3f(std::cos(theta), -1, std::sin(theta));
 	}
 
-	for (int j = 0; j < resolution; ++j) {
-		theta = cy::Pi() * 2 * j / resolution;
-		vertices[i + j] = Vec3f(std::cos(theta), 1, std::sin(theta));
+	//Top Ring
+	for (int i = 0; i < resolution; ++i) {
+		theta = cy::Pi<float>() * 2 * i / resolution;
+		vertices[resolution + i] = Vec3f(std::cos(theta), 1, std::sin(theta));
 	}
 
+	//Bottom Cap
 	for (int i = 0; i < resolution - 2; ++i)
-		faces[i] = Vec4u(vertices[i], vertices[i + 1], vertices[i + 2], MAX_UINT);
+		faces[i] = Vec4u(0, i+1, i + 2, MAX_UINT);
 
-	for (int j = 0; j < resolution - 2; ++j)
-		faces[i + j] = Vec4u(vertices[j], vertices[j + 2], vertices[j + 1], MAX_UINT);
+	//Top Cap
+	for (int i = 0; i < resolution - 2; ++i)
+		faces[resolution - 2 + i] = Vec4u(resolution, resolution + i + 2, resolution + i + 1, MAX_UINT);
 	
-	for (int k = 0; k < resolution; ++k)
-		faces[k + i + j] = Vec4u(vertices[k], vertices[k + 1], vertices[k + resolution + 1], vertices[k + resolution]);
+	//Side Quads
+	int faceOffset = 2 * (resolution - 2); 
+
+	for (int i = 0; i < resolution; ++i) {
+		int next = (i + 1) % resolution; 
+
+		faces[faceOffset + i] = Vec4u(i, next, next + resolution, i + resolution);
+	}
 }
+
+/// <summary>
+/// This method generates a unit cylinder by modifying the vertices passed in by reference and the faces passed in by reference. 
+/// n = resolution. This is for ease of notation in the documentation below.
+/// </summary>
+/// <typeparam name="F">The number of faces. F = 2*(n - 2) + n</typeparam>
+/// <typeparam name="V">The number of vertices. V = n * 2 ALWAYS</typeparam>
+/// <param name="vertices">The array for vertices</param>
+/// <param name="faces">The array for faces</param>
+/// <param name="resolution"> resolution >= 3 ALWAYS. The number of vertices to split the circles for the cylinders into. </param>
+void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u>& faces, uint resolution)
+{
+	assert(resolution >= 3);
+
+	vertices.resize(2 * resolution);
+	faces.resize(2 * (resolution - 2) + resolution);
+
+	float theta;
+
+	// Bottom ring
+	for (uint i = 0; i < resolution; ++i) {
+		theta = cy::Pi<float>() * 2 * i / resolution;
+		vertices[i] = Vec3f(std::cos(theta), -1, std::sin(theta));
+	}
+
+	// Top ring
+	for (uint i = 0; i < resolution; ++i) {
+		theta = cy::Pi<float>() * 2 * i / resolution;
+		vertices[resolution + i] = Vec3f(std::cos(theta), 1, std::sin(theta));
+	}
+
+	// Bottom cap
+	for (uint i = 0; i < resolution - 2; ++i)
+		faces[i] = Vec4u(0, i + 1, i + 2, MAX_UINT);
+
+	// Top cap
+	for (uint i = 0; i < resolution - 2; ++i)
+		faces[resolution - 2 + i] =
+		Vec4u(resolution, resolution + i + 2, resolution + i + 1, MAX_UINT);
+
+	// Sides
+	uint offset = 2 * (resolution - 2);
+
+	for (uint i = 0; i < resolution; ++i) {
+		uint next = (i + 1) % resolution;
+
+		faces[offset + i] =
+			Vec4u(i, next, next + resolution, i + resolution);
+	}
+}
+
 #endif //SHAPES_H

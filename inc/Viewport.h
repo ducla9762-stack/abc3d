@@ -558,10 +558,17 @@ public:
 		Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 		//backup.load("../assets/models/ico_sphere_sub_1.obj");
 		//backup.load(CUBE_VERTICES, CUBE_FACES); 
-		backup.load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
-		backup.tesselate();
-		backup.tesselate(); 
-		backup.normalizeAllVertices();
+		
+		//backup.load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
+		//backup.tesselate();
+		//backup.tesselate(); 
+		//backup.normalizeAllVertices();
+
+		std::vector<Vec3f> cylVerts; 
+		std::vector<Vec4u> cylFaces; 
+
+		generateUnitCylinder(cylVerts, cylFaces, 32); 
+		backup.load(cylVerts, cylFaces);
 
 		mesh = backup;
 	}
