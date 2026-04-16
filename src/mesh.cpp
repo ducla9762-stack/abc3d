@@ -1045,3 +1045,12 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 		return !file.fail();
 	}
 }
+
+/// <summary>
+/// This is a helper function that just normalizes all the vertices
+/// </summary>
+void HalfEdgeMesh::normalizeAllVertices() {
+	for (cy::Vec3f& v : vertPos) {
+		v.Normalize();
+	}
+}
