@@ -29,13 +29,26 @@ Fl_Window* topRightPanel;
 Fl_Window* rightPanel;
 customSlider* slider;
 Fl_Window* scaleWidgets;
-Fl_Simple_Counter* scaleSpinners[3];
+
+const int VIEWPORT_W = 900;
+const int VIEWPORT_H = 720;
+const int RIGHT_PANEL_W = 1080 - VIEWPORT_W;
+const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
+const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
+const int LEFT_TOOLBAR_W = 50;
+const int LEFT_TOOLBAR_H = 480;
+const int BOTTOM_TOOLBAR_H = 50;
+const int BOTTOM_TOOLBAR_W = 200;
+
+const int TOP_TOOLBAR_H = 40;
+const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
+float yPos = 0;
 
 void drawScaleWidgets();
 void drawRotationWidgets();
 void drawPositionWidgets();
 
-// Top Menu Callbacks
+/* Top Menu Callbacks */
 void importModelCallback(Fl_Widget* w, void*) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
 	fileChooser.directory("../assets/models/");
@@ -144,12 +157,62 @@ void scaleCallback(Fl_Widget* w, void*) {
 	rightPanel->show();
 }
 
+// Callbacks from within the Shape button
+void cubeCallback(Fl_Widget * w, void* data) {
+	viewport->displayCube();
+}
+
+void sphereCallback(Fl_Widget* w, void* data) {
+	viewport->displaySphere();
+}
+
+void pyramidCallback(Fl_Widget* w, void* data) {
+	viewport->displayPyramid();
+}
+
+void torusCallback(Fl_Widget* w, void* data) {
+	viewport->displayTorus();
+}
+
 void shapeCallback(Fl_Widget* w, void*) {
 	rightPanel->hide();
 	rightPanel->clear();
 	rightPanel->begin();
 
-		
+	// Cube Shape Button
+	Fl_Toggle_Button* cubeButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 4, "Cube");
+	cubeButton->selection_color(10);
+	cubeButton->box(FL_FLAT_BOX);
+	cubeButton->callback(cubeCallback);
+	cubeButton->align(FL_ALIGN_INSIDE);
+	cubeButton->type(FL_RADIO_BUTTON);
+
+	// Sphere Shape Button
+	Fl_Toggle_Button* sphereButton = new Fl_Toggle_Button(0, VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Sphere");
+	sphereButton->color(8);
+	sphereButton->selection_color(10);
+	sphereButton->box(FL_FLAT_BOX);
+	sphereButton->callback(sphereCallback);
+	sphereButton->align(FL_ALIGN_INSIDE);
+	sphereButton->type(FL_RADIO_BUTTON);
+
+	// Pyramid Shape Button
+	Fl_Toggle_Button* pyramidButton = new Fl_Toggle_Button(0, 2 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Pyramid");
+	pyramidButton->color(8);
+	pyramidButton->selection_color(10);
+	pyramidButton->box(FL_FLAT_BOX);
+	pyramidButton->callback(pyramidCallback);
+	pyramidButton->align(FL_ALIGN_INSIDE);
+	pyramidButton->type(FL_RADIO_BUTTON);
+	
+	// Torus Shape Button
+	Fl_Toggle_Button* torusButton = new Fl_Toggle_Button(0, 3 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Torus");
+	torusButton->color(8);
+	torusButton->selection_color(10);
+	torusButton->box(FL_FLAT_BOX);
+	torusButton->callback(torusCallback);
+	torusButton->align(FL_ALIGN_INSIDE);
+	torusButton->type(FL_RADIO_BUTTON);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -201,7 +264,7 @@ void bevelCallback(Fl_Widget* w, void*) {
 }
 
 
-// Bottom Toolbar Callbacks
+/* Bottom Toolbar Callbacks */
 void vertexCallback(Fl_Widget* w, void*) {
 
 }
@@ -238,28 +301,17 @@ void rotSpinnerCallback(Fl_Widget* spinner) {
 	viewport->setRot(component, spinnerVal);
 }
 
-const int VIEWPORT_W = 900;
-const int VIEWPORT_H = 720;
-const int RIGHT_PANEL_W = 1080 - VIEWPORT_W;
-const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
-const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
-const int LEFT_TOOLBAR_W = 50;
-const int LEFT_TOOLBAR_H = 480;
-const int BOTTOM_TOOLBAR_H = 50;
-const int BOTTOM_TOOLBAR_W = 200;
-
-const int TOP_TOOLBAR_H = 40;
-const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
-float yPos = 0;
-
 void drawScaleWidgets() {
 	// Scale Widgets
-	scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
+	Fl_Window* scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
 	scaleWidgets->begin();
 	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	scaleLabel->label("Scale");
 
+	// Rotation Spinners
+	Fl_Simple_Counter* scaleSpinners[3];
 	yPos = 50;
+
 	for (int i = 0; i < 3; ++i) {
 		scaleSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
 		scaleSpinners[i]->value(1);
@@ -466,7 +518,7 @@ int main(int argc, char* argv[]) {
 	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivision");
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionCallback);
-	// button for tesselation and subdivision
+	// seperate buttons for tesselation and subdivision
 		
 	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Bevel");
 	bevelButton->selection_color(0);
@@ -478,7 +530,7 @@ int main(int argc, char* argv[]) {
 
 	/* Top Right panel */
 	topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
-	topRightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
+	topRightPanel->resizable(nullptr);
 	topRightPanel->color(FL_DARK_RED);
 	topRightPanel->begin();
 	topRightPanel->end();

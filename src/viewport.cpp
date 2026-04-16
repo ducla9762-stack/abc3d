@@ -204,6 +204,11 @@ void Viewport::displaySphere() {
 	//scene.NewMesh()->load()
 }
 
+void Viewport::displayTorus() {
+
+}
+
+
 void Viewport::tesselate() {
 	for (HalfEdgeMesh* mesh : scene.Meshes())
 	{

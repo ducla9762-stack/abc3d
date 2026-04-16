@@ -67,6 +67,8 @@ public:
 
 	void displaySphere();
 
+	void displayTorus();
+
 	float getRot(int compontent, float angle);
 
 	void setRot(int component, float angle);
