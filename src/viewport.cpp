@@ -111,7 +111,7 @@ int Viewport::mousePush() {
 	selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// Check if there is a valid object-level id.
-	if (selectionIds.x != 0) {
+	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
 		// Use the 0 indexed id.
 		selectMesh(selectionIds.x - 1);
 	}
