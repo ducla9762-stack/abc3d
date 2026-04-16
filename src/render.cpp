@@ -20,6 +20,20 @@ Vec3f ModelingRenderer::GetCamTarget() { return camTarget; }
 void ModelingRenderer::SetCamPos(const Vec3f& pos) { camPos = pos; updateUniforms(); }
 void ModelingRenderer::SetCamTarget(const Vec3f& target) { camTarget = target; updateUniforms(); }
 
+Vec3f ModelingRenderer::GetCamUp() {
+	Vec3f forward = camTarget - camPos;
+	Vec3f right = WORLD_Y.Cross(forward);
+	Vec3f up = right.Cross(forward);
+	up.Normalize();
+	return up;
+}
+
+Vec3f ModelingRenderer::GetCamRight() {
+	Vec3f right = WORLD_Y.Cross(camTarget - camPos);
+	right.Normalize();
+	return right;
+}
+
 void ModelingRenderer::SetCamera(const Vec3f& pos, const Vec3f& target) {
 	camPos = pos;
 	camTarget = target;

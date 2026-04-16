@@ -89,6 +89,8 @@ public:
 
 	Vec3f GetCamPos() override;
 	Vec3f GetCamTarget() override;
+	Vec3f GetCamUp();
+	Vec3f GetCamRight();
 
 	void SetCamPos(const Vec3f& pos) override;
 	void SetCamTarget(const Vec3f& target) override;
