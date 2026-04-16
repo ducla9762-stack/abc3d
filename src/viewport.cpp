@@ -2,12 +2,14 @@
 
 #include <iostream>
 
-#include "helper.h"
+#include "viewport.h"
 #include "mesh.h"
 #include "shapes.h"
 #include "render.h"
 #include "scene.h"
-#include "viewport.h"
+#include "helper.h"
+
+#undef max
 
 void Viewport::draw() {
 	if (!context_valid() || modeChanged) {
@@ -72,11 +74,27 @@ void Viewport::mouseDrag() {
 
 	if (change.y == 0 && change.x == 0) return;
 
-	camPos.x -= change.x;
-	camPos.y += change.y;
-	clamp(camPos.y, 1.0f, 179.0f);
-	activeRenderer->SetCamera(sphericalToCartesian(camPos));
+	if (activeElement == VERTEX && activeAction == TRANSLATE_OUT && selectionIds.x == MAX_UINT) {
+		if (firstDragCallback) {
+			actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
+			initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+		}
+		Vec2f uv;
+		uv[0] = float(x) / float(pixel_w());
+		uv[1] = float(y) / float(pixel_h());
+		float scale = 2.0f * (uv - mouseDragStartPos).Length();
 
+		scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
+		modelingRenderer.UpdateRenderBuffers(scene);
+	}
+	else {
+		camPos.x -= change.x;
+		camPos.y += change.y;
+		clamp(camPos.y, 1.0f, 179.0f);
+		activeRenderer->SetCamera(sphericalToCartesian(camPos));
+	}
+
+	firstDragCallback = false;
 	mouseDragPrevPos.Set(x, y);
 	redraw();
 }
@@ -87,13 +105,15 @@ int Viewport::mousePush() {
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
-	Vec3u id = modelingRenderer.SelectionIds(x, y);
+	selectionIds = modelingRenderer.SelectionIds(x, y);
 
-	std::cout << "Object Id: " << id.x << std::endl;
-	std::cout << "Component Id: " << id.y << std::endl;
-	std::cout << "Sub-Component Id: " << id.z << std::endl;
+	std::cout << "Object Id: " << selectionIds.x << std::endl;
+	std::cout << "Component Id: " << selectionIds.y << std::endl;
+	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 
+	mouseDragStartPos.Set(float(Fl::event_x()) / pixel_w(), float(Fl::event_y()) / pixel_h());
 	mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+	firstDragCallback = true;
 	//redraw();
 }
 
@@ -135,9 +155,8 @@ void Viewport::keyDown() {
 		std::cout << "mesh deleted" << std::endl;
 		break;
 	case 'v':
-		Vec3f normal = scene[0]->GetVertexNormal(0);
-		scene[0]->TranslateVertex(0, normal);
-		modelingRenderer.UpdateRenderBuffers(scene);
+		activeElement = VERTEX;
+		activeAction = TRANSLATE_OUT;
 		break;
 	default:
 		return;

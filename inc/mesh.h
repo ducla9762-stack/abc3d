@@ -124,8 +124,10 @@ public:
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
 
+	Vec3f GetVertexPosition(uint vertdId);
 	Vec3f GetVertexNormal(uint vertId);
 	void TranslateVertex(uint vertId, const Vec3f& translation);
+	void TranslateVertexOut(uint vertId, float factor);
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
 	/// <summary>
