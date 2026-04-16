@@ -2,12 +2,14 @@
 
 #include <iostream>
 
-#include "helper.h"
+#include "viewport.h"
 #include "mesh.h"
 #include "shapes.h"
 #include "render.h"
 #include "scene.h"
-#include "viewport.h"
+#include "helper.h"
+
+#undef max
 
 void Viewport::draw() {
 	if (!context_valid() || modeChanged) {
@@ -75,11 +77,27 @@ void Viewport::mouseDrag() {
 
 	if (change.y == 0 && change.x == 0) return;
 
-	camPos.x -= change.x;
-	camPos.y += change.y;
-	clamp(camPos.y, 1.0f, 179.0f);
-	activeRenderer->SetCamera(sphericalToCartesian(camPos));
+	if (activeElement == VERTEX && activeAction == TRANSLATE_OUT && selectionIds.x == MAX_UINT) {
+		if (firstDragCallback) {
+			actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
+			initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+		}
+		Vec2f uv;
+		uv[0] = float(x) / float(pixel_w());
+		uv[1] = float(y) / float(pixel_h());
+		float scale = 2.0f * (uv - mouseDragStartPos).Length();
 
+		scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
+		modelingRenderer.UpdateRenderBuffers(scene);
+	}
+	else {
+		camPos.x -= change.x;
+		camPos.y += change.y;
+		clamp(camPos.y, 1.0f, 179.0f);
+		activeRenderer->SetCamera(sphericalToCartesian(camPos));
+	}
+
+	firstDragCallback = false;
 	mouseDragPrevPos.Set(x, y);
 	redraw();
 }
@@ -90,22 +108,24 @@ int Viewport::mousePush() {
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
-	Vec3u id = modelingRenderer.SelectionIds(x, y);
+	selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// Check if there is a valid object-level id.
-	if (id.x != 0) {
+	if (selctionIds.x != 0) {
 		// Use the 0 indexed id.
-		selectMesh(id.x - 1);
+		selectMesh(selectionIds.x - 1);
 	}
 	else {
 		deselectMeshes();
 	}
 
-	std::cout << "Object Id: " << id.x << std::endl;
-	std::cout << "Component Id: " << id.y << std::endl;
-	std::cout << "Sub-Component Id: " << id.z << std::endl;
+	std::cout << "Object Id: " << selectionIds.x << std::endl;
+	std::cout << "Component Id: " << selectionIds.y << std::endl;
+	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 
+	mouseDragStartPos.Set(float(Fl::event_x()) / pixel_w(), float(Fl::event_y()) / pixel_h());
 	mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+	firstDragCallback = true;
 	//redraw();
 }
 
@@ -137,9 +157,8 @@ void Viewport::keyDown() {
 		deleteMesh();
 		break;
 	case 'v':
-		Vec3f normal = scene[0]->GetVertexNormal(0);
-		scene[0]->TranslateVertex(0, normal);
-		modelingRenderer.UpdateRenderBuffers(scene);
+		activeElement = VERTEX;
+		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
 		singleSelection = false;
@@ -176,7 +195,13 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	//scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	//scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
+	std::vector<Vec3f> vertices;
+	std::vector<Vec4u> faces; 
+
+	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f); 
+	scene.NewMesh()->load(vertices, faces);
 }
 
 void Viewport::setScale(int component, float scale) {

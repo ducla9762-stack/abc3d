@@ -459,6 +459,10 @@ void HalfEdgeMesh::TranslateVertex(uint vertId, const Vec3f& translation) {
 	vertPos.at(vertId) += translation;
 }
 
+Vec3f HalfEdgeMesh::GetVertexPosition(uint vertId) {
+	return vertPos[vertId];
+}
+
 void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 	vertPos.at(vertId) = pos;
 }
@@ -467,6 +471,10 @@ void HalfEdgeMesh::translateVertices(const Vec3f& add) {
 	for (Vec3f& vert : vertPos) {
 		vert += add;
 	}
+}
+
+void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
+	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
 }
 
 Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {

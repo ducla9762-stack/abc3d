@@ -10,17 +10,17 @@
 
 #include <iostream>
 
-#include "helper.h"
 #include "mesh.h"
 #include "shapes.h"
 #include "render.h"
 #include "scene.h"
+#include "helper.h"
 
 inline bool initGlew = true;
 
 enum Mode { MODEL, SIMPLE, RENDER };
 enum Element { OBJECT, FACE, EDGE, VERTEX };
-enum Action { SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL };
+enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL };
 
 class Viewport : public Fl_Gl_Window {
 
@@ -37,7 +37,12 @@ class Viewport : public Fl_Gl_Window {
 
 	Scene scene;
 
+	Vec2f mouseDragStartPos = Vec2f(0.0f);
 	Vec2i mouseDragPrevPos = Vec2i(0); // Input Data
+	Vec3u selectionIds = Vec3u(uint(0));
+	Vec3f actionDir = Vec3f(0.0f);
+	Vec3f initialActionState = Vec3f(0.0f);
+	bool firstDragCallback = false;
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 

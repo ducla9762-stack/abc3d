@@ -111,3 +111,5 @@ Thumbs.db
 *.ilk
 *.rsp
 *.stl
+*.mtl
+*.py
