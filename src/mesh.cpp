@@ -420,9 +420,45 @@ Vec3f HalfEdgeMesh::computeCentroid() {
 	return weightedSum / areaSum;
 }
 
+Vec3f HalfEdgeMesh::GetVertexNormal(uint vertId) {
+	Vec3f pos = vertPos[vertId];
+	uint first = vertEdge[vertId];
+	uint next = edges[edges[first].twin].next;
+	uint last = next;
+
+	Vec3f temp = vertPos[edges[first].dest];
+	Vec3f normalSum(0.0f);
+	float weightSum = 0.0f;
+	bool odd = false;
+
+	do {
+		HalfEdge& edge = edges[next];
+		Vec3f adjVertPos = vertPos[edge.dest];
+		Vec3f seg0 = temp - pos;
+		seg0.Normalize();
+		Vec3f seg1 = adjVertPos - pos;
+		seg1.Normalize();
+			
+		Vec3f normal = seg1.Cross(seg0);
+		std::cout << normal << std::endl;
+
+		float weight = 1.0f - seg0.Dot(seg1);
+		normalSum += normal * weight;
+		weightSum += weight;
+		temp = adjVertPos;
+		next = edges[edge.twin].next;
+	} while (next != last);
+
+	Vec3f normal = normalSum / weightSum;
+	normal.Normalize();
+
+	return normal;
+}
+
 void HalfEdgeMesh::TranslateVertex(uint vertId, const Vec3f& translation) {
 	vertPos.at(vertId) += translation;
 }
+
 void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 	vertPos.at(vertId) = pos;
 }

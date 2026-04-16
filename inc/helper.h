@@ -115,4 +115,51 @@ struct std::hash<cy::Vec2<T>> {
 	}
 };
 
+// Vector Output Stream Overloads
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4f& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4u& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4i& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3f& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3u& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3i& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2f& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2u& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2i& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
+}
+
 #endif
