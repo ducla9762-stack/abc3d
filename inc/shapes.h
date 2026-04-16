@@ -225,7 +225,7 @@ inline void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u
 	}
 }
 
-std::vector<Vec3f> generateUVSphereVertices(uint latSegments, uint lonSegments) {
+inline std::vector<Vec3f> generateUVSphereVertices(uint latSegments, uint lonSegments) {
 	std::vector<Vec3f> vertices; 
 	vertices.reserve((latSegments + 1) * (lonSegments + 1));
 
@@ -248,7 +248,7 @@ std::vector<Vec3f> generateUVSphereVertices(uint latSegments, uint lonSegments) 
 	return vertices; 
 }
 
-std::vector<Vec4u> generateUVSphereFaces(uint latSegments, uint lonSegments) {
+inline std::vector<Vec4u> generateUVSphereFaces(uint latSegments, uint lonSegments) {
 	std::vector<Vec4u> faces; 
 	faces.reserve(latSegments * lonSegments * 2);
 
