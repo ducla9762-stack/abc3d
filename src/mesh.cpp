@@ -595,10 +595,9 @@ Matrix3f HalfEdgeMesh::getTransform3x3() const {
 
 Vec3f HalfEdgeMesh::WorldDirToLocalDir(const Vec3f& worldDir) {
 	Matrix3f transform = getTransform3x3();
-	transform.Invert();
 	transform.Transpose();
 
-	transform.Invert();
+	return transform * worldDir;
 }
 
 void HalfEdgeMesh::deform() {
