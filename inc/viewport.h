@@ -65,9 +65,25 @@ public:
 
 	void setScale(int component, float scale);
 
+	float getScale(int component, float scale);
+
 	void subdivision();
 
 	void tesselate();
+
+	void bevel();
+	
+	void extrude();
+
+	void displayCube();
+
+	void displayPyramid();
+
+	void displaySphere();
+
+	void displayTorus();
+
+	float getRot(int compontent, float angle);
 
 	void deleteMesh();
 
@@ -76,6 +92,8 @@ public:
 	void deselectMeshes();
 
 	void setRot(int component, float angle);
+
+	float getPos(int compontent, float angle);
 
 	void setPos(int component, float pos);
 

@@ -19,14 +19,36 @@
 
 #include <iostream>
 
+#include "customSlider.h"
 #include "viewport.h"
 
 const char* AXIS_LETTERS[3] = { "x", "y", "z" };
 
-Viewport* viewport;
+Viewport* viewport; 
+Fl_Window* topRightPanel; 
+Fl_Window* rightPanel;
+customSlider* slider;
+Fl_Window* scaleWidgets;
 
+const int VIEWPORT_W = 900;
+const int VIEWPORT_H = 720;
+const int RIGHT_PANEL_W = 1080 - VIEWPORT_W;
+const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
+const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
+const int LEFT_TOOLBAR_W = 50;
+const int LEFT_TOOLBAR_H = 480;
+const int BOTTOM_TOOLBAR_H = 50;
+const int BOTTOM_TOOLBAR_W = 200;
 
-// Top Menu Callbacks
+const int TOP_TOOLBAR_H = 40;
+const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
+float yPos = 0;
+
+void drawScaleWidgets();
+void drawRotationWidgets();
+void drawPositionWidgets();
+
+/* Top Menu Callbacks */
 void importModelCallback(Fl_Widget* w, void*) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
 	fileChooser.directory("../assets/models/");
@@ -52,7 +74,6 @@ void exportObjCallback(Fl_Widget* w, void*) {
 }
 
 void saveCallback(Fl_Widget* w, void*) {
-
 }
 
 void editCallback(Fl_Widget* w, void*) {
@@ -88,48 +109,166 @@ void lessonEditorCallback(Fl_Widget* w, void* v) {
 }
 
 
-// Left Toolbar Callbacks
+/* Left Toolbar Callbacks */
 void selectCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
 
+	drawScaleWidgets();
+	drawRotationWidgets();
+	drawPositionWidgets();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
-void moveCallback(Fl_Widget* w, void*) {
+void translationCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
 
+	drawPositionWidgets();
+
+	rightPanel->end();
+	rightPanel->show();
+	// TODO: Add two mode buttons
 }
 
 void rotateCallback(Fl_Widget* w, void*) {
-	
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
+
+	drawRotationWidgets();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
 void scaleCallback(Fl_Widget* w, void*) {
-	
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
+
+	drawScaleWidgets();
+
+	rightPanel->end();
+	rightPanel->show();
+}
+
+// Callbacks from within the Shape button
+void cubeCallback(Fl_Widget * w, void* data) {
+	viewport->displayCube();
+}
+
+void sphereCallback(Fl_Widget* w, void* data) {
+	viewport->displaySphere();
+}
+
+void pyramidCallback(Fl_Widget* w, void* data) {
+	viewport->displayPyramid();
+}
+
+void torusCallback(Fl_Widget* w, void* data) {
+	viewport->displayTorus();
 }
 
 void shapeCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
+
+	// Cube Shape Button
+	Fl_Toggle_Button* cubeButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 4, "Cube");
+	cubeButton->selection_color(10);
+	cubeButton->box(FL_FLAT_BOX);
+	cubeButton->callback(cubeCallback);
+	cubeButton->align(FL_ALIGN_INSIDE);
+	cubeButton->type(FL_RADIO_BUTTON);
+
+	// Sphere Shape Button
+	Fl_Toggle_Button* sphereButton = new Fl_Toggle_Button(0, VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Sphere");
+	sphereButton->color(8);
+	sphereButton->selection_color(10);
+	sphereButton->box(FL_FLAT_BOX);
+	sphereButton->callback(sphereCallback);
+	sphereButton->align(FL_ALIGN_INSIDE);
+	sphereButton->type(FL_RADIO_BUTTON);
+
+	// Pyramid Shape Button
+	Fl_Toggle_Button* pyramidButton = new Fl_Toggle_Button(0, 2 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Pyramid");
+	pyramidButton->color(8);
+	pyramidButton->selection_color(10);
+	pyramidButton->box(FL_FLAT_BOX);
+	pyramidButton->callback(pyramidCallback);
+	pyramidButton->align(FL_ALIGN_INSIDE);
+	pyramidButton->type(FL_RADIO_BUTTON);
 	
+	// Torus Shape Button
+	Fl_Toggle_Button* torusButton = new Fl_Toggle_Button(0, 3 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Torus");
+	torusButton->color(8);
+	torusButton->selection_color(10);
+	torusButton->box(FL_FLAT_BOX);
+	torusButton->callback(torusCallback);
+	torusButton->align(FL_ALIGN_INSIDE);
+	torusButton->type(FL_RADIO_BUTTON);
+
+	rightPanel->end();
+	rightPanel->show();
+	// TODO: Add shape buttons, resolution
 }
 
-void extrudeCallback(Fl_Widget* w, void*) {
+void extrudeCallback(Fl_Widget* w, void* data) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
 
+	viewport->extrude();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
 void subdivisionCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
+
 	viewport->subdivision();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
 void tesselateCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
+
 	viewport->tesselate();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
 void bevelCallback(Fl_Widget* w, void*) {
+	rightPanel->hide();
+	rightPanel->clear();
+	rightPanel->begin();
 
+	viewport->bevel();
+
+	rightPanel->end();
+	rightPanel->show();
 }
 
 
-// Bottom Toolbar Callbacks
+/* Bottom Toolbar Callbacks */
 void vertexCallback(Fl_Widget* w, void*) {
 
 }
+
 void edgeCallback(Fl_Widget* w, void*) {
 
 }
@@ -143,7 +282,7 @@ void objectCallback(Fl_Widget* w, void*) {
 }
 
 
-// Right Toolbar Callbacks
+// Bottom Right Panel Callbacks
 template <int component>
 void scaleSpinnerCallback(Fl_Widget* spinner) {
 	float spinnerVal = ((Fl_Simple_Counter*)spinner)->value();
@@ -162,18 +301,87 @@ void rotSpinnerCallback(Fl_Widget* spinner) {
 	viewport->setRot(component, spinnerVal);
 }
 
-const int VIEWPORT_W = 900;
-const int VIEWPORT_H = 720;
-const int RIGHT_PANEL_W = 1080 - VIEWPORT_W;
-const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
-const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
-const int LEFT_TOOLBAR_W = 50;
-const int LEFT_TOOLBAR_H = 480;
-const int BOTTOM_TOOLBAR_H = 50;
-const int BOTTOM_TOOLBAR_W = 200;
+void drawScaleWidgets() {
+	// Scale Widgets
+	Fl_Window* scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
+	scaleWidgets->begin();
+	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
+	scaleLabel->label("Scale");
 
-const int TOP_TOOLBAR_H = 40;
-const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
+	// Rotation Spinners
+	Fl_Simple_Counter* scaleSpinners[3];
+	yPos = 50;
+
+	for (int i = 0; i < 3; ++i) {
+		scaleSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
+		scaleSpinners[i]->value(1);
+		scaleSpinners[i]->step(.2);
+		scaleSpinners[i]->label(AXIS_LETTERS[i]);
+		scaleSpinners[i]->type(FL_FLOAT_INPUT);
+		scaleSpinners[i]->range(-1000000000, 1000000000);
+		yPos += 50;
+	}
+
+	scaleSpinners[0]->callback(scaleSpinnerCallback<0>);
+	scaleSpinners[1]->callback(scaleSpinnerCallback<1>);
+	scaleSpinners[2]->callback(scaleSpinnerCallback<2>);
+
+	scaleWidgets->end();
+}
+
+void drawRotationWidgets() {
+	// Rotation Widgets
+	Fl_Window* rotWidgets = new Fl_Window(0, 400, RIGHT_PANEL_W, 200);
+	rotWidgets->begin();
+	Fl_Box* rotLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 25);
+	rotLabel->label("Rotation");
+
+	// Rotation Spinners
+	Fl_Simple_Counter* rotSpinners[3];
+	yPos = 50;
+	for (int i = 0; i < 3; ++i) {
+		rotSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
+		rotSpinners[i]->value(1);
+		rotSpinners[i]->step(2);
+		rotSpinners[i]->label(AXIS_LETTERS[i]);
+		rotSpinners[i]->type(FL_FLOAT_INPUT);
+		rotSpinners[i]->range(-1000000000, 1000000000);
+		yPos += 50;
+	}
+
+	rotSpinners[0]->callback(rotSpinnerCallback<0>);
+	rotSpinners[1]->callback(rotSpinnerCallback<1>);
+	rotSpinners[2]->callback(rotSpinnerCallback<2>);
+
+	rotWidgets->end();
+}
+
+void drawPositionWidgets() {
+	// Position Widgets
+	Fl_Window* posWidgets = new Fl_Window(0, 200, RIGHT_PANEL_W, 200);
+	posWidgets->begin();
+	Fl_Box* posLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
+	posLabel->label("Position");
+
+	// Position Spinners
+	Fl_Simple_Counter* posSpinners[3];
+	yPos = 50;
+	for (int i = 0; i < 3; ++i) {
+		posSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
+		posSpinners[i]->value(1);
+		posSpinners[i]->step(.2);
+		posSpinners[i]->label(AXIS_LETTERS[i]);
+		posSpinners[i]->type(FL_FLOAT_INPUT);
+		posSpinners[i]->range(-1000000000, 1000000000);
+		yPos += 50;
+	}
+
+	posSpinners[0]->callback(posSpinnerCallback<0>);
+	posSpinners[1]->callback(posSpinnerCallback<1>);
+	posSpinners[2]->callback(posSpinnerCallback<2>);
+
+	posWidgets->end();
+}
 
 int main(int argc, char* argv[]) {
 	Fl_Window* window = new Fl_Window(0, 0, 1080, 720, "ABC3D");
@@ -201,7 +409,7 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&File/&Export/&Scene", 0, importStlCallback);
 	topMenu->add("&File/&Export/&Lesson");
 
-	topMenu->add("&File/&Save/", "^s", saveCallback);
+	topMenu->add("&File/&Save", "^s", saveCallback);
 	topMenu->add("&File/&Settings");
 	topMenu->add("&File/&Exit");
 
@@ -283,136 +491,78 @@ int main(int argc, char* argv[]) {
 
 	Fl_Radio_Button* selectButton = new Fl_Radio_Button(0, 0, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Select");
 	selectButton->selection_color(0);
+	selectButton->callback(selectCallback);
 
-	Fl_Radio_Button* moveButton = new Fl_Radio_Button(0, LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Move");
-	moveButton->selection_color(0);
-
+	Fl_Radio_Button* translationButton = new Fl_Radio_Button(0, LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Move");
+	translationButton->selection_color(0);
+	translationButton->callback(translationCallback);
+	
 	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 2 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Rotate");
 	rotateButton->selection_color(0);
+	rotateButton->callback(rotateCallback);
 
 	Fl_Radio_Button* scaleButton = new Fl_Radio_Button(0, 3 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Scale");
 	scaleButton->selection_color(0);
+	scaleButton->callback(scaleCallback);
 
 	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 4 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Shape");
 	shapeButton->selection_color(0);
+	shapeButton->callback(shapeCallback);
+	// buttons for shapes, resolutions?
 
 	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 5 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Extrude");
 	extrudeButton->selection_color(0);
+	extrudeButton->callback(extrudeCallback, rightPanel);
 
 	// Subdivision button
 	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivision");
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionCallback);
-	subdivisionButton->when(FL_WHEN_CHANGED);
+	// seperate buttons for tesselation and subdivision
 		
 	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Bevel");
 	bevelButton->selection_color(0);
-
+	bevelButton->callback(bevelCallback);
 
 	sideToolbar->resizable(sideToolbar);
 	sideToolbar->end();
 
 
 	/* Top Right panel */
-	Fl_Window* topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
-	topRightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
-	topRightPanel->begin();
+	topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
+	topRightPanel->resizable(nullptr);
 	topRightPanel->color(FL_DARK_RED);
-
+	topRightPanel->begin();
 	topRightPanel->end();
 
-
 	/* Right panel */
-	Fl_Window* rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3 , RIGHT_PANEL_W, 650);
-	rightPanel->resizable(nullptr); //(VIEWPORT_W, 50, 0, 50);
+	rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3 , RIGHT_PANEL_W, 650);
+	rightPanel->resizable(nullptr);
 	rightPanel->begin();
 
-	// Scale Widgets
-	Fl_Window* scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
-	scaleWidgets->begin();
-	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
-	scaleLabel->label("Scale");
+	drawScaleWidgets();
+	drawRotationWidgets();
+	drawPositionWidgets();
 
-	// Scale Spinners
-	Fl_Simple_Counter* scaleSpinners[3];
-	float yPos = 50;
-	for (int i = 0; i < 3; ++i) {
-		scaleSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		scaleSpinners[i]->value(1);
-		scaleSpinners[i]->step(.2);
-		scaleSpinners[i]->label(AXIS_LETTERS[i]);
-		scaleSpinners[i]->type(FL_FLOAT_INPUT);
-		scaleSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	scaleSpinners[0]->callback(scaleSpinnerCallback<0>);
-	scaleSpinners[1]->callback(scaleSpinnerCallback<1>);
-	scaleSpinners[2]->callback(scaleSpinnerCallback<2>);
-
-	scaleWidgets->end();
-
-	// Position Widgets
-	Fl_Window* posWidgets = new Fl_Window(0, 200, RIGHT_PANEL_W, 200);
-	posWidgets->begin();
-	Fl_Box* posLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
-	posLabel->label("Position");
-
-	// Position Spinners
-	Fl_Simple_Counter* posSpinners[3];
-	yPos = 50;
-	for (int i = 0; i < 3; ++i) {
-		posSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		posSpinners[i]->label(AXIS_LETTERS[i]);
-		posSpinners[i]->type(FL_FLOAT_INPUT);
-		posSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	posSpinners[0]->callback(posSpinnerCallback<0>);
-	posSpinners[1]->callback(posSpinnerCallback<1>);
-	posSpinners[2]->callback(posSpinnerCallback<2>);
-
-	posWidgets->end();
-
-	// Rotation Widgets
-	Fl_Window* rotWidgets = new Fl_Window(0, 400, RIGHT_PANEL_W, 200);
-	rotWidgets->begin();
-	Fl_Box* rotLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 25);
-	rotLabel->label("Rotation");
-
-	// Rotation Spinners
-	Fl_Simple_Counter* rotSpinners[3];
-	yPos = 50;
-	for (int i = 0; i < 3; ++i) {
-		rotSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		rotSpinners[i]->label(AXIS_LETTERS[i]);
-		rotSpinners[i]->type(FL_FLOAT_INPUT);
-		rotSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	rotSpinners[0]->callback(rotSpinnerCallback<0>);
-	rotSpinners[1]->callback(rotSpinnerCallback<1>);
-	rotSpinners[2]->callback(rotSpinnerCallback<2>);
-
-	rotWidgets->end();
 	rightPanel->end();
 
 
-	// Bottom Toolbar
+	/* Bottom Toolbar */
 	Fl_Window* bottomToolbar = new Fl_Window(150, VIEWPORT_H - 70, BOTTOM_TOOLBAR_W, BOTTOM_TOOLBAR_H);
 	bottomToolbar->color(12);
 
 	Fl_Radio_Button* vertexButton = new Fl_Radio_Button(0, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Vertex");
 	vertexButton->selection_color(0);
 	vertexButton->callback(vertexCallback);
+
 	Fl_Radio_Button* edgeButton = new Fl_Radio_Button(50, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Edge");
 	edgeButton->selection_color(0);
 	edgeButton->callback(edgeCallback);
+
 	Fl_Radio_Button* faceButton = new Fl_Radio_Button(100, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Face");
 	faceButton->selection_color(0);
 	faceButton->callback(faceCallback);
+
 	Fl_Radio_Button* objectButton = new Fl_Radio_Button(150, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Object");
 	objectButton->selection_color(0);
 	objectButton->callback(objectCallback);

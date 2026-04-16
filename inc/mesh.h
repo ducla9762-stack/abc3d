@@ -140,6 +140,8 @@ public:
 	///		A half-edge of the edge to be split.
 	/// </param>
 	void refineEdge(uint hEdgeId);
+	void bevel();
+	void extrude();
 	void tesselate();
 	void subdivide();
 	void Clear();

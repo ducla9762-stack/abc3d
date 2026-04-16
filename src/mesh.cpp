@@ -862,6 +862,14 @@ void HalfEdgeMesh::tesselate() {
 	return;
 }
 
+void HalfEdgeMesh::extrude() {
+
+}
+
+void HalfEdgeMesh::bevel() {
+
+}
+
 void HalfEdgeMesh::subdivide() {
 	tesselate();
 	deform();

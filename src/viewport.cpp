@@ -204,6 +204,10 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	scene.NewMesh()->load(vertices, faces);
 }
 
+float Viewport::getScale(int component, float scale) {
+	return 1;
+}
+
 void Viewport::setScale(int component, float scale) {
 	//for (HalfEdgeMesh* mesh : scene.Meshes())
 	//{
@@ -221,6 +225,14 @@ void Viewport::setScale(int component, float scale) {
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
+}
+
+void Viewport::bevel() {
+
+}
+
+void Viewport::extrude() {
+
 }
 
 void Viewport::subdivision() {
@@ -241,6 +253,27 @@ void Viewport::subdivision() {
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
+
+void Viewport::displayCube() {
+	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
+void Viewport::displayPyramid() {
+	scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
+void Viewport::displaySphere() {
+	//scene.NewMesh()->load()
+}
+
+void Viewport::displayTorus() {
+
+}
+
 
 void Viewport::tesselate() {
 	//for (HalfEdgeMesh* mesh : scene.Meshes())
@@ -304,6 +337,10 @@ void Viewport::deselectMeshes() {
 	}
 }
 
+float Viewport::getRot(int component, float angle) {
+	return 1;
+}
+
 void Viewport::setRot(int component, float angle) {
 	//for (HalfEdgeMesh* mesh : scene.Meshes())
 	//{
@@ -321,6 +358,10 @@ void Viewport::setRot(int component, float angle) {
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
+}
+
+float Viewport::getPos(int component, float angle) {
+	return 1;
 }
 
 void Viewport::setPos(int component, float pos) {
