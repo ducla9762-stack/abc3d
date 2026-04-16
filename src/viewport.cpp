@@ -158,6 +158,10 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
+float Viewport::getScale(int component, float scale) {
+	return 1;
+}
+
 void Viewport::setScale(int component, float scale) {
 	for (HalfEdgeMesh* mesh : scene.Meshes())
 	{
@@ -165,6 +169,14 @@ void Viewport::setScale(int component, float scale) {
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
+}
+
+void Viewport::bevel() {
+
+}
+
+void Viewport::extrude() {
+
 }
 
 void Viewport::subdivision() {
@@ -201,6 +213,10 @@ void Viewport::tesselate() {
 	redraw();
 }
 
+float Viewport::getRot(int component, float angle) {
+	return 1;
+}
+
 void Viewport::setRot(int component, float angle) {
 	for (HalfEdgeMesh* mesh : scene.Meshes())
 	{
@@ -208,6 +224,10 @@ void Viewport::setRot(int component, float angle) {
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
+}
+
+float Viewport::getPos(int component, float angle) {
+	return 1;
 }
 
 void Viewport::setPos(int component, float pos) {
