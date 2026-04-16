@@ -138,7 +138,7 @@ Vec4u(10, 9, 11, MAX_UINT)
 /// <param name="faces">The array for faces</param>
 /// <param name="resolution"> resolution >= 3 ALWAYS. The number of vertices to split the circles for the cylinders into. </param>
 template <size_t V, size_t F>
-void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4u, F>& faces, uint resolution) {
+inline void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4u, F>& faces, uint resolution) {
 	float theta;
 	
 	assert(resolution >= 3);
@@ -184,7 +184,7 @@ void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4u, F>& 
 /// <param name="vertices">The array for vertices</param>
 /// <param name="faces">The array for faces</param>
 /// <param name="resolution"> resolution >= 3 ALWAYS. The number of vertices to split the circles for the cylinders into. </param>
-void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u>& faces, uint resolution)
+inline void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u>& faces, uint resolution)
 {
 	assert(resolution >= 3);
 
