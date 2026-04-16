@@ -593,6 +593,14 @@ Matrix3f HalfEdgeMesh::getTransform3x3() const {
 	return transform;
 }
 
+Vec3f HalfEdgeMesh::WorldDirToLocalDir(const Vec3f& worldDir) {
+	Matrix3f transform = getTransform3x3();
+	transform.Invert();
+	transform.Transpose();
+
+	transform.Invert();
+}
+
 void HalfEdgeMesh::deform() {
 	uint vertCount = VertexCount();
 	std::vector<Vec3f> newPositions;

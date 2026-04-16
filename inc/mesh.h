@@ -115,6 +115,7 @@ public:
 	void getRenderBuffers(std::vector<Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) const;
 	Matrix4f getTransform() const;
 	Matrix3f getTransform3x3() const;
+	Vec3f WorldDirToLocalDir(const Vec3f& worldDir);
 	void deform();
 	void GetFaceVertices(uint faceId, uint vertices[4]) const;
 	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const;
