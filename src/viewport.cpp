@@ -116,20 +116,10 @@ void Viewport::mouseWheel() {
 void Viewport::keyDown() {
 	switch (Fl::event_key()) {
 	case 's':
-		for (HalfEdgeMesh* mesh : scene.Meshes())
-		{
-			mesh->subdivide();
-		}
-		std::cout << "subdivided underlying mesh" << std::endl;
-		modelingRenderer.UpdateRenderBuffers(scene);
+		subdivision();
 		break;
 	case 't':
-		for (HalfEdgeMesh* mesh : scene.Meshes())
-		{
-			mesh->tesselate();
-		}
-		std::cout << "tesselated underlying mesh" << std::endl;
-		modelingRenderer.UpdateRenderBuffers(scene);
+		tesselate();
 		break;
 	case 'p':
 		modelingRenderer.ToggleVertexPoints();
@@ -165,39 +155,79 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 }
 
 void Viewport::setScale(int component, float scale) {
-	for (HalfEdgeMesh* mesh : scene.Meshes())
+	//for (HalfEdgeMesh* mesh : scene.Meshes())
+	//{
+	//	mesh->scale[component] = scale;
+	//}
+	//modelingRenderer.UpdateRenderBuffers(scene);
+	//redraw();
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		mesh->scale[component] = scale;
+		if (scene.IsMeshSelected(i))
+		{
+			scene.Meshes().at(i)->scale[component] = scale;
+		}
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::subdivision() {
-	for (HalfEdgeMesh* mesh : scene.Meshes())
+	//for (HalfEdgeMesh* mesh : scene.Meshes())
+	//{
+	//	mesh->subdivide();
+	//}
+	//modelingRenderer.UpdateRenderBuffers(scene);
+	//redraw();
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		mesh->subdivide();
+		if (scene.IsMeshSelected(i))
+		{
+			scene.Meshes().at(i)->subdivide();
+		}
 	}
-	modelingRenderer.UpdateRenderBuffers(scene);
+	modelingRenderer.UpdateRenderBuffers(scene);z
 	redraw();
 }
 
 void Viewport::tesselate() {
-	for (HalfEdgeMesh* mesh : scene.Meshes())
+	//for (HalfEdgeMesh* mesh : scene.Meshes())
+	//{
+	//	mesh->tesselate();
+	//}
+	//modelingRenderer.UpdateRenderBuffers(scene);
+	//redraw();
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		mesh->tesselate();
+		if (scene.IsMeshSelected(i))
+		{
+			scene.Meshes().at(i)->tesselate();
+		}
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::deleteMesh() {
-	for (uint i = 0; i < scene.MeshCount(); i++)
+	//for (uint i = 0; i < scene.MeshCount(); i++)
+	//{
+	//	scene.DeleteMesh(i);
+	//}
+	//std::cout << "mesh deleted" << std::endl;
+	//modelingRenderer.UpdateRenderBuffers(scene);
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		scene.DeleteMesh(i);
+		if (scene.IsMeshSelected(i))
+		{
+			scene.DeleteMesh(i);
+		}
 	}
-	std::cout << "mesh deleted" << std::endl;
 	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 void Viewport::selectMesh(uint id) {
@@ -210,18 +240,38 @@ void Viewport::selectMesh(uint id) {
 }
 
 void Viewport::setRot(int component, float angle) {
-	for (HalfEdgeMesh* mesh : scene.Meshes())
+	//for (HalfEdgeMesh* mesh : scene.Meshes())
+	//{
+	//	mesh->eulerRot[component] = angle;
+	//}
+	//modelingRenderer.UpdateRenderBuffers(scene);
+	//redraw();
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		mesh->eulerRot[component] = angle;
+		if (scene.IsMeshSelected(i))
+		{
+			scene.Meshes().at(i)->eulerRot[component] = angle;
+		}
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::setPos(int component, float pos) {
-	for (HalfEdgeMesh* mesh : scene.Meshes())
+	//for (HalfEdgeMesh* mesh : scene.Meshes())
+	//{
+	//	mesh->pos[component] = pos;
+	//}
+	//modelingRenderer.UpdateRenderBuffers(scene);
+	//redraw();
+
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
-		mesh->pos[component] = pos;
+		if (scene.IsMeshSelected(i))
+		{
+			scene.Meshes().at(i)->pos[component] = pos;
+		}
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
