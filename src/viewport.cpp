@@ -193,7 +193,7 @@ void Viewport::subdivision() {
 			scene.Meshes().at(i)->subdivide();
 		}
 	}
-	modelingRenderer.UpdateRenderBuffers(scene);z
+	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
