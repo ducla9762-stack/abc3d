@@ -49,6 +49,9 @@ int Viewport::handle(int event) {
 	case FL_KEYDOWN:
 		keyDown();
 		break;
+	case FL_KEYUP:
+		keyUp();
+		break;
 	case FL_FOCUS:
 	case FL_UNFOCUS:
 		break;
@@ -94,6 +97,9 @@ int Viewport::mousePush() {
 		// Use the 0 indexed id.
 		selectMesh(id.x - 1);
 	}
+	else {
+		deselectMeshes();
+	}
 
 	std::cout << "Object Id: " << id.x << std::endl;
 	std::cout << "Component Id: " << id.y << std::endl;
@@ -134,6 +140,20 @@ void Viewport::keyDown() {
 		Vec3f normal = scene[0]->GetVertexNormal(0);
 		scene[0]->TranslateVertex(0, normal);
 		modelingRenderer.UpdateRenderBuffers(scene);
+		break;
+	case FL_Control_L:
+		singleSelection = false;
+		break;
+	default:
+		return;
+	}
+	redraw();
+}
+
+void Viewport::keyUp() {
+	switch (Fl::event_key()) {
+	case FL_Control_L:
+		singleSelection = true;
 		break;
 	default:
 		return;
@@ -236,11 +256,26 @@ void Viewport::deleteMesh() {
 }
 
 void Viewport::selectMesh(uint id) {
+	// If single selection, remove all other selections before adding to selection.
+	if (singleSelection) {
+		for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
+			scene.RemoveFromSelectedMeshes(i);
+		}
+	}
+
+	// If not selected, select.
 	if (!scene.IsMeshSelected(id)) {
 		scene.AddToSelectedMeshes(id);
 	}
+	// If selected, remove selection.
 	else {
 		scene.RemoveFromSelectedMeshes(id);
+	}
+}
+
+void Viewport::deselectMeshes() {
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
+		scene.RemoveFromSelectedMeshes(i);
 	}
 }
 

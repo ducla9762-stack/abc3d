@@ -33,6 +33,8 @@ class Viewport : public Fl_Gl_Window {
 	Renderer* activeRenderer = &modelingRenderer;
 	bool modeChanged = false;
 
+	bool singleSelection = true;
+
 	Scene scene;
 
 	Vec2i mouseDragPrevPos = Vec2i(0); // Input Data
@@ -51,6 +53,8 @@ class Viewport : public Fl_Gl_Window {
 
 	void keyDown();
 
+	void keyUp();
+
 public:
 	Viewport(int x, int y, int w, int h, const char* label = nullptr);
 
@@ -63,6 +67,8 @@ public:
 	void deleteMesh();
 
 	void selectMesh(uint id);
+
+	void deselectMeshes();
 
 	void setRot(int component, float angle);
 
