@@ -15,6 +15,7 @@ public:
 
 	~Scene();
 	void DeleteMesh(uint id);
+	void DuplicateMesh(uint id); 
 	HalfEdgeMesh* NewMesh();
 	HalfEdgeMesh* operator[](uint index);
 	const HalfEdgeMesh* operator[](uint index) const;

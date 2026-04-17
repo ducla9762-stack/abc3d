@@ -97,6 +97,8 @@ public:
 
 	void deleteMesh();
 
+	void duplicateMesh();
+
 	void selectMesh(uint id);
 
 	void deselectMeshes();
