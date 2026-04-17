@@ -17,6 +17,21 @@ void Scene::DeleteMesh(uint id) {
 	}
 }
 
+void Scene::DuplicateMesh(uint id) {
+	HalfEdgeMesh* original = meshes.at(id); 
+	if (!original)
+		return;
+	
+	HalfEdgeMesh* duplicate = new HalfEdgeMesh(*original);
+	meshes.push_back(duplicate); 
+	selectedMeshes.push_back(false);
+
+	if (!idStack.empty()) {
+		selectedMeshes.at(idStack.back()) = false;
+		idStack.pop_back();
+	}
+}
+
 HalfEdgeMesh* Scene::NewMesh() {
 
 	if (idStack.empty()) {
