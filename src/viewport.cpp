@@ -180,17 +180,6 @@ void Viewport::keyUp() {
 	redraw();
 }
 
-//void setMeshSelectionBoolean(bool selected)
-//{
-//	meshProgram.Bind();
-//	meshProgram.SetUniform("selected", selected);
-//}
-
-//void initMeshModelSelectionBoolean() {
-//	meshProgram.Bind();
-//	meshProgram.SetUniform("selected", false);
-//}
-
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
@@ -329,12 +318,17 @@ void Viewport::selectMesh(uint id) {
 	else {
 		scene.RemoveFromSelectedMeshes(id);
 	}
+
+	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
+	redraw();
 }
 
 void Viewport::deselectMeshes() {
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
 		scene.RemoveFromSelectedMeshes(i);
 	}
+	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
+	redraw();
 }
 
 float Viewport::getRot(int component, float angle) {

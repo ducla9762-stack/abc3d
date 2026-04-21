@@ -42,6 +42,7 @@ class ModelingRenderer : public Renderer {
 	// Textures
 	GLuint clrTex;
 	GLuint idTex;
+	GLuint selTex; // Selection texture.
 
 	// Buffers
 	GLuint meshVBO; // For mesh data (positions, normals, ids, etc.)
@@ -106,6 +107,8 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
+	void UpdateSelectionTexture(std::vector<bool> selections);
+
 private:
 
 	void SetPerspectiveAndViewport();
@@ -113,6 +116,8 @@ private:
 	void UpdateProjectionUniforms();
 
 	void updateUniforms();
+
+	void updateTextureUniforms();
 
 	void InitFramebuffer();
 };

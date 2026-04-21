@@ -77,6 +77,7 @@ bool ModelingRenderer::Initialize() {
 	// Create textures
 	glGenTextures(1, &idTex);
 	glGenTextures(1, &clrTex);
+	glGenTextures(1, &selTex);
 
 	// Initialize Shader Programs
 	bool success = gridProgram.BuildFiles("../assets/shaders/Grid.vert", "../assets/shaders/Grid.frag");
@@ -128,6 +129,8 @@ void ModelingRenderer::Draw() {
 
 	glBindVertexArray(meshVAO);
 	meshProgram.Bind();
+	meshProgram.Bind();
+
 	glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
 	if (displayPoints) {
@@ -238,6 +241,13 @@ void ModelingRenderer::updateUniforms() {
 	pointProgram.SetUniformMatrix4("mvp", data);
 }
 
+void ModelingRenderer::updateTextureUniforms() {
+	meshProgram.Bind();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_1D, selTex);
+	meshProgram.SetUniform("selectionTex", 0);
+}
+
 void ModelingRenderer::InitFramebuffer() {
 	// Delete old framebuffer
 	glDeleteFramebuffers(1, &fbo);
@@ -258,6 +268,12 @@ void ModelingRenderer::InitFramebuffer() {
 
 	glBindTexture(GL_TEXTURE_2D, idTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
+
+	glBindTexture(GL_TEXTURE_1D, selTex);
+	// Start with 4 entries.
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_R8UI, 4, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Allocate pixel buffer objects for streaming
 	uint pboSize = width * height * 3 * (sizeof(float) + sizeof(uint));
@@ -349,4 +365,18 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 
 	glEnableVertexAttribArray(4);
 	glVertexAttribIPointer(4, 3, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset3);
+
+	updateTextureUniforms();
+}
+
+void ModelingRenderer::UpdateSelectionTexture(std::vector<bool> selections)
+{
+	std::vector<uint8_t> data(selections.size());
+
+	for (size_t i = 0; i < selections.size(); i++) {
+		data[i] = selections[i] ? 1 : 0;
+	}
+
+	glBindTexture(GL_TEXTURE_1D, selTex);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_R8UI, data.size(), 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, data.data());
 }
