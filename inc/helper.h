@@ -1,8 +1,13 @@
 #ifndef _ABC3D_HELPER_H_
 #define _ABC3D_HELPER_H_
 
+#undef max
+
 #include <iostream>
 #include <vector>
+#include <limits>
+
+#include "cyVector.h"
 #include "cyMatrix.h"
 
 using namespace cy;
@@ -16,6 +21,14 @@ typedef Vec3<int> Vec3i;
 typedef Vec3<uint> Vec3u;
 typedef Vec4<int> Vec4i;
 typedef Vec4<uint> Vec4u;
+
+#define MAX_UINT std::numeric_limits<uint>::max()
+
+// Useful constants
+const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
+const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);
+const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
+const Vec3f ORIGIN = Vec3f(0.0f);
 
 /// <summary> Convert degrees to radians. </summary>
 /// <param name="degrees"> An angle in degrees. </param>
@@ -45,6 +58,108 @@ inline Vec3f sphericalToCartesian(const Vec3f& coords) {
 inline void clamp(float& x, float left, float right) {
 	if (x < left) { x = left; }
 	else if (x > right) { x = right; }
+}
+
+inline uint WrapDec(uint x, uint wrapTo, uint wrapFrom = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x - 1;
+}
+
+inline uint WrapSub(uint x, uint sub, uint wrapTo, uint wrapFrom = 0) {
+	uint range = wrapTo - wrapFrom + 1;
+	uint offset = (wrapTo - x + sub) % range;
+	return wrapTo - offset;
+}
+
+inline uint WrapInc(uint x, uint wrapFrom, uint wrapTo = 0) {
+	if (x == wrapFrom) {
+		return wrapTo;
+	}
+	return x + 1;
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom) {
+	return (x + add) % (wrapFrom + 1);
+}
+
+inline uint WrapAdd(uint x, uint add, uint wrapFrom, uint wrapTo) {
+	uint range = wrapFrom - wrapTo + 1;
+	uint offset = (x + add - wrapTo) % range;
+	return wrapTo + offset;
+}
+
+inline void combineHash(size_t& base, const size_t& newHash) {
+	base = (base << 1) + base + newHash;
+}
+
+template<typename T>
+struct std::hash<cy::Vec3<T>> {
+	size_t operator()(const cy::Vec3<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		combineHash(val, hash(vec.z));
+		return val;
+	}
+};
+
+template<typename T>
+struct std::hash<cy::Vec2<T>> {
+	size_t operator()(const cy::Vec2<T>& vec) const noexcept {
+		std::hash<T> hash;
+		size_t val = hash(vec.x);
+		combineHash(val, hash(vec.y));
+		return val;
+	}
+};
+
+// Vector Output Stream Overloads
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4f& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4u& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec4i& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3f& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3u& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec3i& vec) {
+	out << vec.x << ", " << vec.y << ", " << vec.z;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2f& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2u& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Vec2i& vec) {
+	out << vec.x << ", " << vec.y;
+	return out;
 }
 
 #endif
