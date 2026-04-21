@@ -248,6 +248,9 @@ void Viewport::keyDown() {
 	case FL_Delete:
 		deleteMesh();
 		break;
+	case 'd': 
+		duplicateMesh(); 
+		break;
 	case 'v':
 		activeElement = EDGE;
 		activeAction = TRANSLATE_OUT;
@@ -433,6 +436,19 @@ void Viewport::selectMesh(uint id) {
 	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
 	redraw();
 }
+
+void Viewport::duplicateMesh() {
+	
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
+	{
+		if (scene.IsMeshSelected(i)) {
+			scene.DuplicateMesh(i);
+			std::cout << "This should duplicate" << std::endl;
+		}
+			
+	}
+}
+
 
 void Viewport::deselectMeshes() {
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
