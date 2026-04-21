@@ -793,7 +793,7 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 
 void HalfEdgeMesh::tesselate() {
 	// Basic limit for demo
-	if (faceEdges.size() > 100000) { return; }
+	if (faceEdges.size() * 4 > 100000) { return; }
 
 	// Split every edge into two
 	uint prevMeshEdgeCount = edges.size();
@@ -935,7 +935,7 @@ void HalfEdgeMesh::bevel() {
 
 void HalfEdgeMesh::subdivide() {
 	// Basic limit for demo
-	if (faceEdges.size() > 100000) { return; }
+	if (faceEdges.size() * 4 > 100000) { return; }
 
 	tesselate();
 	deform();
