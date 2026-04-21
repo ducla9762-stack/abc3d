@@ -501,6 +501,66 @@ void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
 	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
 }
 
+Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
+	uint vertices[4];
+	GetFaceVertices(faceId, vertices);
+
+	Vec3f vert0 = vertPos[vertices[0]];
+	Vec3f vert1 = vertPos[vertices[1]];
+	Vec3f vert2 = vertPos[vertices[2]];
+
+	Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
+
+	if (vertices[3] != MAX_UINT) {
+		Vec3f vert3 = vertPos[vertices[3]];
+		Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
+		float area1 = normal.Length();
+		float area2 = normal2.Length();
+		normal += normal2;
+		normal /= (area1 + area2);
+	}
+
+	return normal;
+}
+
+Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
+	uint face0 = edges[edgeId].face;
+	uint face1 = edges[edges[edgeId].twin].face;
+
+	Vec3f normal(0.0f);
+	float count = 0.0f;
+	if (face0 != MAX_UINT) {
+		normal += GetFaceNormal(face0);
+		++count;
+	}
+	if (face1 != MAX_UINT) {
+		normal += GetFaceNormal(face1);
+		++count;
+	}
+	std::cout << "Edge Normal Length: " << normal.Length() << std::endl;
+	return normal / count;
+}
+
+#define StartEdgeIteration(faceId) \
+							uint first = faceEdges[faceId];\
+							uint next = first;\
+							do {\
+								HalfEdge& edge = edges[next];\
+								next = edge.next;
+#define EndEdgeIteration	} while (next != first);
+
+void HalfEdgeMesh::TranslateFace(uint faceId, const Vec3f& translation) {
+	StartEdgeIteration(faceId)
+		TranslateVertex(edge.orig, translation);
+	EndEdgeIteration
+}
+
+void HalfEdgeMesh::TranslateEdge(uint edgeId, const Vec3f& translation) {
+	HalfEdge& edge = edges[edgeId];
+	TranslateVertex(edge.orig, translation);
+	TranslateVertex(edge.dest, translation);
+}
+
 Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
 	return (v.Dot(u) / u.LengthSquared()) * u;
 }
@@ -533,7 +593,7 @@ void HalfEdgeMesh::getRenderBuffers(std::vector<Vec3f>& pos, std::vector<Vec3f>&
 		edgeDist.push_back(dist1);
 		edgeDist.push_back(dist2);
 
-		Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
+		Vec3f normal = (seg01).Cross(vert2 - vert0);
 
 		if (vertices[3] != MAX_UINT) {
 			Vec3f vert3 = (transform * vertPos[vertices[3]]) + this->pos;
@@ -905,6 +965,9 @@ void HalfEdgeMesh::Clear() {
 	vertPos.resize(0);
 	vertEdge.resize(0);
 	edges.resize(0);
+	pos.Set(0.0f);
+	scale.Set(1.0f);
+	eulerRot.Set(0.0f);
 }
 
 /// <summary>

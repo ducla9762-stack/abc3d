@@ -37,8 +37,11 @@ class Viewport : public Fl_Gl_Window {
 
 	Scene scene;
 
-	Vec2f mouseDragStartPos = Vec2f(0.0f);
-	Vec2i mouseDragPrevPos = Vec2i(0); // Input Data
+	Vec2f mouseDragStartPosUV = Vec2f(0.0f);
+	Vec2f initialDragDir = Vec2f(0.0f);
+	Vec2i mouseDragPrevPos = Vec2i(0);
+	Vec2f mouseDragPrevPosUV = Vec2f(0.0f);
+	Vec2i mouseDragStartPos = Vec2i(0);
 	Vec3u selectionIds = Vec3u(uint(0));
 	Vec3f actionDir = Vec3f(0.0f);
 	Vec3f initialActionState = Vec3f(0.0f);
@@ -51,6 +54,11 @@ class Viewport : public Fl_Gl_Window {
 	int handle(int event);
 
 	void mouseDrag();
+
+	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
+	bool translateOutVertexDrag(const Vec2f& uv);
+
+	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
 
 	int mousePush();
 
@@ -79,6 +87,8 @@ public:
 
 	void displayPyramid();
 
+	void displayCylinder();
+
 	void displaySphere();
 
 	void displayTorus();
@@ -86,6 +96,8 @@ public:
 	float getRot(int compontent, float angle);
 
 	void deleteMesh();
+
+	void duplicateMesh();
 
 	void selectMesh(uint id);
 

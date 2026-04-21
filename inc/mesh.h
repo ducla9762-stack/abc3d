@@ -93,7 +93,6 @@ class HalfEdgeMesh {
 	Vec3f ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount);
 	Vec3f ApplyLoopMask(uint vertId, uint edgeCount);
 	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
-	Vec3f faceCentroid(uint faceId);
 	float approxFaceSurfaceArea(uint faceId);
 	Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
@@ -124,9 +123,14 @@ public:
 	uint VertexCount() const;
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
+	Vec3f faceCentroid(uint faceId);
 
 	Vec3f GetVertexPosition(uint vertdId);
 	Vec3f GetVertexNormal(uint vertId);
+	Vec3f GetFaceNormal(uint vertId);
+	Vec3f GetEdgeNormal(uint vertId);
+	void TranslateFace(uint faceId, const Vec3f& translation);
+	void TranslateEdge(uint edgeId, const Vec3f& translation);
 	void TranslateVertex(uint vertId, const Vec3f& translation);
 	void TranslateVertexOut(uint vertId, float factor);
 	void SetVertexPosition(uint vertId, const Vec3f& pos);

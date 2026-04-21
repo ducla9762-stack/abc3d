@@ -42,6 +42,7 @@ class ModelingRenderer : public Renderer {
 	// Textures
 	GLuint clrTex;
 	GLuint idTex;
+	GLuint selTex; // Selection texture.
 
 	// Buffers
 	GLuint meshVBO; // For mesh data (positions, normals, ids, etc.)
@@ -91,6 +92,7 @@ public:
 	Vec3f GetCamTarget() override;
 	Vec3f GetCamUp();
 	Vec3f GetCamRight();
+	void GetCameraDirs(Vec3f& forward, Vec3f& up, Vec3f& right);
 
 	void SetCamPos(const Vec3f& pos) override;
 	void SetCamTarget(const Vec3f& target) override;
@@ -106,6 +108,8 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
+	void UpdateSelectionTexture(std::vector<bool> selections);
+
 private:
 
 	void SetPerspectiveAndViewport();
@@ -113,6 +117,8 @@ private:
 	void UpdateProjectionUniforms();
 
 	void updateUniforms();
+
+	void updateTextureUniforms();
 
 	void InitFramebuffer();
 };
