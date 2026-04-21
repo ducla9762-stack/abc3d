@@ -207,6 +207,8 @@ void Viewport::keyDown() {
 	case 'g':
 		modelingRenderer.ToggleGrid();
 		break;
+	case 'a':
+		displayTorus();
 	case FL_Delete:
 		deleteMesh();
 		break;
@@ -307,7 +309,7 @@ void Viewport::displayCylinder() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
-	//generateUnitCylinder(vertices, faces, 40, 20, 1.0f, 0.3f);
+	generateUnitCylinder(vertices, faces, 12);
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -318,7 +320,7 @@ void Viewport::displaySphere() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
-	//generateUVSphere(vertices, faces, 40, 20, 1.0f, 0.3f);
+	//generateUVSphere(vertices, faces, 1.0f);
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
