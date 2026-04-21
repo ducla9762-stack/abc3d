@@ -243,8 +243,6 @@ void Viewport::keyDown() {
 	case 'g':
 		modelingRenderer.ToggleGrid();
 		break;
-	case 'a':
-		displayTorus();
 	case FL_Delete:
 		deleteMesh();
 		break;
