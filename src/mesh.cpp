@@ -941,6 +941,9 @@ void HalfEdgeMesh::Clear() {
 	vertPos.resize(0);
 	vertEdge.resize(0);
 	edges.resize(0);
+	pos.Set(0.0f);
+	scale.Set(1.0f);
+	eulerRot.Set(0.0f);
 }
 
 /// <summary>
