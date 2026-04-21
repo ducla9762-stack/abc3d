@@ -123,6 +123,11 @@ void selectCallback(Fl_Widget* w, void*) {
 	rightPanel->show();
 }
 
+template<Action action>
+void actionChangedCallback(Fl_Widget* w) {
+	viewport->setActiveAction(action);
+}
+
 void translationCallback(Fl_Widget* w, void*) {
 	rightPanel->hide();
 	rightPanel->clear();
@@ -304,11 +309,6 @@ void objectCallback(Fl_Widget* w, void*) {
 template<Element element>
 void elementSelectCallback(Fl_Widget* w) {
 	viewport->setActiveElement(element);
-}
-
-template<Action action>
-void actionChangedCallback(Fl_Widget* w) {
-	viewport->setActiveAction(action);
 }
 
 // Bottom Right Panel Callbacks
