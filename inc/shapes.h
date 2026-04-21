@@ -225,11 +225,7 @@ inline void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u
 	}
 }
 
-inline void generateUVSphere(std::vector<Vec3f>& vertices, std::vector<Vec4u>& faces, uint resolution) {
-
-}
-
-inline void generateUVSphereVertices(std::vector<Vec3f> vertices, uint latSegments, uint lonSegments) {
+inline void generateUVSphereVertices(std::vector<Vec3f>& vertices, uint latSegments, uint lonSegments) {
 	vertices.reserve((latSegments + 1) * (lonSegments + 1));
 
 	for (int i = 0; i <= latSegments; i++) {
@@ -249,7 +245,7 @@ inline void generateUVSphereVertices(std::vector<Vec3f> vertices, uint latSegmen
 	} 
 }
 
-inline void generateUVSphereFaces(std::vector<Vec4u> faces, uint latSegments, uint lonSegments) {
+inline void generateUVSphereFaces(std::vector<Vec4u>& faces, uint latSegments, uint lonSegments) {
 	faces.reserve(latSegments * lonSegments * 2);
 
 	for (int i = 0; i < latSegments; i++) {
@@ -262,4 +258,10 @@ inline void generateUVSphereFaces(std::vector<Vec4u> faces, uint latSegments, ui
 		}
 	}
 }
+
+inline void generateUVSphere(std::vector<Vec3f>& vertices, std::vector<Vec4u>& faces, uint latitude, uint longitude) {
+	generateUVSphereVertices(vertices, latitude, longitude);
+	generateUVSphereFaces(faces, latitude, longitude);
+}
+
 #endif //SHAPES_H

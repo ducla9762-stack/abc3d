@@ -89,7 +89,9 @@ public:
 
 	void displayCylinder();
 
-	void displaySphere();
+	void displayUVSphere();
+
+	void displayIcoSphere();
 
 	void displayTorus();
 
