@@ -123,7 +123,7 @@ bool ModelingRenderer::Initialize() {
 	glClearColor(0, 0, 0, 1);
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glPointSize(20.0f);
+	glPointSize(10.0f);
 
 	return true;
 }

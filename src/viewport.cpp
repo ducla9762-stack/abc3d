@@ -353,11 +353,17 @@ void Viewport::displayCylinder() {
 	redraw();
 }
 
-void Viewport::displaySphere() {
+void Viewport::displayIcoSphere() {
+	scene.NewMesh()->load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
+void Viewport::displayUVSphere() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
-	//generateUVSphere(vertices, faces, 1.0f);
+	generateUVSphere(vertices, faces, 10, 10);
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
