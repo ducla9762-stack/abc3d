@@ -123,14 +123,6 @@ void selectCallback(Fl_Widget* w, void*) {
 	rightPanel->show();
 }
 
-void outwardTranslationCallback(Fl_Widget* w, void*) {
-
-}
-
-void freeTranslationCallback(Fl_Widget* w, void*) {
-
-}
-
 void translationCallback(Fl_Widget* w, void*) {
 	rightPanel->hide();
 	rightPanel->clear();
@@ -141,7 +133,7 @@ void translationCallback(Fl_Widget* w, void*) {
 	outwardTranslationButton->color(10);
 	outwardTranslationButton->selection_color(10);
 	outwardTranslationButton->box(FL_FLAT_BOX);
-	outwardTranslationButton->callback(outwardTranslationCallback);
+	outwardTranslationButton->callback(actionChangedCallback<TRANSLATE_FREE>);
 	outwardTranslationButton->align(FL_ALIGN_INSIDE);
 
 	// Free Translation Button
@@ -149,7 +141,7 @@ void translationCallback(Fl_Widget* w, void*) {
 	freeTranslationButton->color(10);
 	freeTranslationButton->selection_color(10);
 	freeTranslationButton->box(FL_FLAT_BOX);
-	freeTranslationButton->callback(freeTranslationCallback);
+	freeTranslationButton->callback(actionChangedCallback<TRANSLATE_OUT>);
 	freeTranslationButton->align(FL_ALIGN_INSIDE);
 
 
