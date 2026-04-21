@@ -302,12 +302,14 @@ void ModelingRenderer::InitFramebuffer() {
 void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	// Unique vertex data for drawing vertex points
 	sceneVertices.resize(0);
+	vertObjData.resize(0);
 	pointVertDrawCount = 0;
 	for (unsigned int i = 0; i < scene.MeshCount(); i++)
 	{
 		const HalfEdgeMesh* mesh = scene[i];
-		vertObjData.insert(vertObjData.begin(), mesh->VertexCount(), Vec2u(i + 1, pointVertDrawCount));
+		vertObjData.insert(vertObjData.end(), mesh->VertexCount(), Vec2u(i + 1, pointVertDrawCount));
 		pointVertDrawCount += mesh->VertexCount();
+		std::cout << pointVertDrawCount << std::endl;
 		mesh->GetWorldVertexPositions(sceneVertices);
 	}
 	glBindVertexArray(pointVAO);
