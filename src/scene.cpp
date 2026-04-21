@@ -67,28 +67,22 @@ uint Scene::SelectedMeshCount() const { return selectedMeshes.size(); }
 /// Sets boolean at mesh id to true.
 /// </summary>
 /// <param name="id"></param>
-void Scene::AddToSelectedMeshes(uint id)
-{
+void Scene::AddToSelectedMeshes(uint id) {
 	HalfEdgeMesh* mesh = meshes.at(id);
 	if (mesh) {
 		selectedMeshes.at(id) = true;
 	}
-
-	std::cout << "Selected object: " << id << ": " << selectedMeshes.at(id) << std::endl;
 }
 
 /// <summary>
 /// Sets boolean at mesh id to false.
 /// </summary>
 /// <param name="id"></param>
-void Scene::RemoveFromSelectedMeshes(uint id)
-{
+void Scene::RemoveFromSelectedMeshes(uint id) {
 	HalfEdgeMesh* mesh = meshes.at(id);
 	if (mesh) {
 		selectedMeshes.at(id) = false;
 	}
-
-	std::cout << "Selected object: " << id << ": " << selectedMeshes.at(id) << std::endl;
 }
 
 /// <summary>
@@ -96,7 +90,6 @@ void Scene::RemoveFromSelectedMeshes(uint id)
 /// </summary>
 /// <param name="id"></param>
 /// <returns></returns>
-bool Scene::IsMeshSelected(uint id)
-{
+bool Scene::IsMeshSelected(uint id) {
 	return selectedMeshes[id];
 }
