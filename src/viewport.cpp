@@ -110,6 +110,9 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	if (activeElement == VERTEX) {
 		return translateOutVertexDrag(uv);
 	}
+	else if (selectionIds.x == MAX_UINT) {
+		return false;
+	}
 
 	Vec2f changeUV = uv - mouseDragPrevPosUV;
 	float scale = changeUV.Length();
