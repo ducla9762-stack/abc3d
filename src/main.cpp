@@ -139,7 +139,7 @@ void translationCallback(Fl_Widget* w, void*) {
 	Fl_Toggle_Button* outwardTranslationButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
 	outwardTranslationButton->color(10);
 	outwardTranslationButton->selection_color(10);
-	outwardTranslationButton->box(FL_FLAT_BOX);
+	outwardTranslationButton->box(FL_UP_BOX);
 	outwardTranslationButton->callback(actionChangedCallback<TRANSLATE_OUT>);
 	outwardTranslationButton->align(FL_ALIGN_INSIDE);
 
@@ -147,7 +147,7 @@ void translationCallback(Fl_Widget* w, void*) {
 	Fl_Toggle_Button* freeTranslationButton = new Fl_Toggle_Button(0, VIEWPORT_H / 10, RIGHT_PANEL_W, VIEWPORT_H / 10, "Free");
 	freeTranslationButton->color(10);
 	freeTranslationButton->selection_color(10);
-	freeTranslationButton->box(FL_FLAT_BOX);
+	freeTranslationButton->box(FL_UP_BOX);
 	freeTranslationButton->callback(actionChangedCallback<TRANSLATE_FREE>);
 	freeTranslationButton->align(FL_ALIGN_INSIDE);
 
@@ -185,8 +185,12 @@ void cubeCallback(Fl_Widget * w, void* data) {
 	viewport->displayCube();
 }
 
-void sphereCallback(Fl_Widget* w, void* data) {
-	viewport->displaySphere();
+void UVSphereCallback(Fl_Widget* w, void* data) {
+	viewport->displayUVSphere();
+}
+
+void icoSphereCallback(Fl_Widget* w, void* data) {
+	viewport->displayIcoSphere();
 }
 
 void pyramidCallback(Fl_Widget* w, void* data) {
@@ -207,43 +211,51 @@ void shapeCallback(Fl_Widget* w, void*) {
 	rightPanel->begin();
 
 	// Cube Shape Button
-	Fl_Button* cubeButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 7, "Cube");
+	Fl_Button* cubeButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 9, "Cube");
 	cubeButton->selection_color(10);
-	cubeButton->box(FL_FLAT_BOX);
+	cubeButton->box(FL_UP_BOX);
 	cubeButton->callback(cubeCallback);
 	cubeButton->align(FL_ALIGN_INSIDE);
 
-	// Sphere Shape Button
-	Fl_Button* sphereButton = new Fl_Button(0, VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Sphere");
-	sphereButton->selection_color(10);
-	sphereButton->box(FL_FLAT_BOX);
-	sphereButton->callback(sphereCallback);
-	sphereButton->align(FL_ALIGN_INSIDE);
+	// UV Sphere Shape Button
+	Fl_Button* UVSphereButton = new Fl_Button(0, VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "UV Sphere");
+	UVSphereButton->selection_color(10);
+	UVSphereButton->box(FL_UP_BOX);
+	UVSphereButton->callback(UVSphereCallback);
+	UVSphereButton->align(FL_ALIGN_INSIDE);
+
+	// ICO Sphere Shape Button
+	Fl_Button* icoSphereButton = new Fl_Button(0, 2 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Ico Sphere");
+	icoSphereButton->selection_color(10);
+	icoSphereButton->box(FL_UP_BOX);
+	icoSphereButton->callback(icoSphereCallback);
+	icoSphereButton->align(FL_ALIGN_INSIDE);
 
 	// Pyramid Shape Button
-	Fl_Button* pyramidButton = new Fl_Button(0, 2 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Pyramid");
+	Fl_Button* pyramidButton = new Fl_Button(0, 3 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Pyramid");
 	pyramidButton->selection_color(10);
-	pyramidButton->box(FL_FLAT_BOX);
+	pyramidButton->box(FL_UP_BOX);
 	pyramidButton->callback(pyramidCallback);
 	pyramidButton->align(FL_ALIGN_INSIDE);
 
 	// Cylinder Button
-	Fl_Button* cylinderButton = new Fl_Button(0, 3 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Cylinder");
+	Fl_Button* cylinderButton = new Fl_Button(0, 4 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Cylinder");
 	cylinderButton->selection_color(10);
-	cylinderButton->box(FL_FLAT_BOX);
+	cylinderButton->box(FL_UP_BOX);
 	cylinderButton->callback(cylinderCallback);
 	cylinderButton->align(FL_ALIGN_INSIDE);
 	
 	// Torus Shape Button
-	Fl_Button* torusButton = new Fl_Button(0, 4 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Torus");
+	Fl_Button* torusButton = new Fl_Button(0, 5 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Torus");
 	torusButton->selection_color(10);
-	torusButton->box(FL_FLAT_BOX);
+	torusButton->box(FL_UP_BOX);
 	torusButton->callback(torusCallback);
 	torusButton->align(FL_ALIGN_INSIDE);
 
+
 	rightPanel->end();
 	rightPanel->show();
-	// TODO: Add shape buttons, resolution
+	// TODO: Add resolution
 }
 
 void extrudeCallback(Fl_Widget* w, void* data) {
@@ -258,22 +270,31 @@ void extrudeCallback(Fl_Widget* w, void* data) {
 }
 
 void subdivisionCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
-
 	viewport->subdivision();
-
-	rightPanel->end();
-	rightPanel->show();
 }
 
-void tesselateCallback(Fl_Widget* w, void*) {
+void tesselationCallback(Fl_Widget*, void*) {
+	viewport->tesselate();
+}
+
+void subdivisionPanelCallback(Fl_Widget* w, void*) {
 	rightPanel->hide();
 	rightPanel->clear();
 	rightPanel->begin();
 
-	viewport->tesselate();
+	// Subdivide Button
+	Fl_Button* subdivideButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 7, "Subdivide");
+	subdivideButton->selection_color(10);
+	subdivideButton->box(FL_UP_BOX);
+	subdivideButton->callback(subdivisionCallback);
+	subdivideButton->align(FL_ALIGN_INSIDE);
+
+	// Tesselate Button
+	Fl_Button* tesselateButton = new Fl_Button(0, 2 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Tesselation");
+	tesselateButton->selection_color(10);
+	tesselateButton->box(FL_UP_BOX);
+	tesselateButton->callback(tesselationCallback);
+	tesselateButton->align(FL_ALIGN_INSIDE);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -294,7 +315,7 @@ template<Element element>
 void elementSelectCallback(Fl_Widget* w) {
 	viewport->setActiveElement(element);
 }
-
+	
 // Bottom Right Panel Callbacks
 template <int component>
 void scaleSpinnerCallback(Fl_Widget* spinner) {
@@ -398,6 +419,7 @@ void drawPositionWidgets(int x, int y, int w, int h) {
 
 int main(int argc, char* argv[]) {
 	Fl_Window* window = new Fl_Window(0, 0, 1080, 720, "ABC3D");
+	window->fullscreen();
 
 	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H);
 	viewport->end();
@@ -407,7 +429,7 @@ int main(int argc, char* argv[]) {
 	topToolbar->color(8);
 
 	// Menu within the top toolbar
-	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(-2, 0, VIEWPORT_W / 8 - 30, TOP_TOOLBAR_H);
+	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(-2, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H);
 	topMenu->selection_color(10);
 	topMenu->color(8);
 
@@ -433,7 +455,7 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&Edit/&Redo");
 
 
-	Fl_Toggle_Button* helpButton = new Fl_Toggle_Button(VIEWPORT_W / 8, 0, 50, TOP_TOOLBAR_H, "Help");
+	Fl_Toggle_Button* helpButton = new Fl_Toggle_Button(VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Help");
 	helpButton->color(8);
 	helpButton->selection_color(10);
 	helpButton->box(FL_FLAT_BOX);
@@ -528,10 +550,9 @@ int main(int argc, char* argv[]) {
 	extrudeButton->callback(extrudeCallback, rightPanel);
 
 	// Subdivision button
-	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivision");
+	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivide");
 	subdivisionButton->selection_color(0);
-	subdivisionButton->callback(subdivisionCallback);
-	// seperate buttons for tesselation and subdivision
+	subdivisionButton->callback(subdivisionPanelCallback);
 		
 	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Bevel");
 	bevelButton->selection_color(0);
