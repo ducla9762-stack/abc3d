@@ -276,7 +276,6 @@ void bevelCallback(Fl_Widget* w, void*) {
 	rightPanel->show();
 }
 
-
 /* Bottom Toolbar Callbacks */
 void vertexCallback(Fl_Widget* w, void*) {
 
@@ -294,6 +293,15 @@ void objectCallback(Fl_Widget* w, void*) {
 
 }
 
+template<Element element>
+void elementSelectCallback(Fl_Widget* w) {
+	viewport->setActiveElement(element);
+}
+
+template<Action action>
+void actionChangedCallback(Fl_Widget* w) {
+	viewport->setActiveAction(action);
+}
 
 // Bottom Right Panel Callbacks
 template <int component>
@@ -565,18 +573,22 @@ int main(int argc, char* argv[]) {
 	bottomToolbar->color(12);
 
 	Fl_Radio_Button* vertexButton = new Fl_Radio_Button(0, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Vertex");
+	vertexButton->callback(elementSelectCallback<VERTEX>);
 	vertexButton->selection_color(0);
 	vertexButton->callback(vertexCallback);
 
 	Fl_Radio_Button* edgeButton = new Fl_Radio_Button(50, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Edge");
+	edgeButton->callback(elementSelectCallback<EDGE>);
 	edgeButton->selection_color(0);
 	edgeButton->callback(edgeCallback);
 
 	Fl_Radio_Button* faceButton = new Fl_Radio_Button(100, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Face");
+	faceButton->callback(elementSelectCallback<FACE>);
 	faceButton->selection_color(0);
 	faceButton->callback(faceCallback);
 
 	Fl_Radio_Button* objectButton = new Fl_Radio_Button(150, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Object");
+	objectButton->callback(elementSelectCallback<OBJECT>);
 	objectButton->selection_color(0);
 	objectButton->callback(objectCallback);
 
