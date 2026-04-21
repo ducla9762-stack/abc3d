@@ -133,6 +133,8 @@ void translationCallback(Fl_Widget* w, void*) {
 	rightPanel->clear();
 	rightPanel->begin();
 
+	viewport->setActiveAction(TRANSLATE_FREE);
+
 	// Outward Translation Button
 	Fl_Toggle_Button* outwardTranslationButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
 	outwardTranslationButton->color(10);
@@ -154,7 +156,6 @@ void translationCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
-	// TODO: Add two mode buttons
 }
 
 void rotateCallback(Fl_Widget* w, void*) {
@@ -287,23 +288,6 @@ void bevelCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
-}
-
-/* Bottom Toolbar Callbacks */
-void vertexCallback(Fl_Widget* w, void*) {
-
-}
-
-void edgeCallback(Fl_Widget* w, void*) {
-
-}
-
-void faceCallback(Fl_Widget* w, void*) {
-
-}
-
-void objectCallback(Fl_Widget* w, void*) {
-
 }
 
 template<Element element>
