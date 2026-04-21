@@ -44,9 +44,9 @@ const int TOP_TOOLBAR_H = 40;
 const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
 float yPos = 0;
 
-void drawScaleWidgets();
-void drawRotationWidgets();
-void drawPositionWidgets();
+void drawScaleWidgets(int x, int y, int w, int h);
+void drawRotationWidgets(int x, int y, int w, int h);
+void drawPositionWidgets(int x, int y, int w, int h);
 
 /* Top Menu Callbacks */
 void importModelCallback(Fl_Widget* w, void*) {
@@ -115,9 +115,9 @@ void selectCallback(Fl_Widget* w, void*) {
 	rightPanel->clear();
 	rightPanel->begin();
 
-	drawScaleWidgets();
-	drawRotationWidgets();
-	drawPositionWidgets();
+	drawPositionWidgets(0, 0, RIGHT_PANEL_W, 200);
+	drawRotationWidgets(0, 200, RIGHT_PANEL_W, 200);
+	drawScaleWidgets(0, 400, RIGHT_PANEL_W, 200);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -128,7 +128,24 @@ void translationCallback(Fl_Widget* w, void*) {
 	rightPanel->clear();
 	rightPanel->begin();
 
-	drawPositionWidgets();
+	// Outward Translation Button
+	Fl_Toggle_Button* outwardTranslationButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
+	outwardTranslationButton->color(10);
+	outwardTranslationButton->selection_color(10);
+	outwardTranslationButton->box(FL_FLAT_BOX);
+	outwardTranslationButton->callback(actionChangedCallback<TRANSLATE_FREE>);
+	outwardTranslationButton->align(FL_ALIGN_INSIDE);
+
+	// Free Translation Button
+	Fl_Toggle_Button* freeTranslationButton = new Fl_Toggle_Button(0, VIEWPORT_H / 10, RIGHT_PANEL_W, VIEWPORT_H / 10, "Free");
+	freeTranslationButton->color(10);
+	freeTranslationButton->selection_color(10);
+	freeTranslationButton->box(FL_FLAT_BOX);
+	freeTranslationButton->callback(actionChangedCallback<TRANSLATE_OUT>);
+	freeTranslationButton->align(FL_ALIGN_INSIDE);
+
+
+	drawPositionWidgets(0, 2 * VIEWPORT_H / 10, RIGHT_PANEL_W, 200);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -140,7 +157,7 @@ void rotateCallback(Fl_Widget* w, void*) {
 	rightPanel->clear();
 	rightPanel->begin();
 
-	drawRotationWidgets();
+	drawRotationWidgets(0, 0, RIGHT_PANEL_W, 200);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -151,7 +168,7 @@ void scaleCallback(Fl_Widget* w, void*) {
 	rightPanel->clear();
 	rightPanel->begin();
 
-	drawScaleWidgets();
+	drawScaleWidgets(0, 0, RIGHT_PANEL_W, 200);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -184,48 +201,39 @@ void shapeCallback(Fl_Widget* w, void*) {
 	rightPanel->begin();
 
 	// Cube Shape Button
-	Fl_Toggle_Button* cubeButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 5, "Cube");
+	Fl_Button* cubeButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 7, "Cube");
 	cubeButton->selection_color(10);
 	cubeButton->box(FL_FLAT_BOX);
 	cubeButton->callback(cubeCallback);
 	cubeButton->align(FL_ALIGN_INSIDE);
-	cubeButton->type(FL_RADIO_BUTTON);
 
 	// Sphere Shape Button
-	Fl_Toggle_Button* sphereButton = new Fl_Toggle_Button(0, VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Sphere");
-	sphereButton->color(10);
+	Fl_Button* sphereButton = new Fl_Button(0, VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Sphere");
 	sphereButton->selection_color(10);
 	sphereButton->box(FL_FLAT_BOX);
 	sphereButton->callback(sphereCallback);
 	sphereButton->align(FL_ALIGN_INSIDE);
-	sphereButton->type(FL_RADIO_BUTTON);
 
 	// Pyramid Shape Button
-	Fl_Toggle_Button* pyramidButton = new Fl_Toggle_Button(0, 2 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Pyramid");
-	pyramidButton->color(10);
+	Fl_Button* pyramidButton = new Fl_Button(0, 2 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Pyramid");
 	pyramidButton->selection_color(10);
 	pyramidButton->box(FL_FLAT_BOX);
 	pyramidButton->callback(pyramidCallback);
 	pyramidButton->align(FL_ALIGN_INSIDE);
-	pyramidButton->type(FL_RADIO_BUTTON);
 
 	// Cylinder Button
-	Fl_Toggle_Button* cylinderButton = new Fl_Toggle_Button(0, 3 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Cylinder");
-	cylinderButton->color(10);
+	Fl_Button* cylinderButton = new Fl_Button(0, 3 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Cylinder");
 	cylinderButton->selection_color(10);
 	cylinderButton->box(FL_FLAT_BOX);
 	cylinderButton->callback(cylinderCallback);
 	cylinderButton->align(FL_ALIGN_INSIDE);
-	cylinderButton->type(FL_RADIO_BUTTON);
 	
 	// Torus Shape Button
-	Fl_Toggle_Button* torusButton = new Fl_Toggle_Button(0, 4 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Torus");
-	torusButton->color(8);
+	Fl_Button* torusButton = new Fl_Button(0, 4 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Torus");
 	torusButton->selection_color(10);
 	torusButton->box(FL_FLAT_BOX);
 	torusButton->callback(torusCallback);
 	torusButton->align(FL_ALIGN_INSIDE);
-	torusButton->type(FL_RADIO_BUTTON);
 
 	rightPanel->end();
 	rightPanel->show();
@@ -322,9 +330,9 @@ void rotSpinnerCallback(Fl_Widget* spinner) {
 	viewport->setRot(component, spinnerVal);
 }
 
-void drawScaleWidgets() {
+void drawScaleWidgets(int x, int y, int w, int h) {
 	// Scale Widgets
-	Fl_Window* scaleWidgets = new Fl_Window(0, 0, RIGHT_PANEL_W, 200);
+	Fl_Window* scaleWidgets = new Fl_Window(x, y, w, h);
 	scaleWidgets->begin();
 	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	scaleLabel->label("Scale");
@@ -350,9 +358,9 @@ void drawScaleWidgets() {
 	scaleWidgets->end();
 }
 
-void drawRotationWidgets() {
+void drawRotationWidgets(int x, int y, int w, int h) {
 	// Rotation Widgets
-	Fl_Window* rotWidgets = new Fl_Window(0, 400, RIGHT_PANEL_W, 200);
+	Fl_Window* rotWidgets = new Fl_Window(x, y, w, h);
 	rotWidgets->begin();
 	Fl_Box* rotLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 25);
 	rotLabel->label("Rotation");
@@ -377,9 +385,9 @@ void drawRotationWidgets() {
 	rotWidgets->end();
 }
 
-void drawPositionWidgets() {
+void drawPositionWidgets(int x, int y, int w, int h) {
 	// Position Widgets
-	Fl_Window* posWidgets = new Fl_Window(0, 200, RIGHT_PANEL_W, 200);
+	Fl_Window* posWidgets = new Fl_Window(x, y, w, h);
 	posWidgets->begin();
 	Fl_Box* posLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
 	posLabel->label("Position");
@@ -561,9 +569,9 @@ int main(int argc, char* argv[]) {
 	rightPanel->resizable(nullptr);
 	rightPanel->begin();
 
-	drawScaleWidgets();
-	drawRotationWidgets();
-	drawPositionWidgets();
+	drawRotationWidgets(0, 0, RIGHT_PANEL_W, 200);
+	drawPositionWidgets(0, 200, RIGHT_PANEL_W, 200);
+	drawScaleWidgets(0, 400, RIGHT_PANEL_W, 200);
 
 	rightPanel->end();
 
