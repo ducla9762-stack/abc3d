@@ -136,21 +136,19 @@ void translationCallback(Fl_Widget* w, void*) {
 	viewport->setActiveAction(TRANSLATE_FREE);
 
 	// Outward Translation Button
-	Fl_Toggle_Button* outwardTranslationButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
-	outwardTranslationButton->color(10);
+	Fl_Radio_Button* outwardTranslationButton = new Fl_Radio_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
 	outwardTranslationButton->selection_color(10);
 	outwardTranslationButton->box(FL_UP_BOX);
 	outwardTranslationButton->callback(actionChangedCallback<TRANSLATE_OUT>);
 	outwardTranslationButton->align(FL_ALIGN_INSIDE);
 
 	// Free Translation Button
-	Fl_Toggle_Button* freeTranslationButton = new Fl_Toggle_Button(0, VIEWPORT_H / 10, RIGHT_PANEL_W, VIEWPORT_H / 10, "Free");
-	freeTranslationButton->color(10);
+	Fl_Radio_Button* freeTranslationButton = new Fl_Radio_Button(0, VIEWPORT_H / 10, RIGHT_PANEL_W, VIEWPORT_H / 10, "Free");
 	freeTranslationButton->selection_color(10);
 	freeTranslationButton->box(FL_UP_BOX);
 	freeTranslationButton->callback(actionChangedCallback<TRANSLATE_FREE>);
 	freeTranslationButton->align(FL_ALIGN_INSIDE);
-
+	freeTranslationButton->value(1);
 
 	drawPositionWidgets(0, 2 * VIEWPORT_H / 10, RIGHT_PANEL_W, 200);
 
@@ -419,7 +417,6 @@ void drawPositionWidgets(int x, int y, int w, int h) {
 
 int main(int argc, char* argv[]) {
 	Fl_Window* window = new Fl_Window(0, 0, 1080, 720, "ABC3D");
-	window->fullscreen();
 
 	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H);
 	viewport->end();
@@ -611,5 +608,6 @@ int main(int argc, char* argv[]) {
 	window->show(argc, argv);
 	viewport->show();
 	viewport->take_focus();
+	window->fullscreen();
 	return Fl::run();
 }
