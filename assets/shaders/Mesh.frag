@@ -39,8 +39,8 @@ void main(){
 	float threshold = max(abs(dFdx(edgeDists[minEdge])), abs(dFdy(edgeDists[minEdge]))) * 2.0f;
 	float AA = threshold * 0.5f;
 
-	vec3 color1 = isSelected(selectIds.x) ? vec3(0.0f, 1.0f, 1.0f) : vec3(1.0f, 1.0f, 0.0f);
-	vec3 color2 = vec3(abs(dot(normal, viewDir)) * SURFACE_BASE_COLOR);
+	vec3 color1 = isSelected(selectIds.x) ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 1.0f, 0.0f);
+	vec3 color2 = isSelected(selectIds.x) ? vec3(mix(abs(dot(normal, viewDir)) * SURFACE_BASE_COLOR, vec3(0.0f, 1.0f, 0.0f), 0.25f)) : vec3(abs(dot(normal, viewDir)) * SURFACE_BASE_COLOR);
 	float alpha = 1.0f - smoothstep(threshold - AA, threshold + AA, edgeDist);
 
 	color = vec4(mix(color2, color1, alpha), 1.0f);
