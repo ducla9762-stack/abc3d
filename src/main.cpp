@@ -600,6 +600,7 @@ int main(int argc, char* argv[]) {
 	Fl_Radio_Button* objectButton = new Fl_Radio_Button(150, 0, BOTTOM_TOOLBAR_W / 4, BOTTOM_TOOLBAR_H, "Object");
 	objectButton->callback(elementSelectCallback<OBJECT>);
 	objectButton->selection_color(0);
+	objectButton->value(1);
 
 	bottomToolbar->resizable(bottomToolbar);
 	bottomToolbar->end();
