@@ -309,7 +309,6 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 		const HalfEdgeMesh* mesh = scene[i];
 		vertObjData.insert(vertObjData.end(), mesh->VertexCount(), Vec2u(i + 1, pointVertDrawCount));
 		pointVertDrawCount += mesh->VertexCount();
-		std::cout << pointVertDrawCount << std::endl;
 		mesh->GetWorldVertexPositions(sceneVertices);
 	}
 	glBindVertexArray(pointVAO);
