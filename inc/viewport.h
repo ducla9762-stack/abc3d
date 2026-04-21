@@ -58,6 +58,8 @@ class Viewport : public Fl_Gl_Window {
 	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
 	bool translateOutVertexDrag(const Vec2f& uv);
 
+	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
+
 	int mousePush();
 
 	void mouseWheel();

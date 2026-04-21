@@ -34,6 +34,14 @@ Vec3f ModelingRenderer::GetCamRight() {
 	return right;
 }
 
+void ModelingRenderer::GetCameraDirs(Vec3f& forward, Vec3f& up, Vec3f& right) {
+	forward = camTarget - camPos;
+	right = WORLD_Y.Cross(forward);
+	right.Normalize();
+	up = right.Cross(forward);
+	up.Normalize();
+}
+
 void ModelingRenderer::SetCamera(const Vec3f& pos, const Vec3f& target) {
 	camPos = pos;
 	camTarget = target;

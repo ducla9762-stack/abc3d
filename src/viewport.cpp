@@ -87,6 +87,9 @@ void Viewport::mouseDrag() {
 	if (activeAction == TRANSLATE_OUT) {
 		camera = !translateOutDrag(pos, uv);
 	}
+	else if (activeAction == TRANSLATE_FREE) {
+		camera = !translateFreeDrag(pos, uv);
+	}
 	
 	if (camera) {
 		camPos.x -= change.x;
@@ -152,6 +155,36 @@ bool Viewport::translateOutVertexDrag(const Vec2f& uv) {
 	float scale = 2.0f * (uv - mouseDragStartPosUV).Length();
 
 	scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	return true;
+}
+
+bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
+	if (activeElement == FACE || activeElement == EDGE) {
+		return false;
+	}
+
+	Vec3f f, u, r;
+	modelingRenderer.GetCameraDirs(f, u, r);
+
+	Vec2f change = mouseDragPrevPosUV - uv;
+	Vec3f translation = 4.0f * (change.x * r + change.y * u);
+
+	if (activeElement == VERTEX) {
+		if (selectionIds.x != MAX_UINT) {
+			return false;
+		}
+
+		translation = scene[selectionIds.y - 1]->WorldDirToLocalDir(translation);
+		scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, translation);
+	}
+	else if (activeElement == OBJECT) {
+		if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+			return false;
+		}
+		scene[selectionIds.x - 1]->pos += translation;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	return true;
 }
