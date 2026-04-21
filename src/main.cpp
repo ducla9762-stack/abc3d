@@ -170,6 +170,10 @@ void pyramidCallback(Fl_Widget* w, void* data) {
 	viewport->displayPyramid();
 }
 
+void cylinderCallback(Fl_Widget* w, void* data) {
+	viewport->displayCylinder();
+}
+
 void torusCallback(Fl_Widget* w, void* data) {
 	viewport->displayTorus();
 }
@@ -180,7 +184,7 @@ void shapeCallback(Fl_Widget* w, void*) {
 	rightPanel->begin();
 
 	// Cube Shape Button
-	Fl_Toggle_Button* cubeButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 4, "Cube");
+	Fl_Toggle_Button* cubeButton = new Fl_Toggle_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 5, "Cube");
 	cubeButton->selection_color(10);
 	cubeButton->box(FL_FLAT_BOX);
 	cubeButton->callback(cubeCallback);
@@ -188,8 +192,8 @@ void shapeCallback(Fl_Widget* w, void*) {
 	cubeButton->type(FL_RADIO_BUTTON);
 
 	// Sphere Shape Button
-	Fl_Toggle_Button* sphereButton = new Fl_Toggle_Button(0, VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Sphere");
-	sphereButton->color(8);
+	Fl_Toggle_Button* sphereButton = new Fl_Toggle_Button(0, VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Sphere");
+	sphereButton->color(10);
 	sphereButton->selection_color(10);
 	sphereButton->box(FL_FLAT_BOX);
 	sphereButton->callback(sphereCallback);
@@ -197,16 +201,25 @@ void shapeCallback(Fl_Widget* w, void*) {
 	sphereButton->type(FL_RADIO_BUTTON);
 
 	// Pyramid Shape Button
-	Fl_Toggle_Button* pyramidButton = new Fl_Toggle_Button(0, 2 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Pyramid");
-	pyramidButton->color(8);
+	Fl_Toggle_Button* pyramidButton = new Fl_Toggle_Button(0, 2 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Pyramid");
+	pyramidButton->color(10);
 	pyramidButton->selection_color(10);
 	pyramidButton->box(FL_FLAT_BOX);
 	pyramidButton->callback(pyramidCallback);
 	pyramidButton->align(FL_ALIGN_INSIDE);
 	pyramidButton->type(FL_RADIO_BUTTON);
+
+	// Cylinder Button
+	Fl_Toggle_Button* cylinderButton = new Fl_Toggle_Button(0, 3 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Cylinder");
+	cylinderButton->color(10);
+	cylinderButton->selection_color(10);
+	cylinderButton->box(FL_FLAT_BOX);
+	cylinderButton->callback(cylinderCallback);
+	cylinderButton->align(FL_ALIGN_INSIDE);
+	cylinderButton->type(FL_RADIO_BUTTON);
 	
 	// Torus Shape Button
-	Fl_Toggle_Button* torusButton = new Fl_Toggle_Button(0, 3 * VIEWPORT_H / 4, RIGHT_PANEL_W, VIEWPORT_H / 4, "Torus");
+	Fl_Toggle_Button* torusButton = new Fl_Toggle_Button(0, 4 * VIEWPORT_H / 5, RIGHT_PANEL_W, VIEWPORT_H / 5, "Torus");
 	torusButton->color(8);
 	torusButton->selection_color(10);
 	torusButton->box(FL_FLAT_BOX);
@@ -508,7 +521,7 @@ int main(int argc, char* argv[]) {
 	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 4 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Shape");
 	shapeButton->selection_color(0);
 	shapeButton->callback(shapeCallback);
-	// buttons for shapes, resolutions?
+	// buttons for resolutions?
 
 	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 5 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Extrude");
 	extrudeButton->selection_color(0);

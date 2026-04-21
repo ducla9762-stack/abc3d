@@ -79,6 +79,8 @@ public:
 
 	void displayPyramid();
 
+	void displayCylinder();
+
 	void displaySphere();
 
 	void displayTorus();

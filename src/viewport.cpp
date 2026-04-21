@@ -195,13 +195,8 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-	//scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-	//scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
-	std::vector<Vec3f> vertices;
-	std::vector<Vec4u> faces; 
-
-	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f); 
-	scene.NewMesh()->load(vertices, faces);
+	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	
 }
 
 float Viewport::getScale(int component, float scale) {
@@ -266,12 +261,37 @@ void Viewport::displayPyramid() {
 	redraw();
 }
 
+void Viewport::displayCylinder() {
+	std::vector<Vec3f> vertices;
+	std::vector<Vec4u> faces;
+
+	//generateUnitCylinder(vertices, faces, 40, 20, 1.0f, 0.3f);
+	scene.NewMesh()->load(vertices, faces);
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
 void Viewport::displaySphere() {
-	//scene.NewMesh()->load()
+	std::vector<Vec3f> vertices;
+	std::vector<Vec4u> faces;
+
+	//generateUVSphere(vertices, faces, 40, 20, 1.0f, 0.3f);
+	scene.NewMesh()->load(vertices, faces);
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 void Viewport::displayTorus() {
+	std::vector<Vec3f> vertices;
+	std::vector<Vec4u> faces;
 
+	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f);
+	scene.NewMesh()->load(vertices, faces);
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 
