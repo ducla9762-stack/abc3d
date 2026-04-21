@@ -125,85 +125,108 @@ bool FaceList::LoadObj(const char* obj) {
 /// 3) Neither a binary or ASCII stl file
 /// </returns>
 bool FaceList::LoadSTL(const char* stl) {
-	//Aside: Should we start using exceptions?
-
 	ifstream stlFile(stl, std::ios::binary | std::ios::ate);
-	if (!stlFile) return false; 
-	
+	if (!stlFile) return false;
+
 	std::streamsize fileSize = stlFile.tellg();
 	stlFile.seekg(0, std::ios::beg);
-	
-	if (fileSize < 84) return false; 
 
-	char header[80]; 
+	if (fileSize < 84) return false;
+
+	char header[80];
 	stlFile.read(header, 80);
 
-	uint32_t numTriangles = 0; 
-	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4); 
-	
-	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50)); 
-	
+	uint32_t numTriangles = 0;
+	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4);
+
+	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50));
+
+	// De-duplicate vertices by exact position using bit-cast hashing.
+	// STL stores every triangle's vertices independently, so without this
+	// every vertex would be unique and the half-edge twin links can't be built.
+	struct Vec3fHash {
+		size_t operator()(const Vec3f& v) const {
+			uint32_t xi, yi, zi;
+			memcpy(&xi, &v.x, 4);
+			memcpy(&yi, &v.y, 4);
+			memcpy(&zi, &v.z, 4);
+			size_t h = std::hash<uint32_t>{}(xi);
+			h ^= std::hash<uint32_t>{}(yi)+0x9e3779b9u + (h << 6) + (h >> 2);
+			h ^= std::hash<uint32_t>{}(zi)+0x9e3779b9u + (h << 6) + (h >> 2);
+			return h;
+		}
+	};
+	struct Vec3fEqual {
+		bool operator()(const Vec3f& a, const Vec3f& b) const {
+			return a.x == b.x && a.y == b.y && a.z == b.z;
+		}
+	};
+	std::unordered_map<Vec3f, uint, Vec3fHash, Vec3fEqual> vertexMap;
+
+	// Returns the index of this position, inserting it only if not already present.
+	auto getOrAddVertex = [&](const Vertex& v) -> uint {
+		auto it = vertexMap.find(v);
+		if (it != vertexMap.end()) return it->second;
+		uint id = static_cast<uint>(vertices.size());
+		vertices.push_back(v);
+		vertexMap[v] = id;
+		return id;
+		};
+
 	if (isBinary) {
-		vertices.reserve(vertices.size() + numTriangles * 3); 
-		faces.reserve(faces.size() + numTriangles); 
+		faces.reserve(faces.size() + numTriangles);
 
 		for (uint32_t i = 0; i < numTriangles; ++i) {
-			stlFile.seekg(12, std::ios::cur); 
+			stlFile.seekg(12, std::ios::cur); // skip stored normal (we recompute it)
 
-			uint baseVertIndex = static_cast<uint>(vertices.size()); 
-
+			uint triVerts[3];
 			for (int v = 0; v < 3; ++v) {
-				Vertex vertex(0.0f); 
+				Vertex vertex(0.0f);
 				stlFile.read(reinterpret_cast<char*>(&vertex.x), 4);
 				stlFile.read(reinterpret_cast<char*>(&vertex.y), 4);
 				stlFile.read(reinterpret_cast<char*>(&vertex.z), 4);
-				vertices.push_back(vertex); 
+				triVerts[v] = getOrAddVertex(vertex);
 			}
 
-			stlFile.seekg(2, std::ios::cur); 
+			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
 
-			Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT); 
-			faces.push_back(face); 
+			faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
 		}
-		
+
 		return stlFile.good() || stlFile.eof();
 	}
 	else {
-		stlFile.close(); 
-		ifstream asciiFile(stl); 
-		if (!asciiFile) return false; 
+		stlFile.close();
+		ifstream asciiFile(stl);
+		if (!asciiFile) return false;
 
-		string line; 
-		uint loopVertCount = 0; 
-		uint baseVertIndex = 0; 
+		string line;
+		uint loopVertCount = 0;
+		uint triVerts[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
 
 		while (std::getline(asciiFile, line)) {
-			size_t start = line.find_first_not_of(" \t"); 
-			if (start == string::npos) continue; 
-			line = line.substr(start); 
+			size_t start = line.find_first_not_of(" \t");
+			if (start == string::npos) continue;
+			line = line.substr(start);
 
 			if (line.substr(0, 6) == "vertex") {
-				Vertex vertex(0.0f); 
-
-				const char* segStart = line.c_str() + 6; 
-				char* segEnd; 
-
+				if (loopVertCount >= 3) continue; // guard against malformed faces
+				Vertex vertex(0.0f);
+				const char* segStart = line.c_str() + 6;
+				char* segEnd;
 				for (int i = 0; i < 3; ++i) {
 					vertex[i] = std::strtof(segStart, &segEnd);
-					segStart = segEnd; 
+					segStart = segEnd;
 				}
-
-				vertices.push_back(vertex); 
-				++loopVertCount; 
+				triVerts[loopVertCount] = getOrAddVertex(vertex);
+				++loopVertCount;
 			}
-			else if (line.substr(0, 9) == "outer loop") {
-				loopVertCount = 0; 
-				baseVertIndex = static_cast<uint>(vertices.size());
+			else if (line.substr(0, 10) == "outer loop") { // fix: was 9 chars ("outer loo")
+				loopVertCount = 0;
 			}
 			else if (line.substr(0, 7) == "endloop") {
 				if (loopVertCount == 3) {
-					Face face(baseVertIndex, baseVertIndex + 1, baseVertIndex + 2, MAX_UINT);
-					faces.push_back(face); 
+					faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
 				}
 			}
 		}
@@ -211,6 +234,7 @@ bool FaceList::LoadSTL(const char* stl) {
 		return asciiFile.good() || asciiFile.eof();
 	}
 }
+
 
 // HalfEdgeMesh
 uint HalfEdgeMesh::NewFace(uint faceEdge) {
@@ -981,71 +1005,58 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 /// true: if the function can sucessfully save the mesh as an stl file
 /// false: if the function failed to save the mesh as an stl file
 /// </returns>
-bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
-
-	// Ensure that the filename includes the filetype extenstion.
+bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
 	std::string filename(filePath);
 	std::string filetype = ".stl";
-
 	if (filename.find(filetype) == std::string::npos)
-	{
 		filename.append(filetype);
-	}
 
 	struct Triangle { Vec3f v0, v1, v2; };
-	std::vector<Triangle> tris; 
+	std::vector<Triangle> tris;
 
-	uint faceCount = faceEdges.size(); 
+	uint faceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		uint verts[4]; 
-		const_cast<HalfEdgeMesh*>(this)->GetFaceVertices(faceId, verts); 
-		
-		Vec3f v0 = vertPos[verts[0]]; 
+		uint verts[4];
+		GetFaceVertices(faceId, verts); // no const_cast needed; method is already const
+
+		Vec3f v0 = vertPos[verts[0]];
 		Vec3f v1 = vertPos[verts[1]];
 		Vec3f v2 = vertPos[verts[2]];
-
 		tris.push_back({ v0, v1, v2 });
-
 		if (verts[3] != MAX_UINT)
 			tris.push_back({ v0, v2, vertPos[verts[3]] });
 	}
 
 	if (isBinary) {
-		std::ofstream file(filename, std::ios::binary); 
-		if (!file.is_open()) return false; 
+		std::ofstream file(filename, std::ios::binary);
+		if (!file.is_open()) return false;
 
-		char header[80] = {}; 
-		file.write(header, 80); 
+		char header[80] = {};
+		file.write(header, 80);
 
-		uint32_t triCount = static_cast<uint32_t>(tris.size()); 
+		uint32_t triCount = static_cast<uint32_t>(tris.size());
 		file.write(reinterpret_cast<const char*>(&triCount), 4);
 
 		for (const Triangle& tri : tris) {
-			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0); 
-			normal.Normalize(); 
-
+			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
+			normal.Normalize();
 			file.write(reinterpret_cast<const char*>(&normal), 12);
 			file.write(reinterpret_cast<const char*>(&tri.v0), 12);
 			file.write(reinterpret_cast<const char*>(&tri.v1), 12);
 			file.write(reinterpret_cast<const char*>(&tri.v2), 12);
-			uint16_t attr = 0; 
+			uint16_t attr = 0;
 			file.write(reinterpret_cast<const char*>(&attr), 2);
 		}
-
-		return !file.fail(); 
+		return !file.fail();
 	}
-
 	else {
-		std::ofstream file(filePath); 
-		if (!file.is_open()) return false; 
-		
+		std::ofstream file(filename); // fix: was filePath, losing the appended extension
+		if (!file.is_open()) return false;
 
-		file << "solid mesh\n"; 
-
+		file << "solid mesh\n";
 		for (const Triangle& tri : tris) {
 			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
-			normal.Normalize(); 
-
+			normal.Normalize();
 			file << "  facet normal " << normal.x << " " << normal.y << " " << normal.z << "\n";
 			file << "    outer loop\n";
 			file << "      vertex " << tri.v0.x << " " << tri.v0.y << " " << tri.v0.z << "\n";
@@ -1054,9 +1065,7 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const{
 			file << "    endloop\n";
 			file << "  endfacet\n";
 		}
-
 		file << "endsolid mesh\n";
-
 		return !file.fail();
 	}
 }
