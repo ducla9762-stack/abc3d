@@ -68,29 +68,27 @@ int Viewport::handle(int event) {
 }
 
 void Viewport::mouseDrag() {
-	float x = Fl::event_x();
-	float y = Fl::event_y();
+	Vec2f pos(Fl::event_x(), Fl::event_y());
+	Vec2f uv(pos.x / (w() - 1), pos.y / (h() - 1));
+	uv.y = 1.0f - uv.y;
+
+	if (firstDragCallback) {
+		initialDragDir = uv - mouseDragStartPosUV;
+		initialDragDir.Normalize();
+	}
 
 	Vec2f change;
-	change.y = mouseDragPrevPos.y - y;
-	change.x = x - mouseDragPrevPos.x;
+	change.y = mouseDragPrevPos.y - pos.y;
+	change.x = pos.x - mouseDragPrevPos.x;
 
 	if (change.y == 0 && change.x == 0) return;
 
-	if (activeElement == VERTEX && activeAction == TRANSLATE_OUT && selectionIds.x == MAX_UINT) {
-		if (firstDragCallback) {
-			actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
-			initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
-		}
-		Vec2f uv;
-		uv[0] = float(x) / float(pixel_w());
-		uv[1] = float(y) / float(pixel_h());
-		float scale = 2.0f * (uv - mouseDragStartPos).Length();
-
-		scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
-		modelingRenderer.UpdateRenderBuffers(scene);
+	bool camera = true;
+	if (activeAction == TRANSLATE_OUT) {
+		camera = !translateOutDrag(pos, uv);
 	}
-	else {
+	
+	if (camera) {
 		camPos.x -= change.x;
 		camPos.y += change.y;
 		clamp(camPos.y, 1.0f, 179.0f);
@@ -98,8 +96,61 @@ void Viewport::mouseDrag() {
 	}
 
 	firstDragCallback = false;
-	mouseDragPrevPos.Set(x, y);
+	mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragPrevPosUV = uv;
 	redraw();
+}
+
+bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
+
+	if (activeElement == OBJECT || selectionIds.x == 0) {
+		return false;
+	}
+
+	if (activeElement == VERTEX) {
+		return translateOutVertexDrag(uv);
+	}
+
+	Vec2f changeUV = uv - mouseDragPrevPosUV;
+	float scale = changeUV.Length();
+	changeUV /= scale;
+	scale = scale * changeUV.Dot(initialDragDir);
+
+	if (activeElement == FACE) {
+		if (firstDragCallback) {
+			actionDir = scene[selectionIds.x - 1]->GetFaceNormal(selectionIds.y);
+		}
+
+		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, actionDir * scale);
+	}
+	else if (activeElement == EDGE) {
+		if (firstDragCallback) {
+			actionDir = scene[selectionIds.x - 1]->GetEdgeNormal(selectionIds.z);
+		}
+
+		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, actionDir * scale);
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+
+	return true;
+}
+
+bool Viewport::translateOutVertexDrag(const Vec2f& uv) {
+	if (selectionIds.x != MAX_UINT) {
+		return false;
+	}
+
+	if (firstDragCallback) {
+		actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
+		initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+	}
+
+	float scale = 2.0f * (uv - mouseDragStartPosUV).Length();
+
+	scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
+	modelingRenderer.UpdateRenderBuffers(scene);
+	return true;
 }
 
 int Viewport::mousePush() {
@@ -123,8 +174,11 @@ int Viewport::mousePush() {
 	std::cout << "Component Id: " << selectionIds.y << std::endl;
 	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 
-	mouseDragStartPos.Set(float(Fl::event_x()) / pixel_w(), float(Fl::event_y()) / pixel_h());
-	mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragPrevPos = mouseDragStartPos;
+	mouseDragStartPosUV.Set(float(Fl::event_x()) / (w() - 1), float(Fl::event_y()) / (h() - 1));
+	mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
+	mouseDragPrevPosUV = mouseDragStartPosUV;
 	firstDragCallback = true;
 	//redraw();
 }
@@ -157,7 +211,7 @@ void Viewport::keyDown() {
 		deleteMesh();
 		break;
 	case 'v':
-		activeElement = VERTEX;
+		activeElement = EDGE;
 		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
@@ -195,13 +249,7 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
-	//scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-	//scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
-	std::vector<Vec3f> vertices;
-	std::vector<Vec4u> faces; 
-
-	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f); 
-	scene.NewMesh()->load(vertices, faces);
+	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
 void Viewport::setScale(int component, float scale) {
