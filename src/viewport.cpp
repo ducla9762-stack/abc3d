@@ -73,7 +73,9 @@ void Viewport::mouseDrag() {
 	uv.y = 1.0f - uv.y;
 
 	if (firstDragCallback) {
-		initialDragDir = uv - mouseDragStartPosUV;
+		initialDragDirUV = uv - mouseDragStartPosUV;
+		initialDragDirUV.Normalize();
+		initialDragDir = pos - mouseDragStartPos;
 		initialDragDir.Normalize();
 	}
 
@@ -90,6 +92,9 @@ void Viewport::mouseDrag() {
 	else if (activeAction == TRANSLATE_FREE) {
 		camera = !translateFreeDrag(pos, uv);
 	}
+	else if (activeAction == SCALE) {
+		camera = !uniformScaleDrag(pos);
+	}
 	
 	if (camera) {
 		camPos.x -= change.x;
@@ -99,28 +104,41 @@ void Viewport::mouseDrag() {
 	}
 
 	firstDragCallback = false;
-	mouseDragPrevPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragPrevPos = pos;
 	mouseDragPrevPosUV = uv;
 	redraw();
 }
 
-bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
-
-	if (activeElement == OBJECT || selectionIds.x == 0) {
+bool Viewport::uniformScaleDrag(const Vec2f& pos) {
+	if (activeAction != SCALE || selectionIds.x == 0) {
 		return false;
 	}
 
+	Vec2f change = pos - mouseDragPrevPos;
+	float factor = 0.01f * change.Dot(initialDragDir);
+
+	uint objectId = selectionIds.x != MAX_UINT ? selectionIds.x : selectionIds.y;
+	scene[objectId - 1]->scale += factor;
+	modelingRenderer.UpdateRenderBuffers(scene);
+	return true;
+}
+
+bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
+	if (selectionIds.x == 0) { return false; }
+
+	if (activeElement == OBJECT) {
+		return translateFreeDrag(pos, uv);
+	}
+
+	Vec2f change = pos - mouseDragPrevPos;
+	float scale = 0.01f * change.Dot(initialDragDir);
+
 	if (activeElement == VERTEX) {
-		return translateOutVertexDrag(uv);
+		return translateOutVertexDrag(scale);
 	}
 	else if (selectionIds.x == MAX_UINT) {
 		return false;
 	}
-
-	Vec2f changeUV = uv - mouseDragPrevPosUV;
-	float scale = changeUV.Length();
-	changeUV /= scale;
-	scale = scale * changeUV.Dot(initialDragDir);
 
 	if (activeElement == FACE) {
 		if (firstDragCallback) {
@@ -142,33 +160,29 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	return true;
 }
 
-bool Viewport::translateOutVertexDrag(const Vec2f& uv) {
+bool Viewport::translateOutVertexDrag(float scale) {
 	if (selectionIds.x != MAX_UINT) {
 		return false;
 	}
 
 	if (firstDragCallback) {
 		actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
-		initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+		//initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
 	}
 
-	float scale = 2.0f * (uv - mouseDragStartPosUV).Length();
-
-	scene[selectionIds.y - 1]->SetVertexPosition(selectionIds.z, initialActionState + scale * actionDir);
+	scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, scale * actionDir);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	return true;
 }
 
 bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
-	if (activeElement == FACE || activeElement == EDGE) {
-		return false;
-	}
-
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
 
-	Vec2f change = mouseDragPrevPosUV - uv;
-	Vec3f translation = 4.0f * (change.x * r + change.y * u);
+	Vec2f change;
+	change.x = mouseDragPrevPos.x - pos.x;
+	change.y = pos.y - mouseDragPrevPos.y;
+	Vec3f translation = 0.01f * (change.x * r + change.y * u);
 
 	if (activeElement == VERTEX) {
 		if (selectionIds.x != MAX_UINT) {
@@ -177,12 +191,24 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 
 		translation = scene[selectionIds.y - 1]->WorldDirToLocalDir(translation);
 		scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, translation);
+		modelingRenderer.UpdateRenderBuffers(scene);
+		return true;
 	}
-	else if (activeElement == OBJECT) {
-		if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
-			return false;
-		}
+
+	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+		return false;
+	}
+
+	switch (activeElement) {
+	case OBJECT:
 		scene[selectionIds.x - 1]->pos += translation;
+		break;
+	case EDGE:
+		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, translation);
+		break;
+	case FACE:
+		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
+		break;
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -212,7 +238,7 @@ int Viewport::mousePush() {
 
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
 	mouseDragPrevPos = mouseDragStartPos;
-	mouseDragStartPosUV.Set(float(Fl::event_x()) / (w() - 1), float(Fl::event_y()) / (h() - 1));
+	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
 	mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
 	mouseDragPrevPosUV = mouseDragStartPosUV;
 	firstDragCallback = true;

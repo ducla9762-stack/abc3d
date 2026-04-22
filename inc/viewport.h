@@ -38,10 +38,11 @@ class Viewport : public Fl_Gl_Window {
 	Scene scene;
 
 	Vec2f mouseDragStartPosUV = Vec2f(0.0f);
+	Vec2f initialDragDirUV = Vec2f(0.0f);
 	Vec2f initialDragDir = Vec2f(0.0f);
-	Vec2i mouseDragPrevPos = Vec2i(0);
+	Vec2f mouseDragPrevPos = Vec2f(0.0f);
 	Vec2f mouseDragPrevPosUV = Vec2f(0.0f);
-	Vec2i mouseDragStartPos = Vec2i(0);
+	Vec2f mouseDragStartPos = Vec2f(0.0f);
 	Vec3u selectionIds = Vec3u(uint(0));
 	Vec3f actionDir = Vec3f(0.0f);
 	Vec3f initialActionState = Vec3f(0.0f);
@@ -56,9 +57,11 @@ class Viewport : public Fl_Gl_Window {
 	void mouseDrag();
 
 	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
-	bool translateOutVertexDrag(const Vec2f& uv);
+	bool translateOutVertexDrag(float scale);
 
 	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
+
+	bool uniformScaleDrag(const Vec2f& pos);
 
 	int mousePush();
 

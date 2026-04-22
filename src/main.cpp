@@ -121,6 +121,8 @@ void selectCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
+
+	viewport->setActiveAction(SELECT);
 }
 
 template<Action action>
@@ -165,6 +167,8 @@ void rotateCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
+
+	viewport->setActiveAction(ROTATE);
 }
 
 void scaleCallback(Fl_Widget* w, void*) {
@@ -176,6 +180,8 @@ void scaleCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
+
+	viewport->setActiveAction(SCALE);
 }
 
 // Callbacks from within the Shape button
@@ -254,6 +260,7 @@ void shapeCallback(Fl_Widget* w, void*) {
 	rightPanel->end();
 	rightPanel->show();
 	// TODO: Add resolution
+	viewport->setActiveAction(TRANSLATE_FREE);
 }
 
 void extrudeCallback(Fl_Widget* w, void* data) {
@@ -296,6 +303,8 @@ void subdivisionPanelCallback(Fl_Widget* w, void*) {
 
 	rightPanel->end();
 	rightPanel->show();
+
+	viewport->setActiveAction(SELECT);
 }
 
 void bevelCallback(Fl_Widget* w, void*) {
