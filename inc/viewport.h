@@ -15,6 +15,7 @@
 #include "render.h"
 #include "scene.h"
 #include "helper.h"
+#undef max
 
 inline bool initGlew = true;
 
@@ -37,6 +38,8 @@ class Viewport : public Fl_Gl_Window {
 
 	Scene scene;
 
+	void (*primarySelectionCallback)() = nullptr;
+
 	Vec2f mouseDragStartPosUV = Vec2f(0.0f);
 	Vec2f initialDragDirUV = Vec2f(0.0f);
 	Vec2f initialDragDir = Vec2f(0.0f);
@@ -50,6 +53,8 @@ class Viewport : public Fl_Gl_Window {
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 
+	uint primarySelection = MAX_UINT;
+
 	void draw();
 
 	int handle(int event);
@@ -62,6 +67,8 @@ class Viewport : public Fl_Gl_Window {
 	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
 
 	bool uniformScaleDrag(const Vec2f& pos);
+
+	bool rotateDrag(const Vec2f& pos);
 
 	int mousePush();
 
@@ -131,6 +138,10 @@ public:
 	void setActiveElement(Element element);
 
 	void setActiveAction(Action action);
+
+	const HalfEdgeMesh* primarySelectedMesh();
+
+	void setPrimarySelectionCallback(void (*callback)());
 };
 
 #endif

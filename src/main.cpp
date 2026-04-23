@@ -21,14 +21,26 @@
 
 #include "customSlider.h"
 #include "viewport.h"
+#include "ui.h"
 
-const char* AXIS_LETTERS[3] = { "x", "y", "z" };
-
-Viewport* viewport; 
 Fl_Window* topRightPanel; 
 Fl_Window* rightPanel;
 customSlider* slider;
-Fl_Window* scaleWidgets;
+
+enum Tool { SELECT_TOOL, TRANSLATE_TOOL, SCALE_TOOL, ROTATE_TOOL, SUBDIVIDE_TOOL, SHAPE_TOOL, EXTRUDE_TOOL, BEVEL_TOOL };
+constexpr int TOOL_COUNT = 8;
+
+RotateToolPanel* rotateToolPanel;
+ScaleToolPanel* scaleToolPanel;
+TranslationToolPanel* translateToolPanel;
+SubdivideToolPanel* subdivideToolPanel;
+ShapeToolPanel* shapeToolPanel;
+SelectToolPanel* selectToolPanel;
+ExtrudeToolPanel* extrudeToolPanel;
+BevelToolPanel* bevelToolPanel;
+
+ToolPanel* toolPanels[TOOL_COUNT];
+Tool activeTool = SELECT_TOOL;
 
 const int VIEWPORT_W = 900;
 const int VIEWPORT_H = 720;
@@ -42,11 +54,10 @@ const int BOTTOM_TOOLBAR_W = 200;
 
 const int TOP_TOOLBAR_H = 40;
 const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
-float yPos = 0;
 
-void drawScaleWidgets(int x, int y, int w, int h);
-void drawRotationWidgets(int x, int y, int w, int h);
-void drawPositionWidgets(int x, int y, int w, int h);
+void primarySelectionCallback() {
+	toolPanels[activeTool]->updateValues();
+}
 
 /* Top Menu Callbacks */
 void importModelCallback(Fl_Widget* w, void*) {
@@ -111,17 +122,16 @@ void lessonEditorCallback(Fl_Widget* w, void* v) {
 
 /* Left Toolbar Callbacks */
 void selectCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == SELECT_TOOL) {
+		return;
+	}
 
-	drawPositionWidgets(0, 0, RIGHT_PANEL_W, 200);
-	drawRotationWidgets(0, 200, RIGHT_PANEL_W, 200);
-	drawScaleWidgets(0, 400, RIGHT_PANEL_W, 200);
+	toolPanels[activeTool]->hide();
 
-	rightPanel->end();
-	rightPanel->show();
-
+	selectToolPanel->show();
+	selectToolPanel->updateValues();
+	
+	activeTool = SELECT_TOOL;
 	viewport->setActiveAction(SELECT);
 }
 
@@ -131,303 +141,107 @@ void actionChangedCallback(Fl_Widget* w) {
 }
 
 void translationCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == TRANSLATE_TOOL) {
+		return;
+	}
 
+	toolPanels[activeTool]->hide();
+
+	translateToolPanel->show();
+	translateToolPanel->updateValues();
+
+	activeTool = TRANSLATE_TOOL;
 	viewport->setActiveAction(TRANSLATE_FREE);
-
-	// Outward Translation Button
-	Fl_Radio_Button* outwardTranslationButton = new Fl_Radio_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 10, "Outward");
-	outwardTranslationButton->selection_color(10);
-	outwardTranslationButton->box(FL_UP_BOX);
-	outwardTranslationButton->callback(actionChangedCallback<TRANSLATE_OUT>);
-	outwardTranslationButton->align(FL_ALIGN_INSIDE);
-
-	// Free Translation Button
-	Fl_Radio_Button* freeTranslationButton = new Fl_Radio_Button(0, VIEWPORT_H / 10, RIGHT_PANEL_W, VIEWPORT_H / 10, "Free");
-	freeTranslationButton->selection_color(10);
-	freeTranslationButton->box(FL_UP_BOX);
-	freeTranslationButton->callback(actionChangedCallback<TRANSLATE_FREE>);
-	freeTranslationButton->align(FL_ALIGN_INSIDE);
-	freeTranslationButton->value(1);
-
-	drawPositionWidgets(0, 2 * VIEWPORT_H / 10, RIGHT_PANEL_W, 200);
-
-	rightPanel->end();
-	rightPanel->show();
 }
 
 void rotateCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == ROTATE_TOOL) {
+		return;
+	}
 
-	drawRotationWidgets(0, 0, RIGHT_PANEL_W, 200);
+	toolPanels[activeTool]->hide();
 
-	rightPanel->end();
-	rightPanel->show();
-
+	activeTool = ROTATE_TOOL;
 	viewport->setActiveAction(ROTATE);
+
+	rotateToolPanel->show();
+	rotateToolPanel->updateValues();
 }
 
 void scaleCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == SCALE_TOOL) {
+		return;
+	}
 
-	drawScaleWidgets(0, 0, RIGHT_PANEL_W, 200);
+	toolPanels[activeTool]->hide();
 
-	rightPanel->end();
-	rightPanel->show();
-
+	activeTool = SCALE_TOOL;
 	viewport->setActiveAction(SCALE);
-}
 
-// Callbacks from within the Shape button
-void cubeCallback(Fl_Widget * w, void* data) {
-	viewport->displayCube();
-}
-
-void UVSphereCallback(Fl_Widget* w, void* data) {
-	viewport->displayUVSphere();
-}
-
-void icoSphereCallback(Fl_Widget* w, void* data) {
-	viewport->displayIcoSphere();
-}
-
-void pyramidCallback(Fl_Widget* w, void* data) {
-	viewport->displayPyramid();
-}
-
-void cylinderCallback(Fl_Widget* w, void* data) {
-	viewport->displayCylinder();
-}
-
-void torusCallback(Fl_Widget* w, void* data) {
-	viewport->displayTorus();
+	scaleToolPanel->show();
+	scaleToolPanel->updateValues();
+	scaleToolPanel->redraw();
 }
 
 void shapeCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == SHAPE_TOOL) {
+		return;
+	}
 
-	// Cube Shape Button
-	Fl_Button* cubeButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 9, "Cube");
-	cubeButton->selection_color(10);
-	cubeButton->box(FL_UP_BOX);
-	cubeButton->callback(cubeCallback);
-	cubeButton->align(FL_ALIGN_INSIDE);
+	toolPanels[activeTool]->hide();
+	shapeToolPanel->show();
 
-	// UV Sphere Shape Button
-	Fl_Button* UVSphereButton = new Fl_Button(0, VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "UV Sphere");
-	UVSphereButton->selection_color(10);
-	UVSphereButton->box(FL_UP_BOX);
-	UVSphereButton->callback(UVSphereCallback);
-	UVSphereButton->align(FL_ALIGN_INSIDE);
-
-	// ICO Sphere Shape Button
-	Fl_Button* icoSphereButton = new Fl_Button(0, 2 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Ico Sphere");
-	icoSphereButton->selection_color(10);
-	icoSphereButton->box(FL_UP_BOX);
-	icoSphereButton->callback(icoSphereCallback);
-	icoSphereButton->align(FL_ALIGN_INSIDE);
-
-	// Pyramid Shape Button
-	Fl_Button* pyramidButton = new Fl_Button(0, 3 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Pyramid");
-	pyramidButton->selection_color(10);
-	pyramidButton->box(FL_UP_BOX);
-	pyramidButton->callback(pyramidCallback);
-	pyramidButton->align(FL_ALIGN_INSIDE);
-
-	// Cylinder Button
-	Fl_Button* cylinderButton = new Fl_Button(0, 4 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Cylinder");
-	cylinderButton->selection_color(10);
-	cylinderButton->box(FL_UP_BOX);
-	cylinderButton->callback(cylinderCallback);
-	cylinderButton->align(FL_ALIGN_INSIDE);
-	
-	// Torus Shape Button
-	Fl_Button* torusButton = new Fl_Button(0, 5 * VIEWPORT_H / 9, RIGHT_PANEL_W, VIEWPORT_H / 9, "Torus");
-	torusButton->selection_color(10);
-	torusButton->box(FL_UP_BOX);
-	torusButton->callback(torusCallback);
-	torusButton->align(FL_ALIGN_INSIDE);
-
-
-	rightPanel->end();
-	rightPanel->show();
-	// TODO: Add resolution
+	activeTool = SHAPE_TOOL;
 	viewport->setActiveAction(TRANSLATE_FREE);
 }
 
 void extrudeCallback(Fl_Widget* w, void* data) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == EXTRUDE_TOOL) {
+		return;
+	}
 
-	viewport->extrude();
+	toolPanels[activeTool]->hide();
+	extrudeToolPanel->show();
 
-	rightPanel->end();
-	rightPanel->show();
-}
-
-void subdivisionCallback(Fl_Widget* w, void*) {
-	viewport->subdivision();
-}
-
-void tesselationCallback(Fl_Widget*, void*) {
-	viewport->tesselate();
+	activeTool = EXTRUDE_TOOL;
+	viewport->setActiveAction(TRANSLATE_FREE);
 }
 
 void subdivisionPanelCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == SUBDIVIDE_TOOL) {
+		return;
+	}
 
-	// Subdivide Button
-	Fl_Button* subdivideButton = new Fl_Button(0, 0, RIGHT_PANEL_W, VIEWPORT_H / 7, "Subdivide");
-	subdivideButton->selection_color(10);
-	subdivideButton->box(FL_UP_BOX);
-	subdivideButton->callback(subdivisionCallback);
-	subdivideButton->align(FL_ALIGN_INSIDE);
+	toolPanels[activeTool]->hide();
+	subdivideToolPanel->show();
 
-	// Tesselate Button
-	Fl_Button* tesselateButton = new Fl_Button(0, 2 * VIEWPORT_H / 7, RIGHT_PANEL_W, VIEWPORT_H / 7, "Tesselation");
-	tesselateButton->selection_color(10);
-	tesselateButton->box(FL_UP_BOX);
-	tesselateButton->callback(tesselationCallback);
-	tesselateButton->align(FL_ALIGN_INSIDE);
-
-	rightPanel->end();
-	rightPanel->show();
-
-	viewport->setActiveAction(SELECT);
+	activeTool = SUBDIVIDE_TOOL;
+	viewport->setActiveAction(TRANSLATE_FREE);
 }
 
 void bevelCallback(Fl_Widget* w, void*) {
-	rightPanel->hide();
-	rightPanel->clear();
-	rightPanel->begin();
+	if (activeTool == BEVEL_TOOL) {
+		return;
+	}
 
-	viewport->bevel();
+	toolPanels[activeTool]->hide();
+	bevelToolPanel->show();
+	
 
-	rightPanel->end();
-	rightPanel->show();
+	activeTool = BEVEL_TOOL;
+	viewport->setActiveAction(TRANSLATE_FREE);
 }
 
 template<Element element>
 void elementSelectCallback(Fl_Widget* w) {
 	viewport->setActiveElement(element);
 }
-	
-// Bottom Right Panel Callbacks
-template <int component>
-void scaleSpinnerCallback(Fl_Widget* spinner) {
-	float spinnerVal = ((Fl_Simple_Counter*)spinner)->value();
-	viewport->setScale(component, spinnerVal);
-}
-
-template <int component>
-void posSpinnerCallback(Fl_Widget* spinner) {
-	float spinnerVal = ((Fl_Simple_Counter*)spinner)->value();
-	viewport->setPos(component, spinnerVal);
-}
-
-template <int component>
-void rotSpinnerCallback(Fl_Widget* spinner) {
-	float spinnerVal = ((Fl_Simple_Counter*)spinner)->value();
-	viewport->setRot(component, spinnerVal);
-}
-
-void drawScaleWidgets(int x, int y, int w, int h) {
-	// Scale Widgets
-	Fl_Window* scaleWidgets = new Fl_Window(x, y, w, h);
-	scaleWidgets->begin();
-	Fl_Box* scaleLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
-	scaleLabel->label("Scale");
-
-	// Rotation Spinners
-	Fl_Simple_Counter* scaleSpinners[3];
-	yPos = 50;
-
-	for (int i = 0; i < 3; ++i) {
-		scaleSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		scaleSpinners[i]->value(1);
-		scaleSpinners[i]->step(.2);
-		scaleSpinners[i]->label(AXIS_LETTERS[i]);
-		scaleSpinners[i]->type(FL_FLOAT_INPUT);
-		scaleSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	scaleSpinners[0]->callback(scaleSpinnerCallback<0>);
-	scaleSpinners[1]->callback(scaleSpinnerCallback<1>);
-	scaleSpinners[2]->callback(scaleSpinnerCallback<2>);
-
-	scaleWidgets->end();
-}
-
-void drawRotationWidgets(int x, int y, int w, int h) {
-	// Rotation Widgets
-	Fl_Window* rotWidgets = new Fl_Window(x, y, w, h);
-	rotWidgets->begin();
-	Fl_Box* rotLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 25);
-	rotLabel->label("Rotation");
-
-	// Rotation Spinners
-	Fl_Simple_Counter* rotSpinners[3];
-	yPos = 50;
-	for (int i = 0; i < 3; ++i) {
-		rotSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		rotSpinners[i]->value(1);
-		rotSpinners[i]->step(2);
-		rotSpinners[i]->label(AXIS_LETTERS[i]);
-		rotSpinners[i]->type(FL_FLOAT_INPUT);
-		rotSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	rotSpinners[0]->callback(rotSpinnerCallback<0>);
-	rotSpinners[1]->callback(rotSpinnerCallback<1>);
-	rotSpinners[2]->callback(rotSpinnerCallback<2>);
-
-	rotWidgets->end();
-}
-
-void drawPositionWidgets(int x, int y, int w, int h) {
-	// Position Widgets
-	Fl_Window* posWidgets = new Fl_Window(x, y, w, h);
-	posWidgets->begin();
-	Fl_Box* posLabel = new Fl_Box(0, 0, RIGHT_PANEL_W, 50);
-	posLabel->label("Position");
-
-	// Position Spinners
-	Fl_Simple_Counter* posSpinners[3];
-	yPos = 50;
-	for (int i = 0; i < 3; ++i) {
-		posSpinners[i] = new Fl_Simple_Counter(RIGHT_PANEL_LABELS_W, yPos, RIGHT_PANEL_INPUTS_W, 15);
-		posSpinners[i]->value(1);
-		posSpinners[i]->step(.2);
-		posSpinners[i]->label(AXIS_LETTERS[i]);
-		posSpinners[i]->type(FL_FLOAT_INPUT);
-		posSpinners[i]->range(-1000000000, 1000000000);
-		yPos += 50;
-	}
-
-	posSpinners[0]->callback(posSpinnerCallback<0>);
-	posSpinners[1]->callback(posSpinnerCallback<1>);
-	posSpinners[2]->callback(posSpinnerCallback<2>);
-
-	posWidgets->end();
-}
 
 int main(int argc, char* argv[]) {
 	Fl_Window* window = new Fl_Window(0, 0, 1080, 720, "ABC3D");
 
 	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H);
+	viewport->setPrimarySelectionCallback(primarySelectionCallback);
 	viewport->end();
 
 	// Top toolbar
@@ -580,12 +394,41 @@ int main(int argc, char* argv[]) {
 	rightPanel->resizable(nullptr);
 	rightPanel->begin();
 
-	drawRotationWidgets(0, 0, RIGHT_PANEL_W, 200);
-	drawPositionWidgets(0, 200, RIGHT_PANEL_W, 200);
-	drawScaleWidgets(0, 400, RIGHT_PANEL_W, 200);
+	rotateToolPanel = new RotateToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[ROTATE_TOOL] = rotateToolPanel;
+
+	scaleToolPanel = new ScaleToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[SCALE_TOOL] = scaleToolPanel;
+
+	translateToolPanel = new TranslationToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[TRANSLATE_TOOL] = translateToolPanel;
+	translateToolPanel->buttonCallback(0, actionChangedCallback<TRANSLATE_OUT>);
+	translateToolPanel->buttonCallback(1, actionChangedCallback<TRANSLATE_FREE>);
+
+	subdivideToolPanel = new SubdivideToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[SUBDIVIDE_TOOL] = subdivideToolPanel;
+
+	shapeToolPanel = new ShapeToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[SHAPE_TOOL] = shapeToolPanel;
+
+	extrudeToolPanel = new ExtrudeToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[EXTRUDE_TOOL] = extrudeToolPanel;
+
+	bevelToolPanel = new BevelToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	toolPanels[BEVEL_TOOL] = bevelToolPanel;
+
+	selectToolPanel = new SelectToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	selectToolPanel->setPositionPanel(translateToolPanel);
+	selectToolPanel->setRotatePanel(rotateToolPanel);
+	selectToolPanel->setScalePanel(scaleToolPanel);
+	toolPanels[SELECT_TOOL] = selectToolPanel;
+
+	for (int i = 0; i < 8; ++i) { toolPanels[i]->hide(); }
+
+	selectToolPanel->show();
+	selectToolPanel->updateValues();
 
 	rightPanel->end();
-
 
 	/* Bottom Toolbar */
 	Fl_Window* bottomToolbar = new Fl_Window(150, VIEWPORT_H - 70, BOTTOM_TOOLBAR_W, BOTTOM_TOOLBAR_H);
@@ -618,5 +461,6 @@ int main(int argc, char* argv[]) {
 	viewport->show();
 	viewport->take_focus();
 	window->fullscreen();
+
 	return Fl::run();
 }

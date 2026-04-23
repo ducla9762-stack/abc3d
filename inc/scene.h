@@ -10,6 +10,7 @@ class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
 	std::vector<bool> selectedMeshes;
 	std::vector<uint> idStack;
+	uint selectCount = 0;
 
 public:
 
