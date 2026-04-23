@@ -1035,7 +1035,7 @@ bool HalfEdgeMesh::exportObj(const char* filePath) const {
 		filename.append(filetype);
 	}
 
-	std::ofstream file(filename, std::ios::app); 
+	std::ofstream file(filename); 
 	if (!file.is_open()) return false; 
 	
 	for (const Vec3f& v : vertPos) {
