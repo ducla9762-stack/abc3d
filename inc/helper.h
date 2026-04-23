@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <limits>
+#include <cmath>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
@@ -35,6 +36,10 @@ const Vec3f ORIGIN = Vec3f(0.0f);
 /// <returns> An equivalent angle in radians. </returns>
 inline float degreesToRadians(float degrees) {
 	return degrees * (cy::Pi<float>() / 180.0f);
+}
+
+inline float radiansToDegrees(float radians) {
+	return radians * (180.0f / cy::Pi<float>());
 }
 
 inline bool compareFloat(float x, float y, float epsilon) {
@@ -161,5 +166,40 @@ inline std::ostream& operator<<(std::ostream& out, const Vec2i& vec) {
 	out << vec.x << ", " << vec.y;
 	return out;
 }
+
+inline Vec3f matrixToEulerAngle(const Matrix3f& mat) {
+	// Refer to https://www.geometrictools.com/Documentation/EulerAngles.pdf
+	
+	Vec3f eulerRot;
+	eulerRot.y = std::asin(mat.cell[6]);
+
+	constexpr float HALF_PI = Pi<float>() / 2.0f;
+	if (eulerRot.y < HALF_PI && eulerRot.y > -HALF_PI) {
+		eulerRot.x = std::atan2(-mat.cell[7], mat.cell[8]);
+		eulerRot.z = std::atan2(-mat.cell[3], mat.cell[0]);
+	}
+	else if (eulerRot.y > HALF_PI && eulerRot.y < HALF_PI + 0.0001f) {
+		eulerRot.x = std::atan2(mat.cell[1], mat.cell[4]);
+		eulerRot.z = 0.0f;
+	}
+	else if (eulerRot.y < -HALF_PI && eulerRot.y > -HALF_PI - 0.0001f) {
+		eulerRot.z = std::atan2(mat.cell[1], mat.cell[4]);
+		eulerRot.x = 0.0f;
+	}
+
+	eulerRot.x = radiansToDegrees(eulerRot.x);
+	eulerRot.y = radiansToDegrees(eulerRot.y);
+	eulerRot.z = radiansToDegrees(eulerRot.z);
+
+	return eulerRot;
+}
+
+inline Vec3f axisAngleToEulerAngle(const Vec3f& axis, float angle) {
+	Matrix3f mat;
+	mat.SetRotation(axis, angle);
+
+	return matrixToEulerAngle(mat);
+}
+
 
 #endif

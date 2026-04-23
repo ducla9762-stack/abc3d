@@ -95,6 +95,9 @@ void Viewport::mouseDrag() {
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
 	}
+	else if (activeAction == ROTATE) {
+		camera = !rotateDrag(pos);
+	}
 	
 	if (camera) {
 		camPos.x -= change.x;
@@ -120,6 +123,9 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	uint objectId = selectionIds.x != MAX_UINT ? selectionIds.x : selectionIds.y;
 	scene[objectId - 1]->scale += factor;
 	modelingRenderer.UpdateRenderBuffers(scene);
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+
 	return true;
 }
 
@@ -155,6 +161,7 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, actionDir * scale);
 	}
 
+	if (primarySelectionCallback) { primarySelectionCallback(); }
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	return true;
@@ -172,6 +179,9 @@ bool Viewport::translateOutVertexDrag(float scale) {
 
 	scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, scale * actionDir);
 	modelingRenderer.UpdateRenderBuffers(scene);
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+
 	return true;
 }
 
@@ -204,14 +214,52 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		scene[selectionIds.x - 1]->pos += translation;
 		break;
 	case EDGE:
+		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
 		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, translation);
 		break;
 	case FACE:
+		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
 		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
 		break;
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+
+	return true;
+}
+
+bool Viewport::rotateDrag(const Vec2f& pos) {
+	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+		return false;
+	}
+
+	Vec3f f, u, r;
+	modelingRenderer.GetCameraDirs(f, u, r);
+
+	Vec2f change;
+	change.y = mouseDragPrevPos.x - pos.x;
+	change.x = -(pos.y - mouseDragPrevPos.y);
+
+	Vec3f dir = change.x * r + change.y * u;
+	float length = dir.Length();
+	dir /= length;
+
+	Vec3f eulerRot = scene[selectionIds.x - 1]->eulerRot;
+	Matrix3f origRot;
+	origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+	Matrix3f rot;
+	rot.SetRotation(dir, length * 0.01f);
+	rot *= origRot;
+
+	scene[selectionIds.x - 1]->eulerRot = matrixToEulerAngle(rot);
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+
 	return true;
 }
 
@@ -318,15 +366,11 @@ void Viewport::setScale(int component, float scale) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->scale[component] = scale;
-		}
+	if (primarySelection != MAX_UINT) {
+		scene[primarySelection]->scale[component] = scale;
+		modelingRenderer.UpdateRenderBuffers(scene);
+		redraw();
 	}
-	modelingRenderer.UpdateRenderBuffers(scene);
-	redraw();
 }
 
 void Viewport::bevel() {
@@ -443,6 +487,8 @@ void Viewport::deleteMesh() {
 		}
 	}
 	modelingRenderer.UpdateRenderBuffers(scene);
+	primarySelection = MAX_UINT;
+	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
 }
 
@@ -457,13 +503,16 @@ void Viewport::selectMesh(uint id) {
 	// If not selected, select.
 	if (!scene.IsMeshSelected(id)) {
 		scene.AddToSelectedMeshes(id);
+		primarySelection = id;
 	}
 	// If selected, remove selection.
 	else {
 		scene.RemoveFromSelectedMeshes(id);
+		primarySelection = MAX_UINT;
 	}
 
 	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
+	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
 }
 
@@ -475,7 +524,6 @@ void Viewport::duplicateMesh() {
 			scene.DuplicateMesh(i);
 			std::cout << "This should duplicate" << std::endl;
 		}
-			
 	}
 }
 
@@ -485,6 +533,10 @@ void Viewport::deselectMeshes() {
 		scene.RemoveFromSelectedMeshes(i);
 	}
 	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
+
+	primarySelection = MAX_UINT;
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+
 	redraw();
 }
 
@@ -500,15 +552,11 @@ void Viewport::setRot(int component, float angle) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->eulerRot[component] = angle;
-		}
+	if (primarySelection != MAX_UINT) {
+		scene[primarySelection]->eulerRot[component] = angle;
+		modelingRenderer.UpdateRenderBuffers(scene);
+		redraw();
 	}
-	modelingRenderer.UpdateRenderBuffers(scene);
-	redraw();
 }
 
 float Viewport::getPos(int component, float angle) {
@@ -523,15 +571,11 @@ void Viewport::setPos(int component, float pos) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->pos[component] = pos;
-		}
+	if (primarySelection != MAX_UINT) {
+		scene[primarySelection]->pos[component] = pos;
+		modelingRenderer.UpdateRenderBuffers(scene);
+		redraw();
 	}
-	modelingRenderer.UpdateRenderBuffers(scene);
-	redraw();
 }
 
 bool Viewport::loadFile(const char* filepath) {
@@ -572,3 +616,16 @@ void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 void Viewport::setActiveElement(Element element) { activeElement = element; }
 
 void Viewport::setActiveAction(Action action) { activeAction = action; }
+
+const HalfEdgeMesh* Viewport::primarySelectedMesh() {
+	if (primarySelection != MAX_UINT) {
+		return scene[primarySelection];
+	}
+	else {
+		return nullptr;
+	}
+}
+
+void Viewport::setPrimarySelectionCallback(void (*callback)()) {
+	primarySelectionCallback = callback;
+}
