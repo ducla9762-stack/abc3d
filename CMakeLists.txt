@@ -45,6 +45,7 @@ target_include_directories(abc3d PRIVATE
 )
 target_include_directories(abc3d SYSTEM PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/external/cyCodeBase-master"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/im3d"
 )
 
 # Preprocessor defines
