@@ -4,6 +4,7 @@
   "dependencies": [
     "glew",
     "glm",
-    "fltk"
+    "fltk",
+    "imguizmo"
   ]
 }
