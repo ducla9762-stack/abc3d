@@ -235,10 +235,8 @@ public:
 		}
 		if (rotPanel) {
 			rotPanelPos.Set(rotPanel->x(), rotPanel->y());
-			//std::cout << "hi" << rotPanelPos << std::endl;
 			rotPanel->position(x(), yPos);
 			rotPanel->show();
-			//std::cout << "la" << posPanel->x() << ", " << posPanel->y() << std::endl;
 		}
 
 		canShow = false;

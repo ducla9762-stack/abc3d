@@ -11,7 +11,7 @@
 #include <FL/Fl_Radio_Button.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Menu_Button.H>
-//#include <FL/Fl_>
+#include <FL/Fl_Tile.H>
 //#include <FL/Fl_Flex.H>
 #include <FL/Fl_Scrollbar.H>
 #undef max
@@ -24,9 +24,10 @@
 #include "viewport.h"
 #include "ui.h"
 
-Fl_Window* topRightPanel; 
+Fl_Window* tutorialPanel;
 Fl_Window* rightPanel;
 customSlider* slider;
+Fl_Window* window;
 
 // Enum that describes which tool is selected by the user
 enum Tool { SELECT_TOOL, TRANSLATE_TOOL, SCALE_TOOL, ROTATE_TOOL, SUBDIVIDE_TOOL, SHAPE_TOOL, EXTRUDE_TOOL, BEVEL_TOOL };
@@ -43,8 +44,6 @@ BevelToolPanel* bevelToolPanel;
 
 ToolPanel* toolPanels[TOOL_COUNT];
 Tool activeTool = SELECT_TOOL;
-
-int X, Y, W, H;
 
 void primarySelectionCallback() {
 	toolPanels[activeTool]->updateValues();
@@ -77,10 +76,19 @@ void exportObjCallback(Fl_Widget* w, void*) {
 }
 
 void saveCallback(Fl_Widget* w, void*) {
+
 }
 
 void editCallback(Fl_Widget* w, void*) {
-	
+
+}
+
+void settingsCallback(Fl_Widget* w, void*) {
+
+}
+
+void exitCallback(Fl_Widget* w, void*) {
+	window->hide();
 }
 
 void helpCallback(Fl_Widget* w, void* v) {
@@ -100,7 +108,7 @@ void tutorialModeCallback(Fl_Widget* w, void*) {
 }
 
 void cameraModeCallback(Fl_Widget* w, void*) {
-	
+
 }
 
 
@@ -123,7 +131,7 @@ void selectCallback(Fl_Widget* w, void*) {
 
 	selectToolPanel->show();
 	selectToolPanel->updateValues();
-	
+
 	activeTool = SELECT_TOOL;
 	viewport->setActiveAction(SELECT);
 }
@@ -214,7 +222,7 @@ void bevelCallback(Fl_Widget* w, void*) {
 
 	toolPanels[activeTool]->hide();
 	bevelToolPanel->show();
-	
+
 
 	activeTool = BEVEL_TOOL;
 	viewport->setActiveAction(TRANSLATE_FREE);
@@ -231,35 +239,35 @@ void elementSelectCallback(Fl_Widget* w) {
 /// Does this through callbacks, 
 /// <returns></returns>
 int main(int argc, char* argv[]) {
+	int X, Y, W, H;
 	Fl::screen_work_area(X, Y, W, H);
-	Fl_Window* window = new Fl_Window(0, 0, W, H, "ABC3D");
 
 	// Defines the size of the viewport, right panel, and toolbars
-	const int VIEWPORT_W = W * 5/6;
+	const int VIEWPORT_W = W * 5 / 6;
 	const int VIEWPORT_H = H;
-	const int RIGHT_PANEL_W = W * 1/6;
+	const int TUTORIAL_PANEL_H = VIEWPORT_H / 3;
+	const int RIGHT_PANEL_W = W * 1 / 6;
+	const int RIGHT_PANEL_H = VIEWPORT_H * 2 / 3;
 	const int RIGHT_PANEL_INPUTS_W = RIGHT_PANEL_W * 0.9f;
 	const int RIGHT_PANEL_LABELS_W = RIGHT_PANEL_W - RIGHT_PANEL_INPUTS_W;
-	const int LEFT_TOOLBAR_W = VIEWPORT_W * 1/20;
-	const int LEFT_TOOLBAR_H = VIEWPORT_H * 1/2;
-	const int BOTTOM_TOOLBAR_H = VIEWPORT_W * 1/20;
-	const int BOTTOM_TOOLBAR_W = VIEWPORT_W * 1/6;
+	const int LEFT_TOOLBAR_W = VIEWPORT_W * 1 / 20;
+	const int LEFT_TOOLBAR_H = VIEWPORT_H * 1 / 2;
+	const int BOTTOM_TOOLBAR_H = VIEWPORT_W * 1 / 20;
+	const int BOTTOM_TOOLBAR_W = VIEWPORT_W * 1 / 6;
 
 	const int TOP_TOOLBAR_H = 40;
 	const int TOP_TOOLBAR_W = VIEWPORT_W - RIGHT_PANEL_W;
 
-	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H - 40);
+	window = new Fl_Window(0, 0, W, H, "ABC3D");
+
+	viewport = new Viewport(0, 38, VIEWPORT_W, VIEWPORT_H - 38);
 	viewport->setPrimarySelectionCallback(primarySelectionCallback);
 	viewport->resizable();
 	viewport->end();
 
-	/* Top toolbar that has all the different modes, options, and menus. Creates a new window and fills it with radio buttons
-	* Includes file, edit, help, standard mode, simple mode, render mode, tutorial view, camera view, and lesson editor */
-	Fl_Window* topToolbar = new Fl_Window(0, 0, VIEWPORT_W, TOP_TOOLBAR_H);
-	topToolbar->color(8);
-
-	// Menu within the top toolbar
-	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(-2, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H);
+	/* Top toolbar that has all the different modes, options, and menus.
+	* Includes file, edit, help, standard mode, simple mode, tutorial view, and camera view */
+	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(0, -2, VIEWPORT_W, TOP_TOOLBAR_H);
 	topMenu->selection_color(10);
 	topMenu->color(8);
 
@@ -276,7 +284,7 @@ int main(int argc, char* argv[]) {
 
 	topMenu->add("&File/&Save", "^s", saveCallback);
 	topMenu->add("&File/&Settings");
-	topMenu->add("&File/&Exit");
+	topMenu->add("&File/&Exit", 0, exitCallback);
 
 	// Edit Menu Button
 	topMenu->add("&Edit/&Delete");
@@ -284,52 +292,15 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&Edit/&Undo");
 	topMenu->add("&Edit/&Redo");
 
+	topMenu->add("Help", "^h", helpCallback);
 
-	Fl_Toggle_Button* helpButton = new Fl_Toggle_Button(VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Help");
-	helpButton->color(8);
-	helpButton->selection_color(10);
-	helpButton->box(FL_FLAT_BOX);
-	helpButton->callback(helpCallback);
-	helpButton->align(FL_ALIGN_CENTER);
-	helpButton->type(FL_RADIO_BUTTON);
+	topMenu->add("Standard Mode", 0, standardModeCallback);
 
-	// Standard Mode Menu Button
-	Fl_Toggle_Button* standardButton = new Fl_Toggle_Button(2 * VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Standard Mode");
-	standardButton->color(8);
-	standardButton->selection_color(10);
-	standardButton->box(FL_FLAT_BOX);
-	standardButton->callback(standardModeCallback);
-	standardButton->align(FL_ALIGN_INSIDE);
-	standardButton->type(FL_RADIO_BUTTON);
+	topMenu->add("Simple Mode", 0, simpleModeCallback);
 
-	// Simple Mode Menu Button
-	Fl_Toggle_Button* simpleButton = new Fl_Toggle_Button(3 * VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Simple Mode");
-	simpleButton->color(8);
-	simpleButton->selection_color(10);
-	simpleButton->box(FL_FLAT_BOX);
-	simpleButton->callback(simpleModeCallback);
-	simpleButton->align(FL_ALIGN_INSIDE);
-	simpleButton->type(FL_RADIO_BUTTON);
+	topMenu->add("Tutorial", 0, tutorialModeCallback);
 
-	// Tutorial View Menu Button
-	Fl_Toggle_Button* tutorialButton = new Fl_Toggle_Button(4 * VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Tutorials");
-	tutorialButton->color(8);
-	tutorialButton->selection_color(10);
-	tutorialButton->box(FL_FLAT_BOX);
-	tutorialButton->callback(tutorialModeCallback);
-	tutorialButton->align(FL_ALIGN_INSIDE);
-	tutorialButton->type(FL_RADIO_BUTTON);
-
-	// Camera Modes Menu Button
-	Fl_Toggle_Button* cameraButton = new Fl_Toggle_Button(5 * VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Camera");
-	cameraButton->color(8);
-	cameraButton->selection_color(10);
-	cameraButton->box(FL_FLAT_BOX);
-	cameraButton->callback(cameraModeCallback);
-	cameraButton->align(FL_ALIGN_INSIDE);
-	cameraButton->type(FL_RADIO_BUTTON);
-
-	topToolbar->end();
+	topMenu->add("Camera", 0, cameraModeCallback);
 
 	/* Left Toolbar that's always present. Creates a window and fills it with radio buttons
 	* Includes buttons for select, translate, rotate, scale, shape, extrude, subdivision, and bevel */
@@ -343,7 +314,7 @@ int main(int argc, char* argv[]) {
 	Fl_Radio_Button* translationButton = new Fl_Radio_Button(0, LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Move");
 	translationButton->selection_color(0);
 	translationButton->callback(translationCallback);
-	
+
 	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 2 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Rotate");
 	rotateButton->selection_color(0);
 	rotateButton->callback(rotateCallback);
@@ -365,54 +336,55 @@ int main(int argc, char* argv[]) {
 	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Subdivide");
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionPanelCallback);
-		
+
 	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Bevel");
 	bevelButton->selection_color(0);
 	bevelButton->callback(bevelCallback);
 
 	sideToolbar->resizable(sideToolbar);
+	//Fl_Tile* sideTile = new Fl_Tile(20, 70, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H);
 	sideToolbar->end();
 
 
 	/* Top Right panel for the tutorials */
-	topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
-	topRightPanel->resizable(nullptr);
-	topRightPanel->color(FL_DARK_RED);
-	topRightPanel->begin();
-	topRightPanel->end();
+	tutorialPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
+	tutorialPanel->resizable(nullptr);
+	tutorialPanel->color(FL_DARK_RED);
+	tutorialPanel->begin();
+	tutorialPanel->end();
 
 	/* Right panel tools that pop up when a button is selected. Mapping tools and panels
-	* Creates a new window and fills it with options relevant to the selected left toolbar button 
+	* Creates a new window and fills it with options relevant to the selected left toolbar button
 	* Includes rotation, scale, translate, subdivide, shape, extrude, bevel, and select */
-	rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3 , RIGHT_PANEL_W, 650);
+	rightPanel = new Fl_Window(VIEWPORT_W, VIEWPORT_H / 3, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	rightPanel->resizable();
 	rightPanel->begin();
 
-	rotateToolPanel = new RotateToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	rotateToolPanel = new RotateToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[ROTATE_TOOL] = rotateToolPanel;
 
-	scaleToolPanel = new ScaleToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	scaleToolPanel = new ScaleToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SCALE_TOOL] = scaleToolPanel;
 
 	// actionChangedCallback is only used here, determining whether to use translate out or translate free
-	translateToolPanel = new TranslationToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	translateToolPanel = new TranslationToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[TRANSLATE_TOOL] = translateToolPanel;
 	translateToolPanel->buttonCallback(0, actionChangedCallback<TRANSLATE_OUT>);
 	translateToolPanel->buttonCallback(1, actionChangedCallback<TRANSLATE_FREE>);
 
-	subdivideToolPanel = new SubdivideToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	subdivideToolPanel = new SubdivideToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SUBDIVIDE_TOOL] = subdivideToolPanel;
 
-	shapeToolPanel = new ShapeToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	shapeToolPanel = new ShapeToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SHAPE_TOOL] = shapeToolPanel;
 
-	extrudeToolPanel = new ExtrudeToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	extrudeToolPanel = new ExtrudeToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[EXTRUDE_TOOL] = extrudeToolPanel;
 
-	bevelToolPanel = new BevelToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	bevelToolPanel = new BevelToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[BEVEL_TOOL] = bevelToolPanel;
 
-	selectToolPanel = new SelectToolPanel(0, 0, RIGHT_PANEL_W, 650);
+	selectToolPanel = new SelectToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	selectToolPanel->setPositionPanel(translateToolPanel);
 	selectToolPanel->setRotatePanel(rotateToolPanel);
 	selectToolPanel->setScalePanel(scaleToolPanel);
@@ -454,7 +426,6 @@ int main(int argc, char* argv[]) {
 	// Window 
 	window->end();
 	window->resize(X, Y, W, H);
-	window->resizable(rightPanel);
 	window->resizable(window);
 	window->show(argc, argv);
 	viewport->show();
