@@ -21,6 +21,11 @@ using std::ostream;
 
 typedef unsigned uint;
 
+//A single world-space triangle for a .stl file
+struct Triangle {
+	Vec3f v0, v1, v2;
+};
+
 /// <summary>
 /// The outcome of importing a mesh file. `status` says whether a usable mesh was
 /// produced; `skippedFaces` counts face lines the parser dropped but recovered from,
@@ -177,8 +182,14 @@ public:
 	void load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces);
 
 	bool exportObj(const char* filePath) const;
-	bool exportStl(const char* filePath, bool isBinary = true) const; 
+	bool exportStl(const char* filePath, bool isBinary = true) const;
+
+	void appendObj(std::ostream& out, uint& vertOffset) const; 
+	void appendStlTriangles(std::vector<Triangle>& tris) const; 
 };
+
+std::string ensureExtension(const std::string& path, const char* ext); 
+bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary); 
 
 template<typename T>
 bool HalfEdgeMesh::build(const T& faces) {

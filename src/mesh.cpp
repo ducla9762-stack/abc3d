@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <fstream>
 #include <cstring>
+#include <cctype>
+#include <cstdint>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
@@ -1040,6 +1042,53 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 	build(faces);
 }
 
+/// <summary>
+/// Returns `path` with `ext` appended unless it already ends with `ext`
+/// </summary>
+std::string ensureExtension(const std::string& path, const char* ext) {
+	const size_t extLen = std::strlen(ext); 
+	if (path.size() >= extLen) {
+		bool matches = true; 
+
+		for (size_t i = 0; i < extLen; ++i) {
+			if (std::tolower(static_cast<unsigned char>(path[path.size() - extLen + i])) !=
+				std::tolower(static_cast<unsigned char>(ext[j]))) {
+				matches = false; 
+				break; 
+			}
+		}
+
+		if (matches) return path; 
+	}
+
+	return path + ext; 
+}
+
+void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset) const {
+	std::vector<Vec3f> worldPos;
+	worldPos.reserve(vertPos.size()); 
+	GetWorldVertexPositions(worldPos); 
+
+	for (const Vec3f& v : worldPos)
+		out << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		out << "f";
+
+		uint first = faceEdges[faceId]; 
+		uint next = first; 
+
+		do {
+			out << " " << (vertOffset + edges[next].orig + 1); 
+			next = edges[next].next; 
+		} while (next != first); 
+		
+		out << "\n"; 
+	}
+
+	vertOffset += static_cast<uint>(worldPos.size()); 
+}
 
 /// <summary>
 /// This function will save the HalfEdgeMesh as an obj file
@@ -1050,79 +1099,52 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 /// false: if the function failed to save the mesh as an obj file
 /// </returns>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
-
-	// Ensure that the filename includes the filetype extension.
-	std::string filename(filePath);
-	std::string filetype = ".obj";
-
-	if (filename.find(filetype) == std::string::npos)
-	{
-		filename.append(filetype);
-	}
-
-	std::ofstream file(filename); 
+	std::ofstream file(ensureExtension(filePath, ".obj")); 
 	if (!file.is_open()) return false; 
-	
-	for (const Vec3f& v : vertPos) {
-		file << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
-	}
+
+	uint vertOffset = 0; 
+	appendObj(file, vertOffset); 
+
+	return !file.fail();
+}
+
+void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
+	std::vector<Vec3f> worldPos; 
+	worldPos.reserve(vertPos.size()); 
+	GetWorldVertexPositions(worldPos); 
 
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		file << "f"; 
+		uint verts[4];
+		GetFaceVertices(faceId, verts); 
 
-		uint first = faceEdges[faceId]; 
-		uint next = first; 
-
-		do {
-			file << " " << (edges[next].orig + 1); 
-			next = edges[next].next; 
-		} while (next != first); 
+		Vec3f v0 = worldPos[verts[0]]; 
+		Vec3f v1 = worldPos[verts[1]]; 
+		Vec3f v2 = worldPos[verts[2]]; 
 		
-		file << "\n"; 
+		tris.push_back({ v0, v1, v2 }); 
+
+		if (verts[3] != MAX_UINT)
+			tris.push_back({ v0, v2, worldPos[verts[3]] }); 
 	}
-
-	if (file.fail()) return false; 
-
-	return true; 
 }
 
 /// <summary>
-/// This function will save the HalfEdgeMesh as an stl file
+/// Writes world-space triangles out as an stl file. `filePath` is used as given.
 /// </summary>
-/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="filePath">The file path to write to, extension included</param>
+/// <param name="tris">The triangles to write, already in world space</param>
 /// <param name="isBinary">
-/// true: if the user wishes to save in binary stl format (more optimal for space)
-/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// true: binary stl format (more optimal for space)
+/// false: ASCII stl format (more human readable, but much worse for space)
 /// </param>
 /// <returns>
-/// true: if the function can sucessfully save the mesh as an stl file
-/// false: if the function failed to save the mesh as an stl file
+/// true: if the function can sucessfully write the stl file
+/// false: if the function failed to write the stl file
 /// </returns>
-bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
-	std::string filename(filePath);
-	std::string filetype = ".stl";
-	if (filename.find(filetype) == std::string::npos)
-		filename.append(filetype);
-
-	struct Triangle { Vec3f v0, v1, v2; };
-	std::vector<Triangle> tris;
-
-	uint faceCount = faceEdges.size();
-	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		uint verts[4];
-		GetFaceVertices(faceId, verts); // no const_cast needed; method is already const
-
-		Vec3f v0 = vertPos[verts[0]];
-		Vec3f v1 = vertPos[verts[1]];
-		Vec3f v2 = vertPos[verts[2]];
-		tris.push_back({ v0, v1, v2 });
-		if (verts[3] != MAX_UINT)
-			tris.push_back({ v0, v2, vertPos[verts[3]] });
-	}
-
+bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary) {
 	if (isBinary) {
-		std::ofstream file(filename, std::ios::binary);
+		std::ofstream file(filePath, std::ios::binary);
 		if (!file.is_open()) return false;
 
 		char header[80] = {};
@@ -1144,7 +1166,7 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
 		return !file.fail();
 	}
 	else {
-		std::ofstream file(filename); // fix: was filePath, losing the appended extension
+		std::ofstream file(filePath);
 		if (!file.is_open()) return false;
 
 		file << "solid mesh\n";
@@ -1162,4 +1184,23 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
 		file << "endsolid mesh\n";
 		return !file.fail();
 	}
+}
+
+/// <summary>
+/// This function will save the HalfEdgeMesh as an stl file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="isBinary">
+/// true: if the user wishes to save in binary stl format (more optimal for space)
+/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// </param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an stl file
+/// false: if the function failed to save the mesh as an stl file
+/// </returns>
+bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
+	std::vector<Triangle> tris; 
+	appendStlTriangles(tris); 
+	
+	return writeStl(ensureExtension(filePath, ".stl"), tris, isBinary); 
 }
