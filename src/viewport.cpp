@@ -592,23 +592,60 @@ ImportReport Viewport::loadFile(const char* filepath) {
 	return report;
 }
 
-// TODO: Fix export
-bool Viewport::exportObj(const char* filepath) {
-	if (scene.MeshCount() == 0) {
-		return true;
+/// <summary>
+/// Meshes export every selected or whole scene when nothing is selected
+/// </summary>
+/// <returns>Vector of meshes ids</returns>
+std::vector<uint> Viewport::exportMeshIds() {
+	std::vector<uint> selected; 
+	std::vector<uint> all; 
+
+	for (uint i = 0; i < scene.MeshCount(); ++i) {
+		if (scene[i]->VertexCount() == 0) continue;
+
+		all.push_back(i); 
+		if (scene.IsMeshSelected(i)) selected.push_back(i); 
 	}
 
-	scene[0]->exportObj(filepath);
-	return true;
+	return selected.empty() ? all : selected; 
 }
 
-bool Viewport::exportStl(const char* filepath) {
-	if (scene.MeshCount() == 0) {
-		return true;
+/// <summary>
+/// Each mesh in exportMeshIds is written in world space so pos, rot, and scale save
+/// </summary>
+/// <param name="filepath"></param>
+/// <returns>success or fail when export</returns>
+bool Viewport::exportObj(const char* filepath) {
+	std::vector<uint> ids = exportMeshIds(); 
+	if (ids.empty()) return true; 
+
+	std::ofstream file(ensureExtension(filepath, ".obj")); 
+	if (!file.is_open()) return false; 
+
+	uint vertOffset = 0; 
+
+	for (uint id : ids) {
+		file << "o mesh" << id << "\n"; 
+		scene[id]->appendObj(file, vertOffset); 
 	}
 
-	scene[0]->exportStl(filepath);
-	return true;
+	return !file.fail(); 
+}
+
+/// <summary>
+/// STL has no idea for separate objects. We will store them as a soup of triangles for all objects.
+/// </summary>
+/// <param name="filepath"></param>
+/// <returns>success or fail of export</returns>
+bool Viewport::exportStl(const char* filepath) {
+	std::vector<uint> ids = exportMeshIds();
+	if (ids.empty()) return true;
+
+	std::vector<Triangle> tris; 
+	for (uint id : ids)
+		scene[id]->appendStlTriangles(tris); 
+	
+	return writeStl(ensureExtension(filepath, ".stl"), tris, true); 
 }
 
 Mode Viewport::getActiveMode() { return activeMode;  }

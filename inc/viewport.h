@@ -55,6 +55,8 @@ class Viewport : public Fl_Gl_Window {
 
 	uint primarySelection = MAX_UINT;
 
+	std::vector<uint> exportMeshIds(); 
+
 	void draw();
 
 	int handle(int event);
