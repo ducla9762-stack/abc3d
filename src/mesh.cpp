@@ -155,7 +155,7 @@ bool FaceList::LoadSTL(const char* stl) {
 	uint64_t numTriangles = 0;
 	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4);
 	
-	const uint64_t expectedSize = 84ull + static_cast<uint64_t>(numTriangles); 
+	const uint64_t expectedSize = 84ull + static_cast<uint64_t>(numTriangles) * 50ull; 
 	bool isBinary = (static_cast<uint64_t>(fileSize) == expectedSize);
 
 	// De-duplicate vertices by exact position using bit-cast hashing.
