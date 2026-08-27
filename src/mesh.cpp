@@ -1053,9 +1053,7 @@ bool HalfEdgeMesh::load(const char* file) {
 	if (!success) { return false; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	build(faceList.Faces());
-
-	return true;
+	return build(faceList.Faces());
 }
 
 void HalfEdgeMesh::load(const FaceList& faceList) {

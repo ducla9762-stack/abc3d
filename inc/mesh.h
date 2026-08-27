@@ -97,7 +97,7 @@ class HalfEdgeMesh {
 	Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
 	template<typename T>
-	void build(const T& faces);
+	bool build(const T& faces);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -161,14 +161,29 @@ public:
 };
 
 template<typename T>
-void HalfEdgeMesh::build(const T& faces) {
+bool HalfEdgeMesh::build(const T& faces) {
 	vertEdge.resize(0);
 	faceEdges.resize(0);
 	edges.resize(0);
 	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
 	faceEdges.reserve(faces.size());
 
-	// Build
+	//Reject out of range indices 
+	const uint vertLimit = static_cast<uint>(vertPos.size()); 
+	for (uint i = 0; i < faces.size(); ++i) {
+		const Vec4<uint>& face = faces[i]; 
+		uint vertCount = (face[3] == MAX_UINT) ? 3 : 4; 
+
+		for (uint j = 0; j < vertCount; ++j) {
+			if (face[j] >= vertLimit) {Clear(); return false; }
+
+			for (uint k = j + 1; k < vertCount; ++k) {
+				if (face[j] == face[k]) { Clear(); return false; }
+			}
+		}
+	}
+
+	//Build
 	std::unordered_map<Vec2<uint>, uint> edgeIndices;
 
 	for (uint i = 0; i < faces.size(); ++i) {
@@ -190,6 +205,7 @@ void HalfEdgeMesh::build(const T& faces) {
 			HalfEdge& edge = NewEdge(edgeId);
 
 			Vec2<uint> edgeVertices(face[j], face[next]);
+			if (edgeIndices.count(edgeVertices) != 0) { Clear(); return false; } //Non-manifold
 			edgeIndices[edgeVertices] = edgeId;
 
 			edge.orig = edgeVertices[0];
@@ -243,12 +259,13 @@ void HalfEdgeMesh::build(const T& faces) {
 	}
 
 	translateVertices(-computeCentroid());
+	return true; 
 }
 
 template <size_t V, size_t F>
 void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces) {
 	vertPos.insert(vertPos.end(), vertices.begin(), vertices.end());
-	build(faces);
+	(void)build(faces);
 }
 
 #endif
