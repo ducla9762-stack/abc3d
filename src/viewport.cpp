@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <utility>
 
 #include "viewport.h"
 #include "mesh.h"
@@ -578,12 +579,17 @@ void Viewport::setPos(int component, float pos) {
 	}
 }
 
-bool Viewport::loadFile(const char* filepath) {
-	bool success = scene.NewMesh()->load(filepath);
-	if (!success) return false;
+ImportReport Viewport::loadFile(const char* filepath) {
+	// Build into a local mesh first so a rejected file leaves the scene untouched.
+	// Adding to the scene up front would strand an empty mesh on every failed import.
+	HalfEdgeMesh candidate;
+	ImportReport report = candidate.load(filepath);
+	if (!report.ok()) { return report; }
+
+	*scene.NewMesh() = std::move(candidate);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
-	return true;
+	return report;
 }
 
 // TODO: Fix export

@@ -21,6 +21,24 @@ using std::ostream;
 
 typedef unsigned uint;
 
+/// <summary>
+/// The outcome of importing a mesh file. `status` says whether a usable mesh was
+/// produced; `skippedFaces` counts face lines the parser dropped but recovered from,
+/// so a mesh can import successfully and still be missing geometry.
+/// </summary>
+struct ImportReport {
+	enum Status {
+		Ok,              // A mesh was built
+		FileError,       // Could not open the file, or it is not a supported .obj/.stl
+		InvalidTopology  // Face indices out of range, repeated in one face, or non-manifold
+	};
+
+	Status status = Ok;
+	uint skippedFaces = 0;
+
+	bool ok() const { return status == Ok; }
+};
+
 class FaceList{
 
 	typedef Vec4<uint> Face; 
@@ -28,6 +46,7 @@ class FaceList{
 
 	std::vector<Vertex> vertices;
 	std::vector<Face> faces;
+	uint skippedFaces = 0; // Face lines the parser dropped rather than storing
 
 	void MoveTo(const char*& c_str, char delim);
 	void ProcessObjLine(const string& line);
@@ -41,6 +60,7 @@ public:
 	const std::vector<Vec4<uint>>& Faces() const;
 	std::vector<Vec3f>& Vertices();
 	std::vector<Vec4<uint>>& Faces();
+	uint SkippedFaces() const;
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
@@ -149,7 +169,7 @@ public:
 	void tesselate();
 	void subdivide();
 	void Clear();
-	bool load(const char* file);
+	ImportReport load(const char* file);
 	void load(const FaceList& faceList);
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
 

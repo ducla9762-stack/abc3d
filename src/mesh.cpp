@@ -64,7 +64,7 @@ void FaceList::ProcessObjLine(const string& line) {
 			
 			const char* scan = segStart; 
 			while (*scan == ' ' || *scan == '\t') { ++scan; }
-			if (*scan == '-') { return; }
+			if (*scan == '-') { ++skippedFaces; return; } // Negative (relative) indices unsupported
 
 			uint data = std::strtoul(segStart, &segEnd, 10); 
 			uint vertexId = data != 0 ? data - 1 : MAX_UINT; 
@@ -136,6 +136,10 @@ const std::vector<Vec3f>& FaceList::Vertices() const {
 
 const std::vector<Vec4<uint>>& FaceList::Faces() const {
 	return faces;
+}
+
+uint FaceList::SkippedFaces() const {
+	return skippedFaces;
 }
 
 std::vector<Vec3f>& FaceList::Vertices() { return vertices; }
@@ -1036,10 +1040,13 @@ void HalfEdgeMesh::Clear() {
 /// The file to load
 /// </param>
 /// <returns>
-/// return true: the file is loaded sucessfully into the HalfEdgeMesh
-/// return false: the file was not loaded sucessfully and there was some file I/O error most likely
+/// An ImportReport. `status` is Ok when a mesh was built, FileError when the file could
+/// not be read or is not a supported format, and InvalidTopology when the geometry was
+/// rejected (out-of-range index, a vertex repeated within one face, or non-manifold).
+/// On any failure the mesh is left empty. `skippedFaces` reports face lines the parser
+/// dropped but recovered from, so an Ok import can still be missing geometry.
 /// </returns>
-bool HalfEdgeMesh::load(const char* file) {
+ImportReport HalfEdgeMesh::load(const char* file) {
 	FaceList faceList;
 
 	bool success = false; 
@@ -1050,10 +1057,15 @@ bool HalfEdgeMesh::load(const char* file) {
 	else if (strstr(file, ".stl"))
 		success = faceList.LoadSTL(file);
 
-	if (!success) { return false; }
+	ImportReport report;
+	report.skippedFaces = faceList.SkippedFaces();
+
+	if (!success) { report.status = ImportReport::FileError; return report; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	return build(faceList.Faces());
+	if (!build(faceList.Faces())) { report.status = ImportReport::InvalidTopology; }
+
+	return report;
 }
 
 void HalfEdgeMesh::load(const FaceList& faceList) {

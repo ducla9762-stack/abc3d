@@ -121,7 +121,7 @@ public:
 
 	void setPos(int component, float pos);
 
-	bool loadFile(const char* filepath);
+	ImportReport loadFile(const char* filepath);
 
 	bool exportObj(const char* filepath);
 
