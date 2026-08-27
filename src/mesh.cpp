@@ -152,10 +152,11 @@ bool FaceList::LoadSTL(const char* stl) {
 	char header[80];
 	stlFile.read(header, 80);
 
-	uint32_t numTriangles = 0;
+	uint64_t numTriangles = 0;
 	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4);
-
-	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50));
+	
+	const uint64_t expectedSize = 84ull + static_cast<uint64_t>(numTriangles); 
+	bool isBinary = (static_cast<uint64_t>(fileSize) == expectedSize);
 
 	// De-duplicate vertices by exact position using bit-cast hashing.
 	// STL stores every triangle's vertices independently, so without this
@@ -188,7 +189,8 @@ bool FaceList::LoadSTL(const char* stl) {
 		vertexMap[v] = id;
 		return id;
 		};
-
+	
+	const size_t facesBefore = faces.size(); 
 	if (isBinary) {
 		faces.reserve(faces.size() + numTriangles);
 
@@ -205,11 +207,12 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 
 			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
-
-			faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+			if (!stlFile) return false; 
+			
+				faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
 		}
 
-		return stlFile.good() || stlFile.eof();
+		return faces.size() > facesBefore;
 	}
 	else {
 		stlFile.close();
@@ -219,7 +222,7 @@ bool FaceList::LoadSTL(const char* stl) {
 		string line;
 		uint loopVertCount = 0;
 		uint triVerts[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
-
+		
 		while (std::getline(asciiFile, line)) {
 			size_t start = line.find_first_not_of(" \t");
 			if (start == string::npos) continue;
@@ -247,7 +250,7 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 		}
 
-		return asciiFile.good() || asciiFile.eof();
+		return faces.size() > facesBefore;
 	}
 }
 
