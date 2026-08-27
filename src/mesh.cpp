@@ -74,47 +74,6 @@ void FaceList::ProcessObjLine(const string& line) {
 
 		faces.push_back(face); 
 	}
-
-
-	//This is documentation for an issue below with my current code
-	// I will remove all of these comments before merging into Development (just keeping here for history)
-	//1. Import ico_sphere.obj (this is my file locally)
-	//2. (P.S) I believe you can make this by just exporting an icosphere that has been subdivided (if not, I can send it)
-	//3. Subdivide the imported OBJ for ico_sphere
-	//The program should crash
-	//if (line.empty()) { return; }
-	//switch (line[0]) {
-	//case 'v':
-	//{
-	//	Vertex vertex(0.0f);
-	//	const char* segStart = line.c_str();
-	//	char* segEnd;
-	//	for (int i = 0; i < 3; ++i) {
-	//		MoveTo(segStart, ' ');
-	//		float component = std::strtof(segStart, &segEnd);
-	//		if (segStart == segEnd) { break; }
-	//		vertex[i] = component;
-	//		segStart = segEnd;
-	//	}
-	//	vertices.push_back(vertex);
-	//	break;
-	//}
-	//case 'f':
-	//{
-	//	Face face(MAX_UINT);
-	//	const char* segStart = line.c_str();
-	//	char* segEnd;
-	//	for (int i = 0; i < 4; ++i) {
-	//		MoveTo(segStart, ' ');
-	//		uint data = std::strtoul(segStart, &segEnd, 10);
-	//		uint vertexId = data != 0 ? data - 1 : MAX_UINT;
-	//		face[i] = vertexId;
-	//		segStart = segEnd;
-	//	}
-	//	faces.push_back(face);
-	//	break;
-	//}
-	//}
 }
 
 void FaceList::PrintFaceComponent(uint x) const {
