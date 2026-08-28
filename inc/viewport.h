@@ -55,10 +55,23 @@ class Viewport : public Fl_Gl_Window {
 
 	uint primarySelection = MAX_UINT;
 
+	/// <summary>
+	/// Draw loop required for an FLTK widget. Called by FLTK.
+	/// </summary>
 	void draw();
 
+	/// <summary>
+	/// Catches FLTK events; button-presses, etc.
+	/// </summary>
+	/// <param name="event"> event type. </param>
+	/// <returns> callback function </returns>
 	int handle(int event);
 
+	/// <summary>
+	/// Logic executed on a mouse drag event.
+	/// 
+	/// todo: fill this out.
+	/// </summary>
 	void mouseDrag();
 
 	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
@@ -70,77 +83,230 @@ class Viewport : public Fl_Gl_Window {
 
 	bool rotateDrag(const Vec2f& pos);
 
+	/// <summary>
+	/// Logic executed on a mouse button press event.
+	/// </summary>
+	/// <returns></returns>
 	int mousePush();
 
+	/// <summary>
+	/// Logic executed on a mouse wheel event.
+	/// </summary>
 	void mouseWheel();
 
+	/// <summary>
+	/// Logic executed on a key press event.
+	/// </summary>
 	void keyDown();
 
+	/// <summary>
+	/// Logic executed on a key release event.
+	/// </summary>
 	void keyUp();
 
 public:
+	/// <summary>
+	/// Constructor.
+	/// </summary>
+	/// <param name="x"> Viewport x-offset, top left = 0,0 </param>
+	/// <param name="y"> Viewport y-offset, top left = 0,0 </param>
+	/// <param name="w"> Viewport width. </param>
+	/// <param name="h"> Viewport height. </param>
+	/// <param name="label"></param>
 	Viewport(int x, int y, int w, int h, const char* label = nullptr);
 
+	/// <summary>
+	/// Sets the scale of the component by scale.
+	/// </summary>
+	/// <param name="component"> x, y, or z component. </param>
+	/// <param name="scale"> Amount </param>
 	void setScale(int component, float scale);
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="component"></param>
+	/// <param name="scale"></param>
+	/// <returns></returns>
 	float getScale(int component, float scale);
 
+	/// <summary>
+	/// Subdivides all selected meshes.
+	/// 
+	/// This function should be modified to allow for specificity in the level of subdivision.
+	/// </summary>
 	void subdivision();
 
+	/// <summary>
+	/// Tesselates all selected meshes.
+	/// 
+	/// This function should be modified to allow for specificity in the level of subdivision.
+	/// </summary>
 	void tesselate();
 
+	/// <summary>
+	/// todo
+	/// </summary>
 	void bevel();
 	
+	/// <summary>
+	/// todo
+	/// </summary>
 	void extrude();
 
+	/// <summary>
+	/// Adds a new cube mesh to the scene list.
+	/// </summary>
 	void displayCube();
 
+	/// <summary>
+	/// Adds a new pyramid mesh to the scene list.
+	/// </summary>
 	void displayPyramid();
 
+	/// <summary>
+	/// Adds a new cylinder mesh to the scene list.
+	/// </summary>
 	void displayCylinder();
 
+	/// <summary>
+	/// Adds a new UV sphere mesh to the scene list.
+	/// </summary>
 	void displayUVSphere();
 
+	/// <summary>
+	/// Adds a new icosphere mesh to the scene list.
+	/// </summary>
 	void displayIcoSphere();
 
+	/// <summary>
+	/// Adds a new torus mesh to the scene list.
+	/// </summary>
 	void displayTorus();
 
+	/// <summary>
+	/// todo
+	/// </summary>
+	/// <param name="compontent"> x, y, or z component. </param>
+	/// <param name="angle"> </param>
+	/// <returns></returns>
 	float getRot(int compontent, float angle);
 
+	/// <summary>
+	/// Delete all selected meshes from the scene list.
+	/// </summary>
 	void deleteMesh();
 
+	/// <summary>
+	/// Duplicates all selected meshes.
+	/// </summary>
 	void duplicateMesh();
 
+	/// <summary>
+	/// Set selection status of mesh at id.
+	/// </summary>
+	/// <param name="id"> id of mesh in scene. </param>
 	void selectMesh(uint id);
 
+	/// <summary>
+	/// Deselect all meshes in scene.
+	/// </summary>
 	void deselectMeshes();
 
+	/// <summary>
+	/// Set the rotation of component of mesh to angle.
+	/// </summary>
+	/// <param name="component"> x, y, or z component. </param>
+	/// <param name="angle"> Angle. </param>
 	void setRot(int component, float angle);
 
+	/// <summary>
+	/// todo
+	/// </summary>
+	/// <param name="compontent"></param>
+	/// <param name="angle"></param>
+	/// <returns></returns>
 	float getPos(int compontent, float angle);
 
+	/// <summary>
+	/// Set the position of component of mesh.
+	/// </summary>
+	/// <param name="compontent"> x, y, or z component. </param>
+	/// <param name="pos"> Position. </param>
+	/// <returns></returns>
 	void setPos(int component, float pos);
 
+	/// <summary>
+	/// Load the file from filepath as a new mesh in the scene.
+	/// </summary>
+	/// <param name="filepath"> Path to stl/obj file. </param>
+	/// <returns> True if the load was successful. </returns>
 	bool loadFile(const char* filepath);
 
+	/// <summary>
+	/// Export the scene to obj to filepath.
+	/// 
+	/// Todo: make this work with multiple meshes.
+	/// </summary>
+	/// <param name="filepath"> Path to export to. </param>
+	/// <returns> True if the export was successful. </returns>
 	bool exportObj(const char* filepath);
 
+	/// <summary>
+	/// Export the scene to stl to filepath.
+	/// 
+	/// Todo: make this work with multiple meshes.
+	/// </summary>
+	/// <param name="filepath"> Path to export to. </param>
+	/// <returns> True if the export was successful. </returns>
 	bool exportStl(const char* filepath);
 
+	/// <summary>
+	/// Returns the active mode: model, simple, or render.
+	/// </summary>
+	/// <returns> Active mode. </returns>
 	Mode getActiveMode();
 
+	/// <summary>
+	/// Returns the active element: vertex, edge, face, or object.
+	/// </summary>
+	/// <returns> Active element. </returns>
 	Element getActiveElement();
 
+	/// <summary>
+	/// Returns the active action, i.e. the current tool being used.
+	/// </summary>
+	/// <returns> Active action. </returns>
 	Action getActiveAction();
 
+	/// <summary>
+	/// Sets the active mode.
+	/// </summary>
+	/// <param name="mode"> Mode to change to. </param>
 	void setActiveMode(Mode mode);
 
+	/// <summary>
+	/// Sets the active element.
+	/// </summary>
+	/// <param name="element"> Element to change to. </param>
 	void setActiveElement(Element element);
 
+	/// <summary>
+	/// Sets the active action.
+	/// </summary>
+	/// <param name="action"> Action to change to. </param>
 	void setActiveAction(Action action);
 
+	/// <summary>
+	/// Returns the non-mutable primary selected mesh.
+	/// </summary>
+	/// <returns> Pointer to the primary selected mesh. </returns>
 	const HalfEdgeMesh* primarySelectedMesh();
 
+	/// <summary>
+	/// Sets the callback for what is called when the primary selected object is selected.
+	/// </summary>
+	/// <param name="callback"></param>
 	void setPrimarySelectionCallback(void (*callback)());
 };
 

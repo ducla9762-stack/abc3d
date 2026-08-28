@@ -68,6 +68,7 @@ int Viewport::handle(int event) {
 }
 
 void Viewport::mouseDrag() {
+	// Get mouse pointer position.
 	Vec2f pos(Fl::event_x(), Fl::event_y());
 	Vec2f uv(pos.x / (w() - 1), pos.y / (h() - 1));
 	uv.y = 1.0f - uv.y;
@@ -79,6 +80,7 @@ void Viewport::mouseDrag() {
 		initialDragDir.Normalize();
 	}
 
+	// Get change in position.
 	Vec2f change;
 	change.y = mouseDragPrevPos.y - pos.y;
 	change.x = pos.x - mouseDragPrevPos.x;
@@ -86,6 +88,8 @@ void Viewport::mouseDrag() {
 	if (change.y == 0 && change.x == 0) return;
 
 	bool camera = true;
+
+	// Transformation drag depending on action.
 	if (activeAction == TRANSLATE_OUT) {
 		camera = !translateOutDrag(pos, uv);
 	}
@@ -99,6 +103,7 @@ void Viewport::mouseDrag() {
 		camera = !rotateDrag(pos);
 	}
 	
+	// Otherwise, we rotate the camera position.
 	if (camera) {
 		camPos.x -= change.x;
 		camPos.y += change.y;
@@ -264,11 +269,14 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 }
 
 int Viewport::mousePush() {
+	// For now, we ignore right mouse button events.
 	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
+	// Get position of mouse press.
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
+	// Get the selection ids at this position.
 	selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// Check if there is a valid object-level id.
@@ -280,6 +288,7 @@ int Viewport::mousePush() {
 		deselectMeshes();
 	}
 
+	// Print selection ids.
 	std::cout << "Object Id: " << selectionIds.x << std::endl;
 	std::cout << "Component Id: " << selectionIds.y << std::endl;
 	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
@@ -294,6 +303,7 @@ int Viewport::mousePush() {
 }
 
 void Viewport::mouseWheel() {
+	// Adjust the camera zoom.
 	camPos.z += Fl::event_dy();
 	if (camPos.z < 0.0f) { camPos.z = 0.0f; }
 
@@ -351,10 +361,12 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
+	// Load default mesh (cube).
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
 float Viewport::getScale(int component, float scale) {
+	// todo
 	return 1;
 }
 
@@ -366,6 +378,9 @@ void Viewport::setScale(int component, float scale) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
+	// todo: allow scale on multiple selections.
+
+	// If there is a valid primary selection, set component to scale.
 	if (primarySelection != MAX_UINT) {
 		scene[primarySelection]->scale[component] = scale;
 		modelingRenderer.UpdateRenderBuffers(scene);
@@ -374,11 +389,11 @@ void Viewport::setScale(int component, float scale) {
 }
 
 void Viewport::bevel() {
-
+	// todo
 }
 
 void Viewport::extrude() {
-
+	// todo
 }
 
 void Viewport::subdivision() {
@@ -389,6 +404,7 @@ void Viewport::subdivision() {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
+	// Subdivide all selected meshes in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
 		if (scene.IsMeshSelected(i))
@@ -401,12 +417,14 @@ void Viewport::subdivision() {
 }
 
 void Viewport::displayCube() {
+	// Insert new cube mesh into scene.
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::displayPyramid() {
+	// Insert new pyramid mesh into scene.
 	scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
@@ -416,7 +434,9 @@ void Viewport::displayCylinder() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate cylinder of resolution 12.
 	generateUnitCylinder(vertices, faces, 12);
+	// Insert new cylinder mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -424,6 +444,7 @@ void Viewport::displayCylinder() {
 }
 
 void Viewport::displayIcoSphere() {
+	// Insert new icosphere mesh into scene.
 	scene.NewMesh()->load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
@@ -433,7 +454,9 @@ void Viewport::displayUVSphere() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate uv sphere with longitude and lattitude of 10.
 	generateUVSphere(vertices, faces, 10, 10);
+	// Insert new uv sphere mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -444,7 +467,9 @@ void Viewport::displayTorus() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate torus.
 	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f);
+	// Insert new torus mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -460,6 +485,7 @@ void Viewport::tesselate() {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
+	// Tesselate every selected mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
 		if (scene.IsMeshSelected(i))
@@ -479,6 +505,7 @@ void Viewport::deleteMesh() {
 	//std::cout << "mesh deleted" << std::endl;
 	//modelingRenderer.UpdateRenderBuffers(scene);
 
+	// Delete every selected mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
 		if (scene.IsMeshSelected(i))
@@ -517,7 +544,7 @@ void Viewport::selectMesh(uint id) {
 }
 
 void Viewport::duplicateMesh() {
-	
+	// Duplicate every selected mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
 	{
 		if (scene.IsMeshSelected(i)) {
@@ -529,6 +556,7 @@ void Viewport::duplicateMesh() {
 
 
 void Viewport::deselectMeshes() {
+	// Deselect every mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
 		scene.RemoveFromSelectedMeshes(i);
 	}
@@ -540,7 +568,9 @@ void Viewport::deselectMeshes() {
 	redraw();
 }
 
+
 float Viewport::getRot(int component, float angle) {
+	// todo
 	return 1;
 }
 
@@ -552,6 +582,9 @@ void Viewport::setRot(int component, float angle) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
+	// todo: allow this to work for multiple selections.
+
+	// Set the rotation of the primary selected mesh component to angle.
 	if (primarySelection != MAX_UINT) {
 		scene[primarySelection]->eulerRot[component] = angle;
 		modelingRenderer.UpdateRenderBuffers(scene);
@@ -560,6 +593,7 @@ void Viewport::setRot(int component, float angle) {
 }
 
 float Viewport::getPos(int component, float angle) {
+	// todo
 	return 1;
 }
 
@@ -571,6 +605,9 @@ void Viewport::setPos(int component, float pos) {
 	//modelingRenderer.UpdateRenderBuffers(scene);
 	//redraw();
 
+	// todo: allow this to work on multiple selections.
+
+	// Set the position of the primary selected mesh component to position.
 	if (primarySelection != MAX_UINT) {
 		scene[primarySelection]->pos[component] = pos;
 		modelingRenderer.UpdateRenderBuffers(scene);
@@ -579,6 +616,7 @@ void Viewport::setPos(int component, float pos) {
 }
 
 bool Viewport::loadFile(const char* filepath) {
+	// Load mesh from filepath into scene.
 	bool success = scene.NewMesh()->load(filepath);
 	if (!success) return false;
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -592,6 +630,7 @@ bool Viewport::exportObj(const char* filepath) {
 		return true;
 	}
 
+	// Only export the first mesh in scene.
 	scene[0]->exportObj(filepath);
 	return true;
 }
@@ -601,6 +640,7 @@ bool Viewport::exportStl(const char* filepath) {
 		return true;
 	}
 
+	// Only export the first mesh in scene.
 	scene[0]->exportStl(filepath);
 	return true;
 }
