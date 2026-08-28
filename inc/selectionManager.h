@@ -9,6 +9,10 @@ struct SelectionItem {
 	Element type;
 	uint meshId;
 	uint componentId;
+
+	bool operator==(const SelectionItem& other) const {
+		return (type == other.type && meshId == other.meshId && componentId == other.componentId);
+	}
 };
 
 class SelectionManager {
@@ -54,18 +58,34 @@ public:
 	}
 
 	/// <summary>
-	/// Called on mouse click, checks to see if the given item is a valid selection.
+	/// Checks a selection item and decides what to do with it.
 	/// </summary>
-	void processClick(std::optional<SelectionItem> item) {
+	/// <param name="item"> A selection item at a point. </param>
+	/// <returns> True if added false if not. </returns>
+	bool processSelection(std::optional<SelectionItem> item) {
+
+		// TODO: Add additive selection.
+
 		// If the item is null (likely a background hit)
 		if (!item) {
-			std::cout << "background" << std::endl;
 			clearSelection();
+			return false;
 		}
-		// Else the item will be valid, check it.
+		// Else the item will be valid, check it against the selected items and decide what to do.
 		else {
-			std::cout << "type: " << item->type << std::endl;
-			// Todo: add to selections list, keep track of that.
+			// Search for the item in the list.
+			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
+
+			// If the item already exists, remove it from the list.
+			if (contained != selectedItems.end()) {
+				selectedItems.erase(contained);
+				return false;
+			}
+			// Else the item is new, add it to the list.
+			else {
+				selectedItems.push_back(*item);
+				return true;
+			}
 		}
 	}
 };

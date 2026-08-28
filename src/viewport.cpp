@@ -283,7 +283,7 @@ int Viewport::mousePush() {
 	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
 
 	// query the selection maanger with the item.
-	selectionManager.processClick(item);
+	selectionManager.processSelection(item);
 
 	// --------------------- old ----------------------------
 
