@@ -288,9 +288,13 @@ bool HalfEdgeMesh::build(const T& faces) {
 		edge.next = nextId;
 		next->prev = i;
 	}
+	
+	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
+	const Vec3f centroid = computeCentroid();
+	translateVertices(-centroid);
+	pos += centroid;
 
-	translateVertices(-computeCentroid());
-	return true; 
+	return true;
 }
 
 template <size_t V, size_t F>
