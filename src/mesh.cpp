@@ -76,6 +76,12 @@ void FaceList::ProcessObjLine(const string& line) {
 
 		faces.push_back(face); 
 	}
+
+	//"o"/"g" open a new group. Record where it starts so SplitObjects can cut here.
+	else if ((tag == 'o' || tag == 'g') && tagged) {
+		if (objectStarts.empty() || objectStarts.back() != faces.size())
+			objectStarts.push_back(static_cast<uint>(faces.size()));
+	}
 }
 
 void FaceList::PrintFaceComponent(uint x) const {
@@ -115,6 +121,63 @@ void FaceList::PrintContents() const {
 	for (const Face& face : faces) {
 		PrintFace(face);
 	}
+}
+
+/// <summary>
+///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
+///		face indices so it only carries the vertices its own faces use. A list with
+///		no group tags (any .stl, or a flat .obj) comes back as a single part.
+/// </summary>
+std::vector<FaceList> FaceList::SplitObjects() const {
+	// Turn the group markers into [begin, end) face ranges. Faces written before the
+	// first marker form their own leading part, and a list with no markers is one
+	// part covering every face.
+	std::vector<Vec2u> ranges;
+	const uint faceCount = static_cast<uint>(faces.size());
+	uint prev = 0;
+
+	for (uint start : objectStarts) {
+		if (start > prev) { ranges.push_back(Vec2u(prev, start)); }
+		prev = start;
+	}
+
+	if (faceCount > prev) { ranges.push_back(Vec2u(prev, faceCount)); }
+	if (ranges.empty()) { ranges.push_back(Vec2u(0, faceCount)); }
+
+	std::vector<FaceList> parts;
+	parts.reserve(ranges.size());
+
+	for (const Vec2u& range : ranges) {
+		FaceList part;
+		part.faces.reserve(range[1] - range[0]);
+
+		// .obj indices are file-global, so every part needs its own vertex numbering.
+		// Out-of-range indices are copied through untouched, leaving build() to reject them.
+		std::unordered_map<uint, uint> remap;
+
+		for (uint f = range[0]; f < range[1]; ++f) {
+			Face face = faces[f];
+
+			for (int i = 0; i < 4; ++i) {
+				const uint vertId = face[i];
+				if (vertId == MAX_UINT || vertId >= vertices.size()) { continue; }
+
+				auto it = remap.find(vertId);
+				if (it == remap.end()) {
+					it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
+					part.vertices.push_back(vertices[vertId]);
+				}
+
+				face[i] = it->second;
+			}
+
+			part.faces.push_back(face);
+		}
+
+		parts.push_back(std::move(part));
+	}
+
+	return parts;
 }
 
 bool FaceList::LoadObj(const char* obj) {
@@ -1032,9 +1095,43 @@ ImportReport HalfEdgeMesh::load(const char* file) {
 	return report;
 }
 
-void HalfEdgeMesh::load(const FaceList& faceList) {
+bool HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
-	build(faceList.Faces());
+	return build(faceList.Faces());
+}
+
+ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
+	FaceList faceList;
+
+	bool success = false;
+
+	if (strstr(file, ".obj"))
+		success = faceList.LoadObj(file);
+
+	else if (strstr(file, ".stl"))
+		success = faceList.LoadSTL(file);
+
+	ImportReport report;
+	report.skippedFaces = faceList.SkippedFaces();
+
+	if (!success) { report.status = ImportReport::FileError; return report; }
+
+	const std::vector<FaceList> parts = faceList.SplitObjects();
+	std::vector<HalfEdgeMesh> built;
+	built.reserve(parts.size());
+
+	// All or nothing: one rejected part rejects the file, so a failed import never
+	// leaves half a model behind.
+	for (const FaceList& part : parts) {
+		if (part.Faces().empty()) { continue; } // Vertices with no faces, nothing to build
+
+		built.emplace_back();
+		if (!built.back().load(part)) { report.status = ImportReport::InvalidTopology; return report; }
+	}
+
+	meshes = std::move(built);
+
+	return report;
 }
 
 void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {

@@ -51,6 +51,7 @@ class FaceList{
 
 	std::vector<Vertex> vertices;
 	std::vector<Face> faces;
+	std::vector<uint> objectStarts;
 	uint skippedFaces = 0; // Face lines the parser dropped rather than storing
 
 	void MoveTo(const char*& c_str, char delim);
@@ -69,6 +70,8 @@ public:
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
+
+	std::vector<FaceList> SplitObjects() const;
 };
 
 class HalfEdgeMesh {
@@ -175,7 +178,7 @@ public:
 	void subdivide();
 	void Clear();
 	ImportReport load(const char* file);
-	void load(const FaceList& faceList);
+	bool load(const FaceList& faceList);
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
 
 	template <size_t V, size_t F>
@@ -187,6 +190,14 @@ public:
 	void appendObj(std::ostream& out, uint& vertOffset) const; 
 	void appendStlTriangles(std::vector<Triangle>& tris) const; 
 };
+
+/// <summary>
+///		Imports every object in `file` as its own mesh. An .obj is split on its "o"/"g"
+///		groups; an .stl has no object concept, so it always comes back as one mesh.
+///		`meshes` is only written when the whole file imports, so a rejected file leaves
+///		it untouched.
+/// </summary>
+ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes);
 
 std::string ensureExtension(const std::string& path, const char* ext); 
 bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary); 

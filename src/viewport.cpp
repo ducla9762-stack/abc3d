@@ -580,13 +580,15 @@ void Viewport::setPos(int component, float pos) {
 }
 
 ImportReport Viewport::loadFile(const char* filepath) {
-	// Build into a local mesh first so a rejected file leaves the scene untouched.
-	// Adding to the scene up front would strand an empty mesh on every failed import.
-	HalfEdgeMesh candidate;
-	ImportReport report = candidate.load(filepath);
+	// Build into local meshes first so a rejected file leaves the scene untouched.
+	// Adding to the scene up front would strand empty meshes on every failed import.
+	std::vector<HalfEdgeMesh> candidates;
+	ImportReport report = loadMeshes(filepath, candidates);
 	if (!report.ok()) { return report; }
 
-	*scene.NewMesh() = std::move(candidate);
+	for (HalfEdgeMesh& candidate : candidates)
+		*scene.NewMesh() = std::move(candidate);
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 	return report;
