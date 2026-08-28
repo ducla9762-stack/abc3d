@@ -1069,7 +1069,8 @@ void HalfEdgeMesh::Clear() {
 /// <returns>
 /// An ImportReport. `status` is Ok when a mesh was built, FileError when the file could
 /// not be read or is not a supported format, and InvalidTopology when the geometry was
-/// rejected (out-of-range index, a vertex repeated within one face, or non-manifold).
+/// rejected (out-of-range index, a vertex repeated within one face, non-manifold, or a
+/// face with no area because its vertices are coincident or collinear).
 /// On any failure the mesh is left empty. `skippedFaces` reports face lines the parser
 /// dropped but recovered from, so an Ok import can still be missing geometry.
 /// </returns>

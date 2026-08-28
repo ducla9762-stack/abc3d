@@ -35,7 +35,8 @@ struct ImportReport {
 	enum Status {
 		Ok,              // A mesh was built
 		FileError,       // Could not open the file, or it is not a supported .obj/.stl
-		InvalidTopology  // Face indices out of range, repeated in one face, or non-manifold
+		InvalidTopology  // Face indices out of range, repeated in one face, non-manifold,
+		                 // or a face with no area (coincident or collinear vertices)
 	};
 
 	Status status = Ok;
@@ -202,6 +203,16 @@ ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes);
 std::string ensureExtension(const std::string& path, const char* ext); 
 bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary); 
 
+/// <summary>
+///		True when the triangle `v0`, `v1`, `v2` has no usable normal, i.e. the points are
+///		coincident or collinear. The test is exact rather than tolerance based: it matches
+///		the condition under which Normalize() divides by zero, so anything it accepts still
+///		exports a finite normal.
+/// </summary>
+inline bool IsDegenerateFace(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
+	return (v1 - v0).Cross(v2 - v0).LengthSquared() == 0.0f;
+}
+
 template<typename T>
 bool HalfEdgeMesh::build(const T& faces) {
 	vertEdge.resize(0);
@@ -210,7 +221,7 @@ bool HalfEdgeMesh::build(const T& faces) {
 	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
 	faceEdges.reserve(faces.size());
 
-	//Reject out of range indices 
+	//Reject out of range indices and degenerate faces
 	const uint vertLimit = static_cast<uint>(vertPos.size()); 
 	for (uint i = 0; i < faces.size(); ++i) {
 		const Vec4<uint>& face = faces[i]; 
@@ -223,6 +234,14 @@ bool HalfEdgeMesh::build(const T& faces) {
 				if (face[j] == face[k]) { Clear(); return false; }
 			}
 		}
+
+		// Distinct indices can still be coincident or collinear, which leaves the face
+		// with no direction: the cross product is zero length and normalizing it yields
+		// nan. Quads are checked as the same triangle fan the stl writer emits.
+		if (IsDegenerateFace(vertPos[face[0]], vertPos[face[1]], vertPos[face[2]])) { Clear(); return false; }
+
+		if (vertCount == 4 &&
+			IsDegenerateFace(vertPos[face[0]], vertPos[face[2]], vertPos[face[3]])) { Clear(); return false; }
 	}
 
 	//Build
