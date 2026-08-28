@@ -279,6 +279,14 @@ int Viewport::mousePush() {
 	// Get the selection ids at this position.
 	selectionIds = modelingRenderer.SelectionIds(x, y);
 
+	// Create a selection item to send to the selection manager.
+	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+
+	// query the selection maanger with the item.
+	selectionManager.processClick(item);
+
+	// --------------------- old ----------------------------
+
 	// Check if there is a valid object-level id.
 	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
 		// Use the 0 indexed id.
@@ -357,6 +365,67 @@ void Viewport::keyUp() {
 	redraw();
 }
 
+std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
+{
+	switch (selectionManager.getActiveElement()) {
+	case OBJECT:
+		// Normal hit.
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				OBJECT,
+				ids.x - 1,
+				MAX_UINT
+			};
+		}
+		// Vertex hit belonging to object.
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				OBJECT,
+				ids.y - 1,
+				MAX_UINT
+			};
+		}
+
+		break;
+
+	case VERTEX:
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				VERTEX,
+				ids.y - 1,
+				ids.z
+			};
+		}
+
+		break;
+
+	case FACE:
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				FACE,
+				ids.x - 1,
+				ids.y
+			};
+		}
+
+		break;
+
+	case EDGE:
+		if (ids.x != 0 && ids.x != MAX_UINT && ids.z != MAX_UINT) {
+			return SelectionItem{
+				EDGE,
+				ids.x - 1,
+				ids.z
+			};
+		}
+
+		break;
+	}
+
+	// Null if background hit.
+	return std::nullopt;
+}
+
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
@@ -371,21 +440,15 @@ float Viewport::getScale(int component, float scale) {
 }
 
 void Viewport::setScale(int component, float scale) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->scale[component] = scale;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
-
-	// todo: allow scale on multiple selections.
-
-	// If there is a valid primary selection, set component to scale.
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->scale[component] = scale;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+	// Rotate each selected mesh at component by angle.
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	{
+		if (scene.IsMeshSelected(i)) {
+			scene.Meshes().at(i)->scale[component] = scale;
+		}
 	}
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 void Viewport::bevel() {
@@ -397,13 +460,6 @@ void Viewport::extrude() {
 }
 
 void Viewport::subdivision() {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->subdivide();
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
-
 	// Subdivide all selected meshes in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
@@ -478,13 +534,6 @@ void Viewport::displayTorus() {
 
 
 void Viewport::tesselate() {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->tesselate();
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
-
 	// Tesselate every selected mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
@@ -498,13 +547,6 @@ void Viewport::tesselate() {
 }
 
 void Viewport::deleteMesh() {
-	//for (uint i = 0; i < scene.MeshCount(); i++)
-	//{
-	//	scene.DeleteMesh(i);
-	//}
-	//std::cout << "mesh deleted" << std::endl;
-	//modelingRenderer.UpdateRenderBuffers(scene);
-
 	// Delete every selected mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
 	{
@@ -575,21 +617,15 @@ float Viewport::getRot(int component, float angle) {
 }
 
 void Viewport::setRot(int component, float angle) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->eulerRot[component] = angle;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
-
-	// todo: allow this to work for multiple selections.
-
-	// Set the rotation of the primary selected mesh component to angle.
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->eulerRot[component] = angle;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+	// Rotate each selected mesh at component by angle.
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	{
+		if (scene.IsMeshSelected(i)) {
+			scene.Meshes().at(i)->eulerRot[component] = angle;
+		}
 	}
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 float Viewport::getPos(int component, float angle) {
@@ -598,21 +634,15 @@ float Viewport::getPos(int component, float angle) {
 }
 
 void Viewport::setPos(int component, float pos) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->pos[component] = pos;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
-
-	// todo: allow this to work on multiple selections.
-
-	// Set the position of the primary selected mesh component to position.
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->pos[component] = pos;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+	// Rotate each selected mesh at component by angle.
+	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	{
+		if (scene.IsMeshSelected(i)) {
+			scene.Meshes().at(i)->pos[component] = pos;
+		}
 	}
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 bool Viewport::loadFile(const char* filepath) {
@@ -647,13 +677,19 @@ bool Viewport::exportStl(const char* filepath) {
 
 Mode Viewport::getActiveMode() { return activeMode;  }
 
-Element Viewport::getActiveElement() { return activeElement; }
+Element Viewport::getActiveElement() { 
+	//return activeElement;
+	return selectionManager.getActiveElement();
+}
 
 Action Viewport::getActiveAction() { return activeAction; }
 
 void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 
-void Viewport::setActiveElement(Element element) { activeElement = element; }
+void Viewport::setActiveElement(Element element) { 
+	activeElement = element;
+	selectionManager.setActiveElement(element);
+}
 
 void Viewport::setActiveAction(Action action) { activeAction = action; }
 

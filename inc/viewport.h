@@ -15,18 +15,20 @@
 #include "render.h"
 #include "scene.h"
 #include "helper.h"
+#include "selectionManager.h"
 #undef max
 
 inline bool initGlew = true;
 
 enum Mode { MODEL, SIMPLE, RENDER };
-enum Element { OBJECT, FACE, EDGE, VERTEX };
 enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL };
 
 class Viewport : public Fl_Gl_Window {
 
+	SelectionManager selectionManager;
+
 	Mode activeMode = MODEL;
-	Element activeElement = OBJECT;
+	Element activeElement = selectionManager.getActiveElement();
 	Action activeAction = SELECT;
 
 	ModelingRenderer modelingRenderer;
@@ -103,6 +105,14 @@ class Viewport : public Fl_Gl_Window {
 	/// Logic executed on a key release event.
 	/// </summary>
 	void keyUp();
+
+	/// <summary>
+	/// Constructs a selection item given the raw ids from the renderer.
+	/// Intended to be sent to the selection manager for processing.
+	/// </summary>
+	/// <param name="ids"> Raw IDs from the renderer. </param>
+	/// <returns> Valid selection object. </returns>
+	std::optional<SelectionItem> createSelectionItem(Vec3u ids);
 
 public:
 	/// <summary>

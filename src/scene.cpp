@@ -2,6 +2,8 @@
 #include "helper.h"
 #include "scene.h"
 
+// TODO: Remove selection responsibility.
+
 Scene::~Scene() {
 	// Loop through all meshes and delete them.
 	for (HalfEdgeMesh* mesh : meshes) {
