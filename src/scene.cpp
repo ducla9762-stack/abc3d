@@ -13,7 +13,7 @@ void Scene::DeleteMesh(uint id) {
 	if (mesh) {
 		meshes.at(id)->Clear();
 		idStack.push_back(id);
-		selectedMeshes.at(id) = false;
+		RemoveFromSelectedMeshes(id); 
 	}
 }
 

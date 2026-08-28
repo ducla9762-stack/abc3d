@@ -1052,7 +1052,7 @@ std::string ensureExtension(const std::string& path, const char* ext) {
 
 		for (size_t i = 0; i < extLen; ++i) {
 			if (std::tolower(static_cast<unsigned char>(path[path.size() - extLen + i])) !=
-				std::tolower(static_cast<unsigned char>(ext[j]))) {
+				std::tolower(static_cast<unsigned char>(ext[i]))) {
 				matches = false; 
 				break; 
 			}
