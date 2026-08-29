@@ -61,30 +61,50 @@ public:
 	/// Checks a selection item and decides what to do with it.
 	/// </summary>
 	/// <param name="item"> A selection item at a point. </param>
+	/// <param name="additive"> If the selection is additive or single. </param>
 	/// <returns> True if added false if not. </returns>
-	bool processSelection(std::optional<SelectionItem> item) {
-
-		// TODO: Add additive selection.
+	bool processSelection(std::optional<SelectionItem>& item, boolean additive) {
 
 		// If the item is null (likely a background hit)
 		if (!item) {
 			clearSelection();
 			return false;
 		}
-		// Else the item will be valid, check it against the selected items and decide what to do.
-		else {
-			// Search for the item in the list.
-			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
+		// This shouldn't happen.
+		if (item->type != activeElement)
+		{
+			return false;
+		}
 
+		// Else a valid item has been selected.
+		else {
+			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
+				
 			// If the item already exists, remove it from the list.
 			if (contained != selectedItems.end()) {
-				selectedItems.erase(contained);
-				return false;
+				// If single selection.
+				if (!additive) {
+					selectedItems.clear();
+					return false;
+				}
+				// Else additive selection.
+				else {
+					selectedItems.erase(contained);
+					return false;
+				}
 			}
 			// Else the item is new, add it to the list.
 			else {
-				selectedItems.push_back(*item);
-				return true;
+				if (!additive)
+				{
+					selectedItems.clear();
+					selectedItems.push_back(*item);
+					return true;
+				}
+				else {
+					selectedItems.push_back(*item);
+					return true;
+				}
 			}
 		}
 	}

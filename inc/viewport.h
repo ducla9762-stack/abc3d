@@ -36,7 +36,7 @@ class Viewport : public Fl_Gl_Window {
 	Renderer* activeRenderer = &modelingRenderer;
 	bool modeChanged = false;
 
-	bool singleSelection = true;
+	bool additiveSelection = false;
 
 	Scene scene;
 

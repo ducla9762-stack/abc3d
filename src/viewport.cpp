@@ -283,7 +283,9 @@ int Viewport::mousePush() {
 	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
 
 	// query the selection maanger with the item.
-	selectionManager.processSelection(item);
+	selectionManager.processSelection(item, additiveSelection);
+
+	std::cout << selectionManager.getSelectedItems().size() << std::endl;
 
 	// --------------------- old ----------------------------
 
@@ -346,7 +348,7 @@ void Viewport::keyDown() {
 		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
-		singleSelection = false;
+		additiveSelection = true;
 		break;
 	default:
 		return;
@@ -357,7 +359,7 @@ void Viewport::keyDown() {
 void Viewport::keyUp() {
 	switch (Fl::event_key()) {
 	case FL_Control_L:
-		singleSelection = true;
+		additiveSelection = false;
 		break;
 	default:
 		return;
@@ -563,7 +565,7 @@ void Viewport::deleteMesh() {
 
 void Viewport::selectMesh(uint id) {
 	// If single selection, remove all other selections before adding to selection.
-	if (singleSelection) {
+	if (additiveSelection) {
 		for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
 			scene.RemoveFromSelectedMeshes(i);
 		}
