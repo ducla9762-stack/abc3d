@@ -14,6 +14,7 @@
 #include <FL/Fl_Tile.H>
 //#include <FL/Fl_Flex.H>
 #include <FL/Fl_Scrollbar.H>
+#include <FL/fl_ask.H>
 #undef max
 
 #include <GL/glew.h>
@@ -54,8 +55,35 @@ void primarySelectionCallback() {
 void importModelCallback(Fl_Widget* w, void*) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
 	fileChooser.directory("../assets/models/");
-	if (fileChooser.show() == 0) {
-		viewport->loadFile(fileChooser.filename());
+	if (fileChooser.show() != 0) { return; } // Cancelled, or the chooser errored
+
+	const char* filepath = fileChooser.filename();
+	ImportReport report = viewport->loadFile(filepath);
+
+	switch (report.status) {
+	case ImportReport::FileError:
+		fl_alert("Could not read \"%s\".\n\n"
+			"The file could not be opened, or it is not a supported .obj or .stl file.",
+			filepath);
+		break;
+
+	case ImportReport::InvalidTopology:
+		fl_alert("Could not import \"%s\".\n\n"
+			"The model is not a valid mesh: a face refers to a vertex that does not exist, "
+			"repeats the same vertex twice, or an edge is shared by more than two faces.\n\n"
+			"Nothing was added to the scene.",
+			filepath);
+		break;
+
+	case ImportReport::Ok:
+		// The mesh loaded, but the parser had to discard geometry to get there.
+		if (report.skippedFaces > 0) {
+			fl_alert("Imported \"%s\", but %u face(s) were skipped.\n\n"
+				"They use negative (relative) vertex indices, which are not supported. "
+				"The model may look incomplete.",
+				filepath, report.skippedFaces);
+		}
+		break;
 	}
 }
 
