@@ -200,6 +200,13 @@ public:
 /// </summary>
 ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes);
 
+/// <summary>
+///		True when `path` ends with `ext`, compared without regard to case. The match is
+///		anchored to the end of the path, so a directory named "models.obj.d" no longer
+///		makes a .stl file inside it look like an .obj.
+/// </summary>
+bool hasExtension(const std::string& path, const char* ext); 
+
 std::string ensureExtension(const std::string& path, const char* ext); 
 bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary); 
 

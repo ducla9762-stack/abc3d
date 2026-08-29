@@ -227,11 +227,16 @@ bool FaceList::LoadSTL(const char* stl) {
 	// STL stores every triangle's vertices independently, so without this
 	// every vertex would be unique and the half-edge twin links can't be built.
 	struct Vec3fHash {
+		// -0.0f and 0.0f compare equal but have different bit patterns, so they get different results. 
+		// This hashing collapses both into the same value
+		static uint32_t Bits(float f) {
+			uint32_t i;
+			memcpy(&i, &f, 4);
+			return (i == 0x80000000u) ? 0u : i;
+		}
+
 		size_t operator()(const Vec3f& v) const {
-			uint32_t xi, yi, zi;
-			memcpy(&xi, &v.x, 4);
-			memcpy(&yi, &v.y, 4);
-			memcpy(&zi, &v.z, 4);
+			const uint32_t xi = Bits(v.x), yi = Bits(v.y), zi = Bits(v.z);
 			size_t h = std::hash<uint32_t>{}(xi);
 			h ^= std::hash<uint32_t>{}(yi)+0x9e3779b9u + (h << 6) + (h >> 2);
 			h ^= std::hash<uint32_t>{}(zi)+0x9e3779b9u + (h << 6) + (h >> 2);
@@ -1079,10 +1084,13 @@ ImportReport HalfEdgeMesh::load(const char* file) {
 
 	bool success = false; 
 
-	if (strstr(file, ".obj"))
+	// Dispatch on the file's actual extension. strstr matched ".obj" anywhere in the
+	// path, so a .stl inside a directory like "models.obj.d" went to the .obj parser,
+	// and it was case sensitive, so "CUBE.STL" matched neither branch.
+	if (hasExtension(file, ".obj"))
 		success = faceList.LoadObj(file);
 
-	else if (strstr(file, ".stl"))
+	else if (hasExtension(file, ".stl"))
 		success = faceList.LoadSTL(file);
 
 	ImportReport report;
@@ -1106,10 +1114,10 @@ ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
 
 	bool success = false;
 
-	if (strstr(file, ".obj"))
+	if (hasExtension(file, ".obj"))
 		success = faceList.LoadObj(file);
 
-	else if (strstr(file, ".stl"))
+	else if (hasExtension(file, ".stl"))
 		success = faceList.LoadSTL(file);
 
 	ImportReport report;
@@ -1141,25 +1149,27 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 }
 
 /// <summary>
+/// True when `path` ends with `ext`, compared without regard to case.
+/// </summary>
+bool hasExtension(const std::string& path, const char* ext) {
+	const size_t extLen = std::strlen(ext); 
+	if (path.size() < extLen) return false; 
+
+	for (size_t i = 0; i < extLen; ++i) {
+		if (std::tolower(static_cast<unsigned char>(path[path.size() - extLen + i])) !=
+			std::tolower(static_cast<unsigned char>(ext[i]))) {
+			return false; 
+		}
+	}
+
+	return true; 
+}
+
+/// <summary>
 /// Returns `path` with `ext` appended unless it already ends with `ext`
 /// </summary>
 std::string ensureExtension(const std::string& path, const char* ext) {
-	const size_t extLen = std::strlen(ext); 
-	if (path.size() >= extLen) {
-		bool matches = true; 
-
-		for (size_t i = 0; i < extLen; ++i) {
-			if (std::tolower(static_cast<unsigned char>(path[path.size() - extLen + i])) !=
-				std::tolower(static_cast<unsigned char>(ext[i]))) {
-				matches = false; 
-				break; 
-			}
-		}
-
-		if (matches) return path; 
-	}
-
-	return path + ext; 
+	return hasExtension(path, ext) ? path : path + ext; 
 }
 
 void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset) const {
