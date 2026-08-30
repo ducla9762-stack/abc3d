@@ -663,10 +663,7 @@ ImportReport Viewport::loadFile(const char* filepath) {
 	return report;
 }
 
-/// <summary>
-/// Meshes export every selected or whole scene when nothing is selected
-/// </summary>
-/// <returns>Vector of meshes ids</returns>
+
 std::vector<uint> Viewport::exportMeshIds() {
 	std::vector<uint> selected; 
 	std::vector<uint> all; 
@@ -681,11 +678,6 @@ std::vector<uint> Viewport::exportMeshIds() {
 	return selected.empty() ? all : selected; 
 }
 
-/// <summary>
-/// Each mesh in exportMeshIds is written in world space so pos, rot, and scale save
-/// </summary>
-/// <param name="filepath"></param>
-/// <returns>success or fail when export</returns>
 bool Viewport::exportObj(const char* filepath) {
 	std::vector<uint> ids = exportMeshIds(); 
 	if (ids.empty()) return true; 
@@ -703,11 +695,6 @@ bool Viewport::exportObj(const char* filepath) {
 	return !file.fail(); 
 }
 
-/// <summary>
-/// STL has no idea for separate objects. We will store them as a soup of triangles for all objects.
-/// </summary>
-/// <param name="filepath"></param>
-/// <returns>success or fail of export</returns>
 bool Viewport::exportStl(const char* filepath) {
 	std::vector<uint> ids = exportMeshIds();
 	if (ids.empty()) return true;

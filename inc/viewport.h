@@ -57,6 +57,10 @@ class Viewport : public Fl_Gl_Window {
 
 	uint primarySelection = MAX_UINT;
 
+	/// <summary>
+	/// Meshes export every selected or whole scene when nothing is selected
+	/// </summary>
+	/// <returns>Vector of meshes ids</returns>
 	std::vector<uint> exportMeshIds(); 
 
 	/// <summary>
@@ -248,25 +252,25 @@ public:
 	/// <returns></returns>
 	void setPos(int component, float pos);
 
-
+	/// <summary>
+	/// Loads the file at filepath as a mesh.
+	/// </summary>
+	/// <param name="filepath"></param>
+	/// <returns></returns>
 	ImportReport loadFile(const char* filepath);
 
 	/// <summary>
-	/// Export the scene to obj to filepath.
-	/// 
-	/// Todo: make this work with multiple meshes.
+	/// Each mesh in exportMeshIds is written in world space so pos, rot, and scale save
 	/// </summary>
-	/// <param name="filepath"> Path to export to. </param>
-	/// <returns> True if the export was successful. </returns>
+	/// <param name="filepath"></param>
+	/// <returns>success or fail when export</returns>
 	bool exportObj(const char* filepath);
 
 	/// <summary>
-	/// Export the scene to stl to filepath.
-	/// 
-	/// Todo: make this work with multiple meshes.
+	/// STL has no idea for separate objects. We will store them as a soup of triangles for all objects.
 	/// </summary>
-	/// <param name="filepath"> Path to export to. </param>
-	/// <returns> True if the export was successful. </returns>
+	/// <param name="filepath"></param>
+	/// <returns>success or fail of export</returns>
 	bool exportStl(const char* filepath);
 
 	/// <summary>
