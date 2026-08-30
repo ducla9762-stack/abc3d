@@ -42,6 +42,8 @@ public:
 	spinners[1]->callback(spinnerCallback<1>);\
 	spinners[2]->callback(spinnerCallback<2>);\
 
+/// <summary> Subclass of ToolPanel that populates rotation spinners in the rotation panel
+/// Works with the rotate panel by calling viewport </summary>
 class RotateToolPanel : public ToolPanel {
 	template <int component>
 	static void spinnerCallback(Fl_Widget* spinner) {
@@ -72,6 +74,8 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates scale spinners in the scale panel
+/// Works with the scale panel by calling viewport </summary>
 class ScaleToolPanel : public ToolPanel {
 	template <int component>
 	static void spinnerCallback(Fl_Widget* spinner) {
@@ -83,7 +87,8 @@ class ScaleToolPanel : public ToolPanel {
 public:
 	ScaleToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h, title) {
 		begin();
-		BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Scale", 0.0, 0.2)
+		
+BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Scale", 0.0, 0.2)
 		size(w, yPos);
 		end();
 	}
@@ -101,6 +106,8 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates translation spinners in the translation panel
+/// Works with the panel by calling viewport </summary>
 class TranslationToolPanel : public ToolPanel {
 	template <int component>
 	static void spinnerCallback(Fl_Widget* spinner) {
@@ -177,6 +184,8 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates translation, scale, and rotation spinners in the select panel
+/// Works with the select panel by calling viewport </summary>
 class SelectToolPanel : public ToolPanel {
 	TranslationToolPanel* posPanel = nullptr;
 	ScaleToolPanel* scalePanel = nullptr;
@@ -226,10 +235,8 @@ public:
 		}
 		if (rotPanel) {
 			rotPanelPos.Set(rotPanel->x(), rotPanel->y());
-			//std::cout << "hi" << rotPanelPos << std::endl;
 			rotPanel->position(x(), yPos);
 			rotPanel->show();
-			//std::cout << "la" << posPanel->x() << ", " << posPanel->y() << std::endl;
 		}
 
 		canShow = false;
@@ -253,6 +260,8 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates buttons for each shape in the shape panel
+/// Works with the select panel by calling viewport </summary>
 class ShapeToolPanel : public ToolPanel {
 	// Callbacks from within the Shape button
 	static void cubeCallback(Fl_Widget* w, void* data) {
@@ -336,6 +345,8 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates subdivision and tesselation buttons in the subdivision panel
+/// Works with the select panel by calling viewport </summary>
 class SubdivideToolPanel : public ToolPanel {
 	static void subdivisionCallback(Fl_Widget* w, void*) {
 		viewport->subdivision();
@@ -368,11 +379,17 @@ public:
 	}
 };
 
+/// <summary> Subclass of ToolPanel that populates ______
+/// Works with the select panel by calling viewport </summary>
+// TODO 
 class BevelToolPanel : public ToolPanel {
 public:
 	BevelToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) { end(); }
 };
 
+/// <summary> Subclass of ToolPanel that populates _____
+/// Works with the select panel, not the buttons themselves, by calling viewport </summary>
+// TODO
 class ExtrudeToolPanel : public ToolPanel {
 public:
 	ExtrudeToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) { end(); }

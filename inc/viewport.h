@@ -57,6 +57,8 @@ class Viewport : public Fl_Gl_Window {
 
 	uint primarySelection = MAX_UINT;
 
+	std::vector<uint> exportMeshIds(); 
+
 	/// <summary>
 	/// Draw loop required for an FLTK widget. Called by FLTK.
 	/// </summary>
@@ -246,12 +248,8 @@ public:
 	/// <returns></returns>
 	void setPos(int component, float pos);
 
-	/// <summary>
-	/// Load the file from filepath as a new mesh in the scene.
-	/// </summary>
-	/// <param name="filepath"> Path to stl/obj file. </param>
-	/// <returns> True if the load was successful. </returns>
-	bool loadFile(const char* filepath);
+
+	ImportReport loadFile(const char* filepath);
 
 	/// <summary>
 	/// Export the scene to obj to filepath.

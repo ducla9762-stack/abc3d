@@ -19,7 +19,7 @@ void Scene::DeleteMesh(uint id) {
 		// Clear the mesh, , ensure mesh is de-selected.
 		meshes.at(id)->Clear();
 		idStack.push_back(id);
-		selectedMeshes.at(id) = false;
+		RemoveFromSelectedMeshes(id); 
 	}
 }
 
