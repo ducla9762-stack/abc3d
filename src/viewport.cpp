@@ -286,23 +286,21 @@ int Viewport::mousePush() {
 	// query the selection maanger with the item.
 	selectionManager.processSelection(item, additiveSelection);
 
-	std::cout << selectionManager.getSelectedItems().size() << std::endl;
-
 	// --------------------- old ----------------------------
 
-	// Check if there is a valid object-level id.
-	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
-		// Use the 0 indexed id.
-		selectMesh(selectionIds.x - 1);
-	}
-	else {
-		deselectMeshes();
-	}
+	//// Check if there is a valid object-level id.
+	//if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
+	//	// Use the 0 indexed id.
+	//	selectMesh(selectionIds.x - 1);
+	//}
+	//else {
+	//	deselectMeshes();
+	//}
 
-	// Print selection ids.
-	std::cout << "Object Id: " << selectionIds.x << std::endl;
-	std::cout << "Component Id: " << selectionIds.y << std::endl;
-	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
+	//// Print selection ids.
+	//std::cout << "Object Id: " << selectionIds.x << std::endl;
+	//std::cout << "Component Id: " << selectionIds.y << std::endl;
+	//std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
 	mouseDragPrevPos = mouseDragStartPos;
@@ -339,10 +337,10 @@ void Viewport::keyDown() {
 		modelingRenderer.ToggleGrid();
 		break;
 	case FL_Delete:
-		deleteMesh();
+		deleteElement();
 		break;
 	case 'd': 
-		duplicateMesh(); 
+		duplicateElement(); 
 		break;
 	case 'v':
 		activeElement = EDGE;
@@ -444,12 +442,39 @@ float Viewport::getScale(int component, float scale) {
 
 void Viewport::setScale(int component, float scale) {
 	// Rotate each selected mesh at component by angle.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i)) {
-			scene.Meshes().at(i)->scale[component] = scale;
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i)) {
+	//		scene.Meshes().at(i)->scale[component] = scale;
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->scale[component] = scale;
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
@@ -464,13 +489,40 @@ void Viewport::extrude() {
 
 void Viewport::subdivision() {
 	// Subdivide all selected meshes in scene.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->subdivide();
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i))
+	//	{
+	//		scene.Meshes().at(i)->subdivide();
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->subdivide();
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
@@ -538,32 +590,87 @@ void Viewport::displayTorus() {
 
 void Viewport::tesselate() {
 	// Tesselate every selected mesh in scene.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->tesselate();
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i))
+	//	{
+	//		scene.Meshes().at(i)->tesselate();
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->tesselate();
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
-void Viewport::deleteMesh() {
+void Viewport::deleteElement() {
 	// Delete every selected mesh in scene.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.DeleteMesh(i);
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i))
+	//	{
+	//		scene.DeleteMesh(i);
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			scene.DeleteMesh(item.meshId);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	primarySelection = MAX_UINT;
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
 }
 
+// OLD FUNCTION
 void Viewport::selectMesh(uint id) {
 	// If single selection, remove all other selections before adding to selection.
 	if (additiveSelection) {
@@ -588,18 +695,44 @@ void Viewport::selectMesh(uint id) {
 	redraw();
 }
 
-void Viewport::duplicateMesh() {
+void Viewport::duplicateElement() {
 	// Duplicate every selected mesh in scene.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
-	{
-		if (scene.IsMeshSelected(i)) {
-			scene.DuplicateMesh(i);
-			std::cout << "This should duplicate" << std::endl;
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
+	//{
+	//	if (scene.IsMeshSelected(i)) {
+	//		scene.DuplicateMesh(i);
+	//		std::cout << "This should duplicate" << std::endl;
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			scene.DuplicateMesh(item.meshId);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
 }
 
-
+// OLD FUNCTION
 void Viewport::deselectMeshes() {
 	// Deselect every mesh in scene.
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
@@ -621,12 +754,39 @@ float Viewport::getRot(int component, float angle) {
 
 void Viewport::setRot(int component, float angle) {
 	// Rotate each selected mesh at component by angle.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i)) {
-			scene.Meshes().at(i)->eulerRot[component] = angle;
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i)) {
+	//		scene.Meshes().at(i)->eulerRot[component] = angle;
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->eulerRot[component] = angle;
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
@@ -638,12 +798,39 @@ float Viewport::getPos(int component, float angle) {
 
 void Viewport::setPos(int component, float pos) {
 	// Rotate each selected mesh at component by angle.
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i)) {
-			scene.Meshes().at(i)->pos[component] = pos;
+	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
+	//{
+	//	if (scene.IsMeshSelected(i)) {
+	//		scene.Meshes().at(i)->pos[component] = pos;
+	//	}
+	//}
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->pos[component] = pos;
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }

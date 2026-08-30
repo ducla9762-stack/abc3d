@@ -211,12 +211,12 @@ public:
 	/// <summary>
 	/// Delete all selected meshes from the scene list.
 	/// </summary>
-	void deleteMesh();
+	void deleteElement();
 
 	/// <summary>
 	/// Duplicates all selected meshes.
 	/// </summary>
-	void duplicateMesh();
+	void duplicateElement();
 
 	/// <summary>
 	/// Set selection status of mesh at id.
