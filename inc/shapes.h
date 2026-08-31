@@ -166,12 +166,15 @@ inline void generateUnitCylinder(std::array<Vec3f, V>& vertices, std::array<Vec4
 		faces[resolution - 2 + i] = Vec4u(resolution, resolution + i + 2, resolution + i + 1, MAX_UINT);
 	
 	//Side Quads
+	//Walk the bottom ring backwards so the sides wind the same way round as the caps: every
+	//edge they share is then traversed once in each direction, which is what makes the
+	//cylinder a closed manifold rather than two caps glued to an inside out tube.
 	int faceOffset = 2 * (resolution - 2); 
 
 	for (int i = 0; i < resolution; ++i) {
 		int next = (i + 1) % resolution; 
 
-		faces[faceOffset + i] = Vec4u(i, next, next + resolution, i + resolution);
+		faces[faceOffset + i] = Vec4u(i, i + resolution, next + resolution, next);
 	}
 }
 
@@ -215,47 +218,97 @@ inline void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u
 		Vec4u(resolution, resolution + i + 2, resolution + i + 1, MAX_UINT);
 
 	// Sides
+	// Walk the bottom ring backwards so the sides wind the same way round as the caps: every
+	// edge they share is then traversed once in each direction, which is what makes the
+	// cylinder a closed manifold rather than two caps glued to an inside out tube.
 	uint offset = 2 * (resolution - 2);
 
 	for (uint i = 0; i < resolution; ++i) {
 		uint next = (i + 1) % resolution;
 
 		faces[offset + i] =
-			Vec4u(i, next, next + resolution, i + resolution);
+			Vec4u(i, i + resolution, next + resolution, next);
 	}
 }
 
+/// <summary>
+/// This method generates the vertices of a unit UV sphere by modifying the vertices passed in by reference.
+/// The layout is one vertex at the north pole, then latSegments - 1 rings of lonSegments vertices each,
+/// then one vertex at the south pole. No ring is generated at a pole, where a whole row of vertices would
+/// otherwise collapse onto the same point and leave every face touching it with zero area, and no column is
+/// duplicated to close the seam, so each position appears exactly once.
+/// </summary>
+/// <param name="vertices">The vector for vertices</param>
+/// <param name="latSegments"> latSegments >= 2 ALWAYS. The number of bands to split the sphere into from pole to pole. </param>
+/// <param name="lonSegments"> lonSegments >= 3 ALWAYS. The number of vertices to split each ring into. </param>
 inline void generateUVSphereVertices(std::vector<Vec3f>& vertices, uint latSegments, uint lonSegments) {
-	vertices.reserve((latSegments + 1) * (lonSegments + 1));
+	assert(latSegments >= 2);
+	assert(lonSegments >= 3);
 
-	for (int i = 0; i <= latSegments; i++) {
-		float v = float(i) / latSegments; 
-		float phi = v * cy::Pi<float>();
+	vertices.reserve(2 + (latSegments - 1) * lonSegments);
 
-		for (int j = 0; j <= lonSegments; j++) {
-			float u = (float)j / lonSegments; 
-			float theta = u * 2.0f * cy::Pi<float>(); 
+	vertices.push_back(Vec3f(0.0f, 1.0f, 0.0f)); //North Pole
 
-			float x = std::sin(phi) * std::cos(theta); 
-			float y = std::cos(phi); 
-			float z = std::sin(phi) * std::sin(theta);
+	//Rings, poles excluded
+	for (uint i = 1; i < latSegments; ++i) {
+		float phi = cy::Pi<float>() * i / latSegments;
+		float sinPhi = std::sin(phi);
+		float cosPhi = std::cos(phi);
 
-			vertices.push_back(Vec3f(x, y, z)); 
+		for (uint j = 0; j < lonSegments; ++j) {
+			float theta = cy::Pi<float>() * 2.0f * j / lonSegments;
+
+			vertices.push_back(Vec3f(sinPhi * std::cos(theta), cosPhi, sinPhi * std::sin(theta)));
 		}
-	} 
+	}
+
+	vertices.push_back(Vec3f(0.0f, -1.0f, 0.0f)); //South Pole
 }
 
+/// <summary>
+/// This method generates the faces for the vertex layout generateUVSphereVertices produces by modifying the
+/// faces passed in by reference. A triangle fan closes each pole and two triangles cover each cell of the grid
+/// in between. Columns wrap with a modulo rather than through a duplicated seam, so the sphere closes on itself.
+/// </summary>
+/// <param name="faces">The vector for faces</param>
+/// <param name="latSegments"> latSegments >= 2 ALWAYS. Must match the value passed to generateUVSphereVertices. </param>
+/// <param name="lonSegments"> lonSegments >= 3 ALWAYS. Must match the value passed to generateUVSphereVertices. </param>
 inline void generateUVSphereFaces(std::vector<Vec4u>& faces, uint latSegments, uint lonSegments) {
-	faces.reserve(latSegments * lonSegments * 2);
+	assert(latSegments >= 2);
+	assert(lonSegments >= 3);
 
-	for (int i = 0; i < latSegments; i++) {
-		for (int j = 0; j < lonSegments; j++) {
-			int first = i * (lonSegments + 1) + j; 
-			int second = first + lonSegments + 1; 
+	const uint northPole = 0;
+	const uint firstRing = 1;
+	const uint lastRing = 1 + (latSegments - 2) * lonSegments;
+	const uint southPole = 1 + (latSegments - 1) * lonSegments;
 
-			faces.push_back(Vec4u(first, second, first + 1, MAX_UINT)); 
-			faces.push_back(Vec4u(second, second + 1, first + 1, MAX_UINT));
+	faces.reserve(2 * lonSegments * (latSegments - 1));
+
+	//North Cap
+	for (uint j = 0; j < lonSegments; ++j) {
+		uint next = (j + 1) % lonSegments;
+
+		faces.push_back(Vec4u(northPole, firstRing + next, firstRing + j, MAX_UINT));
+	}
+
+	//Bands between consecutive rings
+	for (uint i = 1; i + 1 < latSegments; ++i) {
+		uint ring = 1 + (i - 1) * lonSegments;
+		uint nextRing = ring + lonSegments;
+
+		for (uint j = 0; j < lonSegments; ++j) {
+			uint next = (j + 1) % lonSegments;
+
+			faces.push_back(Vec4u(ring + j, ring + next, nextRing + j, MAX_UINT));
+			faces.push_back(Vec4u(nextRing + j, ring + next, nextRing + next, MAX_UINT));
 		}
+	}
+
+	//South Cap
+	for (uint j = 0; j < lonSegments; ++j) {
+		uint next = (j + 1) % lonSegments;
+
+		faces.push_back(Vec4u(southPole, lastRing + j, lastRing + next, MAX_UINT));
 	}
 }
 
