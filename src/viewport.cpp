@@ -18,6 +18,7 @@ void Viewport::draw() {
 		activeRenderer->SetCamera(sphericalToCartesian(camPos));
 		modelingRenderer.UpdateRenderBuffers(scene);
 		if (!success) { return; }
+		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
 		modeChanged = false;
 	}
 	if (!valid()) {
@@ -286,6 +287,15 @@ int Viewport::mousePush() {
 	// query the selection maanger with the item.
 	selectionManager.processSelection(item, additiveSelection);
 
+	// Tell the renderer to update the selection visuals.
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
+	}
+
+	redraw();
+
 	// --------------------- old ----------------------------
 
 	//// Check if there is a valid object-level id.
@@ -301,7 +311,8 @@ int Viewport::mousePush() {
 	//std::cout << "Object Id: " << selectionIds.x << std::endl;
 	//std::cout << "Component Id: " << selectionIds.y << std::endl;
 	//std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-
+	
+	// Drag stuff, refactor later.
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
 	mouseDragPrevPos = mouseDragStartPos;
 	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
@@ -664,6 +675,7 @@ void Viewport::deleteElement() {
 		}
 	}
 
+	selectionManager.clearSelection();
 	modelingRenderer.UpdateRenderBuffers(scene);
 	primarySelection = MAX_UINT;
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -735,6 +747,7 @@ void Viewport::duplicateElement() {
 // OLD FUNCTION
 void Viewport::deselectMeshes() {
 	// Deselect every mesh in scene.
+	selectionManager.clearSelection();
 	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
 		scene.RemoveFromSelectedMeshes(i);
 	}
@@ -907,17 +920,39 @@ void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 void Viewport::setActiveElement(Element element) { 
 	activeElement = element;
 	selectionManager.setActiveElement(element);
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
+	}
+	redraw();
 }
 
 void Viewport::setActiveAction(Action action) { activeAction = action; }
 
-const HalfEdgeMesh* Viewport::primarySelectedMesh() {
-	if (primarySelection != MAX_UINT) {
-		return scene[primarySelection];
+const HalfEdgeMesh* Viewport::primarySelectedItem() {
+
+	// Check if there are no selected items.
+	if (selectionManager.getSelectedItems().empty())
+	{
+		return nullptr;
 	}
+
+	// If there are meshes, get the last selected one and return it to the UI.
+	if (!scene.Meshes().empty()) {
+		SelectionItem lastSelection = selectionManager.getSelectedItems().back();
+		return scene[lastSelection.meshId];
+	}
+	// Else there are no meshes.
 	else {
 		return nullptr;
 	}
+
+	//if (primarySelection != MAX_UINT) {
+	//	return scene[primarySelection];
+	//}
+	//else {
+	//	return nullptr;
+	//}
 }
 
 void Viewport::setPrimarySelectionCallback(void (*callback)()) {

@@ -310,10 +310,10 @@ public:
 	void setActiveAction(Action action);
 
 	/// <summary>
-	/// Returns the non-mutable primary selected mesh.
+	/// Returns the non-mutable primary selected mesh, which is the last selected item.
 	/// </summary>
 	/// <returns> Pointer to the primary selected mesh. </returns>
-	const HalfEdgeMesh* primarySelectedMesh();
+	const HalfEdgeMesh* primarySelectedItem();
 
 	/// <summary>
 	/// Sets the callback for what is called when the primary selected object is selected.

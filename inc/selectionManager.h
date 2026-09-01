@@ -1,19 +1,7 @@
 #ifndef _ABC3D_SELECTION_MANAGER_H_
 #define _ABC3D_SELECTION_MANAGER_H_
 
-#include "helper.h"
-
-enum Element { OBJECT, FACE, EDGE, VERTEX };
-
-struct SelectionItem {
-	Element type;
-	uint meshId;
-	uint componentId;
-
-	bool operator==(const SelectionItem& other) const {
-		return (type == other.type && meshId == other.meshId && componentId == other.componentId);
-	}
-};
+#include "selection.h"
 
 class SelectionManager {
 private:
@@ -63,7 +51,7 @@ public:
 	/// <param name="item"> A selection item at a point. </param>
 	/// <param name="additive"> If the selection is additive or single. </param>
 	/// <returns> True if added false if not. </returns>
-	bool processSelection(std::optional<SelectionItem>& item, boolean additive) {
+	bool processSelection(std::optional<SelectionItem>& item, bool additive) {
 
 		// If the item is null (likely a background hit)
 		if (!item) {
@@ -102,6 +90,10 @@ public:
 					return true;
 				}
 				else {
+					if (selectedItems.size() >= MAX_SELECTION_ITEMS) {
+						return false;
+					}
+
 					selectedItems.push_back(*item);
 					return true;
 				}
