@@ -125,15 +125,11 @@ class HalfEdgeMesh {
 	float approxFaceSurfaceArea(uint faceId);
 	Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
-	template<typename T>
-	bool build(const T& faces);
+	template<typename T, typename Face>
+	bool build(const T& faces, uint(*faceVertexCount)(const Face&));
 	Vec3f NewellNormal(uint faceId);
 
-	bool IsTriangle(uint faceId) {
-		uint edge = faceEdges[faceId];
-		return edges[edge].prev == edges[edges[edge].next].next;
-	}
-
+	bool IsTriangle(uint faceId);
 	bool IsNGon(uint faceId);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
@@ -235,8 +231,12 @@ inline bool IsDegenerateFace(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) 
 	return (v1 - v0).Cross(v2 - v0).LengthSquared() == 0.0f;
 }
 
-template<typename T>
-bool HalfEdgeMesh::build(const T& faces) {
+inline uint basicVertexCountFunc(const Vec4u& face) {
+	return face[3] == MAX_UINT ? 3 : 4;
+}
+
+template<typename T, typename Face>
+bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	vertEdge.resize(0);
 	faceEdges.resize(0);
 	edges.resize(0);
@@ -246,8 +246,8 @@ bool HalfEdgeMesh::build(const T& faces) {
 	//Reject out of range indices and degenerate faces
 	const uint vertLimit = static_cast<uint>(vertPos.size()); 
 	for (uint i = 0; i < faces.size(); ++i) {
-		const Vec4<uint>& face = faces[i]; 
-		uint vertCount = (face[3] == MAX_UINT) ? 3 : 4; 
+		const Face& face = faces[i]; 
+		uint vertCount = faceVertexCount(face);
 
 		for (uint j = 0; j < vertCount; ++j) {
 			if (face[j] >= vertLimit) {Clear(); return false; }
@@ -270,15 +270,12 @@ bool HalfEdgeMesh::build(const T& faces) {
 	std::unordered_map<Vec2<uint>, uint> edgeIndices;
 
 	for (uint i = 0; i < faces.size(); ++i) {
-		const Vec4<uint>& face = faces[i];
+		const Face& face = faces[i];
 
 		uint firstEdge = edges.size();
 		faceEdges.push_back(firstEdge);
 
-		uint vertCount = 4;
-		if (face[3] == MAX_UINT) {
-			vertCount = 3;
-		}
+		uint vertCount = faceVertexCount(face);
 
 		for (uint j = 0; j < vertCount; ++j) {
 			uint next = WrapInc(j, vertCount - 1);
@@ -352,7 +349,7 @@ bool HalfEdgeMesh::build(const T& faces) {
 template <size_t V, size_t F>
 void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces) {
 	vertPos.insert(vertPos.end(), vertices.begin(), vertices.end());
-	(void)build(faces);
+	(void)build(faces, basicVertexCountFunc);
 }
 
 #endif

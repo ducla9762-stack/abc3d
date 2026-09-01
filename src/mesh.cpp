@@ -1341,14 +1341,14 @@ ImportReport HalfEdgeMesh::load(const char* file) {
 	if (!success) { report.status = ImportReport::FileError; return report; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	if (!build(faceList.Faces())) { report.status = ImportReport::InvalidTopology; }
+	if (!build(faceList.Faces(), basicVertexCountFunc)) { report.status = ImportReport::InvalidTopology; }
 
 	return report;
 }
 
 bool HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
-	return build(faceList.Faces());
+	return build(faceList.Faces(), basicVertexCountFunc);
 }
 
 ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
@@ -1387,7 +1387,7 @@ ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
 
 void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {
 	vertPos = vertices;
-	build(faces);
+	build(faces, basicVertexCountFunc);
 }
 
 /// <summary>
