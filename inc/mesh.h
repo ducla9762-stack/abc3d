@@ -127,6 +127,14 @@ class HalfEdgeMesh {
 	void translateVertices(const Vec3f& add);
 	template<typename T>
 	bool build(const T& faces);
+	Vec3f NewellNormal(uint faceId);
+
+	bool IsTriangle(uint faceId) {
+		uint edge = faceEdges[faceId];
+		return edges[edge].prev == edges[edges[edge].next].next;
+	}
+
+	bool IsNGon(uint faceId);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -146,6 +154,8 @@ public:
 	Vec3f WorldDirToLocalDir(const Vec3f& worldDir);
 	void deform();
 	void GetFaceVertices(uint faceId, uint vertices[4]) const;
+	void GetTriVertices(uint faceId, uint vertices[3]) const;
+	void GetTriVertices(uint faceId, Vec3f vertices[3]) const;
 	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const;
 	const Vec3f* VertexPositions() const;
 	const void GetWorldVertexPositions(std::vector<Vec3f>& vertices) const;
@@ -153,6 +163,11 @@ public:
 	void GetElementBuffer(std::vector<uint>& elementBuffer);
 	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
 	Vec3f faceCentroid(uint faceId);
+	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangulation);
+
+	void TriangulateFace(uint faceId);
+	void TriangulateAllNGons();
+	void ClipCorner(uint edge, uint& innerClipId, uint& outerClipId, uint& cornerFace);
 
 	Vec3f GetVertexPosition(uint vertdId);
 	Vec3f GetVertexNormal(uint vertId);

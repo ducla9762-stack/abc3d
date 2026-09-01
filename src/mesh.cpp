@@ -497,6 +497,7 @@ Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
 	return sum / vertexCount;
 }
 
+// Old. Doesn't work with n-gons or non-convex quads yet.
 float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
 	uint faceVertices[4];
 	GetFaceVertices(faceId, faceVertices);
@@ -517,6 +518,7 @@ float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
 	return area;
 }
 
+// Old. approxFaceSurfaceArea doesn't work with N-gons yet.
 Vec3f HalfEdgeMesh::computeCentroid() {
 	uint faceCount = faceEdges.size();
 	if (faceCount == 0) return Vec3f(0.0f);
@@ -590,6 +592,232 @@ void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
 	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
 }
 
+bool HalfEdgeMesh::IsTriangle(uint faceId) {
+	uint edge = faceEdges[faceId];
+	return edges[edge].prev == edges[edges[edge].next].next;
+}
+
+bool HalfEdgeMesh::IsNGon(uint faceId) {
+	uint edgeId = faceEdges[faceId];
+	const HalfEdge& edge = edges[edgeId];
+	const HalfEdge& next = edges[edge.next];
+	bool isTri = edge.prev == next.next;
+	bool isQuad = edge.prev == edges[next.next].next;
+	return !(isTri || isQuad);
+}
+
+bool isConvex(const Vec2f& vert1, const Vec2f& vert2, const Vec2f& vert3) {
+	const float EPSILON = 0.0001f;
+	float orientation = (vert1 - vert2).Cross(vert3 - vert2);
+	return orientation < -EPSILON;
+}
+
+void HalfEdgeMesh::ClipCorner(uint hEdge, uint& innerClipId, uint& outerClipId, uint& cornerFace) {
+	if (IsTriangle(edges[hEdge].face)) { return; }
+
+	innerClipId = NewEdge();
+	outerClipId = NewEdge();
+	cornerFace = NewFace(hEdge);
+
+	HalfEdge& edge = edges[hEdge];
+	HalfEdge& prev = edges[edge.prev];
+
+	HalfEdge& innerClip = edges[innerClipId];
+	innerClip.orig = edge.dest;
+	innerClip.dest = prev.orig;
+	innerClip.prev = hEdge;
+	innerClip.next = edge.prev;
+	innerClip.twin = outerClipId;
+	innerClip.face = cornerFace;
+
+	HalfEdge& outerClip = edges[outerClipId];
+	outerClip.orig = innerClip.dest;
+	outerClip.dest = innerClip.orig;
+	outerClip.prev = prev.prev;
+	outerClip.next = edge.next;
+	outerClip.twin = innerClipId;
+	outerClip.face = edge.face;
+
+	edges[edge.next].prev = outerClipId;
+	edges[prev.prev].next = outerClipId;
+
+	edge.face = cornerFace;
+	edge.next = innerClipId;
+
+	prev.face = cornerFace;
+	prev.prev = innerClipId;
+}
+
+Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p) {
+	uint component = n.y < 0.9f ? 1 : 0;
+	Vec3f uBasis(0.0f);
+	uBasis[component] = 1.0f;
+
+	uBasis = n.Cross(uBasis);
+	uBasis.Normalize();
+	Vec3f vBasis = n.Cross(uBasis);
+
+	return Vec2f(p.Dot(uBasis), p.Dot(vBasis));
+}
+
+// Doesn't yet work with co-linear edges. Fix this later.
+void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangles) {
+	if (IsTriangle(faceId)) { return; }
+
+	struct PolygonCorner {
+		Vec2f pos;
+		uint id;
+		PolygonCorner* next;
+		PolygonCorner* prev;
+	};
+
+	int numVertices = FaceEdgeCount(faceId);
+	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
+	uint edgeId = faceEdges[faceId];
+	Vec3f normal = NewellNormal(faceId);
+
+	for (int i = 0; i < numVertices; ++i) {
+		const HalfEdge& edge = edges[edgeId];
+		polyCorners[i].id = edge.orig;
+		polyCorners[i].pos = projectToLocalPlane(normal, vertPos[edge.orig]);
+		polyCorners[i].next = polyCorners + WrapInc(i, numVertices - 1);
+		polyCorners[i].prev = polyCorners + WrapDec(i, numVertices - 1);
+		edgeId = edge.next;
+	}
+
+	PolygonCorner* corner = polyCorners;
+
+	triangles.clear();
+	triangles.reserve(numVertices - 2);
+
+	while (numVertices > 2) {
+		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			corner = corner->next;
+			continue;
+		}
+
+		PolygonCorner* next = corner->next->next;
+		bool validEar = true;
+		while (next != corner->prev && validEar == true) {
+			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
+				&& isConvex(corner->pos, corner->next->pos, next->pos)
+				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
+			next = next->next;
+		}
+
+		if (validEar) {
+			corner->prev->next = corner->next;
+			corner->next->prev = corner->prev;
+			--numVertices;
+
+			triangles.emplace_back(corner->prev->id, corner->id, corner->next->id);
+		}
+
+		corner = corner->next;
+	}
+
+	delete[] polyCorners;
+}
+
+// Check for co-linear edges later (doesn't do this yet).
+void HalfEdgeMesh::TriangulateFace(uint faceId) {
+	if (IsTriangle(faceId)) { return; }
+
+	struct PolygonCorner {
+		uint halfEdge;
+		Vec2f pos;
+		PolygonCorner* next;
+		PolygonCorner* prev;
+	};
+
+	int numVertices = FaceEdgeCount(faceId);
+	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
+	uint edgeId = faceEdges[faceId];
+	Vec3f normal = NewellNormal(faceId);
+
+	for (int i = 0; i < numVertices; ++i) {
+		const HalfEdge& edge = edges[edgeId];
+		polyCorners[i].halfEdge = edgeId;
+		polyCorners[i].pos = projectToLocalPlane(normal, vertPos[edge.orig]);
+		polyCorners[i].next = polyCorners + WrapInc(i, numVertices - 1);
+		polyCorners[i].prev = polyCorners + WrapDec(i, numVertices - 1);
+		edgeId = edge.next;
+	}
+
+	PolygonCorner* corner = polyCorners;
+
+	while (numVertices > 2) {
+		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			corner = corner->next;
+			continue;
+		}
+
+		PolygonCorner* next = corner->next->next;
+		bool validEar = true;
+		while (next != corner->prev && validEar == true) {
+			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
+				&& isConvex(corner->pos, corner->next->pos, next->pos)
+				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
+			next = next->next;
+		}
+
+		if (validEar) {
+			uint innerClip, outerClip, cornerFace;
+			ClipCorner(corner->halfEdge, innerClip, outerClip, cornerFace);
+
+			corner->prev->halfEdge = outerClip;
+			corner->prev->next = corner->next;
+			corner->next->prev = corner->prev;
+
+			--numVertices;
+		}
+
+		corner = corner->next;
+	}
+
+	delete[] polyCorners;
+}
+
+void HalfEdgeMesh::TriangulateAllNGons() {
+	// Optimize later by making private version of triangulate face that takes pre-allocated memory
+	// so we don't allocate memory for every face
+	int faceCount = faceEdges.size();
+	for (int i = 0; i < faceCount; ++i) {
+		if (!IsNGon(i)) { continue; }
+		TriangulateFace(i);
+	}
+}
+
+#define StartEdgeIteration(faceId) \
+							uint first = faceEdges[faceId];\
+							uint next = first;\
+							do {\
+								HalfEdge& edge = edges[next];\
+								next = edge.next;
+#define EndEdgeIteration	} while (next != first);
+
+// https://www.sciencedirect.com/science/chapter/edited-volume/pii/B978008050755250052X
+Vec3f HalfEdgeMesh::NewellNormal(uint faceId) {
+	if (IsTriangle(faceId)) {
+		Vec3f vertices[3];
+		GetTriVertices(faceId, vertices);
+
+		return (vertices[1] - vertices[0]).Cross(vertices[2] - vertices[0]);
+	}
+
+	Vec3f normal(0.0f);
+
+	StartEdgeIteration(faceId)
+		Vec3f orig = vertPos[edge.orig];
+		Vec3f dest = vertPos[edge.dest];
+		normal.x += (orig.y - dest.y) * (orig.z + dest.z);
+		normal.y += (orig.z - dest.z) * (orig.x + dest.x);
+		normal.z += (orig.x - dest.x) * (orig.y + dest.y);
+	EndEdgeIteration
+
+	return normal;
+}
+
 Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
 	uint vertices[4];
 	GetFaceVertices(faceId, vertices);
@@ -629,14 +857,6 @@ Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
 	std::cout << "Edge Normal Length: " << normal.Length() << std::endl;
 	return normal / count;
 }
-
-#define StartEdgeIteration(faceId) \
-							uint first = faceEdges[faceId];\
-							uint next = first;\
-							do {\
-								HalfEdge& edge = edges[next];\
-								next = edge.next;
-#define EndEdgeIteration	} while (next != first);
 
 void HalfEdgeMesh::TranslateFace(uint faceId, const Vec3f& translation) {
 	StartEdgeIteration(faceId)
@@ -803,6 +1023,22 @@ void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) const {
 	vertices[3] = edge->dest != vertices[0] ? edge->dest : MAX_UINT;
 }
 
+void HalfEdgeMesh::GetTriVertices(uint faceId, uint vertices[3]) const {
+	const HalfEdge& edge = edges[faceEdges[faceId]];
+
+	vertices[0] = edge.orig;
+	vertices[1] = edge.dest;
+	vertices[2] = edges[edge.next].dest;
+}
+
+void HalfEdgeMesh::GetTriVertices(uint faceId, Vec3f vertices[3]) const {
+	const HalfEdge& edge = edges[faceEdges[faceId]];
+
+	vertices[0] = vertPos[edge.orig];
+	vertices[1] = vertPos[edge.dest];
+	vertices[2] = vertPos[edges[edge.next].dest];
+}
+
 void HalfEdgeMesh::GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const {
 	uint first = faceEdges[faceId];
 	uint next = first;
@@ -837,6 +1073,7 @@ uint HalfEdgeMesh::VertexCount() const {
 	return vertPos.size();
 }
 
+// Old. Doesn't work with N-gons.
 void HalfEdgeMesh::GetElementBuffer(std::vector<uint>& elementBuffer) {
 	uint vertices[4]{ MAX_UINT, MAX_UINT, MAX_UINT, MAX_UINT };
 	uint faceCount = faceEdges.size();
@@ -919,6 +1156,11 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
+		if (IsNGon(faceId)) {
+			TriangulateFace(faceId);
+			continue;
+		}
+
 		uint faceEdgeId = faceEdges[faceId];
 		HalfEdge* faceEdge = &edges[faceEdgeId];
 
