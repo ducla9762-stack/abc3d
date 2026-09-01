@@ -55,6 +55,8 @@ class Viewport : public Fl_Gl_Window {
 
 	uint primarySelection = MAX_UINT;
 
+	std::vector<uint> exportMeshIds(); 
+
 	void draw();
 
 	int handle(int event);
@@ -121,7 +123,7 @@ public:
 
 	void setPos(int component, float pos);
 
-	bool loadFile(const char* filepath);
+	ImportReport loadFile(const char* filepath);
 
 	bool exportObj(const char* filepath);
 

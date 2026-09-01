@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <fstream>
 #include <cstring>
+#include <cctype>
+#include <cstdint>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
@@ -29,38 +31,56 @@ void FaceList::MoveTo(const char*& c_str, char delim) {
 }
 
 void FaceList::ProcessObjLine(const string& line) {
+	//New Code
 	if (line.empty()) { return; }
-	switch (line[0]) {
-	case 'v':
-	{
+
+	//Only "v " as a position line. "vn", "vt", "vp" not counted
+	//"f " must not match a hypothetical "fo" tag. 
+	const char tag = line[0];
+	const char sep = line[1];
+	const bool tagged = (sep == ' ' || sep == '\t');
+
+	if (tag == 'v' && tagged) {
 		Vertex vertex(0.0f);
 		const char* segStart = line.c_str();
 		char* segEnd;
+
 		for (int i = 0; i < 3; ++i) {
-			MoveTo(segStart, ' ');
+			MoveTo(segStart, ' '); 
 			float component = std::strtof(segStart, &segEnd);
 			if (segStart == segEnd) { break; }
-			vertex[i] = component;
-			segStart = segEnd;
+			vertex[i] = component; 
+			segStart = segEnd; 
 		}
-		vertices.push_back(vertex);
-		break;
+
+		vertices.push_back(vertex); 
 	}
-	case 'f':
-	{
-		Face face(MAX_UINT);
-		const char* segStart = line.c_str();
-		char* segEnd;
+
+	else if (tag == 'f' && tagged) {
+		Face face(MAX_UINT); 
+		const char* segStart = line.c_str(); 
+		char* segEnd; 
+
 		for (int i = 0; i < 4; ++i) {
 			MoveTo(segStart, ' ');
-			uint data = std::strtoul(segStart, &segEnd, 10);
-			uint vertexId = data != 0 ? data - 1 : MAX_UINT;
-			face[i] = vertexId;
-			segStart = segEnd;
+			
+			const char* scan = segStart; 
+			while (*scan == ' ' || *scan == '\t') { ++scan; }
+			if (*scan == '-') { ++skippedFaces; return; } // Negative (relative) indices unsupported
+
+			uint data = std::strtoul(segStart, &segEnd, 10); 
+			uint vertexId = data != 0 ? data - 1 : MAX_UINT; 
+			face[i] = vertexId; 
+			segStart = segEnd; 
 		}
-		faces.push_back(face);
-		break;
+
+		faces.push_back(face); 
 	}
+
+	//"o"/"g" open a new group. Record where it starts so SplitObjects can cut here.
+	else if ((tag == 'o' || tag == 'g') && tagged) {
+		if (objectStarts.empty() || objectStarts.back() != faces.size())
+			objectStarts.push_back(static_cast<uint>(faces.size()));
 	}
 }
 
@@ -85,6 +105,10 @@ const std::vector<Vec4<uint>>& FaceList::Faces() const {
 	return faces;
 }
 
+uint FaceList::SkippedFaces() const {
+	return skippedFaces;
+}
+
 std::vector<Vec3f>& FaceList::Vertices() { return vertices; }
 
 std::vector<Vec4<uint>>& FaceList::Faces() { return faces; }
@@ -97,6 +121,63 @@ void FaceList::PrintContents() const {
 	for (const Face& face : faces) {
 		PrintFace(face);
 	}
+}
+
+/// <summary>
+///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
+///		face indices so it only carries the vertices its own faces use. A list with
+///		no group tags (any .stl, or a flat .obj) comes back as a single part.
+/// </summary>
+std::vector<FaceList> FaceList::SplitObjects() const {
+	// Turn the group markers into [begin, end) face ranges. Faces written before the
+	// first marker form their own leading part, and a list with no markers is one
+	// part covering every face.
+	std::vector<Vec2u> ranges;
+	const uint faceCount = static_cast<uint>(faces.size());
+	uint prev = 0;
+
+	for (uint start : objectStarts) {
+		if (start > prev) { ranges.push_back(Vec2u(prev, start)); }
+		prev = start;
+	}
+
+	if (faceCount > prev) { ranges.push_back(Vec2u(prev, faceCount)); }
+	if (ranges.empty()) { ranges.push_back(Vec2u(0, faceCount)); }
+
+	std::vector<FaceList> parts;
+	parts.reserve(ranges.size());
+
+	for (const Vec2u& range : ranges) {
+		FaceList part;
+		part.faces.reserve(range[1] - range[0]);
+
+		// .obj indices are file-global, so every part needs its own vertex numbering.
+		// Out-of-range indices are copied through untouched, leaving build() to reject them.
+		std::unordered_map<uint, uint> remap;
+
+		for (uint f = range[0]; f < range[1]; ++f) {
+			Face face = faces[f];
+
+			for (int i = 0; i < 4; ++i) {
+				const uint vertId = face[i];
+				if (vertId == MAX_UINT || vertId >= vertices.size()) { continue; }
+
+				auto it = remap.find(vertId);
+				if (it == remap.end()) {
+					it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
+					part.vertices.push_back(vertices[vertId]);
+				}
+
+				face[i] = it->second;
+			}
+
+			part.faces.push_back(face);
+		}
+
+		parts.push_back(std::move(part));
+	}
+
+	return parts;
 }
 
 bool FaceList::LoadObj(const char* obj) {
@@ -136,20 +217,26 @@ bool FaceList::LoadSTL(const char* stl) {
 	char header[80];
 	stlFile.read(header, 80);
 
-	uint32_t numTriangles = 0;
+	uint64_t numTriangles = 0;
 	stlFile.read(reinterpret_cast<char*>(&numTriangles), 4);
-
-	bool isBinary = (fileSize == static_cast<std::streamsize>(84 + numTriangles * 50));
+	
+	const uint64_t expectedSize = 84ull + static_cast<uint64_t>(numTriangles) * 50ull; 
+	bool isBinary = (static_cast<uint64_t>(fileSize) == expectedSize);
 
 	// De-duplicate vertices by exact position using bit-cast hashing.
 	// STL stores every triangle's vertices independently, so without this
 	// every vertex would be unique and the half-edge twin links can't be built.
 	struct Vec3fHash {
+		// -0.0f and 0.0f compare equal but have different bit patterns, so they get different results. 
+		// This hashing collapses both into the same value
+		static uint32_t Bits(float f) {
+			uint32_t i;
+			memcpy(&i, &f, 4);
+			return (i == 0x80000000u) ? 0u : i;
+		}
+
 		size_t operator()(const Vec3f& v) const {
-			uint32_t xi, yi, zi;
-			memcpy(&xi, &v.x, 4);
-			memcpy(&yi, &v.y, 4);
-			memcpy(&zi, &v.z, 4);
+			const uint32_t xi = Bits(v.x), yi = Bits(v.y), zi = Bits(v.z);
 			size_t h = std::hash<uint32_t>{}(xi);
 			h ^= std::hash<uint32_t>{}(yi)+0x9e3779b9u + (h << 6) + (h >> 2);
 			h ^= std::hash<uint32_t>{}(zi)+0x9e3779b9u + (h << 6) + (h >> 2);
@@ -172,7 +259,8 @@ bool FaceList::LoadSTL(const char* stl) {
 		vertexMap[v] = id;
 		return id;
 		};
-
+	
+	const size_t facesBefore = faces.size(); 
 	if (isBinary) {
 		faces.reserve(faces.size() + numTriangles);
 
@@ -189,11 +277,12 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 
 			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
-
-			faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+			if (!stlFile) return false; 
+			
+				faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
 		}
 
-		return stlFile.good() || stlFile.eof();
+		return faces.size() > facesBefore;
 	}
 	else {
 		stlFile.close();
@@ -203,7 +292,7 @@ bool FaceList::LoadSTL(const char* stl) {
 		string line;
 		uint loopVertCount = 0;
 		uint triVerts[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
-
+		
 		while (std::getline(asciiFile, line)) {
 			size_t start = line.find_first_not_of(" \t");
 			if (start == string::npos) continue;
@@ -231,7 +320,7 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 		}
 
-		return asciiFile.good() || asciiFile.eof();
+		return faces.size() > facesBefore;
 	}
 }
 
@@ -983,31 +1072,75 @@ void HalfEdgeMesh::Clear() {
 /// The file to load
 /// </param>
 /// <returns>
-/// return true: the file is loaded sucessfully into the HalfEdgeMesh
-/// return false: the file was not loaded sucessfully and there was some file I/O error most likely
+/// An ImportReport. `status` is Ok when a mesh was built, FileError when the file could
+/// not be read or is not a supported format, and InvalidTopology when the geometry was
+/// rejected (out-of-range index, a vertex repeated within one face, non-manifold, or a
+/// face with no area because its vertices are coincident or collinear).
+/// On any failure the mesh is left empty. `skippedFaces` reports face lines the parser
+/// dropped but recovered from, so an Ok import can still be missing geometry.
 /// </returns>
-bool HalfEdgeMesh::load(const char* file) {
+ImportReport HalfEdgeMesh::load(const char* file) {
 	FaceList faceList;
 
 	bool success = false; 
 
-	if (strstr(file, ".obj"))
+	// Dispatch on the file's actual extension. strstr matched ".obj" anywhere in the
+	// path, so a .stl inside a directory like "models.obj.d" went to the .obj parser,
+	// and it was case sensitive, so "CUBE.STL" matched neither branch.
+	if (hasExtension(file, ".obj"))
 		success = faceList.LoadObj(file);
 
-	else if (strstr(file, ".stl"))
+	else if (hasExtension(file, ".stl"))
 		success = faceList.LoadSTL(file);
 
-	if (!success) { return false; }
+	ImportReport report;
+	report.skippedFaces = faceList.SkippedFaces();
+
+	if (!success) { report.status = ImportReport::FileError; return report; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	build(faceList.Faces());
+	if (!build(faceList.Faces())) { report.status = ImportReport::InvalidTopology; }
 
-	return true;
+	return report;
 }
 
-void HalfEdgeMesh::load(const FaceList& faceList) {
+bool HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
-	build(faceList.Faces());
+	return build(faceList.Faces());
+}
+
+ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
+	FaceList faceList;
+
+	bool success = false;
+
+	if (hasExtension(file, ".obj"))
+		success = faceList.LoadObj(file);
+
+	else if (hasExtension(file, ".stl"))
+		success = faceList.LoadSTL(file);
+
+	ImportReport report;
+	report.skippedFaces = faceList.SkippedFaces();
+
+	if (!success) { report.status = ImportReport::FileError; return report; }
+
+	const std::vector<FaceList> parts = faceList.SplitObjects();
+	std::vector<HalfEdgeMesh> built;
+	built.reserve(parts.size());
+
+	// All or nothing: one rejected part rejects the file, so a failed import never
+	// leaves half a model behind.
+	for (const FaceList& part : parts) {
+		if (part.Faces().empty()) { continue; } // Vertices with no faces, nothing to build
+
+		built.emplace_back();
+		if (!built.back().load(part)) { report.status = ImportReport::InvalidTopology; return report; }
+	}
+
+	meshes = std::move(built);
+
+	return report;
 }
 
 void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces) {
@@ -1015,6 +1148,55 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 	build(faces);
 }
 
+/// <summary>
+/// True when `path` ends with `ext`, compared without regard to case.
+/// </summary>
+bool hasExtension(const std::string& path, const char* ext) {
+	const size_t extLen = std::strlen(ext); 
+	if (path.size() < extLen) return false; 
+
+	for (size_t i = 0; i < extLen; ++i) {
+		if (std::tolower(static_cast<unsigned char>(path[path.size() - extLen + i])) !=
+			std::tolower(static_cast<unsigned char>(ext[i]))) {
+			return false; 
+		}
+	}
+
+	return true; 
+}
+
+/// <summary>
+/// Returns `path` with `ext` appended unless it already ends with `ext`
+/// </summary>
+std::string ensureExtension(const std::string& path, const char* ext) {
+	return hasExtension(path, ext) ? path : path + ext; 
+}
+
+void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset) const {
+	std::vector<Vec3f> worldPos;
+	worldPos.reserve(vertPos.size()); 
+	GetWorldVertexPositions(worldPos); 
+
+	for (const Vec3f& v : worldPos)
+		out << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
+
+	uint faceCount = faceEdges.size(); 
+	for (uint faceId = 0; faceId < faceCount; ++faceId) {
+		out << "f";
+
+		uint first = faceEdges[faceId]; 
+		uint next = first; 
+
+		do {
+			out << " " << (vertOffset + edges[next].orig + 1); 
+			next = edges[next].next; 
+		} while (next != first); 
+		
+		out << "\n"; 
+	}
+
+	vertOffset += static_cast<uint>(worldPos.size()); 
+}
 
 /// <summary>
 /// This function will save the HalfEdgeMesh as an obj file
@@ -1025,80 +1207,54 @@ void HalfEdgeMesh::load(const std::vector<Vec3f>& vertices, const std::vector<Ve
 /// false: if the function failed to save the mesh as an obj file
 /// </returns>
 bool HalfEdgeMesh::exportObj(const char* filePath) const {
-
-	// Ensure that the filename includes the filetype extension.
-	std::string filename(filePath);
-	std::string filetype = ".obj";
-
-	if (filename.find(filetype) == std::string::npos)
-	{
-		filename.append(filetype);
-	}
-
-	std::ofstream file(filename); 
+	std::ofstream file(ensureExtension(filePath, ".obj")); 
 	if (!file.is_open()) return false; 
-	
-	for (const Vec3f& v : vertPos) {
-		file << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
+
+	uint vertOffset = 0; 
+	appendObj(file, vertOffset); 
+
+	return !file.fail();
+}
 	}
+void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
+	std::vector<Vec3f> worldPos; 
+	worldPos.reserve(vertPos.size()); 
+	GetWorldVertexPositions(worldPos); 
+	std::vector<Triangle> tris; 
 
-	uint faceCount = faceEdges.size(); 
-	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		file << "f"; 
+	uint faceCount = faceEdges.size();
+		uint verts[4];
+		GetFaceVertices(faceId, verts); 
 
-		uint first = faceEdges[faceId]; 
-		uint next = first; 
-
-		do {
-			file << " " << (edges[next].orig + 1); 
-			next = edges[next].next; 
-		} while (next != first); 
+		Vec3f v0 = worldPos[verts[0]]; 
+		Vec3f v1 = worldPos[verts[1]]; 
+		Vec3f v2 = worldPos[verts[2]]; 
 		
-		file << "\n"; 
+		tris.push_back({ v0, v1, v2 }); 
+
+
+		if (verts[3] != MAX_UINT)
+			tris.push_back({ v0, v2, worldPos[verts[3]] }); 
 	}
-
-	if (file.fail()) return false; 
-
-	return true; 
 }
 
 /// <summary>
-/// This function will save the HalfEdgeMesh as an stl file
+/// Writes world-space triangles out as an stl file. `filePath` is used as given.
 /// </summary>
-/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="filePath">The file path to write to, extension included</param>
+/// <param name="tris">The triangles to write, already in world space</param>
 /// <param name="isBinary">
-/// true: if the user wishes to save in binary stl format (more optimal for space)
-/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// true: binary stl format (more optimal for space)
+/// false: ASCII stl format (more human readable, but much worse for space)
 /// </param>
 /// <returns>
-/// true: if the function can sucessfully save the mesh as an stl file
-/// false: if the function failed to save the mesh as an stl file
+/// true: if the function can sucessfully write the stl file
+/// false: if the function failed to write the stl file
 /// </returns>
-bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
-	std::string filename(filePath);
-	std::string filetype = ".stl";
-	if (filename.find(filetype) == std::string::npos)
-		filename.append(filetype);
-
-	struct Triangle { Vec3f v0, v1, v2; };
-	std::vector<Triangle> tris;
-
-	uint faceCount = faceEdges.size();
-	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		uint verts[4];
-		GetFaceVertices(faceId, verts); // no const_cast needed; method is already const
-
-		Vec3f v0 = vertPos[verts[0]];
-		Vec3f v1 = vertPos[verts[1]];
-		Vec3f v2 = vertPos[verts[2]];
-		tris.push_back({ v0, v1, v2 });
-		if (verts[3] != MAX_UINT)
-			tris.push_back({ v0, v2, vertPos[verts[3]] });
-	}
-
-	if (isBinary) {
-		std::ofstream file(filename, std::ios::binary);
+bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary) {
+		std::ofstream file(filePath, std::ios::binary);
 		if (!file.is_open()) return false;
+		if (!file.is_open()) return false; 
 
 		char header[80] = {};
 		file.write(header, 80);
@@ -1118,11 +1274,13 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
 		}
 		return !file.fail();
 	}
-	else {
-		std::ofstream file(filename); // fix: was filePath, losing the appended extension
+		std::ofstream file(filePath);
 		if (!file.is_open()) return false;
 
 		file << "solid mesh\n";
+
+		file << "solid mesh\n"; 
+
 		for (const Triangle& tri : tris) {
 			Vec3f normal = (tri.v1 - tri.v0).Cross(tri.v2 - tri.v0);
 			normal.Normalize();
@@ -1137,4 +1295,23 @@ bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
 		file << "endsolid mesh\n";
 		return !file.fail();
 	}
+}
+
+/// <summary>
+/// This function will save the HalfEdgeMesh as an stl file
+/// </summary>
+/// <param name="filePath">The file path including the name to save to</param>
+/// <param name="isBinary">
+/// true: if the user wishes to save in binary stl format (more optimal for space)
+/// false: if the user wishes to save in ASCII stl format (more human readable, but much worse for space)
+/// </param>
+/// <returns>
+/// true: if the function can sucessfully save the mesh as an stl file
+/// false: if the function failed to save the mesh as an stl file
+/// </returns>
+bool HalfEdgeMesh::exportStl(const char* filePath, bool isBinary) const {
+	std::vector<Triangle> tris; 
+	appendStlTriangles(tris); 
+	
+	return writeStl(ensureExtension(filePath, ".stl"), tris, isBinary); 
 }

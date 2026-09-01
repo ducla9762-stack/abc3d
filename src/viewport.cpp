@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <utility>
 
 #include "viewport.h"
 #include "mesh.h"
@@ -578,31 +579,75 @@ void Viewport::setPos(int component, float pos) {
 	}
 }
 
-bool Viewport::loadFile(const char* filepath) {
-	bool success = scene.NewMesh()->load(filepath);
-	if (!success) return false;
+ImportReport Viewport::loadFile(const char* filepath) {
+	// Build into local meshes first so a rejected file leaves the scene untouched.
+	// Adding to the scene up front would strand empty meshes on every failed import.
+	std::vector<HalfEdgeMesh> candidates;
+	ImportReport report = loadMeshes(filepath, candidates);
+	if (!report.ok()) { return report; }
+
+	for (HalfEdgeMesh& candidate : candidates)
+		*scene.NewMesh() = std::move(candidate);
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
-	return true;
+	return report;
 }
 
-// TODO: Fix export
+/// <summary>
+/// Meshes export every selected or whole scene when nothing is selected
+/// </summary>
+/// <returns>Vector of meshes ids</returns>
+std::vector<uint> Viewport::exportMeshIds() {
+	std::vector<uint> selected; 
+	std::vector<uint> all; 
+
+	for (uint i = 0; i < scene.MeshCount(); ++i) {
+		if (scene[i]->VertexCount() == 0) continue;
+
+		all.push_back(i); 
+		if (scene.IsMeshSelected(i)) selected.push_back(i); 
+	}
+
+	return selected.empty() ? all : selected; 
+}
+
+/// <summary>
+/// Each mesh in exportMeshIds is written in world space so pos, rot, and scale save
+/// </summary>
+/// <param name="filepath"></param>
+/// <returns>success or fail when export</returns>
 bool Viewport::exportObj(const char* filepath) {
-	if (scene.MeshCount() == 0) {
-		return true;
+	std::vector<uint> ids = exportMeshIds(); 
+	if (ids.empty()) return true; 
+
+	std::ofstream file(ensureExtension(filepath, ".obj")); 
+	if (!file.is_open()) return false; 
+
+	uint vertOffset = 0; 
+
+	for (uint id : ids) {
+		file << "o mesh" << id << "\n"; 
+		scene[id]->appendObj(file, vertOffset); 
 	}
 
-	scene[0]->exportObj(filepath);
-	return true;
+	return !file.fail(); 
 }
 
+/// <summary>
+/// STL has no idea for separate objects. We will store them as a soup of triangles for all objects.
+/// </summary>
+/// <param name="filepath"></param>
+/// <returns>success or fail of export</returns>
 bool Viewport::exportStl(const char* filepath) {
-	if (scene.MeshCount() == 0) {
-		return true;
-	}
+	std::vector<uint> ids = exportMeshIds();
+	if (ids.empty()) return true;
 
-	scene[0]->exportStl(filepath);
-	return true;
+	std::vector<Triangle> tris; 
+	for (uint id : ids)
+		scene[id]->appendStlTriangles(tris); 
+	
+	return writeStl(ensureExtension(filepath, ".stl"), tris, true); 
 }
 
 Mode Viewport::getActiveMode() { return activeMode;  }
