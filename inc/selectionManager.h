@@ -102,13 +102,18 @@ public:
 	}
 
 	/// <summary>
-	/// Returns whether or not the item at index i is selected.
+	/// Returns whether or not the mesh at i is selected.
 	/// </summary>
-	/// <param name="i"> index </param>
+	/// <param name="i"> mesh id </param>
 	/// <returns> True if contained false otherwise. </returns>
-	bool contains(uint i) {
-		return true;
-		// todo implement.
+	bool hasSelectedMesh(uint i) {
+		return std::any_of(
+			selectedItems.begin(),
+			selectedItems.end(),
+			[i](const SelectionItem& item) {
+				return item.meshId == i;
+			}
+		);
 	}
 };
 

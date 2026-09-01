@@ -760,8 +760,9 @@ std::vector<uint> Viewport::exportMeshIds() {
 		if (scene[i]->VertexCount() == 0) continue;
 
 		all.push_back(i); 
-		//if (scene.IsMeshSelected(i)) selected.push_back(i); 
-		// todo fix.
+		if (selectionManager.hasSelectedMesh(i)) {
+			selected.push_back(i);
+		}
 	}
 
 	return selected.empty() ? all : selected; 
