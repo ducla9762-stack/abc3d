@@ -6,6 +6,9 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Simple_Counter.H>
 #include <FL/Fl_Radio_Button.H>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Image.H>
+#include <Fl/Fl_SVG_Image.H>
 #undef max
 
 #include "viewport.h"
@@ -13,6 +16,52 @@
 inline const char* AXIS_LETTERS[3] = { "x", "y", "z" };
 
 inline Viewport* viewport;
+
+//class IconButton : public Fl_Button {
+//	Fl_SVG_Image* icon = nullptr;
+//	Fl_Callback* userCallback = nullptr;
+//	Fl_Color iconSelectColor = FL_WHITE;
+//	Fl_Color iconUnselectColor = FL_BLACK;
+//
+//	static void interiorCallback(Fl_Widget* w, void* data) {
+//		IconButton* button = static_cast<IconButton*>(w);
+//		if (!button->userCallback) { return; }
+//
+//		if (button->value()) { button->Fl_Widget::label_.image_->color_average(button->iconSelectColor, 0.0f); }
+//		else { button->icon->color_average(button->iconUnselectColor, 0.0f); }
+//
+//		button->userCallback(w, data);
+//	}
+//
+//public:
+//	IconButton(int x, int y, int w, int h, const char* imgPath = nullptr, const char* tooltip = nullptr) : Fl_Button(x, y, w, h) {
+//		if (imgPath) { 
+//			icon = new Fl_SVG_Image(imgPath); 
+//			bind_image(icon);
+//		}
+//		this->tooltip(tooltip);
+//		Fl_Button::callback(interiorCallback);
+//	}
+//
+//	void image(const char* imgPath) {
+//		icon = new Fl_SVG_Image(imgPath);
+//		bind_image(icon);
+//	}
+//
+//	int error() const { return icon->fail(); }
+//
+//	void setIconSelectColor(Fl_Color color) { 
+//		iconSelectColor = color; 
+//		if (value()) { icon->color_average(color, 0.0f); }
+//	}
+//
+//	void setIconUnselectColor(Fl_Color color) {
+//		iconUnselectColor = color;
+//		if (!value()) { icon->color_average(color, 0.0f); }
+//	}
+//
+//	void setSelectColor(Fl_Color color) { Fl_Button::selection_color(color); }
+//};
 
 class ToolPanel : public Fl_Window {
 public:

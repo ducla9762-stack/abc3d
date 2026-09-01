@@ -13,11 +13,16 @@
 #include <FL/Fl_Menu_Button.H>
 //#include <FL/Fl_Flex.H>
 #include <FL/Fl_Scrollbar.H>
+#include <Fl/Fl_Image.H>
+#include <Fl/Fl_SVG_Image.H>
+#include <Fl/Fl_PNG_Image.H>
+#include <Fl/Fl_Tooltip.H>
 #undef max
 
 #include <GL/glew.h>
 
 #include <iostream>
+#include <cmath>
 
 #include "customSlider.h"
 #include "viewport.h"
@@ -40,6 +45,7 @@ ExtrudeToolPanel* extrudeToolPanel;
 BevelToolPanel* bevelToolPanel;
 
 ToolPanel* toolPanels[TOOL_COUNT];
+Fl_SVG_Image* toolIcons[TOOL_COUNT];
 Tool activeTool = SELECT_TOOL;
 
 const int VIEWPORT_W = 900;
@@ -128,6 +134,10 @@ void selectCallback(Fl_Widget* w, void*) {
 
 	toolPanels[activeTool]->hide();
 
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[SELECT_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
+
 	selectToolPanel->show();
 	selectToolPanel->updateValues();
 	
@@ -145,6 +155,10 @@ void translationCallback(Fl_Widget* w, void*) {
 		return;
 	}
 
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[TRANSLATE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
+
 	toolPanels[activeTool]->hide();
 
 	translateToolPanel->show();
@@ -158,6 +172,10 @@ void rotateCallback(Fl_Widget* w, void*) {
 	if (activeTool == ROTATE_TOOL) {
 		return;
 	}
+
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[ROTATE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
 
 	toolPanels[activeTool]->hide();
 
@@ -173,6 +191,10 @@ void scaleCallback(Fl_Widget* w, void*) {
 		return;
 	}
 
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[SCALE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
+
 	toolPanels[activeTool]->hide();
 
 	activeTool = SCALE_TOOL;
@@ -183,10 +205,18 @@ void scaleCallback(Fl_Widget* w, void*) {
 	scaleToolPanel->redraw();
 }
 
+//void toolButtonCallback(Fl_Widget* w, void* data) {
+//	IconButton* button = static_cast<IconButton*>(w);
+//}
+
 void shapeCallback(Fl_Widget* w, void*) {
 	if (activeTool == SHAPE_TOOL) {
 		return;
 	}
+
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[SHAPE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
 
 	toolPanels[activeTool]->hide();
 	shapeToolPanel->show();
@@ -200,6 +230,10 @@ void extrudeCallback(Fl_Widget* w, void* data) {
 		return;
 	}
 
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[EXTRUDE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
+
 	toolPanels[activeTool]->hide();
 	extrudeToolPanel->show();
 
@@ -212,6 +246,10 @@ void subdivisionPanelCallback(Fl_Widget* w, void*) {
 		return;
 	}
 
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[SUBDIVIDE_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
+
 	toolPanels[activeTool]->hide();
 	subdivideToolPanel->show();
 
@@ -223,6 +261,10 @@ void bevelCallback(Fl_Widget* w, void*) {
 	if (activeTool == BEVEL_TOOL) {
 		return;
 	}
+
+	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
+	toolIcons[BEVEL_TOOL]->color_average(FL_WHITE, 0.0f);
+	w->redraw();
 
 	toolPanels[activeTool]->hide();
 	bevelToolPanel->show();
@@ -242,6 +284,7 @@ int main(int argc, char* argv[]) {
 
 	viewport = new Viewport(0, 40, VIEWPORT_W, VIEWPORT_H);
 	viewport->setPrimarySelectionCallback(primarySelectionCallback);
+	viewport->resizable(nullptr);
 	viewport->end();
 
 	// Top toolbar
@@ -273,7 +316,6 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&Edit/&Duplicate");
 	topMenu->add("&Edit/&Undo");
 	topMenu->add("&Edit/&Redo");
-
 
 	Fl_Toggle_Button* helpButton = new Fl_Toggle_Button(VIEWPORT_W / 8, 0, VIEWPORT_W / 8, TOP_TOOLBAR_H, "Help");
 	helpButton->color(8);
@@ -340,47 +382,90 @@ int main(int argc, char* argv[]) {
 	topToolbar->end();
 
 	// Left Toolbar
-	Fl_Window* sideToolbar = new Fl_Window(20, 70, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H);
+	viewport->begin();
 
-	sideToolbar->color(7);
+	Fl_Window* sideToolbar = new Fl_Window(20, 70, 64, 64 * 8);
+	sideToolbar->resizable(nullptr);
+	sideToolbar->size_range(64, 64 * 8, 64, 64 * 8);
 
-	Fl_Radio_Button* selectButton = new Fl_Radio_Button(0, 0, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Select");
+	//sideToolbar->color(7);
+
+	Fl_Tooltip::delay(0.2f);
+
+	float screenScale = Fl::screen_scale(window->screen_num());
+
+	Fl_Radio_Button* selectButton = new Fl_Radio_Button(0, 0, 64, 64);
+	selectButton->value(1);
 	selectButton->selection_color(0);
 	selectButton->callback(selectCallback);
+	toolIcons[SELECT_TOOL] = new Fl_SVG_Image("../assets/images/select_tool.svg");
+	//toolIcons[SELECT_TOOL]->scale(std::round(64 / screenScale), std::round(64 / screenScale));
+	//toolIcons[SELECT_TOOL]->scale(std::ceil(64 / screenScale), std::ceil(64 / screenScale));
+	//toolIcons[SELECT_TOOL]->scale(64, 64);
+	//toolIcons[SELECT_TOOL]->RGB_scaling(FL_RGB_SCALING_BILINEAR);
+	//selectImage->scale(64, 64);
+	toolIcons[SELECT_TOOL]->color_average(FL_WHITE, 0.0f);
+	//selectImage->scale(64, 64);
+	selectButton->image(toolIcons[SELECT_TOOL]);
+	//selectButton->labeltype(_FL_IMAGE_LABEL);
+	selectButton->align(FL_ALIGN_CENTER);
+	selectButton->tooltip("Select Tool");
 
-	Fl_Radio_Button* translationButton = new Fl_Radio_Button(0, LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Move");
+	Fl_Radio_Button* translationButton = new Fl_Radio_Button(0, 64, 64, 64);
 	translationButton->selection_color(0);
 	translationButton->callback(translationCallback);
+	toolIcons[TRANSLATE_TOOL] = new Fl_SVG_Image("../assets/images/move_tool.svg");
+	translationButton->image(toolIcons[TRANSLATE_TOOL]);
+	translationButton->tooltip("Move Tool");
 	
-	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 2 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Rotate");
+	Fl_Radio_Button* rotateButton = new Fl_Radio_Button(0, 2 * 64, 64, 64);
 	rotateButton->selection_color(0);
 	rotateButton->callback(rotateCallback);
+	toolIcons[ROTATE_TOOL] = new Fl_SVG_Image("../assets/images/rotate_tool.svg");
+	rotateButton->image(toolIcons[ROTATE_TOOL]);
+	rotateButton->tooltip("Rotate Tool");
+	rotateButton->box(Fl_Boxtype::_FL_GLEAM_THIN_UP_BOX);
 
-	Fl_Radio_Button* scaleButton = new Fl_Radio_Button(0, 3 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Scale");
+	Fl_Radio_Button* scaleButton = new Fl_Radio_Button(0, 3 * 64, 64, 64);
 	scaleButton->selection_color(0);
 	scaleButton->callback(scaleCallback);
+	toolIcons[SCALE_TOOL] = new Fl_SVG_Image("../assets/images/scale_tool.svg");
+	scaleButton->image(toolIcons[SCALE_TOOL]);
+	scaleButton->tooltip("Scale Tool");
 
-	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 4 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Shape");
+	Fl_Radio_Button* shapeButton = new Fl_Radio_Button(0, 4 * 64, 64, 64);
 	shapeButton->selection_color(0);
 	shapeButton->callback(shapeCallback);
+	toolIcons[SHAPE_TOOL] = new Fl_SVG_Image("../assets/images/shape_tool.svg");
+	shapeButton->image(toolIcons[SHAPE_TOOL]);
+	shapeButton->tooltip("Shape Tool");
 	// buttons for resolutions?
 
-	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 5 * LEFT_TOOLBAR_H / 8, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H / 8, "Extrude");
+	Fl_Radio_Button* extrudeButton = new Fl_Radio_Button(0, 5 * 64, 64, 64);
 	extrudeButton->selection_color(0);
 	extrudeButton->callback(extrudeCallback, rightPanel);
+	toolIcons[EXTRUDE_TOOL] = new Fl_SVG_Image("../assets/images/extrude_tool.svg");
+	extrudeButton->image(toolIcons[EXTRUDE_TOOL]);
+	extrudeButton->tooltip("Extrude Tool");
 
 	// Subdivision button
-	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Subdivide");
+	Fl_Radio_Button* subdivisionButton = new Fl_Radio_Button(0, 6 * 64, 64, 64);
 	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionPanelCallback);
+	toolIcons[SUBDIVIDE_TOOL] = new Fl_SVG_Image("../assets/images/subdiv_tool.svg");
+	subdivisionButton->image(toolIcons[SUBDIVIDE_TOOL]);
+	subdivisionButton->tooltip("Subdivision Tool");
 		
-	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * LEFT_TOOLBAR_H / 8, 50, LEFT_TOOLBAR_H / 8, "Bevel");
+	Fl_Radio_Button* bevelButton = new Fl_Radio_Button(0, 7 * 64, 64, 64);
 	bevelButton->selection_color(0);
 	bevelButton->callback(bevelCallback);
+	toolIcons[BEVEL_TOOL] = new Fl_SVG_Image("../assets/images/bevel_tool.svg");
+	bevelButton->bind_image(toolIcons[BEVEL_TOOL]);
+	bevelButton->tooltip("Bevel Tool");
 
-	sideToolbar->resizable(sideToolbar);
+	//sideToolbar->resizable(sideToolbar);
 	sideToolbar->end();
-
+	viewport->end();
 
 	/* Top Right panel */
 	topRightPanel = new Fl_Window(VIEWPORT_W, 0, RIGHT_PANEL_W, VIEWPORT_H / 3);
@@ -460,7 +545,8 @@ int main(int argc, char* argv[]) {
 	window->show(argc, argv);
 	viewport->show();
 	viewport->take_focus();
-	window->fullscreen();
+	sideToolbar->show();
+	//window->fullscreen();
 
 	return Fl::run();
 }
