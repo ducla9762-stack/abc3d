@@ -296,21 +296,10 @@ int Viewport::mousePush() {
 
 	redraw();
 
-	// --------------------- old ----------------------------
-
-	//// Check if there is a valid object-level id.
-	//if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
-	//	// Use the 0 indexed id.
-	//	selectMesh(selectionIds.x - 1);
-	//}
-	//else {
-	//	deselectMeshes();
-	//}
-
-	//// Print selection ids.
-	//std::cout << "Object Id: " << selectionIds.x << std::endl;
-	//std::cout << "Component Id: " << selectionIds.y << std::endl;
-	//std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
+	// Print selection ids.
+	std::cout << "Object Id: " << selectionIds.x << std::endl;
+	std::cout << "Component Id: " << selectionIds.y << std::endl;
+	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 	
 	// Drag stuff, refactor later.
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
@@ -452,14 +441,6 @@ float Viewport::getScale(int component, float scale) {
 }
 
 void Viewport::setScale(int component, float scale) {
-	// Rotate each selected mesh at component by angle.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i)) {
-	//		scene.Meshes().at(i)->scale[component] = scale;
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -499,15 +480,6 @@ void Viewport::extrude() {
 }
 
 void Viewport::subdivision() {
-	// Subdivide all selected meshes in scene.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i))
-	//	{
-	//		scene.Meshes().at(i)->subdivide();
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -600,15 +572,6 @@ void Viewport::displayTorus() {
 
 
 void Viewport::tesselate() {
-	// Tesselate every selected mesh in scene.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i))
-	//	{
-	//		scene.Meshes().at(i)->tesselate();
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -640,15 +603,6 @@ void Viewport::tesselate() {
 }
 
 void Viewport::deleteElement() {
-	// Delete every selected mesh in scene.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i))
-	//	{
-	//		scene.DeleteMesh(i);
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -682,41 +636,7 @@ void Viewport::deleteElement() {
 	redraw();
 }
 
-// OLD FUNCTION
-void Viewport::selectMesh(uint id) {
-	// If single selection, remove all other selections before adding to selection.
-	if (additiveSelection) {
-		for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
-			scene.RemoveFromSelectedMeshes(i);
-		}
-	}
-
-	// If not selected, select.
-	if (!scene.IsMeshSelected(id)) {
-		scene.AddToSelectedMeshes(id);
-		primarySelection = id;
-	}
-	// If selected, remove selection.
-	else {
-		scene.RemoveFromSelectedMeshes(id);
-		primarySelection = MAX_UINT;
-	}
-
-	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
-	if (primarySelectionCallback) { primarySelectionCallback(); }
-	redraw();
-}
-
 void Viewport::duplicateElement() {
-	// Duplicate every selected mesh in scene.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
-	//{
-	//	if (scene.IsMeshSelected(i)) {
-	//		scene.DuplicateMesh(i);
-	//		std::cout << "This should duplicate" << std::endl;
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -744,36 +664,12 @@ void Viewport::duplicateElement() {
 	}
 }
 
-// OLD FUNCTION
-void Viewport::deselectMeshes() {
-	// Deselect every mesh in scene.
-	selectionManager.clearSelection();
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
-		scene.RemoveFromSelectedMeshes(i);
-	}
-	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
-
-	primarySelection = MAX_UINT;
-	if (primarySelectionCallback) { primarySelectionCallback(); }
-
-	redraw();
-}
-
-
 float Viewport::getRot(int component, float angle) {
 	// todo
 	return 1;
 }
 
 void Viewport::setRot(int component, float angle) {
-	// Rotate each selected mesh at component by angle.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i)) {
-	//		scene.Meshes().at(i)->eulerRot[component] = angle;
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -810,14 +706,6 @@ float Viewport::getPos(int component, float angle) {
 }
 
 void Viewport::setPos(int component, float pos) {
-	// Rotate each selected mesh at component by angle.
-	//for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	//{
-	//	if (scene.IsMeshSelected(i)) {
-	//		scene.Meshes().at(i)->pos[component] = pos;
-	//	}
-	//}
-
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -872,7 +760,8 @@ std::vector<uint> Viewport::exportMeshIds() {
 		if (scene[i]->VertexCount() == 0) continue;
 
 		all.push_back(i); 
-		if (scene.IsMeshSelected(i)) selected.push_back(i); 
+		//if (scene.IsMeshSelected(i)) selected.push_back(i); 
+		// todo fix.
 	}
 
 	return selected.empty() ? all : selected; 
@@ -946,13 +835,6 @@ const HalfEdgeMesh* Viewport::primarySelectedItem() {
 	else {
 		return nullptr;
 	}
-
-	//if (primarySelection != MAX_UINT) {
-	//	return scene[primarySelection];
-	//}
-	//else {
-	//	return nullptr;
-	//}
 }
 
 void Viewport::setPrimarySelectionCallback(void (*callback)()) {

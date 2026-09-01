@@ -12,9 +12,7 @@
 /// </summary>
 class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
-	std::vector<bool> selectedMeshes;
 	std::vector<uint> idStack;
-	uint selectCount = 0;
 
 public:
 	/// <summary>
@@ -62,53 +60,16 @@ public:
 	const std::vector<HalfEdgeMesh*>& Meshes() const;
 
 	/// <summary>
-	/// Returns the non-mutable list of selection booleans for selected meshes in scene.
-	/// </summary>
-	/// <returns> Address of list of selected meshes in scene. </returns>
-	const std::vector<bool>& SelectedMeshes() const;
-
-	/// <summary>
 	/// Returns the mutable list of meshes in scene.
 	/// </summary>
 	/// <returns> Address of list of meshes in scene. </returns>
 	std::vector<HalfEdgeMesh*>& Meshes();
 
 	/// <summary>
-	/// Returns a mutable list of selection boolesn for selected meshes in scene.
-	/// </summary>
-	/// <returns> Address of list of selected meshes in scene. </returns>
-	std::vector<bool>& SelectedMeshes();
-
-	/// <summary>
 	/// Returns the number of meshes in the scene.
 	/// </summary>
 	/// <returns> Size of the list of meshes in the scene. </returns>
 	uint MeshCount() const;
-
-	/// <summary>
-	/// Returns the number of selected meshes in scene.
-	/// </summary>
-	/// <returns> Returns the select count. </returns>
-	uint SelectedMeshCount() const;
-
-	/// <summary>
-	/// Sets the selection boolean of the mesh at id to true.
-	/// </summary>
-	/// <param name="id"> The id of the mesh in scene. </param>
-	void AddToSelectedMeshes(uint id);
-
-	/// <summary>
-	/// Sets the selection boolean of the mesh at id to false.
-	/// </summary>
-	/// <param name="id"> The id of the mesh in scene.</param>
-	void RemoveFromSelectedMeshes(uint id);
-
-	/// <summary>
-	/// Returns if the mesh at id is selected or not.
-	/// </summary>
-	/// <param name="id"> The id of the mesh in scene. </param>
-	/// <returns> True if the mesh is selected. </returns>
-	bool IsMeshSelected(uint id);
 };
 
 #endif

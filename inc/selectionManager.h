@@ -100,6 +100,16 @@ public:
 			}
 		}
 	}
+
+	/// <summary>
+	/// Returns whether or not the item at index i is selected.
+	/// </summary>
+	/// <param name="i"> index </param>
+	/// <returns> True if contained false otherwise. </returns>
+	bool contains(uint i) {
+		return true;
+		// todo implement.
+	}
 };
 
 #endif
