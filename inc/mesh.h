@@ -162,6 +162,10 @@ public:
 	void TranslateEdge(uint edgeId, const Vec3f& translation);
 	void TranslateVertex(uint vertId, const Vec3f& translation);
 	void TranslateVertexOut(uint vertId, float factor);
+	void GetOutGoingHalfEdges(uint vertId, std::vector<uint>& halfEdges) const; 
+	Vec3f GetHalfEdgeVector(uint hEdgeId) const; 
+	uint PickOutgoingHalfEdge(uint vertId, const Vec2f& dragDir, const Vec3f& camRight, const Vec3f& camUp) const; 
+	void TranslateVertexAlongEdge(uint vertId, uint hEdgeId, float distance); 
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
 	/// <summary>

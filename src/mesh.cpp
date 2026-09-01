@@ -556,8 +556,6 @@ Vec3f HalfEdgeMesh::GetVertexNormal(uint vertId) {
 		std::cout << normal << std::endl;
 
 		float weight = 1.0f - seg0.Dot(seg1);
-		normalSum += normal * weight;
-		weightSum += weight;
 		temp = adjVertPos;
 		next = edges[edge.twin].next;
 	} while (next != last);
@@ -588,6 +586,70 @@ void HalfEdgeMesh::translateVertices(const Vec3f& add) {
 
 void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
 	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
+}
+
+void HalfEdgeMesh::GetOutGoingHalfEdges(uint vertId, std::vector<uint>& halfEdges) const {
+	Vec3f pos = vertPos[vertId];
+	if (vertId >= vertEdge.size())
+		return; 
+
+	uint next = vertEdge[vertId];
+	
+	if (next == MAX_UINT)
+		return; 
+
+	uint last = next;
+
+	Vec3f temp = vertPos[edges[next].dest];
+	uint step = 0; 
+
+	do {
+		if (step >= edges.size())
+			break; 
+		
+		halfEdges.push_back(next); 
+		const HalfEdge& edge = edges[next];
+		Vec3f adjVertPos = vertPos[edge.dest];
+		Vec3f seg0 = temp - pos;
+		seg0.Normalize();
+		Vec3f seg1 = adjVertPos - pos;
+		seg1.Normalize();
+
+		temp = adjVertPos;
+		next = edges[edge.twin].next;
+		++step; 
+	} while (next != last);
+}
+
+uint HalfEdgeMesh::PickOutgoingHalfEdge(uint vertId, const Vec2f& dragDir, const Vec3f& camRight, const Vec3f& camUp) const {
+	std::vector<uint> halfEdges; 
+	GetOutGoingHalfEdges(vertId, halfEdges);
+	
+	if (halfEdges.empty())
+		return MAX_UINT; 
+
+	Matrix3f transformCache = getTransform3x3(); 
+	uint best = MAX_UINT, bestScore = -2.0f; 
+	uint epsilon = 0.02f; 
+
+	for (auto& candidate : halfEdges) {
+		Vec3f world = transformCache * GetHalfEdgeVector(candidate); 
+		Vec2f screen = Vec2f(world.Dot(camRight), world.Dot(camUp)); 
+		
+		if (screen.LengthSquared() < epsilon)
+			continue; 
+		
+		screen.Normalize();
+		//dragDir must be a unit length
+		uint score = screen.Dot(dragDir); 
+
+		if (score > bestScore) {
+			bestScore = score;
+			best = candidate;
+		}
+	}
+
+	return best; 
 }
 
 Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
