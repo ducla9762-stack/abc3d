@@ -21,6 +21,30 @@ using std::ostream;
 
 typedef unsigned uint;
 
+//A single world-space triangle for a .stl file
+struct Triangle {
+	Vec3f v0, v1, v2;
+};
+
+/// <summary>
+/// The outcome of importing a mesh file. `status` says whether a usable mesh was
+/// produced; `skippedFaces` counts face lines the parser dropped but recovered from,
+/// so a mesh can import successfully and still be missing geometry.
+/// </summary>
+struct ImportReport {
+	enum Status {
+		Ok,              // A mesh was built
+		FileError,       // Could not open the file, or it is not a supported .obj/.stl
+		InvalidTopology  // Face indices out of range, repeated in one face, non-manifold,
+		                 // or a face with no area (coincident or collinear vertices)
+	};
+
+	Status status = Ok;
+	uint skippedFaces = 0;
+
+	bool ok() const { return status == Ok; }
+};
+
 class FaceList{
 
 	typedef Vec4<uint> Face; 
@@ -28,6 +52,8 @@ class FaceList{
 
 	std::vector<Vertex> vertices;
 	std::vector<Face> faces;
+	std::vector<uint> objectStarts;
+	uint skippedFaces = 0; // Face lines the parser dropped rather than storing
 
 	void MoveTo(const char*& c_str, char delim);
 	void ProcessObjLine(const string& line);
@@ -41,9 +67,12 @@ public:
 	const std::vector<Vec4<uint>>& Faces() const;
 	std::vector<Vec3f>& Vertices();
 	std::vector<Vec4<uint>>& Faces();
+	uint SkippedFaces() const;
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
+
+	std::vector<FaceList> SplitObjects() const;
 };
 
 class HalfEdgeMesh {
@@ -97,7 +126,7 @@ class HalfEdgeMesh {
 	Vec3f computeCentroid();
 	void translateVertices(const Vec3f& add);
 	template<typename T>
-	void build(const T& faces);
+	bool build(const T& faces);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -149,26 +178,80 @@ public:
 	void tesselate();
 	void subdivide();
 	void Clear();
-	bool load(const char* file);
-	void load(const FaceList& faceList);
+	ImportReport load(const char* file);
+	bool load(const FaceList& faceList);
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);
 
 	template <size_t V, size_t F>
 	void load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces);
 
 	bool exportObj(const char* filePath) const;
-	bool exportStl(const char* filePath, bool isBinary = true) const; 
+	bool exportStl(const char* filePath, bool isBinary = true) const;
+
+	void appendObj(std::ostream& out, uint& vertOffset) const; 
+	void appendStlTriangles(std::vector<Triangle>& tris) const; 
 };
 
+/// <summary>
+///		Imports every object in `file` as its own mesh. An .obj is split on its "o"/"g"
+///		groups; an .stl has no object concept, so it always comes back as one mesh.
+///		`meshes` is only written when the whole file imports, so a rejected file leaves
+///		it untouched.
+/// </summary>
+ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes);
+
+/// <summary>
+///		True when `path` ends with `ext`, compared without regard to case. The match is
+///		anchored to the end of the path, so a directory named "models.obj.d" no longer
+///		makes a .stl file inside it look like an .obj.
+/// </summary>
+bool hasExtension(const std::string& path, const char* ext); 
+
+std::string ensureExtension(const std::string& path, const char* ext); 
+bool writeStl(const std::string& filePath, const std::vector<Triangle>& tris, bool isBinary); 
+
+/// <summary>
+///		True when the triangle `v0`, `v1`, `v2` has no usable normal, i.e. the points are
+///		coincident or collinear. The test is exact rather than tolerance based: it matches
+///		the condition under which Normalize() divides by zero, so anything it accepts still
+///		exports a finite normal.
+/// </summary>
+inline bool IsDegenerateFace(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2) {
+	return (v1 - v0).Cross(v2 - v0).LengthSquared() == 0.0f;
+}
+
 template<typename T>
-void HalfEdgeMesh::build(const T& faces) {
+bool HalfEdgeMesh::build(const T& faces) {
 	vertEdge.resize(0);
 	faceEdges.resize(0);
 	edges.resize(0);
 	vertEdge.insert(vertEdge.end(), vertPos.size(), MAX_UINT);
 	faceEdges.reserve(faces.size());
 
-	// Build
+	//Reject out of range indices and degenerate faces
+	const uint vertLimit = static_cast<uint>(vertPos.size()); 
+	for (uint i = 0; i < faces.size(); ++i) {
+		const Vec4<uint>& face = faces[i]; 
+		uint vertCount = (face[3] == MAX_UINT) ? 3 : 4; 
+
+		for (uint j = 0; j < vertCount; ++j) {
+			if (face[j] >= vertLimit) {Clear(); return false; }
+
+			for (uint k = j + 1; k < vertCount; ++k) {
+				if (face[j] == face[k]) { Clear(); return false; }
+			}
+		}
+
+		// Distinct indices can still be coincident or collinear, which leaves the face
+		// with no direction: the cross product is zero length and normalizing it yields
+		// nan. Quads are checked as the same triangle fan the stl writer emits.
+		if (IsDegenerateFace(vertPos[face[0]], vertPos[face[1]], vertPos[face[2]])) { Clear(); return false; }
+
+		if (vertCount == 4 &&
+			IsDegenerateFace(vertPos[face[0]], vertPos[face[2]], vertPos[face[3]])) { Clear(); return false; }
+	}
+
+	//Build
 	std::unordered_map<Vec2<uint>, uint> edgeIndices;
 
 	for (uint i = 0; i < faces.size(); ++i) {
@@ -190,6 +273,7 @@ void HalfEdgeMesh::build(const T& faces) {
 			HalfEdge& edge = NewEdge(edgeId);
 
 			Vec2<uint> edgeVertices(face[j], face[next]);
+			if (edgeIndices.count(edgeVertices) != 0) { Clear(); return false; } //Non-manifold
 			edgeIndices[edgeVertices] = edgeId;
 
 			edge.orig = edgeVertices[0];
@@ -241,14 +325,19 @@ void HalfEdgeMesh::build(const T& faces) {
 		edge.next = nextId;
 		next->prev = i;
 	}
+	
+	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
+	const Vec3f centroid = computeCentroid();
+	translateVertices(-centroid);
+	pos += centroid;
 
-	translateVertices(-computeCentroid());
+	return true;
 }
 
 template <size_t V, size_t F>
 void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<Vec4u, F>& faces) {
 	vertPos.insert(vertPos.end(), vertices.begin(), vertices.end());
-	build(faces);
+	(void)build(faces);
 }
 
 #endif
