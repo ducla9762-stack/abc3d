@@ -103,6 +103,8 @@ class HalfEdgeMesh {
 		uint triCount = 0;
 	};
 
+	friend class RenderBufferBuilder;
+
 	uint NewFace(uint faceEdge);
 	uint NewVertex(const Vec3f& pos, uint firstEdgeId);
 
@@ -117,7 +119,7 @@ class HalfEdgeMesh {
 
 	// Invalidates previous edge references/pointers.
 	HalfEdge& NewEdge(const HalfEdge hEdge, uint& id);
-	uint FaceEdgeCount(uint faceId);
+	uint FaceEdgeCount(uint faceId) const;
 	VertexAdjacentInfo GetVertexAdjacentInfo(uint vertId);
 	Vec3f ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount);
 	Vec3f ApplyLoopMask(uint vertId, uint edgeCount);
@@ -127,10 +129,10 @@ class HalfEdgeMesh {
 	void translateVertices(const Vec3f& add);
 	template<typename T, typename Face>
 	bool build(const T& faces, uint(*faceVertexCount)(const Face&));
-	Vec3f NewellNormal(uint faceId);
+	Vec3f NewellNormal(uint faceId) const;
 
-	bool IsTriangle(uint faceId);
-	bool IsNGon(uint faceId);
+	bool IsTriangle(uint faceId) const;
+	bool IsNGon(uint faceId) const;
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -144,23 +146,27 @@ public:
 	Vec3f pos = Vec3f(0.0f);
 	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
 
-	void getRenderBuffers(std::vector<Vec3f>& pos, std::vector<Vec3f>& norm, std::vector<Vec2u>& ids, std::vector<float>& edgeDist, std::vector<Vec3u>& edgeIds, uint objId) const;
 	Matrix4f getTransform() const;
 	Matrix3f getTransform3x3() const;
 	Vec3f WorldDirToLocalDir(const Vec3f& worldDir);
 	void deform();
+
 	void GetFaceVertices(uint faceId, uint vertices[4]) const;
 	void GetTriVertices(uint faceId, uint vertices[3]) const;
+	Vec3u GetTriVertices(uint faceId) const;
 	void GetTriVertices(uint faceId, Vec3f vertices[3]) const;
+	void GetTriVertices(uint faceId, std::vector<Vec3f>& vertices) const;
+
+	Vec3u GetTriEdges(uint faceId) const;
+
 	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const;
 	const Vec3f* VertexPositions() const;
 	const void GetWorldVertexPositions(std::vector<Vec3f>& vertices) const;
 	uint VertexCount() const;
-	void GetElementBuffer(std::vector<uint>& elementBuffer);
-	void GetEdgeElementBuffer(std::vector<uint>& elementBuffer);
 	Vec3f faceCentroid(uint faceId);
-	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangulation);
 
+	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangulation) const;
+	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVertices, std::vector<Vec3u>& triangleEdges) const;
 	void TriangulateFace(uint faceId);
 	void TriangulateAllNGons();
 	void ClipCorner(uint edge, uint& innerClipId, uint& outerClipId, uint& cornerFace);

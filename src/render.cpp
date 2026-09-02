@@ -326,39 +326,36 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(uint) * pointVertDrawCount * 2, vertObjData.data(), GL_DYNAMIC_DRAW);
 
 	// Mesh Data
-	meshPosData.resize(0);
-	meshNormData.resize(0);
-	meshIdData.resize(0);
-	meshEdgeIdData.resize(0);
-	meshDistData.resize(0);
+	bufBuilder.Clear();
+
 	for (unsigned int i = 0; i < scene.MeshCount(); i++)
 	{
 		const HalfEdgeMesh* mesh = scene[i];
-		mesh->getRenderBuffers(meshPosData, meshNormData, meshIdData, meshDistData, meshEdgeIdData, i + 1);
+		bufBuilder.AddMesh(*mesh, i + 1);
 	}
 
-	size_t meshPosDataSize = sizeof(float) * 3 * meshPosData.size();
-	size_t meshNormDataSize = sizeof(float) * 3 * meshNormData.size();
-	size_t meshIdDataSize = sizeof(uint) * 2 * meshIdData.size();
-	size_t meshDistDataSize = sizeof(float) * meshDistData.size();
-	size_t meshEdgeIdDataSize = sizeof(uint) * 3 * meshEdgeIdData.size();
+	size_t meshPosDataSize = sizeof(float) * 3 * bufBuilder.PosBuffer().size();
+	size_t meshNormDataSize = sizeof(float) * 3 * bufBuilder.NormBuffer().size();
+	size_t meshIdDataSize = sizeof(uint) * 2 * bufBuilder.IdBuffer().size();
+	size_t meshDistDataSize = sizeof(float) * bufBuilder.EdgeDistBuffer().size();
+	size_t meshEdgeIdDataSize = sizeof(uint) * 3 * bufBuilder.EdgeIdBuffer().size();
 	size_t bufOffset1 = meshPosDataSize + meshNormDataSize;
 	size_t bufOffset2 = bufOffset1 + meshIdDataSize;
 	size_t bufOffset3 = bufOffset2 + meshDistDataSize;
 	size_t size = bufOffset3 + meshEdgeIdDataSize;
 
-	meshVertDrawCount = meshPosData.size();
+	meshVertDrawCount = bufBuilder.PosBuffer().size();
 
 	glBindVertexArray(meshVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, meshVBO);
 	glBufferData(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, meshPosDataSize, meshPosData.data());
-	glBufferSubData(GL_ARRAY_BUFFER, meshPosDataSize, meshNormDataSize, meshNormData.data());
-	glBufferSubData(GL_ARRAY_BUFFER, bufOffset1, meshIdDataSize, meshIdData.data());
-	glBufferSubData(GL_ARRAY_BUFFER, bufOffset2, meshDistDataSize, meshDistData.data());
-	glBufferSubData(GL_ARRAY_BUFFER, bufOffset3, meshEdgeIdDataSize, meshEdgeIdData.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, meshPosDataSize, bufBuilder.PosBuffer().data());
+	glBufferSubData(GL_ARRAY_BUFFER, meshPosDataSize, meshNormDataSize, bufBuilder.NormBuffer().data());
+	glBufferSubData(GL_ARRAY_BUFFER, bufOffset1, meshIdDataSize, bufBuilder.IdBuffer().data());
+	glBufferSubData(GL_ARRAY_BUFFER, bufOffset2, meshDistDataSize, bufBuilder.EdgeDistBuffer().data());
+	glBufferSubData(GL_ARRAY_BUFFER, bufOffset3, meshEdgeIdDataSize, bufBuilder.EdgeIdBuffer().data());
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
