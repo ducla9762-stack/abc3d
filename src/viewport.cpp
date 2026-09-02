@@ -224,11 +224,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	switch (activeElement) {
 	case OBJECT:
 		scene[selectionIds.x - 1]->pos += translation;
-		for (int i = 0; i < scene.MeshCount(); ++i) {
-			if (scene.IsMeshSelected(i)) {
-				scene[i]->pos += translation;
-			}
-		}
+		
 		break;
 	case EDGE:
 		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
