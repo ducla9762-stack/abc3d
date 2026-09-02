@@ -395,4 +395,11 @@ public:
 	ExtrudeToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) { end(); }
 };
 
+class RadioButton : public Fl_Radio_Button {
+public:
+	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h) {
+
+	}
+};
+
 #endif
