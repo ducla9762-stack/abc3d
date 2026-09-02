@@ -3,17 +3,20 @@
 #include "scene.h"
 
 Scene::~Scene() {
+	// Loop through all meshes and delete them.
 	for (HalfEdgeMesh* mesh : meshes) {
 		delete mesh;
 	}
 }
 
 void Scene::DeleteMesh(uint id) {
+	// Get the mesh at id.
 	HalfEdgeMesh* mesh = meshes.at(id);
+	// If the mesh exists:
 	if (mesh) {
+		// Clear the mesh.
 		meshes.at(id)->Clear();
 		idStack.push_back(id);
-		RemoveFromSelectedMeshes(id); 
 	}
 }
 
@@ -23,16 +26,20 @@ void Scene::DuplicateMesh(uint id) {
 }
 
 HalfEdgeMesh* Scene::NewMesh() {
+	// If there are no deleted meshes in the scene:
 	if (idStack.empty()) {
+		// Create a new mesh, push it back, and push back false by default for selection.
 		HalfEdgeMesh* newMesh = new HalfEdgeMesh();
 		meshes.push_back(newMesh);
-		selectedMeshes.push_back(false);
 		return newMesh;
 	}
 
+	// Else there are deleted meshes in the scene.
+	// We can use their allocated space.
+
+	// Remove the earliest deleted mesh id.
 	uint index = idStack.back();
 	idStack.pop_back();
-	selectedMeshes.at(index) = false;
 	return meshes.at(index);
 }
 
@@ -42,50 +49,6 @@ const HalfEdgeMesh* Scene::operator[](uint index) const { return meshes.at(index
 
 const std::vector<HalfEdgeMesh*>& Scene::Meshes() const { return meshes; }
 
-const std::vector<bool>& Scene::SelectedMeshes() const { return selectedMeshes; }
-
 std::vector<HalfEdgeMesh*>& Scene::Meshes() { return meshes; }
 
-std::vector<bool>& Scene::SelectedMeshes() { return selectedMeshes; }
-
 uint Scene::MeshCount() const { return meshes.size(); }
-
-uint Scene::SelectedMeshCount() const { return selectCount; }
-
-/// <summary>
-/// Sets boolean at mesh id to true.
-/// </summary>
-/// <param name="id"></param>
-void Scene::AddToSelectedMeshes(uint id) {
-	if (id >= meshes.size() || selectedMeshes[id] == true) {
-		return;
-	}
-
-	selectedMeshes[id] = true;
-	++selectCount;
-}
-
-/// <summary>
-/// Sets boolean at mesh id to false.
-/// </summary>
-/// <param name="id"></param>
-void Scene::RemoveFromSelectedMeshes(uint id) {
-	if (id >= meshes.size() || selectedMeshes[id] == false) { return; }
-
-	selectedMeshes[id] = false;
-	--selectCount;
-}
-
-/// <summary>
-/// Returns if the mesh at id is selected.
-/// </summary>
-/// <param name="id"></param>
-/// <returns></returns>
-bool Scene::IsMeshSelected(uint id) {
-	if (id < meshes.size()) {
-		return selectedMeshes[id];
-	}
-	else {
-		return false;
-	}
-}
