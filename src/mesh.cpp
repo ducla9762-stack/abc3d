@@ -798,7 +798,7 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 	triangleVertices.reserve(triangleVertices.size() + numVertices - 2);
 	triangleEdges.reserve(triangleVertices.size() + numVertices - 2);
 
-	while (numVertices > 2) {
+	while (numVertices > 3) {
 		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
 			corner = corner->next;
 			continue;
@@ -818,13 +818,17 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 			corner->next->prev = corner->prev;
 			--numVertices;
 
-			corner->prev->edgeId = MAX_UINT;
 			triangleVertices.emplace_back(corner->prev->vertId, corner->vertId, corner->next->vertId);
-			triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, corner->next->edgeId);
+			triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, MAX_UINT);
+
+			corner->prev->edgeId = MAX_UINT;
 		}
 
 		corner = corner->next;
 	}
+
+	triangleVertices.emplace_back(corner->prev->vertId, corner->vertId, corner->next->vertId);
+	triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, corner->next->edgeId);
 
 	delete[] polyCorners;
 }

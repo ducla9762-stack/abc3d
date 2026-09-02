@@ -1,6 +1,9 @@
 #ifndef _ABC3D_SELECTION_MANAGER_H_
 #define _ABC3D_SELECTION_MANAGER_H_
 
+#include <algorithm>
+#include <optional>
+
 #include "selection.h"
 
 class SelectionManager {
