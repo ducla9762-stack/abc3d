@@ -11,6 +11,7 @@
 
 #include "helper.h"
 #include "scene.h"
+#include "renderBufferBuilder.h"
 #include "selection.h"
 
 using std::chrono::steady_clock;
@@ -65,11 +66,7 @@ class ModelingRenderer : public Renderer {
 	std::vector<Vec3f> sceneVertices;
 	std::vector<Vec2u> vertObjData;
 
-	std::vector<Vec3f> meshPosData;
-	std::vector<Vec3f> meshNormData;
-	std::vector<Vec2u> meshIdData;
-	std::vector<float> meshDistData;
-	std::vector<Vec3u> meshEdgeIdData;
+	RenderBufferBuilder bufBuilder;
 
 	uint meshVertDrawCount = 0;
 	uint pointVertDrawCount = 0;
