@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <chrono>
+#include <array>
+#include <algorithm>
 
 #include "cyGL.h"
 #include "cyMatrix.h"
@@ -378,6 +380,7 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	updateTextureUniforms();
 }
 
+// OLD FUNCTION
 void ModelingRenderer::UpdateSelectionTexture(std::vector<bool> selections)
 {
 	std::vector<uint8_t> data(selections.size());
@@ -388,4 +391,30 @@ void ModelingRenderer::UpdateSelectionTexture(std::vector<bool> selections)
 
 	glBindTexture(GL_TEXTURE_1D, selTex);
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_R8UI, data.size(), 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, data.data());
+}
+
+void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selectedItems)
+{
+	// Pack the CPU selection list into the format used by the GLSL array:
+	// (element type, one-based GPU object ID, local component ID).
+	std::array<GLuint, MAX_SELECTION_ITEMS * 3> gpuSelections{};
+	const size_t selectionCount = selectedItems.size();
+
+	for (size_t i = 0; i < selectionCount; ++i) {
+		const SelectionItem& item = selectedItems[i];
+		gpuSelections[i * 3 + 0] = static_cast<GLuint>(item.type);
+		gpuSelections[i * 3 + 1] = item.meshId + 1; // GPU IDs are one-based
+		gpuSelections[i * 3 + 2] = item.componentId;
+	}
+
+	// Uniform arrays are uploaded with the location of their first element.
+	meshProgram.Bind();
+	meshProgram.SetUniform("selectionCount", static_cast<GLuint>(selectionCount));
+	meshProgram.SetUniform3(
+		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
+
+	pointProgram.Bind();
+	pointProgram.SetUniform("selectionCount", static_cast<GLuint>(selectionCount));
+	pointProgram.SetUniform3(
+		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
 }
