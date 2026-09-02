@@ -62,7 +62,7 @@ public:
 	}
 
 	void updateValues() override {
-		const HalfEdgeMesh* mesh = viewport->primarySelectedMesh();
+		const HalfEdgeMesh* mesh = viewport->primarySelectedItem();
 		if (!mesh) {
 			hide();
 			return;
@@ -94,7 +94,7 @@ BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Scale", 0.0, 0.2)
 	}
 
 	void updateValues() override {
-		const HalfEdgeMesh* mesh = viewport->primarySelectedMesh();
+		const HalfEdgeMesh* mesh = viewport->primarySelectedItem();
 		if (!mesh) {
 			hide();
 			return;
@@ -150,7 +150,7 @@ public:
 	}
 
 	void updateValues() override {
-		const HalfEdgeMesh* mesh = viewport->primarySelectedMesh();
+		const HalfEdgeMesh* mesh = viewport->primarySelectedItem();
 		if (!mesh) {
 			spinnerContainer->hide();
 			return;

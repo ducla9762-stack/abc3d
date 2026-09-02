@@ -10,7 +10,6 @@ layout(location = 1) out vec3 selectPos;
 layout(location = 2) out uvec3 selectIds;
 
 uniform vec3 lightPosition;
-uniform bool selected;
 
 const float LIGHT_INTENSITY = 0.5;
 const float AMBIENT_INTENSITY = 0.2;
@@ -36,16 +35,6 @@ void main(){
 	}
 
 	vec3 ambientTerm = AMBIENT_INTENSITY * SURFACE_COLOR;
-
-	if (selected)
-	{
-		ambientTerm = AMBIENT_INTENSITY * SELECTION_COLOR;
-		color = vec4(LIGHT_INTENSITY * (diffuseTerm + specularTerm) + ambientTerm, 1);
-	}
-	else
-	{
-		color = vec4(LIGHT_INTENSITY * (diffuseTerm + specularTerm) + ambientTerm, 1);
-	}
 
 	selectPos = localPos;
 	selectIds = ids;

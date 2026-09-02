@@ -12,6 +12,7 @@
 #include "helper.h"
 #include "scene.h"
 #include "renderBufferBuilder.h"
+#include "selection.h"
 
 using std::chrono::steady_clock;
 using std::chrono::milliseconds;
@@ -106,6 +107,15 @@ public:
 	void UpdateRenderBuffers(const Scene& scene);
 
 	void UpdateSelectionTexture(std::vector<bool> selections);
+
+	/// <summary>
+	/// Sends selection data to the GPU via uniforms for visualization.
+	/// 
+	/// NOTE: This is a mostly AI generated function, and might not represent the best possible
+	/// implementation.
+	/// </summary>
+	/// <param name="selectedItems"></param>
+	void UpdateSelection(const std::vector<SelectionItem>& selectedItems);
 
 private:
 
