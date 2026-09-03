@@ -673,9 +673,6 @@ void HalfEdgeMesh::TranslateVertexAlongEdge(uint vertId, uint hEdgeId, float dis
 	TranslateVertex(vertId, dir * distance); 
 }
 
-Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
-	uint vertices[4];
-	GetFaceVertices(faceId, vertices);
 bool HalfEdgeMesh::IsTriangle(uint faceId) const {
 	uint edge = faceEdges[faceId];
 	return edges[edge].prev == edges[edges[edge].next].next;
