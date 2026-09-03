@@ -222,5 +222,9 @@ inline Vec3f axisAngleToEulerAngle(const Vec3f& axis, float angle) {
 	return matrixToEulerAngle(mat);
 }
 
+inline Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
+	return (v.Dot(u) / u.LengthSquared()) * u;
+}
+
 
 #endif

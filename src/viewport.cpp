@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <unordered_set>
 #include <utility>
 
 #include "viewport.h"
@@ -18,6 +19,7 @@ void Viewport::draw() {
 		activeRenderer->SetCamera(sphericalToCartesian(camPos));
 		modelingRenderer.UpdateRenderBuffers(scene);
 		if (!success) { return; }
+		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
 		modeChanged = false;
 	}
 	if (!valid()) {
@@ -36,6 +38,11 @@ int Viewport::handle(int event) {
 	}
 
 	if (context() == nullptr) { return 0; }
+
+	if (Fl_Group::handle(event)) {
+		return 1;
+	}
+
 
 	make_current();
 	// Process event
@@ -69,6 +76,7 @@ int Viewport::handle(int event) {
 }
 
 void Viewport::mouseDrag() {
+	// Get mouse pointer position.
 	Vec2f pos(Fl::event_x(), Fl::event_y());
 	Vec2f uv(pos.x / (w() - 1), pos.y / (h() - 1));
 	uv.y = 1.0f - uv.y;
@@ -80,6 +88,7 @@ void Viewport::mouseDrag() {
 		initialDragDir.Normalize();
 	}
 
+	// Get change in position.
 	Vec2f change;
 	change.y = mouseDragPrevPos.y - pos.y;
 	change.x = pos.x - mouseDragPrevPos.x;
@@ -87,6 +96,8 @@ void Viewport::mouseDrag() {
 	if (change.y == 0 && change.x == 0) return;
 
 	bool camera = true;
+
+	// Transformation drag depending on action.
 	if (activeAction == TRANSLATE_OUT) {
 		camera = !translateOutDrag(pos, uv);
 	}
@@ -103,6 +114,7 @@ void Viewport::mouseDrag() {
 		camera = !rotateDrag(pos);
 	}
 	
+	// Otherwise, we rotate the camera position.
 	if (camera) {
 		camPos.x -= change.x;
 		camPos.y += change.y;
@@ -117,15 +129,33 @@ void Viewport::mouseDrag() {
 }
 
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
-	if (activeAction != SCALE || selectionIds.x == 0) {
+	// If the action action is not scale, and there are no selections, do nothing.
+	// Todo: edge and face scale.
+	if (selectionManager.getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
+	// Calculate the amount to scale by.
 	Vec2f change = pos - mouseDragPrevPos;
 	float factor = 0.01f * change.Dot(initialDragDir);
 
-	uint objectId = selectionIds.x != MAX_UINT ? selectionIds.x : selectionIds.y;
-	scene[objectId - 1]->scale += factor;
+	// Change all selected elements.
+	// Use unordered set for fast lookup time.
+	std::unordered_set<uint> transformedMeshes;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		// Don't transform the same mesh multiple times.
+		if (item.meshId >= scene.MeshCount() || !transformedMeshes.insert(item.meshId).second) {
+			continue;
+		}
+
+		// Scale.
+		scene[item.meshId]->AddScale(factor);
+	}
+
+	if (transformedMeshes.empty()) {
+		return false;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -134,35 +164,64 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 }
 
 bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
-	if (selectionIds.x == 0) { return false; }
+	// If there are no selected elements, do nothing.
+	if (selectionManager.getSelectedItems().empty()) { return false; }
 
+	// If we are selecting objects, translate free instead of out.
 	if (activeElement == OBJECT) {
 		return translateFreeDrag(pos, uv);
 	}
 
+	// Calculate change in position.
 	Vec2f change = pos - mouseDragPrevPos;
 	float scale = 0.01f * change.Dot(initialDragDir);
 
+	// If we are selecting vertices, do vertex translation.
 	if (activeElement == VERTEX) {
 		return translateOutVertexDrag(scale);
 	}
-	else if (selectionIds.x == MAX_UINT) {
+
+	// else get all selected items.
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	// If this is the first drag, establish direction.
+	if (firstDragCallback) {
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		// For each selected item, transform.
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			if (item.type == FACE) {
+				dragActionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+			}
+			else if (item.type == EDGE) {
+				dragActionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+			}
+		}
+	}
+
+	bool transformed = false;
+	// Otherwise, translate.
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.meshId >= scene.MeshCount() || i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		if (item.type == FACE) {
+			scene[item.meshId]->TranslateFace(item.componentId, dragActionDirs[i] * scale);
+			transformed = true;
+		}
+		else if (item.type == EDGE) {
+			scene[item.meshId]->TranslateEdge(item.componentId, dragActionDirs[i] * scale);
+			transformed = true;
+		}
+	}
+
+	if (!transformed) {
 		return false;
-	}
-
-	if (activeElement == FACE) {
-		if (firstDragCallback) {
-			actionDir = scene[selectionIds.x - 1]->GetFaceNormal(selectionIds.y);
-		}
-
-		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, actionDir * scale);
-	}
-	else if (activeElement == EDGE) {
-		if (firstDragCallback) {
-			actionDir = scene[selectionIds.x - 1]->GetEdgeNormal(selectionIds.z);
-		}
-
-		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, actionDir * scale);
 	}
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -172,16 +231,39 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 }
 
 bool Viewport::translateOutVertexDrag(float scale) {
-	if (selectionIds.x != MAX_UINT) {
+	// If no selection, do nothing.
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	if (selectedItems.empty()) {
 		return false;
 	}
 
+	// If first drag, establish direction, translate out.
 	if (firstDragCallback) {
-		actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
-		//initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.type == VERTEX && item.meshId < scene.MeshCount()) {
+				dragActionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+			}
+		}
 	}
 
-	scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, scale * actionDir);
+	// Else translate out.
+	bool transformed = false;
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.type != VERTEX || item.meshId >= scene.MeshCount() || i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		scene[item.meshId]->TranslateVertex(item.componentId, scale * dragActionDirs[i]);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -219,29 +301,53 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
 
+	// Calculate position change.
 	Vec2f change;
 	change.x = mouseDragPrevPos.x - pos.x;
 	change.y = pos.y - mouseDragPrevPos.y;
 	Vec3f translation = 0.01f * (change.x * r + change.y * u);
 
-	if (activeElement == VERTEX) {
-		if (selectionIds.x != MAX_UINT) {
-			return false;
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
 		}
 
-		translation = scene[selectionIds.y - 1]->WorldDirToLocalDir(translation);
-		scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, translation);
-		modelingRenderer.UpdateRenderBuffers(scene);
-		return true;
+		// Translate depending on which element type.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (item.type) {
+		case OBJECT:
+			if (transformedObjects.insert(item.meshId).second) {
+				//mesh->pos += translation;
+				mesh->Pos(translation);
+				transformed = true;
+			}
+			break;
+		case VERTEX:
+			mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		case EDGE:
+			mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		case FACE:
+			mesh->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		}
 	}
 
-	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+	if (!transformed) {
 		return false;
 	}
 
 	switch (activeElement) {
 	case OBJECT:
-		scene[selectionIds.x - 1]->pos += translation;
+		scene[selectionIds.x - 1]->TranslatePos(translation);
+		
 		break;
 	case EDGE:
 		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
@@ -261,30 +367,56 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 }
 
 bool Viewport::rotateDrag(const Vec2f& pos) {
-	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+	// If no selections, do nothing.
+	if (selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
 
+	// calculate change in rotation.
 	Vec2f change;
 	change.y = mouseDragPrevPos.x - pos.x;
 	change.x = -(pos.y - mouseDragPrevPos.y);
 
 	Vec3f dir = change.x * r + change.y * u;
 	float length = dir.Length();
+	if (length == 0.0f) {
+		return false;
+	}
 	dir /= length;
 
-	Vec3f eulerRot = scene[selectionIds.x - 1]->eulerRot;
-	Matrix3f origRot;
-	origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		// Don't rotate twice.
+		if (item.type != OBJECT || item.meshId >= scene.MeshCount() ||
+			!transformedObjects.insert(item.meshId).second) {
+			continue;
+		}
 
-	Matrix3f rot;
-	rot.SetRotation(dir, length * 0.01f);
-	rot *= origRot;
+		Vec3f eulerRot = scene[item.meshId]->Rot();
+		Matrix3f origRot;
+		origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
-	scene[selectionIds.x - 1]->eulerRot = matrixToEulerAngle(rot);
+		//Vec3f eulerRot = scene[item.meshId]->eulerRot;
+		//Matrix3f origRot;
+		//origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		Matrix3f rot;
+		rot.SetRotation(dir, length * 0.01f);
+		rot *= origRot;
+
+		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
+
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
 
@@ -294,26 +426,37 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 }
 
 int Viewport::mousePush() {
+	// For now, we ignore right mouse button events.
 	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
+	// Get position of mouse press.
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
+	// Get the selection ids at this position.
 	selectionIds = modelingRenderer.SelectionIds(x, y);
 
-	// Check if there is a valid object-level id.
-	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT) {
-		// Use the 0 indexed id.
-		selectMesh(selectionIds.x - 1);
-	}
-	else {
-		deselectMeshes();
+	// Create a selection item to send to the selection manager.
+	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+
+	// query the selection maanger with the item.
+	selectionManager.processSelection(item, additiveSelection);
+
+	// Tell the renderer to update the selection visuals.
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
 	}
 
+	redraw();
+
+	// Print selection ids.
 	std::cout << "Object Id: " << selectionIds.x << std::endl;
 	std::cout << "Component Id: " << selectionIds.y << std::endl;
 	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-
+	
+	// Drag stuff, refactor later.
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
 	mouseDragPrevPos = mouseDragStartPos;
 	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
@@ -325,6 +468,7 @@ int Viewport::mousePush() {
 }
 
 void Viewport::mouseWheel() {
+	// Adjust the camera zoom.
 	camPos.z += Fl::event_dy();
 	if (camPos.z < 0.0f) { camPos.z = 0.0f; }
 
@@ -353,17 +497,17 @@ void Viewport::keyDown() {
 		modelingRenderer.ToggleGrid();
 		break;
 	case FL_Delete:
-		deleteMesh();
+		deleteElement();
 		break;
 	case 'd': 
-		duplicateMesh(); 
+		duplicateElement(); 
 		break;
 	case 'v':
 		activeElement = EDGE;
 		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
-		singleSelection = false;
+		additiveSelection = true;
 		break;
 	default:
 		return;
@@ -374,7 +518,7 @@ void Viewport::keyDown() {
 void Viewport::keyUp() {
 	switch (Fl::event_key()) {
 	case FL_Control_L:
-		singleSelection = true;
+		additiveSelection = false;
 		break;
 	default:
 		return;
@@ -382,66 +526,159 @@ void Viewport::keyUp() {
 	redraw();
 }
 
+std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
+{
+	switch (selectionManager.getActiveElement()) {
+	case OBJECT:
+		// Normal hit.
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				OBJECT,
+				ids.x - 1,
+				MAX_UINT
+			};
+		}
+		// Vertex hit belonging to object.
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				OBJECT,
+				ids.y - 1,
+				MAX_UINT
+			};
+		}
+
+		break;
+
+	case VERTEX:
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				VERTEX,
+				ids.y - 1,
+				ids.z
+			};
+		}
+
+		break;
+
+	case FACE:
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				FACE,
+				ids.x - 1,
+				ids.y
+			};
+		}
+
+		break;
+
+	case EDGE:
+		if (ids.x != 0 && ids.x != MAX_UINT && ids.z != MAX_UINT) {
+			return SelectionItem{
+				EDGE,
+				ids.x - 1,
+				ids.z
+			};
+		}
+
+		break;
+	}
+
+	// Null if background hit.
+	return std::nullopt;
+}
+
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
+	// Load default mesh (cube).
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
 float Viewport::getScale(int component, float scale) {
+	// todo
 	return 1;
 }
 
 void Viewport::setScale(int component, float scale) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->scale[component] = scale;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->scale[component] = scale;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->Scale(component, scale);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
+		}
 	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 void Viewport::bevel() {
-
+	// todo
 }
 
 void Viewport::extrude() {
-
+	// todo
 }
 
 void Viewport::subdivision() {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->subdivide();
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->subdivide();
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->subdivide();
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::displayCube() {
+	// Insert new cube mesh into scene.
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
 void Viewport::displayPyramid() {
+	// Insert new pyramid mesh into scene.
 	scene.NewMesh()->load(PYRAMID_VERTICES, PYRAMID_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
@@ -451,7 +688,9 @@ void Viewport::displayCylinder() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate cylinder of resolution 12.
 	generateUnitCylinder(vertices, faces, 12);
+	// Insert new cylinder mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -459,6 +698,7 @@ void Viewport::displayCylinder() {
 }
 
 void Viewport::displayIcoSphere() {
+	// Insert new icosphere mesh into scene.
 	scene.NewMesh()->load(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
@@ -468,7 +708,9 @@ void Viewport::displayUVSphere() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate uv sphere with longitude and lattitude of 10.
 	generateUVSphere(vertices, faces, 10, 10);
+	// Insert new uv sphere mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -479,7 +721,9 @@ void Viewport::displayTorus() {
 	std::vector<Vec3f> vertices;
 	std::vector<Vec4u> faces;
 
+	// Generate torus.
 	generateUnitTorus(vertices, faces, 40, 20, 1.0f, 0.3f);
+	// Insert new torus mesh into scene.
 	scene.NewMesh()->load(vertices, faces);
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -488,129 +732,168 @@ void Viewport::displayTorus() {
 
 
 void Viewport::tesselate() {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->tesselate();
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.Meshes().at(i)->tesselate();
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->tesselate();
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 	redraw();
 }
 
-void Viewport::deleteMesh() {
-	//for (uint i = 0; i < scene.MeshCount(); i++)
-	//{
-	//	scene.DeleteMesh(i);
-	//}
-	//std::cout << "mesh deleted" << std::endl;
-	//modelingRenderer.UpdateRenderBuffers(scene);
+void Viewport::deleteElement() {
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++)
-	{
-		if (scene.IsMeshSelected(i))
-		{
-			scene.DeleteMesh(i);
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			scene.DeleteMesh(item.meshId);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
+
+	selectionManager.clearSelection();
 	modelingRenderer.UpdateRenderBuffers(scene);
 	primarySelection = MAX_UINT;
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
 }
 
-void Viewport::selectMesh(uint id) {
-	// If single selection, remove all other selections before adding to selection.
-	if (singleSelection) {
-		for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
-			scene.RemoveFromSelectedMeshes(i);
+void Viewport::duplicateElement() {
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			scene.DuplicateMesh(item.meshId);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
 		}
 	}
-
-	// If not selected, select.
-	if (!scene.IsMeshSelected(id)) {
-		scene.AddToSelectedMeshes(id);
-		primarySelection = id;
-	}
-	// If selected, remove selection.
-	else {
-		scene.RemoveFromSelectedMeshes(id);
-		primarySelection = MAX_UINT;
-	}
-
-	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
-	if (primarySelectionCallback) { primarySelectionCallback(); }
-	redraw();
-}
-
-void Viewport::duplicateMesh() {
-	
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) 
-	{
-		if (scene.IsMeshSelected(i)) {
-			scene.DuplicateMesh(i);
-			std::cout << "This should duplicate" << std::endl;
-		}
-	}
-}
-
-
-void Viewport::deselectMeshes() {
-	for (uint i = 0; i < scene.SelectedMeshes().size(); i++) {
-		scene.RemoveFromSelectedMeshes(i);
-	}
-	modelingRenderer.UpdateSelectionTexture(scene.SelectedMeshes());
-
-	primarySelection = MAX_UINT;
-	if (primarySelectionCallback) { primarySelectionCallback(); }
-
-	redraw();
 }
 
 float Viewport::getRot(int component, float angle) {
+	// todo
 	return 1;
 }
 
 void Viewport::setRot(int component, float angle) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->eulerRot[component] = angle;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->eulerRot[component] = angle;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->Rot(component, angle);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
+		}
 	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 float Viewport::getPos(int component, float angle) {
+	// todo
 	return 1;
 }
 
 void Viewport::setPos(int component, float pos) {
-	//for (HalfEdgeMesh* mesh : scene.Meshes())
-	//{
-	//	mesh->pos[component] = pos;
-	//}
-	//modelingRenderer.UpdateRenderBuffers(scene);
-	//redraw();
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
 
-	if (primarySelection != MAX_UINT) {
-		scene[primarySelection]->pos[component] = pos;
-		modelingRenderer.UpdateRenderBuffers(scene);
-		redraw();
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->Pos(component, pos);
+			break;
+
+		case VERTEX:
+			// todo
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			// todo
+			break;
+		}
 	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
 }
 
 ImportReport Viewport::loadFile(const char* filepath) {
@@ -628,10 +911,7 @@ ImportReport Viewport::loadFile(const char* filepath) {
 	return report;
 }
 
-/// <summary>
-/// Meshes export every selected or whole scene when nothing is selected
-/// </summary>
-/// <returns>Vector of meshes ids</returns>
+
 std::vector<uint> Viewport::exportMeshIds() {
 	std::vector<uint> selected; 
 	std::vector<uint> all; 
@@ -640,17 +920,14 @@ std::vector<uint> Viewport::exportMeshIds() {
 		if (scene[i]->VertexCount() == 0) continue;
 
 		all.push_back(i); 
-		if (scene.IsMeshSelected(i)) selected.push_back(i); 
+		if (selectionManager.hasSelectedMesh(i)) {
+			selected.push_back(i);
+		}
 	}
 
 	return selected.empty() ? all : selected; 
 }
 
-/// <summary>
-/// Each mesh in exportMeshIds is written in world space so pos, rot, and scale save
-/// </summary>
-/// <param name="filepath"></param>
-/// <returns>success or fail when export</returns>
 bool Viewport::exportObj(const char* filepath) {
 	std::vector<uint> ids = exportMeshIds(); 
 	if (ids.empty()) return true; 
@@ -668,11 +945,6 @@ bool Viewport::exportObj(const char* filepath) {
 	return !file.fail(); 
 }
 
-/// <summary>
-/// STL has no idea for separate objects. We will store them as a soup of triangles for all objects.
-/// </summary>
-/// <param name="filepath"></param>
-/// <returns>success or fail of export</returns>
 bool Viewport::exportStl(const char* filepath) {
 	std::vector<uint> ids = exportMeshIds();
 	if (ids.empty()) return true;
@@ -686,20 +958,41 @@ bool Viewport::exportStl(const char* filepath) {
 
 Mode Viewport::getActiveMode() { return activeMode;  }
 
-Element Viewport::getActiveElement() { return activeElement; }
+Element Viewport::getActiveElement() { 
+	//return activeElement;
+	return selectionManager.getActiveElement();
+}
 
 Action Viewport::getActiveAction() { return activeAction; }
 
 void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 
-void Viewport::setActiveElement(Element element) { activeElement = element; }
+void Viewport::setActiveElement(Element element) { 
+	activeElement = element;
+	selectionManager.setActiveElement(element);
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
+	}
+	redraw();
+}
 
 void Viewport::setActiveAction(Action action) { activeAction = action; }
 
-const HalfEdgeMesh* Viewport::primarySelectedMesh() {
-	if (primarySelection != MAX_UINT) {
-		return scene[primarySelection];
+const HalfEdgeMesh* Viewport::primarySelectedItem() {
+
+	// Check if there are no selected items.
+	if (selectionManager.getSelectedItems().empty())
+	{
+		return nullptr;
 	}
+
+	// If there are meshes, get the last selected one and return it to the UI.
+	if (!scene.Meshes().empty()) {
+		SelectionItem lastSelection = selectionManager.getSelectedItems().back();
+		return scene[lastSelection.meshId];
+	}
+	// Else there are no meshes.
 	else {
 		return nullptr;
 	}
