@@ -355,14 +355,14 @@ HalfEdgeMesh::HalfEdge& HalfEdgeMesh::NewEdge(uint& id) {
 }
 
 // Invalidates previous edge references/pointers.
-uint HalfEdgeMesh::NewEdge(const HalfEdge hEdge) {
+uint HalfEdgeMesh::NewEdge(const HalfEdge& hEdge) {
 	uint newEdgeId = edges.size();
 	edges.push_back(hEdge);
 	return newEdgeId;
 }
 
 // Invalidates previous edge references/pointers.
-HalfEdgeMesh::HalfEdge& HalfEdgeMesh::NewEdge(const HalfEdge hEdge, uint& id) {
+HalfEdgeMesh::HalfEdge& HalfEdgeMesh::NewEdge(const HalfEdge& hEdge, uint& id) {
 	id = edges.size();
 	edges.push_back(hEdge);
 	return edges[id];
@@ -500,7 +500,7 @@ Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
 // Old. Doesn't work with n-gons or non-convex quads yet.
 float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
 	uint faceVertices[4];
-	GetFaceVertices(faceId, faceVertices);
+	GetQuadVertices(faceId, faceVertices);
 	Vec3f vert0 = vertPos[faceVertices[0]];
 	Vec3f vert1 = vertPos[faceVertices[1]];
 	Vec3f vert2 = vertPos[faceVertices[2]];
@@ -798,7 +798,7 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 	triangleVertices.reserve(triangleVertices.size() + numVertices - 2);
 	triangleEdges.reserve(triangleVertices.size() + numVertices - 2);
 
-	while (numVertices > 2) {
+	while (numVertices > 3) {
 		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
 			corner = corner->next;
 			continue;
@@ -818,13 +818,17 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 			corner->next->prev = corner->prev;
 			--numVertices;
 
-			corner->prev->edgeId = MAX_UINT;
 			triangleVertices.emplace_back(corner->prev->vertId, corner->vertId, corner->next->vertId);
-			triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, corner->next->edgeId);
+			triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, MAX_UINT);
+
+			corner->prev->edgeId = MAX_UINT;
 		}
 
 		corner = corner->next;
 	}
+
+	triangleVertices.emplace_back(corner->prev->vertId, corner->vertId, corner->next->vertId);
+	triangleEdges.emplace_back(corner->prev->edgeId, corner->edgeId, corner->next->edgeId);
 
 	delete[] polyCorners;
 }
@@ -898,6 +902,15 @@ void HalfEdgeMesh::TriangulateAllNGons() {
 	}
 }
 
+void HalfEdgeMesh::Triangulate() {
+	// Optimize later by making private version of triangulate face that takes pre-allocated memory
+	// so we don't allocate memory for every face
+	int faceCount = faceEdges.size();
+	for (int i = 0; i < faceCount; ++i) {
+		if (!IsTriangle(i)) { TriangulateFace(i); }
+	}
+}
+
 #define StartEdgeIteration(faceId) \
 							uint first = faceEdges[faceId];\
 							uint next = first;\
@@ -939,25 +952,7 @@ Vec3f HalfEdgeMesh::NewellNormal(uint faceId) const {
 }
 
 Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
-	uint vertices[4];
-	GetFaceVertices(faceId, vertices);
-
-	Vec3f vert0 = vertPos[vertices[0]];
-	Vec3f vert1 = vertPos[vertices[1]];
-	Vec3f vert2 = vertPos[vertices[2]];
-
-	Vec3f normal = (vert1 - vert0).Cross(vert2 - vert0);
-
-	if (vertices[3] != MAX_UINT) {
-		Vec3f vert3 = vertPos[vertices[3]];
-		Vec3f normal2 = (vert2 - vert0).Cross(vert3 - vert0);
-		float area1 = normal.Length();
-		float area2 = normal2.Length();
-		normal += normal2;
-		normal /= (area1 + area2);
-	}
-
-	return normal;
+	return NewellNormal(faceId);
 }
 
 Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
@@ -1037,7 +1032,7 @@ void HalfEdgeMesh::deform() {
 	return;
 }
 
-void HalfEdgeMesh::GetFaceVertices(uint faceId, uint vertices[4]) const {
+void HalfEdgeMesh::GetQuadVertices(uint faceId, uint vertices[4]) const {
 	const HalfEdge* edge = &edges[faceEdges[faceId]];
 	for (uint i = 0; i < 3; ++i) {
 		vertices[i] = edge->dest;
@@ -1173,7 +1168,7 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
-		if (IsNGon(faceId)) {
+		if (FaceEdgeCount(faceId) > 8) { // Scrappy/easy n-gon fix for now. Improve code later.
 			TriangulateFace(faceId);
 			continue;
 		}
@@ -1483,7 +1478,7 @@ void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
 		uint verts[4];
-		GetFaceVertices(faceId, verts); 
+		GetQuadVertices(faceId, verts); 
 
 		Vec3f v0 = worldPos[verts[0]]; 
 		Vec3f v1 = worldPos[verts[1]]; 

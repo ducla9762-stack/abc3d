@@ -54,7 +54,9 @@ class RenderBufferBuilder {
 
 			this->norm.insert(this->norm.end(), 3, normal);
 			this->ids.insert(this->ids.end(), 3, ids);
-			this->edgeIds.insert(this->edgeIds.end(), 3, triEdges[i]);
+
+			Vec3u triEdgeIds(triEdges[i][1], triEdges[i][2], triEdges[i][0]);
+			this->edgeIds.insert(this->edgeIds.end(), 3, triEdgeIds);
 		}
 	}
 

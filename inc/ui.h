@@ -69,7 +69,7 @@ public:
 		}
 		show();
 		for (int i = 0; i < 3; ++i) {
-			spinners[i]->value(mesh->eulerRot[i]);
+			spinners[i]->value(mesh->Rot()[i]);
 		}
 	}
 };
@@ -101,7 +101,7 @@ BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Scale", 0.0, 0.2)
 		}
 		show();
 		for (int i = 0; i < 3; ++i) {
-			spinners[i]->value(mesh->scale[i]);
+			spinners[i]->value(mesh->Scale()[i]);
 		}
 	}
 };
@@ -157,7 +157,7 @@ public:
 		}
 		spinnerContainer->show();
 		for (int i = 0; i < 3; ++i) {
-			spinners[i]->value(mesh->pos[i]);
+			spinners[i]->value(mesh->Pos()[i]);
 		}
 	}
 
@@ -393,6 +393,13 @@ public:
 class ExtrudeToolPanel : public ToolPanel {
 public:
 	ExtrudeToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) { end(); }
+};
+
+class RadioButton : public Fl_Radio_Button {
+public:
+	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h) {
+
+	}
 };
 
 #endif

@@ -121,6 +121,19 @@ bool ModelingRenderer::Initialize() {
 	// Initialize the selection boolean for the mesh shader program.
 	// By default nothing should be selected.
 
+	// Initialize arrow renderer
+	arrowRenderer.Initialize();
+	std::vector<ArrowRenderer::Arrow> arrows;
+	arrows.emplace_back();
+	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().length = 10.0f;
+	arrows.back().radius = 0.25;
+	arrows.back().tipHeight = 2.0f;
+	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().ids = Vec2u(0, 0);
+	arrowRenderer.SetArrows(arrows);
+
 	// Set clear color & blend function
 	glClearColor(0, 0, 0, 1);
 	glEnable(GL_DEPTH_TEST);
@@ -182,6 +195,8 @@ void ModelingRenderer::Draw() {
 	}
 	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 
+	arrowRenderer.Draw();
+
 	/*int selectBufSize = pixel_w() * pixel_h();
 
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
@@ -227,6 +242,8 @@ void ModelingRenderer::UpdateProjectionUniforms() {
 	gridProgram.SetUniformMatrix4("mvp", data);
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
+
+	arrowRenderer.SetViewProjectionUniform(data);
 }
 
 void ModelingRenderer::updateUniforms() {
@@ -249,6 +266,8 @@ void ModelingRenderer::updateUniforms() {
 	gridProgram.SetUniformMatrix4("mvp", data);
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
+
+	arrowRenderer.SetViewProjectionUniform(data);
 }
 
 void ModelingRenderer::updateTextureUniforms() {
@@ -415,3 +434,106 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 	pointProgram.SetUniform3(
 		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
 }
+
+// Arrow renderer
+
+bool ArrowRenderer::Initialize() {
+	// Build shader program
+	bool success = program.BuildFiles("../assets/shaders/Arrow.vert", "../assets/shaders/ArrowColor.frag");
+	if (!success) {
+		std::cout << "Failed to compile arrow shader programs!" << std::endl;
+		return false;
+	}
+
+	// Generate vertex array object
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// Generate VBO for generic arrow vertices
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * VERTICES.size() * 3, VERTICES.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+
+	// Generate EBO for generic arrow faces
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRIANGLES.size() * 3, TRIANGLES.data(), GL_STATIC_DRAW);
+
+	// Generate VBO for instanced data (Arrow struct)
+	glGenBuffers(1, &instancedVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, base));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, dir));
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, length));
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, radius));
+	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, tipHeight));
+	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, color));
+	glVertexAttribPointer(7, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
+
+	for (int i = 1; i < 7; ++i) {
+		glEnableVertexAttribArray(i);
+		glVertexAttribDivisor(i, 1);
+	}
+
+	return true;
+}
+
+void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
+	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Arrow) * arrows.size(), arrows.data(), usage);
+	instanceCount = arrows.size();
+}
+
+void ArrowRenderer::Draw() {
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBindVertexArray(vao);
+
+	program.Bind();
+	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
+}
+
+void ArrowRenderer::SetViewProjectionUniform(float data[16]) {
+	program.Bind();
+	program.SetUniformMatrix4("viewProj", data);
+}
+
+constexpr float HALF_SQR_2 = 0.7071068f;
+const std::vector<Vec3f> ArrowRenderer::VERTICES = {
+	// Cylinder Base
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+	// Cylinder Top
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+	// Pyramid Base
+	Vec3f(2.0, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
+	Vec3f(2.0f, 0.0f, 2.0f),
+	// Pyramid Top
+	Vec3f(0.0f, 0.0f, 0.0f)
+};
+
+const std::vector<Vec3u> ArrowRenderer::TRIANGLES = {
+	// Clinder Base
+	Vec3u(0, 1, 2), Vec3u(0, 2, 3), Vec3u(0, 3, 4), Vec3u(0, 4, 5), Vec3u(0, 5, 6), Vec3u(0, 6, 7),
+	// Cyclinder Top
+	Vec3u(8, 10, 9), Vec3u(8, 11, 10), Vec3u(8, 12, 11), Vec3u(8, 13, 12), Vec3u(8, 14, 13), Vec3u(8, 15, 14),
+	// Cylinder Sides
+	Vec3u(0, 8, 1), Vec3u(1, 8, 9),
+	Vec3u(1, 9, 2), Vec3u(2, 9, 10),
+	Vec3u(2, 10, 3), Vec3u(3, 10, 11),
+	Vec3u(3, 11, 4), Vec3u(4, 11, 12),
+	Vec3u(4, 12, 5), Vec3u(5, 12, 13),
+	Vec3u(5, 13, 6), Vec3u(6, 13, 14),
+	Vec3u(6, 14, 7), Vec3u(7, 14, 15),
+	Vec3u(7, 15, 0), Vec3u(0, 15, 8),
+	// Pyramid Base
+	Vec3u(16, 17, 18), Vec3u(16, 17, 19),
+	// Pyramid Top
+	Vec3u(16, 20, 17), Vec3u(17, 20, 18), Vec3u(18, 20, 19), Vec3u(19, 20, 16)
+};

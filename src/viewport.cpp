@@ -39,6 +39,11 @@ int Viewport::handle(int event) {
 
 	if (context() == nullptr) { return 0; }
 
+	if (Fl_Group::handle(event)) {
+		return 1;
+	}
+
+
 	make_current();
 	// Process event
 	switch (event) {
@@ -141,7 +146,7 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 		}
 
 		// Scale.
-		scene[item.meshId]->scale += factor;
+		scene[item.meshId]->AddScale(factor);
 	}
 
 	if (transformedMeshes.empty()) {
@@ -309,6 +314,21 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		return false;
 	}
 
+	switch (activeElement) {
+	case OBJECT:
+		scene[selectionIds.x - 1]->TranslatePos(translation);
+		
+		break;
+	case EDGE:
+		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
+		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, translation);
+		break;
+	case FACE:
+		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
+		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
+		break;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -346,6 +366,9 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 			!transformedObjects.insert(item.meshId).second) {
 			continue;
 		}
+	// Vec3f eulerRot = scene[selectionIds.x - 1]->Rot();
+	// Matrix3f origRot;
+	// origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
 		Vec3f eulerRot = scene[item.meshId]->eulerRot;
 		Matrix3f origRot;
@@ -355,7 +378,7 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 		rot.SetRotation(dir, length * 0.01f);
 		rot *= origRot;
 
-		scene[item.meshId]->eulerRot = matrixToEulerAngle(rot);
+		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
 		transformed = true;
 	}
 
@@ -550,7 +573,7 @@ void Viewport::setScale(int component, float scale) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->scale[component] = scale;
+			mesh->Scale(component, scale);
 			break;
 
 		case VERTEX:
@@ -779,7 +802,7 @@ void Viewport::setRot(int component, float angle) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->eulerRot[component] = angle;
+			mesh->Rot(component, angle);
 			break;
 
 		case VERTEX:
@@ -815,7 +838,7 @@ void Viewport::setPos(int component, float pos) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->pos[component] = pos;
+			mesh->Pos(component, pos);
 			break;
 
 		case VERTEX:
