@@ -555,11 +555,11 @@ Vec3f HalfEdgeMesh::GetVertexNormal(uint vertId) {
 		seg1.Normalize();
 			
 		Vec3f normal = seg1.Cross(seg0);
-		std::cout << normal << std::endl;
-
+		
 		float weight = 1.0f - seg0.Dot(seg1);
 		normalSum += normal * weight;
 		weightSum += weight;
+
 		temp = adjVertPos;
 		next = edges[edge.twin].next;
 	} while (next != last);
@@ -592,6 +592,90 @@ void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
 	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
 }
 
+void HalfEdgeMesh::GetOutGoingHalfEdges(uint vertId, std::vector<uint>& halfEdges) const {
+	if (vertId >= vertEdge.size())
+		return;
+	
+	uint next = vertEdge[vertId];
+	
+	if (next == MAX_UINT)
+		return; 
+
+	uint last = next;
+	uint step = 0; 
+
+	do {
+		if (step >= edges.size())
+			break; 
+		
+		halfEdges.push_back(next); 
+		const HalfEdge& edge = edges[next];
+
+		next = edges[edge.twin].next;
+		++step; 
+	} while (next != last);
+}
+
+uint HalfEdgeMesh::PickOutgoingHalfEdge(uint vertId, const Vec2f& dragDir, const Vec3f& camRight, const Vec3f& camUp) const {
+	std::vector<uint> halfEdges; 
+	GetOutGoingHalfEdges(vertId, halfEdges);
+	
+	if (halfEdges.empty())
+		return MAX_UINT; 
+
+	Matrix3f transformCache = getTransform3x3(); 
+	uint best = MAX_UINT;
+	float bestScore = -2.0f; 
+	float epsilon = 1e-12f;
+
+	for (auto& candidate : halfEdges) {
+		Vec3f world = transformCache * GetHalfEdgeVector(candidate); 
+		Vec2f screen = Vec2f(world.Dot(camRight), world.Dot(camUp)); 
+		
+		if (screen.LengthSquared() < epsilon)
+			continue; 
+		
+		screen.Normalize();
+		//dragDir must be a unit length
+		float score = screen.Dot(dragDir); 
+
+		if (score > bestScore) {
+			bestScore = score;
+			best = candidate;
+		}
+	}
+
+	return best; 
+}
+
+Vec3f HalfEdgeMesh::GetHalfEdgeVector(uint hEdgeId) const {
+	if (hEdgeId >= edges.size())
+		return Vec3f(0.0f); 
+
+	const HalfEdge& edge = edges[hEdgeId]; 
+	return vertPos[edge.dest] - vertPos[edge.orig]; 
+}
+
+void HalfEdgeMesh::TranslateVertexAlongEdge(uint vertId, uint hEdgeId, float distance) {
+	if (hEdgeId >= edges.size())
+		return; 
+	
+	if (edges[hEdgeId].orig != vertId)
+		return; 
+	
+	Vec3f dir = GetHalfEdgeVector(hEdgeId); 
+
+	float epsilon = 1e-12f;
+	if (dir.LengthSquared() < epsilon)
+		return; 
+	
+	dir.Normalize(); 
+	TranslateVertex(vertId, dir * distance); 
+}
+
+Vec3f HalfEdgeMesh::GetFaceNormal(uint faceId) {
+	uint vertices[4];
+	GetFaceVertices(faceId, vertices);
 bool HalfEdgeMesh::IsTriangle(uint faceId) const {
 	uint edge = faceEdges[faceId];
 	return edges[edge].prev == edges[edges[edge].next].next;

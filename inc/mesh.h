@@ -406,6 +406,10 @@ public:
 	/// <param name="vertId">Vertex to translate.</param>
 	/// <param name="factor">Ammount to translate as a multiple of the unit normal direction.</param>
 	void TranslateVertexOut(uint vertId, float factor);
+	void GetOutGoingHalfEdges(uint vertId, std::vector<uint>& halfEdges) const; 
+	Vec3f GetHalfEdgeVector(uint hEdgeId) const; 
+	uint PickOutgoingHalfEdge(uint vertId, const Vec2f& dragDir, const Vec3f& camRight, const Vec3f& camUp) const; 
+	void TranslateVertexAlongEdge(uint vertId, uint hEdgeId, float distance); 
 	/// <summary>Directly sets a vertex's position</summary>
 	/// <param name="vertId">The vertex to relocate.</param>
 	/// <param name="pos">The vertex's new position.</param>
