@@ -652,6 +652,10 @@ void HalfEdgeMesh::ClipCorner(uint hEdge, uint& innerClipId, uint& outerClipId, 
 	edges[edge.next].prev = outerClipId;
 	edges[prev.prev].next = outerClipId;
 
+	if (faceEdges[edge.face] == hEdge) {
+		faceEdges[edge.face] = outerClipId;
+	}
+
 	edge.face = cornerFace;
 	edge.next = innerClipId;
 
@@ -1159,8 +1163,10 @@ void HalfEdgeMesh::tesselate() {
 
 	// Split every edge into two
 	uint prevMeshEdgeCount = edges.size();
+
 	for (uint edgeId = 0; edgeId < prevMeshEdgeCount; ++edgeId) {
-		if (edges[edgeId].next < prevMeshEdgeCount) { // If edge hasn't already been refined
+		const HalfEdge& edge = edges[edgeId];
+		if (edge.next < prevMeshEdgeCount) { // If edge hasn't already been refined
 			refineEdge(edgeId);
 		}
 	}
@@ -1168,77 +1174,39 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
-		if (FaceEdgeCount(faceId) > 8) { // Scrappy/easy n-gon fix for now. Improve code later.
+		int faceEdgeCount = FaceEdgeCount(faceId);
+
+		if (faceEdgeCount > 8) {
 			TriangulateFace(faceId);
 			continue;
 		}
 
 		uint faceEdgeId = faceEdges[faceId];
-		HalfEdge* faceEdge = &edges[faceEdgeId];
 
-		uint next = faceEdge->next;
-		int faceEdgeCount = 1; // Refers to edge count before splitting
+		if (faceEdgeCount == 6) { // Triangle
+			uint edgeId = edges[faceEdgeId].next;
+			uint innerClip, newFace;
 
-		// Iterate over each corner. Each one besides the first will be associated with a new face.
-		while (next != faceEdge->prev) {
-			HalfEdge& cornerEdge1 = edges[next];
-			HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
-
-			uint faceId = NewFace(next);
-			cornerEdge1.face = faceId;
-			cornerEdge2.face = faceId;
-
-			++faceEdgeCount;
-			next = cornerEdge2.next;
-		}
-
-		if (faceEdgeCount == 3) {
-			// Triangle
-
-			// Clip Each Corner
-			for (int i = 0; i < 3; ++i) {
-				uint newEdgeId;
-				HalfEdge& newEdge = NewEdge(newEdgeId);
-
-				faceEdge = &edges[faceEdgeId]; // Update reference since it could be invalidated
-				HalfEdge& faceEdgePrev = edges[faceEdge->prev];
-				uint nextCornerEdge = edges[faceEdge->next].next;
-
-				newEdge.orig = faceEdge->dest;
-				newEdge.dest = faceEdgePrev.orig;
-				newEdge.face = faceEdge->face;
-				newEdge.next = faceEdge->prev;
-				newEdge.prev = faceEdgeId;
-
-				faceEdge->next = newEdgeId;
-				faceEdgePrev.prev = newEdgeId;
-
-				faceEdgeId = nextCornerEdge;
-				faceEdge = &edges[faceEdgeId];
-			}
-
-			uint centerFaceId = faceEdges.size();
-			uint centerFaceFirstEdgeId = edges.size();
-			uint centerFaceLastEdgeId = centerFaceFirstEdgeId + 2;
-			faceEdges.push_back(centerFaceFirstEdgeId);
-
-			for (uint i = centerFaceFirstEdgeId - 3; i < centerFaceFirstEdgeId; ++i) {
-				uint twinId = NewEdge();
-
-				HalfEdge& edge = edges[i];
-				edge.twin = twinId;
-
-				HalfEdge& twin = edges[twinId];
-				twin.twin = i;
-				twin.orig = edge.dest;
-				twin.dest = edge.orig;
-				twin.face = centerFaceId;
-				twin.next = WrapInc(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
-				twin.prev = WrapDec(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
-			}
+			ClipCorner(edgeId, innerClip, edgeId, newFace);
+			edgeId = edges[edgeId].next;
+			ClipCorner(edgeId, innerClip, edgeId, newFace);
 		}
 		else {
 			// Quad
+			HalfEdge* faceEdge = &edges[faceEdgeId];
+			uint next = faceEdge->next;
+			// Iterate over each corner. Each one besides the first will be associated with a new face.
+			while (next != faceEdge->prev) {
+				HalfEdge& cornerEdge1 = edges[next];
+				HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
+
+				uint faceId = NewFace(next);
+				cornerEdge1.face = faceId;
+				cornerEdge2.face = faceId;
+
+				next = cornerEdge2.next;
+			}
+
 			Vec3f positionSum = vertPos[faceEdge->orig];
 			next = faceEdge->next;
 			for (uint i = 0; i < 3; ++i) {
