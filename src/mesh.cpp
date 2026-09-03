@@ -1524,19 +1524,22 @@ void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
 	worldPos.reserve(vertPos.size()); 
 	GetWorldVertexPositions(worldPos); 
 
+	std::vector<Vec3u> triangles; 
+	triangles.reserve(16); 
+
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		uint verts[4];
-		GetQuadVertices(faceId, verts); 
+		triangles.clear(); 
+		GetTriangulation(faceId, triangles); 
 
-		Vec3f v0 = worldPos[verts[0]]; 
-		Vec3f v1 = worldPos[verts[1]]; 
-		Vec3f v2 = worldPos[verts[2]]; 
-		
-		tris.push_back({ v0, v1, v2 }); 
+		for (const Vec3u& t : triangles) {
+			const Vec3f& v0 = worldPos[t[0]]; 
+			const Vec3f& v1 = worldPos[t[1]]; 
+			const Vec3f& v2 = worldPos[t[2]];
 
-		if (verts[3] != MAX_UINT)
-			tris.push_back({ v0, v2, worldPos[verts[3]] }); 
+			if (IsDegenerateFace(v0, v1, v2)) continue; 
+			tris.push_back({ v0, v1, v2 }); 
+		}
 	}
 }
 
