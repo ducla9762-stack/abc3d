@@ -93,6 +93,9 @@ void Viewport::mouseDrag() {
 	else if (activeAction == TRANSLATE_FREE) {
 		camera = !translateFreeDrag(pos, uv);
 	}
+	else if (activeAction == TRANSLATE_EDGE) {
+		camera = !translateAlongEdgeDrag(pos); 
+	}
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
 	}
@@ -184,6 +187,32 @@ bool Viewport::translateOutVertexDrag(float scale) {
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
 	return true;
+}
+
+bool Viewport::translateAlongEdgeDrag(const Vec2f& pos) {
+	if (selectionIds.x != MAX_UINT)
+		return false;
+	
+	Vec3f f, u, r; 
+	modelingRenderer.GetCameraDirs(f, u, r);
+
+	if (firstDragCallback) {
+		Vec2f dragDir = Vec2f(initialDragDir.x, -initialDragDir.y); 
+		actionEdge = scene[selectionIds.y - 1]->PickOutgoingHalfEdge(selectionIds.z, dragDir, r, u); 
+	}
+
+	if (actionEdge == MAX_UINT)
+		return false; 
+
+	Vec2f change = pos - mouseDragPrevPos; 
+	float distance = 0.01f * change.Dot(initialDragDir); 
+	scene[selectionIds.y - 1]->TranslateVertexAlongEdge(selectionIds.z, actionEdge, distance); 
+	modelingRenderer.UpdateRenderBuffers(scene); 
+	
+	if (primarySelectionCallback)
+		primarySelectionCallback(); 
+	
+	return true; 
 }
 
 bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
@@ -292,6 +321,7 @@ int Viewport::mousePush() {
 	mouseDragPrevPosUV = mouseDragStartPosUV;
 	firstDragCallback = true;
 	//redraw();
+	return 1;
 }
 
 void Viewport::mouseWheel() {
@@ -306,6 +336,10 @@ void Viewport::mouseWheel() {
 
 void Viewport::keyDown() {
 	switch (Fl::event_key()) {
+	case 'e': 
+		activeElement = VERTEX; 
+		activeAction = TRANSLATE_EDGE; 
+		break; 
 	case 's':
 		subdivision();
 		break;
