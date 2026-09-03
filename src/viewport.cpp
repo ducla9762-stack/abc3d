@@ -55,12 +55,6 @@ int Viewport::handle(int event) {
 	case FL_MOUSEWHEEL:
 		mouseWheel();
 		break;
-	case FL_KEYDOWN:
-		keyDown();
-		break;
-	case FL_KEYUP:
-		keyUp();
-		break;
 	case FL_FOCUS:
 	case FL_UNFOCUS:
 		break;
@@ -325,50 +319,6 @@ void Viewport::mouseWheel() {
 	camPos.x += Fl::event_dx();
 
 	activeRenderer->SetCamera(sphericalToCartesian(camPos));
-	redraw();
-}
-
-void Viewport::keyDown() {
-	switch (Fl::event_key()) {
-	case 's':
-		subdivision();
-		break;
-	case 't':
-		tesselate();
-		break;
-	case 'p':
-		modelingRenderer.ToggleVertexPoints();
-		break;
-	case 'g':
-		modelingRenderer.ToggleGrid();
-		break;
-	case FL_Delete:
-		deleteElement();
-		break;
-	case 'd': 
-		duplicateElement(); 
-		break;
-	case 'v':
-		activeElement = EDGE;
-		activeAction = TRANSLATE_OUT;
-		break;
-	case FL_Control_L:
-		additiveSelection = true;
-		break;
-	default:
-		return;
-	}
-	redraw();
-}
-
-void Viewport::keyUp() {
-	switch (Fl::event_key()) {
-	case FL_Control_L:
-		additiveSelection = false;
-		break;
-	default:
-		return;
-	}
 	redraw();
 }
 
@@ -846,4 +796,22 @@ const HalfEdgeMesh* Viewport::primarySelectedItem() {
 
 void Viewport::setPrimarySelectionCallback(void (*callback)()) {
 	primarySelectionCallback = callback;
+}
+
+void Viewport::togglePoints() {
+	modelingRenderer.ToggleVertexPoints();
+	redraw();
+}
+
+void Viewport::toggleGrid() {
+	modelingRenderer.ToggleGrid();
+	redraw();
+}
+
+void Viewport::enableAdditiveSelection() {
+	additiveSelection = true;
+}
+
+void Viewport::disableAdditiveSelection() {
+	additiveSelection = false;
 }

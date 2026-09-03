@@ -21,7 +21,7 @@
 inline bool initGlew = true;
 
 enum Mode { MODEL, SIMPLE, RENDER };
-enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL };
+enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL, SHAPE, SUBDIVIDE, TESSELATE};
 
 class Viewport : public Fl_Gl_Window {
 
@@ -320,6 +320,14 @@ public:
 	/// </summary>
 	/// <param name="callback"></param>
 	void setPrimarySelectionCallback(void (*callback)());
+
+	void togglePoints();
+
+	void toggleGrid();
+
+	void enableAdditiveSelection();
+
+	void disableAdditiveSelection();
 };
 
 #endif
