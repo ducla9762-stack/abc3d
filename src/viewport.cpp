@@ -38,6 +38,11 @@ int Viewport::handle(int event) {
 
 	if (context() == nullptr) { return 0; }
 
+	if (Fl_Group::handle(event)) {
+		return 1;
+	}
+
+
 	make_current();
 	// Process event
 	switch (event) {
@@ -219,6 +224,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	switch (activeElement) {
 	case OBJECT:
 		scene[selectionIds.x - 1]->pos += translation;
+		
 		break;
 	case EDGE:
 		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
