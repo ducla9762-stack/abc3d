@@ -71,18 +71,14 @@ public:
 		else {
 			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
 				
-			// If the item already exists, remove it from the list.
+			// If the item already exists, only remove it for additive selection.
+			// A normal click must leave the selection intact so the item can be
+			// dragged without first deselecting and reselecting it.
 			if (contained != selectedItems.end()) {
-				// If single selection.
-				if (!additive) {
-					selectedItems.clear();
-					return false;
-				}
-				// Else additive selection.
-				else {
+				if (additive) {
 					selectedItems.erase(contained);
-					return false;
 				}
+				return false;
 			}
 			// Else the item is new, add it to the list.
 			else {
