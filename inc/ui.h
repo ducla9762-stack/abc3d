@@ -34,7 +34,6 @@ public:
 		spinners[i]->step(stepSize);\
 		spinners[i]->label(AXIS_LETTERS[i]);\
 		spinners[i]->align(FL_ALIGN_LEFT);\
-		spinners[i]->type(FL_FLOAT_INPUT);\
 		spinners[i]->range(-1000000000, 1000000000);\
 		yPos += 25;\
 	}\
