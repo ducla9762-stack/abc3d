@@ -512,7 +512,7 @@ const std::vector<Vec3f> ArrowRenderer::VERTICES = {
 	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
 	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
 	// Pyramid Base
-	Vec3f(2.0, 0.0f, -1.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
+	Vec3f(2.0, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
 	Vec3f(2.0f, 0.0f, 2.0f),
 	// Pyramid Top
 	Vec3f(0.0f, 0.0f, 0.0f)
