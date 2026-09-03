@@ -16,7 +16,6 @@ uniform mat4 viewProj;
 
 const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
 const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
-const float arrowTipHeight = 2.0f;
 
 void main(){
 	vec3 pos = vertexPosition;
