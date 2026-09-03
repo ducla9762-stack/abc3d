@@ -105,33 +105,144 @@ class HalfEdgeMesh {
 
 	friend class RenderBufferBuilder;
 
+	/// <summary>
+	/// Adds a new face.
+	/// </summary>
+	/// <param name="faceEdge">Default edge of the face.</param>
+	/// <returns>The new face's id</returns>
 	uint NewFace(uint faceEdge);
+
+	/// <summary>
+	/// Adds a new vertex.
+	/// </summary>
+	/// <param name="pos">The position of the new vertex.</param>
+	/// <param name="firstEdgeId">The id of the vertex's default incident edge</param>
+	/// <returns>The new vertex's id</returns>
 	uint NewVertex(const Vec3f& pos, uint firstEdgeId);
 
-	// Invalidates previous edge references/pointers
+	/// <summary>
+	/// Adds a new empty edge whose members need to be set.
+	/// Invalidates prevoius edge references/pointers.
+	/// </summary>
+	/// <returns>New Edge Id</returns>
 	uint NewEdge();
 
-	// Invalidates previous edge references/pointers.
+	/// <summary>
+	/// Adds a new empty edge whose members need to be set.
+	/// Invalidates prevoius edge references/pointers.
+	/// </summary>
+	/// <param name="id">Will contain new edge's id</param>
+	/// <returns>Reference to new edge</returns>
 	HalfEdge& NewEdge(uint& id);
 
-	// Invalidates previous edge references/pointers.
-	uint NewEdge(const HalfEdge hEdge);
+	/// <summary>
+	/// Adds a new edge.
+	/// Invalidates prevoius edge references/pointers.
+	/// </summary>
+	/// <param name="hEdge">Edge to be copied.</param>
+	/// <returns>New Edge Id</returns>
+	uint NewEdge(const HalfEdge& hEdge);
 
-	// Invalidates previous edge references/pointers.
-	HalfEdge& NewEdge(const HalfEdge hEdge, uint& id);
+	/// <summary>
+	///	Adds a new edge.
+	/// Invalidates prevoius edge references/pointers.
+	/// </summary>
+	/// <param name="hEdge">Edge to be copied</param>
+	/// <param name="id">Will contain new edge's id</param>
+	/// <returns>Reference to new edge</returns>
+	HalfEdge& NewEdge(const HalfEdge& hEdge, uint& id);
+
+	/// <param name="faceId">The id of the face whose edges will be counted.</param>
+	/// <returns>The number of edges in the face.</returns>
 	uint FaceEdgeCount(uint faceId) const;
+
+	/// <param name="vertId">The vertex being queried.</param>
+	/// <returns>Adjacent info for the vertex.</returns>
 	VertexAdjacentInfo GetVertexAdjacentInfo(uint vertId);
+
+	/// <summary>
+	/// Performs the deform stage of subdivision using a subdivision scheme
+	/// that hybridizes the Catmull-Clark and Loop schemes.
+	/// </summary>
+	void deform();
+
+	/// <summary>
+	/// Relocates a vertex based on the Catmull-Clark subdivision scheme.
+	/// </summary>
+	/// <param name="vertId">The vertex to relocate.</param>
+	/// <param name="edgeCount">Number of edges incident to the vertex.</param>
+	/// <param name="faceCount">Number of faces incident to the vertex.</param>
+	/// <returns></returns>
 	Vec3f ApplyCatmullClarkMask(uint vertId, uint edgeCount, uint faceCount);
+
+	/// <summary>
+	/// Relocates a vertex based on the Loop subdivision scheme.
+	/// </summary>
+	/// <param name="vertId">The vertex to relocate.</param>
+	/// <param name="edgeCount">Number of edges incident to the vertex.</param>
+	/// <returns></returns>
 	Vec3f ApplyLoopMask(uint vertId, uint edgeCount);
+
+	/// <summary>
+	/// Relocates a vertex based on a subdivision scheme that hybridizes
+	/// the Catmull-Clark and Loop schemes.
+	/// </summary>
+	/// <param name="vertId">The vertex to relocate.</param>
+	/// <param name="edgeCount">The number of edges incident to the vertex.</param>
+	/// <param name="quadCount">The number of quad faces incident to the vertex.</param>
+	/// <returns></returns>
 	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
+
+	/// <summary>
+	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Approximates the surface area of a face.
+	/// </summary>
+	/// <param name="faceId">The face whose area will be approximated.</param>
+	/// <returns>Approximate surface area of the face.</returns>
 	float approxFaceSurfaceArea(uint faceId);
+
+	/// <summary>
+	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Computes the area based centroid of the mesh.
+	/// </summary>
+	/// <returns>The area based centroid of the mesh.</returns>
 	Vec3f computeCentroid();
+
+	/// <summary>
+	/// Translate all vertices by a translation factor.
+	/// </summary>
+	/// <param name="add">Translation factor.</param>
 	void translateVertices(const Vec3f& add);
+
+	/// <summary>
+	/// Builds the Half-Edge Mesh.
+	/// </summary>
+	/// <typeparam name="Face">
+	/// Representation of a polygon that must implement the index operator
+	/// such that indexing by i returns the ith consecutive vertex along the polygonal chain.
+	/// </typeparam>
+	/// <typeparam name="T"> 
+	/// A data structure containing polygonal faces that can be indexed with the index operator. 
+	/// </typeparam>
+	/// <param name="faces">Structure containing faces of the mesh.</param>
+	/// <param name="faceVertexCount">
+	/// A function that takes a Face as input and outputs number of vertices in the face.
+	/// </param>
+	/// <returns>True if the build succeeded. Otherwise, false.</returns>
 	template<typename T, typename Face>
 	bool build(const T& faces, uint(*faceVertexCount)(const Face&));
+
+	/// <summary>
+	/// Computes a single representative normal of a face using Newell's Method.
+	/// </summary>
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>Unit normal direction of the face.</returns>
 	Vec3f NewellNormal(uint faceId) const;
 
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>True if the face has three vertices. Otherwise, false.</returns>
 	bool IsTriangle(uint faceId) const;
+
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>True if the face has more than 4 vertices. Otherwise, false.</returns>
 	bool IsNGon(uint faceId) const;
 
 	std::vector<uint> faceEdges; // Each faces' first edge
@@ -140,46 +251,164 @@ class HalfEdgeMesh {
 	std::vector<uint> vertEdge; // Each vertices' first edge
 
 	std::vector<HalfEdge> edges; // Each half-edge
-public:
 
 	Vec3f scale = Vec3f(1.0f);
 	Vec3f pos = Vec3f(0.0f);
 	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
+public:
 
+	/// <returns>Mesh's scale factor.</returns>
+	const Vec3f& Scale() const { return scale; }
+	/// <returns>Mesh's world-space position.</returns>
+	const Vec3f& Pos() const { return pos; }
+	/// <returns>Mesh's rotation represented w/ euler angles.</returns>
+	const Vec3f& Rot() const { return eulerRot; }
+
+	/// <param name="scale">New scale factor for the mesh.</param>
+	void Scale(const Vec3f& scale) { this->scale = scale; }
+	/// <param name="componentId">Component to change.</param>
+	/// <param name="component">New component value.</param>
+	void Scale(int component, float val) { this->scale[component] = val; }
+	/// <param name="pos">New position for the mesh.</param>
+	void Pos(const Vec3f& pos) { this->pos = pos; }
+	/// <param name="componentId">Component to change.</param>
+	/// <param name="component">New component value.</param>
+	void Pos(int component, float val) { this->pos[component] = val; }
+	/// <param name="eulerRot">New rotation factor for the mesh.</param>
+	void Rot(const Vec3f& rot) { this->eulerRot = rot; }
+	/// <param name="componentId">Component to change.</param>
+	/// <param name="component">New component value.</param>
+	void Rot(int component, float val) { this->eulerRot[component] = val; }
+
+	/// <summary> Translates the mesh's world-space position. </summary>
+	/// <param name="translation">Factor to translate the position by.</param>
+	void TranslatePos(const Vec3f& translation) { pos += translation; }
+	/// <summary>Adds to the mesh's scale factor.</summary>
+	/// <param name="add">The scale factor to add.</param>
+	void AddScale(const Vec3f& add) { this->scale += add; }
+	/// <summary>Adds to the mesh's scale factor uniformly.</summary>
+	/// <param name="add">The scale factor to add uniformly.</param>
+	void AddScale(const float& add) { this->scale += add; }
+
+	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
+	/// <returns>Scale and rotation components of model transform.</returns>
 	Matrix3f getTransform3x3() const;
+	/// <param name="worldDir">Direction in world-space.</param>
+	/// <returns>The corresponding direction in local-space.</returns>
 	Vec3f WorldDirToLocalDir(const Vec3f& worldDir);
-	void deform();
 
-	void GetFaceVertices(uint faceId, uint vertices[4]) const;
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="vertices">
+	/// Will contain the first 4 vertices of the face. 
+	/// If there are only 3 vertices, vertices[3] = MAX_UINT.
+	/// </param>
+	void GetQuadVertices(uint faceId, uint vertices[4]) const;
+
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="vertices">Will contain the first 3 vertices of the face.</param>
 	void GetTriVertices(uint faceId, uint vertices[3]) const;
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>The first 3 vertices of the face.</returns>
 	Vec3u GetTriVertices(uint faceId) const;
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="vertices">Will contain the positions of the first 3 vertices of the face.</param>
 	void GetTriVertices(uint faceId, Vec3f vertices[3]) const;
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="vertices">A list to push the positions of the first 3 vertices of the face to.</param>
 	void GetTriVertices(uint faceId, std::vector<Vec3f>& vertices) const;
 
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>The first 3 edges of the face.</returns>
 	Vec3u GetTriEdges(uint faceId) const;
 
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="vertices">
+	/// Will contain the first 4 vertices of the face. 
+	/// If there are only 3 vertices, vertices[3] = MAX_UINT.
+	/// </param>
+	/// <param name="edges">
+	/// Will contain the first 4 edges of the face. 
+	/// If there are only 3 edges, edges[3] = MAX_UINT.</param>
 	void GetFaceElements(uint faceId, uint vertices[4], uint edges[4]) const;
+
+	/// <returns>A pointer to the positions of the vertices in the mesh.</returns>
 	const Vec3f* VertexPositions() const;
+
+	/// <param name="vertices">A list to push the world-space positions of all vertices in the mesh to.</param>
 	const void GetWorldVertexPositions(std::vector<Vec3f>& vertices) const;
+
+	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
+
+	/// <summary>
+	/// OUTDATED AND NEEDS UPDATE.
+	/// </summary>
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>Centroid of the face.</returns>
 	Vec3f faceCentroid(uint faceId);
 
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="triangulation">Triangulation of the face.</param>
 	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangulation) const;
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <param name="triangleVertices">Vertices of the face's triangulation.</param>
+	/// <param name="triangleEdges">
+	/// Edges of the face's triangulation. An edge will be MAX_UINT if it does not exist in the mesh.
+	/// </param>
 	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVertices, std::vector<Vec3u>& triangleEdges) const;
+	/// <param name="faceId">A face to permanently triangulate.</param>
 	void TriangulateFace(uint faceId);
+	/// <summary>Permanently triangulates all n-gon faces in the mesh.</summary>
 	void TriangulateAllNGons();
+	/// <summary>Permanently triangulates all quad and n-gon faces in the mesh.</summary>
 	void Triangulate();
+
+	/// <summary>
+	/// Clips the corner of a face to create a new triangle.
+	/// </summary>
+	/// <param name="edge">The edge whose origin vertex defines the corner.</param>
+	/// <param name="innerClipId">
+	/// Will contain the id of the new half-edge that is part of the new triangle. 
+	/// </param>
+	/// <param name="outerClipId">
+	/// Will contain the id of the new half-edge that is exterior to the new triangle.
+	/// In other words, it is the id of the new half-edge in the original face.
+	/// </param>
+	/// <param name="cornerFace">Will contain the id of the new face (triangle).</param>
 	void ClipCorner(uint edge, uint& innerClipId, uint& outerClipId, uint& cornerFace);
 
+	/// <param name="vertdId">A vertex of the mesh.</param>
+	/// <returns>Position of the vertex.</returns>
 	Vec3f GetVertexPosition(uint vertdId);
+	/// <param name="vertId">A vertex of the mesh.</param>
+	/// <returns>Unit normal direction of the vertex.</returns>
 	Vec3f GetVertexNormal(uint vertId);
-	Vec3f GetFaceNormal(uint vertId);
-	Vec3f GetEdgeNormal(uint vertId);
+	/// <param name="faceId">A face of the mesh.</param>
+	/// <returns>The unit normal direction of the face.</returns>
+	Vec3f GetFaceNormal(uint faceId);
+	/// <param name="edgeId">An edge of the mesh.</param>
+	/// <returns>The unit normal direction of the edge.</returns>
+	Vec3f GetEdgeNormal(uint edgeId);
+	/// <summary> Translates a face. </summary>
+	/// <param name="faceId">Face to translate.</param>
+	/// <param name="translation">Translation factor.</param>
 	void TranslateFace(uint faceId, const Vec3f& translation);
+	/// <summary> Translates edge. </summary>
+	/// <param name="edgeId">Edge to translate.</param>
+	/// <param name="translation">Translation factor.</param>
 	void TranslateEdge(uint edgeId, const Vec3f& translation);
+	/// <summary> Translates vertex. </summary>
+	/// <param name="vertId">Vertex to translate.</param>
+	/// <param name="translation">Translation factor.</param>
 	void TranslateVertex(uint vertId, const Vec3f& translation);
+	/// <summary>Translates a vertex along its unit normal direction.</summary>
+	/// <param name="vertId">Vertex to translate.</param>
+	/// <param name="factor">Ammount to translate as a multiple of the unit normal direction.</param>
 	void TranslateVertexOut(uint vertId, float factor);
+	/// <summary>Directly sets a vertex's position</summary>
+	/// <param name="vertId">The vertex to relocate.</param>
+	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
 	/// <summary>
@@ -191,11 +420,21 @@ public:
 	///		A half-edge of the edge to be split.
 	/// </param>
 	void refineEdge(uint hEdgeId);
+
+	/// <summary>Not yet implemented.</summary>
 	void bevel();
+	/// <summary>Not yet implemented.</summary>
 	void extrude();
+	/// <summary>Tesselates the mesh. N-gons are triangulated.</summary>
 	void tesselate();
+	/// <summary>
+	/// Subdivides the mesh according to a subdivision scheme that hybridizes
+	/// the Catmull-Clark and Loop schemes.
+	/// </summary>
 	void subdivide();
+	/// <summary>Clear mesh data but keep memory allocated.</summary>
 	void Clear();
+	
 	ImportReport load(const char* file);
 	bool load(const FaceList& faceList);
 	void load(const std::vector<Vec3f>& vertices, const std::vector<Vec4u>& faces);

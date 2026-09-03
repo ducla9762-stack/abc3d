@@ -133,7 +133,7 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	float factor = 0.01f * change.Dot(initialDragDir);
 
 	uint objectId = selectionIds.x != MAX_UINT ? selectionIds.x : selectionIds.y;
-	scene[objectId - 1]->scale += factor;
+	scene[objectId - 1]->AddScale(factor);
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -223,7 +223,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 
 	switch (activeElement) {
 	case OBJECT:
-		scene[selectionIds.x - 1]->pos += translation;
+		scene[selectionIds.x - 1]->TranslatePos(translation);
 		
 		break;
 	case EDGE:
@@ -259,7 +259,7 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 	float length = dir.Length();
 	dir /= length;
 
-	Vec3f eulerRot = scene[selectionIds.x - 1]->eulerRot;
+	Vec3f eulerRot = scene[selectionIds.x - 1]->Rot();
 	Matrix3f origRot;
 	origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
@@ -267,7 +267,7 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 	rot.SetRotation(dir, length * 0.01f);
 	rot *= origRot;
 
-	scene[selectionIds.x - 1]->eulerRot = matrixToEulerAngle(rot);
+	scene[selectionIds.x - 1]->Rot(matrixToEulerAngle(rot));
 
 	modelingRenderer.UpdateRenderBuffers(scene);
 
@@ -456,7 +456,7 @@ void Viewport::setScale(int component, float scale) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->scale[component] = scale;
+			mesh->Scale(component, scale);
 			break;
 
 		case VERTEX:
@@ -685,7 +685,7 @@ void Viewport::setRot(int component, float angle) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->eulerRot[component] = angle;
+			mesh->Rot(component, angle);
 			break;
 
 		case VERTEX:
@@ -721,7 +721,7 @@ void Viewport::setPos(int component, float pos) {
 
 		switch (item.type) {
 		case OBJECT:
-			mesh->pos[component] = pos;
+			mesh->Pos(component, pos);
 			break;
 
 		case VERTEX:
