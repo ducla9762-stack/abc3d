@@ -60,6 +60,7 @@ target_link_libraries(abc3d PRIVATE
     glm::glm
     fltk
     fltk_gl
+    fltk_images
 )
 
 # Add directories with any random loose .dlls or .libs here

@@ -11,6 +11,7 @@
 
 #include "helper.h"
 #include "scene.h"
+#include "renderBufferBuilder.h"
 #include "selection.h"
 
 using std::chrono::steady_clock;
@@ -27,6 +28,58 @@ public:
 	virtual void SetCamera(const Vec3f& pos, const Vec3f& target = ORIGIN) = 0;
 	virtual Vec3f GetCamPos() = 0;
 	virtual Vec3f GetCamTarget() = 0;
+};
+
+/// <summary>
+/// Renders world-space arrows to the framebuffer with a given View-Projection matrix.
+/// </summary>
+class ArrowRenderer {
+	// Generic arrow geometry data
+	static const std::vector<Vec3f> VERTICES;
+	static const std::vector<Vec3u> TRIANGLES;
+
+	// Data for OpenGL operations
+	GLSLProgram program; // Shader program
+	GLuint vao, vbo, ebo; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
+	GLuint instancedVbo; // VBO for arrow data (Arrow struct)
+	GLsizei instanceCount; // Number of arrows
+
+public:
+
+	struct Arrow {
+		Vec3f base;
+		Vec3f dir;
+		float length;
+		float radius;
+		float tipHeight;
+		Vec3f color;
+		Vec2u ids;
+	};
+
+	/// <summary>
+	/// Initializes OpenGL state (program, buffers, and vao).
+	/// Must be called before anything else.
+	/// </summary>
+	/// <returns>True if the shader program compiled. Otherwise, false.</returns>
+	bool Initialize();
+
+	/// <summary>
+	/// Draws arrows to framebuffer.
+	/// </summary>
+	void Draw();
+
+	/// <summary>
+	/// Sets the View-Projection transformation.
+	/// </summary>
+	/// <param name="data">View-Projection Matrix</param>
+	void SetViewProjectionUniform(float data[16]);
+
+	/// <summary>
+	/// Sets the arrows to draw.
+	/// </summary>
+	/// <param name="arrows">List of arrows</param>
+	/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
+	void SetArrows(const std::vector<Arrow>& arrows, GLenum usage = GL_STATIC_DRAW);
 };
 
 class ModelingRenderer : public Renderer {
@@ -65,11 +118,7 @@ class ModelingRenderer : public Renderer {
 	std::vector<Vec3f> sceneVertices;
 	std::vector<Vec2u> vertObjData;
 
-	std::vector<Vec3f> meshPosData;
-	std::vector<Vec3f> meshNormData;
-	std::vector<Vec2u> meshIdData;
-	std::vector<float> meshDistData;
-	std::vector<Vec3u> meshEdgeIdData;
+	RenderBufferBuilder bufBuilder;
 
 	uint meshVertDrawCount = 0;
 	uint pointVertDrawCount = 0;
@@ -83,6 +132,8 @@ class ModelingRenderer : public Renderer {
 	int height = 0;
 
 	std::vector<Vec3u> idSelectBuf;
+
+	ArrowRenderer arrowRenderer;
 
 public:
 
