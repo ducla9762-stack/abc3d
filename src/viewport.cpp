@@ -291,7 +291,8 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		switch (item.type) {
 		case OBJECT:
 			if (transformedObjects.insert(item.meshId).second) {
-				mesh->pos += translation;
+				//mesh->pos += translation;
+				mesh->Pos(translation);
 				transformed = true;
 			}
 			break;
@@ -366,19 +367,21 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 			!transformedObjects.insert(item.meshId).second) {
 			continue;
 		}
-	// Vec3f eulerRot = scene[selectionIds.x - 1]->Rot();
-	// Matrix3f origRot;
-	// origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
-		Vec3f eulerRot = scene[item.meshId]->eulerRot;
+		Vec3f eulerRot = scene[item.meshId]->Rot();
 		Matrix3f origRot;
 		origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		//Vec3f eulerRot = scene[item.meshId]->eulerRot;
+		//Matrix3f origRot;
+		//origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
 		Matrix3f rot;
 		rot.SetRotation(dir, length * 0.01f);
 		rot *= origRot;
 
 		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
+
 		transformed = true;
 	}
 
