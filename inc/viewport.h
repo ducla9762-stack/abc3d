@@ -50,6 +50,7 @@ class Viewport : public Fl_Gl_Window {
 	Vec2f mouseDragStartPos = Vec2f(0.0f);
 	Vec3u selectionIds = Vec3u(uint(0));
 	Vec3f actionDir = Vec3f(0.0f);
+	std::vector<Vec3f> dragActionDirs;
 	Vec3f initialActionState = Vec3f(0.0f);
 	bool firstDragCallback = false;
 

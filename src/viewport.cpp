@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <unordered_set>
 #include <utility>
 
 #include "viewport.h"
@@ -120,15 +121,33 @@ void Viewport::mouseDrag() {
 }
 
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
-	if (activeAction != SCALE || selectionIds.x == 0) {
+	// If the action action is not scale, and there are no selections, do nothing.
+	// Todo: edge and face scale.
+	if (selectionManager.getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
+	// Calculate the amount to scale by.
 	Vec2f change = pos - mouseDragPrevPos;
 	float factor = 0.01f * change.Dot(initialDragDir);
 
-	uint objectId = selectionIds.x != MAX_UINT ? selectionIds.x : selectionIds.y;
-	scene[objectId - 1]->scale += factor;
+	// Change all selected elements.
+	// Use unordered set for fast lookup time.
+	std::unordered_set<uint> transformedMeshes;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		// Don't transform the same mesh multiple times.
+		if (item.meshId >= scene.MeshCount() || !transformedMeshes.insert(item.meshId).second) {
+			continue;
+		}
+
+		// Scale.
+		scene[item.meshId]->scale += factor;
+	}
+
+	if (transformedMeshes.empty()) {
+		return false;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -137,35 +156,64 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 }
 
 bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
-	if (selectionIds.x == 0) { return false; }
+	// If there are no selected elements, do nothing.
+	if (selectionManager.getSelectedItems().empty()) { return false; }
 
+	// If we are selecting objects, translate free instead of out.
 	if (activeElement == OBJECT) {
 		return translateFreeDrag(pos, uv);
 	}
 
+	// Calculate change in position.
 	Vec2f change = pos - mouseDragPrevPos;
 	float scale = 0.01f * change.Dot(initialDragDir);
 
+	// If we are selecting vertices, do vertex translation.
 	if (activeElement == VERTEX) {
 		return translateOutVertexDrag(scale);
 	}
-	else if (selectionIds.x == MAX_UINT) {
+
+	// else get all selected items.
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	// If this is the first drag, establish direction.
+	if (firstDragCallback) {
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		// For each selected item, transform.
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			if (item.type == FACE) {
+				dragActionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+			}
+			else if (item.type == EDGE) {
+				dragActionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+			}
+		}
+	}
+
+	bool transformed = false;
+	// Otherwise, translate.
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.meshId >= scene.MeshCount() || i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		if (item.type == FACE) {
+			scene[item.meshId]->TranslateFace(item.componentId, dragActionDirs[i] * scale);
+			transformed = true;
+		}
+		else if (item.type == EDGE) {
+			scene[item.meshId]->TranslateEdge(item.componentId, dragActionDirs[i] * scale);
+			transformed = true;
+		}
+	}
+
+	if (!transformed) {
 		return false;
-	}
-
-	if (activeElement == FACE) {
-		if (firstDragCallback) {
-			actionDir = scene[selectionIds.x - 1]->GetFaceNormal(selectionIds.y);
-		}
-
-		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, actionDir * scale);
-	}
-	else if (activeElement == EDGE) {
-		if (firstDragCallback) {
-			actionDir = scene[selectionIds.x - 1]->GetEdgeNormal(selectionIds.z);
-		}
-
-		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, actionDir * scale);
 	}
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -175,16 +223,39 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 }
 
 bool Viewport::translateOutVertexDrag(float scale) {
-	if (selectionIds.x != MAX_UINT) {
+	// If no selection, do nothing.
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	if (selectedItems.empty()) {
 		return false;
 	}
 
+	// If first drag, establish direction, translate out.
 	if (firstDragCallback) {
-		actionDir = scene[selectionIds.y - 1]->GetVertexNormal(selectionIds.z);
-		//initialActionState = scene[selectionIds.y - 1]->GetVertexPosition(selectionIds.z);
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.type == VERTEX && item.meshId < scene.MeshCount()) {
+				dragActionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+			}
+		}
 	}
 
-	scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, scale * actionDir);
+	// Else translate out.
+	bool transformed = false;
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.type != VERTEX || item.meshId >= scene.MeshCount() || i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		scene[item.meshId]->TranslateVertex(item.componentId, scale * dragActionDirs[i]);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
 	modelingRenderer.UpdateRenderBuffers(scene);
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
@@ -196,38 +267,46 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
 
+	// Calculate position change.
 	Vec2f change;
 	change.x = mouseDragPrevPos.x - pos.x;
 	change.y = pos.y - mouseDragPrevPos.y;
 	Vec3f translation = 0.01f * (change.x * r + change.y * u);
 
-	if (activeElement == VERTEX) {
-		if (selectionIds.x != MAX_UINT) {
-			return false;
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
 		}
 
-		translation = scene[selectionIds.y - 1]->WorldDirToLocalDir(translation);
-		scene[selectionIds.y - 1]->TranslateVertex(selectionIds.z, translation);
-		modelingRenderer.UpdateRenderBuffers(scene);
-		return true;
+		// Translate depending on which element type.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (item.type) {
+		case OBJECT:
+			if (transformedObjects.insert(item.meshId).second) {
+				mesh->pos += translation;
+				transformed = true;
+			}
+			break;
+		case VERTEX:
+			mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		case EDGE:
+			mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		case FACE:
+			mesh->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(translation));
+			transformed = true;
+			break;
+		}
 	}
 
-	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+	if (!transformed) {
 		return false;
-	}
-
-	switch (activeElement) {
-	case OBJECT:
-		scene[selectionIds.x - 1]->pos += translation;
-		break;
-	case EDGE:
-		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
-		scene[selectionIds.x - 1]->TranslateEdge(selectionIds.z, translation);
-		break;
-	case FACE:
-		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
-		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
-		break;
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
@@ -238,30 +317,51 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 }
 
 bool Viewport::rotateDrag(const Vec2f& pos) {
-	if (selectionIds.x == 0 || selectionIds.x == MAX_UINT) {
+	// If no selections, do nothing.
+	if (selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
 
+	// calculate change in rotation.
 	Vec2f change;
 	change.y = mouseDragPrevPos.x - pos.x;
 	change.x = -(pos.y - mouseDragPrevPos.y);
 
 	Vec3f dir = change.x * r + change.y * u;
 	float length = dir.Length();
+	if (length == 0.0f) {
+		return false;
+	}
 	dir /= length;
 
-	Vec3f eulerRot = scene[selectionIds.x - 1]->eulerRot;
-	Matrix3f origRot;
-	origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		// Don't rotate twice.
+		if (item.type != OBJECT || item.meshId >= scene.MeshCount() ||
+			!transformedObjects.insert(item.meshId).second) {
+			continue;
+		}
 
-	Matrix3f rot;
-	rot.SetRotation(dir, length * 0.01f);
-	rot *= origRot;
+		Vec3f eulerRot = scene[item.meshId]->eulerRot;
+		Matrix3f origRot;
+		origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
-	scene[selectionIds.x - 1]->eulerRot = matrixToEulerAngle(rot);
+		Matrix3f rot;
+		rot.SetRotation(dir, length * 0.01f);
+		rot *= origRot;
+
+		scene[item.meshId]->eulerRot = matrixToEulerAngle(rot);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
 
