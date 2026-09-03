@@ -169,6 +169,7 @@ public:
 	void GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVertices, std::vector<Vec3u>& triangleEdges) const;
 	void TriangulateFace(uint faceId);
 	void TriangulateAllNGons();
+	void Triangulate();
 	void ClipCorner(uint edge, uint& innerClipId, uint& outerClipId, uint& cornerFace);
 
 	Vec3f GetVertexPosition(uint vertdId);

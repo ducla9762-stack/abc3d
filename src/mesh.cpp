@@ -902,6 +902,15 @@ void HalfEdgeMesh::TriangulateAllNGons() {
 	}
 }
 
+void HalfEdgeMesh::Triangulate() {
+	// Optimize later by making private version of triangulate face that takes pre-allocated memory
+	// so we don't allocate memory for every face
+	int faceCount = faceEdges.size();
+	for (int i = 0; i < faceCount; ++i) {
+		if (!IsTriangle(i)) { TriangulateFace(i); }
+	}
+}
+
 #define StartEdgeIteration(faceId) \
 							uint first = faceEdges[faceId];\
 							uint next = first;\
