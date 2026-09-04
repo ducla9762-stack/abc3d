@@ -474,7 +474,7 @@ bool ArrowRenderer::Initialize() {
 	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, color));
 	glVertexAttribPointer(7, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
 
-	for (int i = 1; i < 7; ++i) {
+	for (int i = 1; i < 8; ++i) {
 		glEnableVertexAttribArray(i);
 		glVertexAttribDivisor(i, 1);
 	}
