@@ -105,13 +105,16 @@ void Viewport::mouseDrag() {
 		camera = !translateFreeDrag(pos, uv);
 	}
 	else if (activeAction == TRANSLATE_EDGE) {
-		camera = !translateAlongEdgeDrag(pos); 
+		camera = !translateAlongEdgeDrag(pos);
 	}
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
 	}
 	else if (activeAction == ROTATE) {
 		camera = !rotateDrag(pos);
+	}
+	else if (activeAction == EXTRUDE) {
+		camera = !extrudeDrag(pos, uv);
 	}
 	
 	// Otherwise, we rotate the camera position.
@@ -656,8 +659,58 @@ void Viewport::bevel() {
 	// todo
 }
 
-void Viewport::extrude() {
-	// todo
+bool Viewport::extrudeDrag(const Vec2f& pos, const Vec2f& uv) {
+	// Extrusion only works on selected faces.
+	if (selectionManager.getSelectedItems().empty() || getActiveElement() != FACE) { return false; }
+
+	// Project this mouse movement onto the initial drag direction.
+	Vec2f change = pos - mouseDragPrevPos;
+	float scale = 0.01f * change.Dot(initialDragDir);
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	// Capture the face normals before changing. Extrude() replaces
+	// the selected face's edge loop with the new cap, so the same face id can be
+	// translated immediately after the extrusion.
+	if (firstDragCallback) {
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.type != FACE || item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			dragActionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+		}
+	}
+
+	bool transformed = false;
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.type != FACE || item.meshId >= scene.MeshCount() ||
+			i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		if (firstDragCallback) {
+			mesh->Extrude(item.componentId);
+		}
+
+		// Extrude() creates the bridge and cap at the original position. Move
+		// that cap to make the extrusion visible and interactive.
+		mesh->TranslateFace(item.componentId, dragActionDirs[i] * scale);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+	modelingRenderer.UpdateRenderBuffers(scene);
+
+	return true;
 }
 
 void Viewport::subdivision() {

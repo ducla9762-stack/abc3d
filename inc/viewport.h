@@ -169,9 +169,10 @@ public:
 	void bevel();
 	
 	/// <summary>
-	/// todo
+	/// Extrude a face with a drag.
 	/// </summary>
-	void extrude();
+	/// <param name="pos"></param>
+	bool extrudeDrag(const Vec2f& pos, const Vec2f& uv);
 
 	/// <summary>
 	/// Adds a new cube mesh to the scene list.
