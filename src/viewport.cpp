@@ -131,7 +131,7 @@ void Viewport::mouseDrag() {
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	// If the action action is not scale, and there are no selections, do nothing.
 	// Todo: edge and face scale.
-	if (selectionManager.getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
+	if (getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
@@ -168,7 +168,7 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 	
 	// If we are selecting objects, translate free instead of out.
-	if (selectionManager.getActiveElement() == OBJECT) {
+	if (getActiveElement() == OBJECT) {
 		return translateFreeDrag(pos, uv);
 	}
 
@@ -177,7 +177,7 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	float scale = 0.01f * change.Dot(initialDragDir);
 
 	// If we are selecting vertices, do vertex translation.
-	if (selectionManager.getActiveElement() == VERTEX) {
+	if (getActiveElement() == VERTEX) {
 		return translateOutVertexDrag(scale);
 	}
 
@@ -273,7 +273,7 @@ bool Viewport::translateOutVertexDrag(float scale) {
 
 bool Viewport::translateAlongEdgeDrag(const Vec2f& pos) {
 	// If the active element is not vertex, do nothing.
-	if (selectionManager.getActiveElement() != VERTEX)
+	if (getActiveElement() != VERTEX)
 		return false;
 	
 	Vec3f f, u, r; 
@@ -455,7 +455,7 @@ int Viewport::mousePush() {
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
 	// Get the selection ids at this position.
-	selectionIds = modelingRenderer.SelectionIds(x, y);
+	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// Create a selection item to send to the selection manager.
 	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
@@ -549,7 +549,7 @@ void Viewport::keyUp() {
 
 std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 {
-	switch (selectionManager.getActiveElement()) {
+	switch (getActiveElement()) {
 	case OBJECT:
 		// Normal hit.
 		if (ids.x != 0 && ids.x != MAX_UINT) {
@@ -989,7 +989,6 @@ Action Viewport::getActiveAction() { return activeAction; }
 void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 
 void Viewport::setActiveElement(Element element) { 
-	activeElement = element;
 	selectionManager.setActiveElement(element);
 	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
 	if (primarySelectionCallback) {

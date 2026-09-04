@@ -28,7 +28,7 @@ class Viewport : public Fl_Gl_Window {
 	SelectionManager selectionManager;
 
 	Mode activeMode = MODEL;
-	Element activeElement = selectionManager.getActiveElement();
+	//Element activeElement = selectionManager.getActiveElement();
 	Action activeAction = SELECT;
 
 	ModelingRenderer modelingRenderer;
@@ -48,7 +48,7 @@ class Viewport : public Fl_Gl_Window {
 	Vec2f mouseDragPrevPos = Vec2f(0.0f);
 	Vec2f mouseDragPrevPosUV = Vec2f(0.0f);
 	Vec2f mouseDragStartPos = Vec2f(0.0f);
-	Vec3u selectionIds = Vec3u(uint(0));
+	//Vec3u selectionIds = Vec3u(uint(0));
 	Vec3f actionDir = Vec3f(0.0f);
 	uint actionEdge = MAX_UINT; 
 	std::vector<Vec3f> dragActionDirs;
