@@ -99,8 +99,8 @@ void FaceList::ProcessObjLine(const string& line) {
 
 	//"o"/"g" open a new group. Record where it starts so SplitObjects can cut here.
 	else if ((tag == 'o' || tag == 'g') && tagged) {
-		if (objectStarts.empty() || objectStarts.back() != faces.size())
-			objectStarts.push_back(static_cast<uint>(faces.size()));
+		if (objectStarts.empty() || objectStarts.back() != FaceCount())
+			objectStarts.push_back(FaceCount());
 	}
 }
 
@@ -121,17 +121,12 @@ const std::vector<Vec3f>& FaceList::Vertices() const {
 	return vertices;
 }
 
-const std::vector<Vec4<uint>>& FaceList::Faces() const {
-	return faces;
-}
-
 uint FaceList::SkippedFaces() const {
 	return skippedFaces;
 }
 
 std::vector<Vec3f>& FaceList::Vertices() { return vertices; }
 
-std::vector<Vec4<uint>>& FaceList::Faces() { return faces; }
 
 void FaceList::PrintContents() const {
 	for (const Vertex& vertex : vertices) {
@@ -286,7 +281,8 @@ bool FaceList::LoadSTL(const char* stl) {
 	
 	const size_t facesBefore = FaceCount(); 
 	if (isBinary) {
-		faceVerts.reserve(faceVerts.size() + numTriangles);
+		faceVerts.reserve(faceVerts.size() + numTriangles * 3);
+		faceStarts.reserve(faceStarts.size() + numTriangles); 
 
 		for (uint32_t i = 0; i < numTriangles; ++i) {
 			stlFile.seekg(12, std::ios::cur); // skip stored normal (we recompute it)
@@ -303,7 +299,8 @@ bool FaceList::LoadSTL(const char* stl) {
 			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
 			if (!stlFile) return false; 
 			
-			faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3); 
+			faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3);
+			faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 		}
 
 		return FaceCount() > facesBefore;
@@ -340,6 +337,7 @@ bool FaceList::LoadSTL(const char* stl) {
 			else if (line.substr(0, 7) == "endloop") {
 				if (loopVertCount == 3) {
 					faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3);
+					faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 				}
 			}
 		}
@@ -1459,7 +1457,7 @@ ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
 	// All or nothing: one rejected part rejects the file, so a failed import never
 	// leaves half a model behind.
 	for (const FaceList& part : parts) {
-		if (part.Faces().empty()) { continue; } // Vertices with no faces, nothing to build
+		if (part.FaceCount() == 0) { continue; } // Vertices with no faces, nothing to build
 
 		built.emplace_back();
 		if (!built.back().load(part)) { report.status = ImportReport::InvalidTopology; return report; }

@@ -517,6 +517,11 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	for (uint i = 0; i < faces.size(); ++i) {
 		const Face& face = faces[i]; 
 		uint vertCount = faceVertexCount(face);
+		
+		if (vertCount < 3) {
+			Clear(); 
+			return false; 
+		}
 
 		for (uint j = 0; j < vertCount; ++j) {
 			if (face[j] >= vertLimit) {Clear(); return false; }
@@ -526,13 +531,22 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 			}
 		}
 
-		// Distinct indices can still be coincident or collinear, which leaves the face
-		// with no direction: the cross product is zero length and normalizing it yields
-		// nan. Quads are checked as the same triangle fan the stl writer emits.
-		if (IsDegenerateFace(vertPos[face[0]], vertPos[face[1]], vertPos[face[2]])) { Clear(); return false; }
+		//Newell accumulation
+		//Project the polygon onto x, y, z. 
+		//The projected area onto the YZ plane is the x-component of the normal, ZX onto the y, XY onto the z
+		Vec3<double> newell(0.0); 
+		for (uint j = 0; j < vertCount; ++j) {
+			const Vec3f& orig = vertPos[face[j]]; 
+			const Vec3f& dest = vertPos[face[WrapInc(j, vertCount - 1)]]; 
+			newell.x += (orig.y - dest.y) * (orig.z + dest.z); 
+			newell.y += (orig.z - dest.z) * (orig.x + dest.x); 
+			newell.z += (orig.x - dest.x) * (orig.y + dest.y); 
+		}
 
-		if (vertCount == 4 &&
-			IsDegenerateFace(vertPos[face[0]], vertPos[face[2]], vertPos[face[3]])) { Clear(); return false; }
+		if (newell.LengthSquared() == 0.0) {
+			Clear(); 
+			return false; 
+		}
 	}
 
 	//Build
