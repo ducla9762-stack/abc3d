@@ -320,8 +320,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		switch (item.type) {
 		case OBJECT:
 			if (transformedObjects.insert(item.meshId).second) {
-				//mesh->pos += translation;
-				mesh->Pos(translation);
+				mesh->TranslatePos(translation);
 				transformed = true;
 			}
 			break;
