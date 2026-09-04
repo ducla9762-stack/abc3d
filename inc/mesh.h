@@ -45,13 +45,23 @@ struct ImportReport {
 	bool ok() const { return status == Ok; }
 };
 
-class FaceList{
+//Implements size() and operator[], which is all HalfEdgeMesh::build needs
+struct FaceView {
+	const uint* verts = nullptr; 
+	uint count = 0; 
+	uint operator[](uint i)const { return verts[i]; }
+	uint size() const { return count; }
+};
 
-	typedef Vec4<uint> Face; 
+inline uint polyVertexCount(const FaceView& face) { return face.count;  }
+
+class FaceList{
 	typedef Vec3f Vertex;
 
-	std::vector<Vertex> vertices;
-	std::vector<Face> faces;
+	std::vector<uint> faceVerts; 
+	std::vector<uint> faceStarts = {0};
+	
+	std::vector<Vertex> vertices; 
 	std::vector<uint> objectStarts;
 	uint skippedFaces = 0; // Face lines the parser dropped rather than storing
 
@@ -62,6 +72,17 @@ class FaceList{
 	bool isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const;
 
 public:
+	struct PolygonList {
+		const FaceList* owner; 
+		size_t size() const { return owner->FaceCount();  }
+		FaceView operator[](uint i)const { return owner->GetFace(i); }
+	};
+
+	uint FaceCount() const { return static_cast<uint>(faceStarts.size()) - 1; }
+	FaceView GetFace(uint i) const {
+		return FaceView{ faceVerts.data() + faceStarts[i], faceStarts[i + 1] - faceStarts[i] };
+	};
+	PolygonList Polygons() const { return PolygonList{ this }; }
 
 	const std::vector<Vec3f>& Vertices() const;
 	const std::vector<Vec4<uint>>& Faces() const;

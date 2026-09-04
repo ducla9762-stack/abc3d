@@ -1525,7 +1525,7 @@ void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
 	GetWorldVertexPositions(worldPos); 
 
 	std::vector<Vec3u> triangles; 
-	triangles.reserve(16); 
+	triangles.reserve(16); //Pre-allocate to skip doubling
 
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
