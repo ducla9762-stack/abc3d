@@ -284,9 +284,9 @@ bool FaceList::LoadSTL(const char* stl) {
 		return id;
 		};
 	
-	const size_t facesBefore = faces.size(); 
+	const size_t facesBefore = FaceCount(); 
 	if (isBinary) {
-		faces.reserve(faces.size() + numTriangles);
+		faceVerts.reserve(faceVerts.size() + numTriangles);
 
 		for (uint32_t i = 0; i < numTriangles; ++i) {
 			stlFile.seekg(12, std::ios::cur); // skip stored normal (we recompute it)
@@ -303,10 +303,10 @@ bool FaceList::LoadSTL(const char* stl) {
 			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
 			if (!stlFile) return false; 
 			
-				faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+			faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3); 
 		}
 
-		return faces.size() > facesBefore;
+		return FaceCount() > facesBefore;
 	}
 	else {
 		stlFile.close();
@@ -339,12 +339,12 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 			else if (line.substr(0, 7) == "endloop") {
 				if (loopVertCount == 3) {
-					faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+					faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3);
 				}
 			}
 		}
 
-		return faces.size() > facesBefore;
+		return FaceCount() > facesBefore;
 	}
 }
 
