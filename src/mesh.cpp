@@ -109,11 +109,11 @@ void FaceList::PrintFaceComponent(uint x) const {
 	else { std::cout << x << " "; }
 }
 
-void FaceList::PrintFace(const Face& face) const {
+void FaceList::PrintFace(const FaceView& face) const {
 	std::cout << "f ";
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < face.count; ++i)
 		PrintFaceComponent(face[i]);
-	}
+
 	std::cout << std::endl;
 }
 

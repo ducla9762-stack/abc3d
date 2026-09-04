@@ -68,7 +68,7 @@ class FaceList{
 	void MoveTo(const char*& c_str, char delim);
 	void ProcessObjLine(const string& line);
 	void PrintFaceComponent(uint x) const;
-	void PrintFace(const Face& face) const;
+	void PrintFace(const FaceView& face) const;
 	bool isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const;
 
 public:
@@ -85,9 +85,7 @@ public:
 	PolygonList Polygons() const { return PolygonList{ this }; }
 
 	const std::vector<Vec3f>& Vertices() const;
-	const std::vector<Vec4<uint>>& Faces() const;
 	std::vector<Vec3f>& Vertices();
-	std::vector<Vec4<uint>>& Faces();
 	uint SkippedFaces() const;
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
