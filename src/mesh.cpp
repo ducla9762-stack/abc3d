@@ -69,6 +69,7 @@ void FaceList::ProcessObjLine(const string& line) {
 			while (*scan == ' ' || *scan == '\t') ++scan;
 			if (*scan == '\0') break;
 
+			// Negative indices are valid .obj, but not supported here
 			if (*scan == '-') {
 				faceVerts.resize(start);
 				++skippedFaces;
@@ -78,6 +79,7 @@ void FaceList::ProcessObjLine(const string& line) {
 			uint data = std::strtoul(segStart, &segEnd, 10);
 			if (segStart == segEnd) break;
 
+			//.obj indices are one based, so 0 is malformed
 			if (data == 0) {
 				faceVerts.resize(start); 
 				++skippedFaces; 
@@ -88,12 +90,14 @@ void FaceList::ProcessObjLine(const string& line) {
 			segStart = segEnd; 
 		}
 
+		//Check because Vec4u dropped
 		if (faceVerts.size() - start < 3) {
 			faceVerts.resize(start); 
 			++skippedFaces; 
 			return; 
 		}
 
+		//face offset append
 		faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 	}
 
@@ -137,11 +141,7 @@ void FaceList::PrintContents() const {
 		PrintFace(GetFace(i)); 
 }
 
-/// <summary>
-///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
-///		face indices so it only carries the vertices its own faces use. A list with
-///		no group tags (any .stl, or a flat .obj) comes back as a single part.
-/// </summary>
+
 std::vector<FaceList> FaceList::SplitObjects() const {
 	// Turn the group markers into [begin, end) face ranges. Faces written before the
 	// first marker form their own leading part, and a list with no markers is one
@@ -171,6 +171,7 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 		std::unordered_map<uint, uint> remap;
 
 		for (uint f = range[0]; f < range[1]; ++f) {
+			//Copy the whole face, no padding so MAX_UINT is out-of-range index
 			const uint begin = faceStarts[f], end = faceStarts[f + 1]; 
 
 			for (uint k = begin; k < end; ++k) {
@@ -189,7 +190,8 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 
 				part.faceVerts.push_back(mapped);
 			}
-
+			
+			//offset push for face
 			part.faceStarts.push_back(static_cast<uint>(part.faceVerts.size())); 
 		}
 
@@ -281,6 +283,7 @@ bool FaceList::LoadSTL(const char* stl) {
 	
 	const size_t facesBefore = FaceCount(); 
 	if (isBinary) {
+		//3 indices per triangle, one offset per triangle
 		faceVerts.reserve(faceVerts.size() + numTriangles * 3);
 		faceStarts.reserve(faceStarts.size() + numTriangles); 
 
@@ -1547,11 +1550,11 @@ void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
 	GetWorldVertexPositions(worldPos); 
 
 	std::vector<Vec3u> triangles; 
-	triangles.reserve(16); //Pre-allocate to skip doubling
+	triangles.reserve(16); //Reused across faces below, so this allocates once
 
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		triangles.clear(); 
+		triangles.clear(); //Keeps capactiy
 		GetTriangulation(faceId, triangles); 
 
 		for (const Vec3u& t : triangles) {

@@ -45,7 +45,10 @@ struct ImportReport {
 	bool ok() const { return status == Ok; }
 };
 
-//Implements size() and operator[], which is all HalfEdgeMesh::build needs
+/// <summary>
+/// A window for one polygon from vertex indices inside
+/// size() and operator[] are the whole interface HalfEdgeMesh::build uses, so build() works on this and Vec4u without changes. 
+/// </summary>
 struct FaceView {
 	const uint* verts = nullptr; 
 	uint count = 0; 
@@ -53,13 +56,17 @@ struct FaceView {
 	uint size() const { return count; }
 };
 
+//Access to FaceView in build()
 inline uint polyVertexCount(const FaceView& face) { return face.count;  }
 
 class FaceList{
 	typedef Vec3f Vertex;
 
+	//Polygon storage as one flat vector rather than one vector per face
+	//faceVerts holds every face's vertex indices, and faceStarts[i] gives the offset where face i begins
+	//Face i will be from [faceStarts[i], faceStarts[i + 1]], so there must be a trailing sentinel (accounted for in the size)
 	std::vector<uint> faceVerts; 
-	std::vector<uint> faceStarts = {0};
+	std::vector<uint> faceStarts = {0}; 
 	
 	std::vector<Vertex> vertices; 
 	std::vector<uint> objectStarts;
@@ -72,12 +79,16 @@ class FaceList{
 	bool isBinarySTL(const std::streamsize fileSize, const uint32_t numTriangles, const char* header) const;
 
 public:
+	/// <summary>
+	/// An adapter to give a list of polygons. It holds one pointer and synthesizes the container interface. 
+	/// </summary>
 	struct PolygonList {
 		const FaceList* owner; 
 		size_t size() const { return owner->FaceCount();  }
 		FaceView operator[](uint i)const { return owner->GetFace(i); }
 	};
 
+	//size() - 1 because the trailing sentinel
 	uint FaceCount() const { return static_cast<uint>(faceStarts.size()) - 1; }
 	FaceView GetFace(uint i) const {
 		return FaceView{ faceVerts.data() + faceStarts[i], faceStarts[i + 1] - faceStarts[i] };
@@ -90,7 +101,11 @@ public:
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
-
+	/// <summary>
+	///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
+	///		face indices so it only carries the vertices its own faces use. A list with
+	///		no group tags (any .stl, or a flat .obj) comes back as a single part.
+	/// </summary>
 	std::vector<FaceList> SplitObjects() const;
 };
 
@@ -468,7 +483,11 @@ public:
 	bool exportObj(const char* filePath) const;
 	bool exportStl(const char* filePath, bool isBinary = true) const;
 
-	void appendObj(std::ostream& out, uint& vertOffset) const; 
+	void appendObj(std::ostream& out, uint& vertOffset) const;
+	/// <summary>
+	/// Flatten every face into world-space triangles for .stl export
+	/// </summary>
+	/// <param name="tris"></param>
 	void appendStlTriangles(std::vector<Triangle>& tris) const; 
 };
 
@@ -518,6 +537,7 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 		const Face& face = faces[i]; 
 		uint vertCount = faceVertexCount(face);
 		
+		//Since we're not using Vec4u, we must check for incorrect faces
 		if (vertCount < 3) {
 			Clear(); 
 			return false; 
@@ -532,8 +552,13 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 		}
 
 		//Newell accumulation
-		//Project the polygon onto x, y, z. 
-		//The projected area onto the YZ plane is the x-component of the normal, ZX onto the y, XY onto the z
+		//A polygon with no area has no normal, so NewellNormal would divide by 0 (nan)
+		//Instead of a single cross product, we do the following: 
+		//1) Project the polygon onto each x, y, z 
+		//2) Take the signed area of each shadow: YZ -> x component, ZX -> y, XY -> z
+		//3) Each term below is the shoelace sum (https://en.wikipedia.org/wiki/Shoelace_formula) with one trapezoid per edge so the total cancels to twice the enclosed signed area. 
+		//Every vertex contributes
+		//Given an n-gon (pentagon for example) whose 3 corners happen to be collinear, we can still extract the normal
 		Vec3<double> newell(0.0); 
 		for (uint j = 0; j < vertCount; ++j) {
 			const Vec3f& orig = vertPos[face[j]]; 
