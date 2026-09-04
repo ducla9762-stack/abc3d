@@ -57,24 +57,44 @@ void FaceList::ProcessObjLine(const string& line) {
 	}
 
 	else if (tag == 'f' && tagged) {
-		Face face(MAX_UINT); 
 		const char* segStart = line.c_str(); 
-		char* segEnd; 
+		char* segEnd;
+		const uint start = static_cast<uint>(faceVerts.size()); 
 
-		for (int i = 0; i < 4; ++i) {
+		while (true) {
 			MoveTo(segStart, ' ');
-			
-			const char* scan = segStart; 
-			while (*scan == ' ' || *scan == '\t') { ++scan; }
-			if (*scan == '-') { ++skippedFaces; return; } // Negative (relative) indices unsupported
+			if (*segStart == '\0') break;
 
-			uint data = std::strtoul(segStart, &segEnd, 10); 
-			uint vertexId = data != 0 ? data - 1 : MAX_UINT; 
-			face[i] = vertexId; 
+			const char* scan = segStart;
+			while (*scan == ' ' || *scan == '\t') ++scan;
+			if (*scan == '\0') break;
+
+			if (*scan == '-') {
+				faceVerts.resize(start);
+				++skippedFaces;
+				return;
+			}
+
+			uint data = std::strtoul(segStart, &segEnd, 10);
+			if (segStart == segEnd) break;
+
+			if (data == 0) {
+				faceVerts.resize(start); 
+				++skippedFaces; 
+				return; 
+			}
+			
+			faceVerts.push_back(data - 1);
 			segStart = segEnd; 
 		}
 
-		faces.push_back(face); 
+		if (faceVerts.size() - start < 3) {
+			faceVerts.resize(start); 
+			++skippedFaces; 
+			return; 
+		}
+
+		faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 	}
 
 	//"o"/"g" open a new group. Record where it starts so SplitObjects can cut here.
@@ -1402,14 +1422,14 @@ ImportReport HalfEdgeMesh::load(const char* file) {
 	if (!success) { report.status = ImportReport::FileError; return report; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	if (!build(faceList.Faces(), basicVertexCountFunc)) { report.status = ImportReport::InvalidTopology; }
+	if (!build(faceList.Polygons(), polyVertexCount)) { report.status = ImportReport::InvalidTopology; }
 
 	return report;
 }
 
 bool HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
-	return build(faceList.Faces(), basicVertexCountFunc);
+	return build(faceList.Polygons(), polyVertexCount);
 }
 
 ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
