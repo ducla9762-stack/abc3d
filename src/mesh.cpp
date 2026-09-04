@@ -138,9 +138,8 @@ void FaceList::PrintContents() const {
 		std::cout << "v " << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
 	}
 
-	for (const Face& face : faces) {
-		PrintFace(face);
-	}
+	for (uint i = 0; i < FaceCount(); ++i)
+		PrintFace(GetFace(i)); 
 }
 
 /// <summary>
@@ -153,7 +152,7 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 	// first marker form their own leading part, and a list with no markers is one
 	// part covering every face.
 	std::vector<Vec2u> ranges;
-	const uint faceCount = static_cast<uint>(faces.size());
+	const uint faceCount = FaceCount();
 	uint prev = 0;
 
 	for (uint start : objectStarts) {
@@ -169,29 +168,34 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 
 	for (const Vec2u& range : ranges) {
 		FaceList part;
-		part.faces.reserve(range[1] - range[0]);
+		part.faceVerts.reserve(faceVerts.size()); 
+		part.faceStarts.reserve(range[1] - range[0]);
 
 		// .obj indices are file-global, so every part needs its own vertex numbering.
 		// Out-of-range indices are copied through untouched, leaving build() to reject them.
 		std::unordered_map<uint, uint> remap;
 
 		for (uint f = range[0]; f < range[1]; ++f) {
-			Face face = faces[f];
+			const uint begin = faceStarts[f], end = faceStarts[f + 1]; 
 
-			for (int i = 0; i < 4; ++i) {
-				const uint vertId = face[i];
-				if (vertId == MAX_UINT || vertId >= vertices.size()) { continue; }
+			for (uint k = begin; k < end; ++k) {
+				const uint vertId = faceVerts[k]; 
+				uint mapped = vertId; 
 
-				auto it = remap.find(vertId);
-				if (it == remap.end()) {
-					it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
-					part.vertices.push_back(vertices[vertId]);
+				if (vertId < vertices.size()) {
+					auto it = remap.find(vertId);
+					if (it == remap.end()) {
+						it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
+						part.vertices.push_back(vertices[vertId]);
+					}
+
+					mapped = it->second; 
 				}
 
-				face[i] = it->second;
+				part.faceVerts.push_back(mapped);
 			}
 
-			part.faces.push_back(face);
+			part.faceStarts.push_back(static_cast<uint>(part.faceVerts.size())); 
 		}
 
 		parts.push_back(std::move(part));
