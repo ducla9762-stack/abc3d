@@ -423,8 +423,14 @@ public:
 
 	/// <summary>Not yet implemented.</summary>
 	void bevel();
-	/// <summary>Not yet implemented.</summary>
-	void extrude();
+	/// <summary>
+	/// Essentially pops a face out from its edge loop, creating new topology that connects
+	/// the face to its previous edge loop. Initially, this new topological bridge will have
+	/// degenerate geometry (it is made of 0-area quads). Thus, it is recommended to translate 
+	/// the extruded face along a direction within the hemisphere defined by the surface normal.
+	/// </summary>
+	/// <param name="faceId">The face to extrude</param>
+	void Extrude(uint faceId);
 	/// <summary>Tesselates the mesh. N-gons are triangulated.</summary>
 	void tesselate();
 	/// <summary>

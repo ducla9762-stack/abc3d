@@ -719,10 +719,12 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangles) 
 		PolygonCorner* prev;
 	};
 
+	Vec3f normal = NewellNormal(faceId);
+	if (std::isnan(normal.x)) { return; }
+
 	int numVertices = FaceEdgeCount(faceId);
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -782,10 +784,12 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 		PolygonCorner* prev;
 	};
 
+	Vec3f normal = NewellNormal(faceId);
+	if (std::isnan(normal.x)) { return; }
+
 	int numVertices = FaceEdgeCount(faceId);
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -1260,8 +1264,92 @@ void HalfEdgeMesh::tesselate() {
 	return;
 }
 
-void HalfEdgeMesh::extrude() {
+void HalfEdgeMesh::Extrude(uint faceId) {
+	uint faceEdgeCount = FaceEdgeCount(faceId);
+	uint edgesToAdd = faceEdgeCount * 4; // Number of new edges
 
+	uint edgeStartIndex = edges.size(); // Index of first new edge
+	uint vertStartIndex = vertPos.size(); // Index of first new vertex
+
+	edges.insert(edges.end(), edgesToAdd, HalfEdge()); // Insert new edges
+
+	// Store certain edge boundaries related to the new end cap face
+	// and the bridge that connects this to the old face's edge loop
+	uint totalEdges = edges.size();
+	uint lastCapEdge = totalEdges - 1;
+	uint firstCapEdge = totalEdges - faceEdgeCount;
+	uint lastBridgeEdge = firstCapEdge - 1;
+
+	// First iteration state
+	uint edgeId = faceEdges[faceId];
+	uint offset = edgeStartIndex;
+	HalfEdge* newEdges = edges.data() + offset;
+
+	// For each edge in the old face's edge loop, create a bridge face (always a quad)
+	for (uint i = 0; i < faceEdgeCount; ++i) {
+		uint newFace = NewFace(edgeId);
+
+		// ogEdge refers to the current edge in the old face's edge loop
+		HalfEdge& ogEdge = edges[edgeId];
+		uint next = ogEdge.next;
+
+		ogEdge.next = offset;
+		ogEdge.prev = offset + 2;
+		ogEdge.face = newFace;
+
+		// oppEdge refers to the edge opposite of ogEdge in the bridge face
+		uint oppEdge = offset + 1;
+		uint oppOrig = NewVertex(vertPos[ogEdge.dest], oppEdge);
+		uint oppDest = vertStartIndex + WrapDec(i, faceEdgeCount - 1);
+
+		// Set outgoing edge
+		HalfEdge* newEdge = newEdges;
+		newEdge->prev = edgeId;
+		newEdge->next = oppEdge;
+		newEdge->twin = WrapAdd(offset, 5, lastBridgeEdge, edgeStartIndex);
+		newEdge->face = newFace;
+		newEdge->orig = ogEdge.dest;
+		newEdge->dest = oppOrig;
+
+		// Set opposite edge
+		++newEdge;
+		newEdge->prev = offset;
+		newEdge->next = ogEdge.prev;
+		newEdge->twin = firstCapEdge + i;
+		newEdge->face = newFace;
+		newEdge->orig = oppOrig;
+		newEdge->dest = oppDest;
+		edges[newEdge->twin].twin = oppEdge; // Connect end cap edge to bridge
+
+		// Set incoming edge
+		++newEdge;
+		newEdge->prev = oppEdge;
+		newEdge->next = edgeId;
+		newEdge->twin = WrapSub(offset, 3, lastBridgeEdge, edgeStartIndex);
+		newEdge->face = newFace;
+		newEdge->orig = oppDest;
+		newEdge->dest = ogEdge.orig;
+
+		// Progress iteration
+		edgeId = next;
+		offset += 3;
+		newEdges += 3;
+	}
+
+	// Set edges of end cap face (connect them and set vertices)
+	for (uint i = firstCapEdge; i < totalEdges; ++i) {
+		HalfEdge& edge = edges[i];
+		HalfEdge& twin = edges[edge.twin];
+
+		edge.dest = twin.orig;
+		edge.orig = twin.dest;
+		edge.face = faceId;
+		edge.next = WrapInc(i, lastCapEdge, firstCapEdge);
+		edge.prev = WrapDec(i, lastCapEdge, firstCapEdge);
+	}
+
+	// faceId now refers to the new end cap face
+	faceEdges[faceId] = firstCapEdge;
 }
 
 void HalfEdgeMesh::bevel() {
