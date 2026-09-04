@@ -166,9 +166,9 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	// If there are no selected elements, do nothing.
 	if (selectionManager.getSelectedItems().empty()) { return false; }
-
+	
 	// If we are selecting objects, translate free instead of out.
-	if (activeElement == OBJECT) {
+	if (selectionManager.getActiveElement() == OBJECT) {
 		return translateFreeDrag(pos, uv);
 	}
 
@@ -177,7 +177,7 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	float scale = 0.01f * change.Dot(initialDragDir);
 
 	// If we are selecting vertices, do vertex translation.
-	if (activeElement == VERTEX) {
+	if (selectionManager.getActiveElement() == VERTEX) {
 		return translateOutVertexDrag(scale);
 	}
 
@@ -272,24 +272,45 @@ bool Viewport::translateOutVertexDrag(float scale) {
 }
 
 bool Viewport::translateAlongEdgeDrag(const Vec2f& pos) {
-	if (selectionIds.x != MAX_UINT)
+	// If the active element is not vertex, do nothing.
+	if (selectionManager.getActiveElement() != VERTEX)
 		return false;
 	
 	Vec3f f, u, r; 
 	modelingRenderer.GetCameraDirs(f, u, r);
 
-	if (firstDragCallback) {
-		Vec2f dragDir = Vec2f(initialDragDir.x, -initialDragDir.y); 
-		actionEdge = scene[selectionIds.y - 1]->PickOutgoingHalfEdge(selectionIds.z, dragDir, r, u); 
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Get the selected mesh.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		// Calculate the direction.
+		if (firstDragCallback) {
+			Vec2f dragDir = Vec2f(initialDragDir.x, -initialDragDir.y);
+			actionEdge = mesh->PickOutgoingHalfEdge(item.componentId, dragDir, r, u);
+		}
+
+		if (actionEdge == MAX_UINT)
+			return false;
+
+		// Translate the vertex along the edge.
+		Vec2f change = pos - mouseDragPrevPos;
+		float distance = 0.01f * change.Dot(initialDragDir);
+		mesh->TranslateVertexAlongEdge(item.componentId, actionEdge, distance);
+		transformed = true;
 	}
 
-	if (actionEdge == MAX_UINT)
-		return false; 
+	if (!transformed) {
+		return false;
+	}
 
-	Vec2f change = pos - mouseDragPrevPos; 
-	float distance = 0.01f * change.Dot(initialDragDir); 
-	scene[selectionIds.y - 1]->TranslateVertexAlongEdge(selectionIds.z, actionEdge, distance); 
-	modelingRenderer.UpdateRenderBuffers(scene); 
+	modelingRenderer.UpdateRenderBuffers(scene);
 	
 	if (primarySelectionCallback)
 		primarySelectionCallback(); 
@@ -343,7 +364,8 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		return false;
 	}
 
-	switch (activeElement) {
+	// Breaking stuff?
+	/*switch (activeElement) {
 	case OBJECT:
 		scene[selectionIds.x - 1]->TranslatePos(translation);
 		
@@ -356,7 +378,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
 		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
 		break;
-	}
+	}*/
 
 	modelingRenderer.UpdateRenderBuffers(scene);
 
@@ -480,7 +502,7 @@ void Viewport::mouseWheel() {
 void Viewport::keyDown() {
 	switch (Fl::event_key()) {
 	case 'e': 
-		activeElement = VERTEX; 
+		selectionManager.setActiveElement(VERTEX); 
 		activeAction = TRANSLATE_EDGE; 
 		break; 
 	case 's':
@@ -502,7 +524,7 @@ void Viewport::keyDown() {
 		duplicateElement(); 
 		break;
 	case 'v':
-		activeElement = EDGE;
+		selectionManager.setActiveElement(EDGE);
 		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
