@@ -71,28 +71,44 @@ public:
 		else {
 			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
 				
-			// If the item already exists, only remove it for additive selection.
-			// A normal click must leave the selection intact so the item can be
-			// dragged without first deselecting and reselecting it.
+			// If the item is already selected.
 			if (contained != selectedItems.end()) {
+				// If we are doing additive selection, remove the selected item from the list, retain the rest.
 				if (additive) {
 					selectedItems.erase(contained);
+				}
+				// Else we are doing single selection.
+				else {
+					// If we were previously doing additive selection, clear the list but retain this.
+					if (selectedItems.size() > 1) {
+						selectedItems.clear();
+						selectedItems.push_back(*item);
+						return true;
+					}
+					// Else we want to toggle selection.
+					else {
+						selectedItems.clear();
+					}
 				}
 				return false;
 			}
 			// Else the item is new, add it to the list.
 			else {
+				// If we are doing single selection, clear the old selections and put this one in.
 				if (!additive)
 				{
 					selectedItems.clear();
 					selectedItems.push_back(*item);
 					return true;
 				}
+				// Else We are doing multiple selections.
 				else {
+					// If there are too many selections, don't add to the list.
 					if (selectedItems.size() >= MAX_SELECTION_ITEMS) {
 						return false;
 					}
 
+					// Else, add it to the selection.
 					selectedItems.push_back(*item);
 					return true;
 				}

@@ -57,30 +57,54 @@ void FaceList::ProcessObjLine(const string& line) {
 	}
 
 	else if (tag == 'f' && tagged) {
-		Face face(MAX_UINT); 
 		const char* segStart = line.c_str(); 
-		char* segEnd; 
+		char* segEnd;
+		const uint start = static_cast<uint>(faceVerts.size()); 
 
-		for (int i = 0; i < 4; ++i) {
+		while (true) {
 			MoveTo(segStart, ' ');
-			
-			const char* scan = segStart; 
-			while (*scan == ' ' || *scan == '\t') { ++scan; }
-			if (*scan == '-') { ++skippedFaces; return; } // Negative (relative) indices unsupported
+			if (*segStart == '\0') break;
 
-			uint data = std::strtoul(segStart, &segEnd, 10); 
-			uint vertexId = data != 0 ? data - 1 : MAX_UINT; 
-			face[i] = vertexId; 
+			const char* scan = segStart;
+			while (*scan == ' ' || *scan == '\t') ++scan;
+			if (*scan == '\0') break;
+
+			// Negative indices are valid .obj, but not supported here
+			if (*scan == '-') {
+				faceVerts.resize(start);
+				++skippedFaces;
+				return;
+			}
+
+			uint data = std::strtoul(segStart, &segEnd, 10);
+			if (segStart == segEnd) break;
+
+			//.obj indices are one based, so 0 is malformed
+			if (data == 0) {
+				faceVerts.resize(start); 
+				++skippedFaces; 
+				return; 
+			}
+			
+			faceVerts.push_back(data - 1);
 			segStart = segEnd; 
 		}
 
-		faces.push_back(face); 
+		//Check because Vec4u dropped
+		if (faceVerts.size() - start < 3) {
+			faceVerts.resize(start); 
+			++skippedFaces; 
+			return; 
+		}
+
+		//face offset append
+		faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 	}
 
 	//"o"/"g" open a new group. Record where it starts so SplitObjects can cut here.
 	else if ((tag == 'o' || tag == 'g') && tagged) {
-		if (objectStarts.empty() || objectStarts.back() != faces.size())
-			objectStarts.push_back(static_cast<uint>(faces.size()));
+		if (objectStarts.empty() || objectStarts.back() != FaceCount())
+			objectStarts.push_back(FaceCount());
 	}
 }
 
@@ -89,20 +113,16 @@ void FaceList::PrintFaceComponent(uint x) const {
 	else { std::cout << x << " "; }
 }
 
-void FaceList::PrintFace(const Face& face) const {
+void FaceList::PrintFace(const FaceView& face) const {
 	std::cout << "f ";
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < face.count; ++i)
 		PrintFaceComponent(face[i]);
-	}
+
 	std::cout << std::endl;
 }
 
 const std::vector<Vec3f>& FaceList::Vertices() const {
 	return vertices;
-}
-
-const std::vector<Vec4<uint>>& FaceList::Faces() const {
-	return faces;
 }
 
 uint FaceList::SkippedFaces() const {
@@ -111,29 +131,23 @@ uint FaceList::SkippedFaces() const {
 
 std::vector<Vec3f>& FaceList::Vertices() { return vertices; }
 
-std::vector<Vec4<uint>>& FaceList::Faces() { return faces; }
 
 void FaceList::PrintContents() const {
 	for (const Vertex& vertex : vertices) {
 		std::cout << "v " << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
 	}
 
-	for (const Face& face : faces) {
-		PrintFace(face);
-	}
+	for (uint i = 0; i < FaceCount(); ++i)
+		PrintFace(GetFace(i)); 
 }
 
-/// <summary>
-///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
-///		face indices so it only carries the vertices its own faces use. A list with
-///		no group tags (any .stl, or a flat .obj) comes back as a single part.
-/// </summary>
+
 std::vector<FaceList> FaceList::SplitObjects() const {
 	// Turn the group markers into [begin, end) face ranges. Faces written before the
 	// first marker form their own leading part, and a list with no markers is one
 	// part covering every face.
 	std::vector<Vec2u> ranges;
-	const uint faceCount = static_cast<uint>(faces.size());
+	const uint faceCount = FaceCount();
 	uint prev = 0;
 
 	for (uint start : objectStarts) {
@@ -149,29 +163,36 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 
 	for (const Vec2u& range : ranges) {
 		FaceList part;
-		part.faces.reserve(range[1] - range[0]);
+		part.faceVerts.reserve(faceVerts.size()); 
+		part.faceStarts.reserve(range[1] - range[0]);
 
 		// .obj indices are file-global, so every part needs its own vertex numbering.
 		// Out-of-range indices are copied through untouched, leaving build() to reject them.
 		std::unordered_map<uint, uint> remap;
 
 		for (uint f = range[0]; f < range[1]; ++f) {
-			Face face = faces[f];
+			//Copy the whole face, no padding so MAX_UINT is out-of-range index
+			const uint begin = faceStarts[f], end = faceStarts[f + 1]; 
 
-			for (int i = 0; i < 4; ++i) {
-				const uint vertId = face[i];
-				if (vertId == MAX_UINT || vertId >= vertices.size()) { continue; }
+			for (uint k = begin; k < end; ++k) {
+				const uint vertId = faceVerts[k]; 
+				uint mapped = vertId; 
 
-				auto it = remap.find(vertId);
-				if (it == remap.end()) {
-					it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
-					part.vertices.push_back(vertices[vertId]);
+				if (vertId < vertices.size()) {
+					auto it = remap.find(vertId);
+					if (it == remap.end()) {
+						it = remap.emplace(vertId, static_cast<uint>(part.vertices.size())).first;
+						part.vertices.push_back(vertices[vertId]);
+					}
+
+					mapped = it->second; 
 				}
 
-				face[i] = it->second;
+				part.faceVerts.push_back(mapped);
 			}
-
-			part.faces.push_back(face);
+			
+			//offset push for face
+			part.faceStarts.push_back(static_cast<uint>(part.faceVerts.size())); 
 		}
 
 		parts.push_back(std::move(part));
@@ -260,9 +281,11 @@ bool FaceList::LoadSTL(const char* stl) {
 		return id;
 		};
 	
-	const size_t facesBefore = faces.size(); 
+	const size_t facesBefore = FaceCount(); 
 	if (isBinary) {
-		faces.reserve(faces.size() + numTriangles);
+		//3 indices per triangle, one offset per triangle
+		faceVerts.reserve(faceVerts.size() + numTriangles * 3);
+		faceStarts.reserve(faceStarts.size() + numTriangles); 
 
 		for (uint32_t i = 0; i < numTriangles; ++i) {
 			stlFile.seekg(12, std::ios::cur); // skip stored normal (we recompute it)
@@ -279,10 +302,11 @@ bool FaceList::LoadSTL(const char* stl) {
 			stlFile.seekg(2, std::ios::cur); // skip attribute byte count
 			if (!stlFile) return false; 
 			
-				faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+			faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3);
+			faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 		}
 
-		return faces.size() > facesBefore;
+		return FaceCount() > facesBefore;
 	}
 	else {
 		stlFile.close();
@@ -315,15 +339,46 @@ bool FaceList::LoadSTL(const char* stl) {
 			}
 			else if (line.substr(0, 7) == "endloop") {
 				if (loopVertCount == 3) {
-					faces.push_back(Face(triVerts[0], triVerts[1], triVerts[2], MAX_UINT));
+					faceVerts.insert(faceVerts.end(), triVerts, triVerts + 3);
+					faceStarts.push_back(static_cast<uint>(faceVerts.size())); 
 				}
 			}
 		}
 
-		return faces.size() > facesBefore;
+		return FaceCount() > facesBefore;
 	}
 }
 
+void HalfEdgeMeshBeveler::StartEdgeBevel(uint edgeId) {
+	elements[0] = edgeId;
+	elements[1] = mesh.edges[edgeId].twin;
+	mesh.BevelEdge(edgeId);
+
+	if (!buf) { buf = new Vec3f[8]; }
+
+	for (int i = 0; i < 2; ++i) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
+		Vec3f orig = mesh.vertPos[edge.orig];
+		Vec3f dest = mesh.vertPos[edge.dest];
+
+		buf[i * 2] = orig;
+		buf[i * 2 + 1] = dest;
+
+		buf[i * 2 + 4] = mesh.vertPos[mesh.edges[edge.prev].orig] - orig;
+		buf[i * 2 + 5] = mesh.vertPos[mesh.edges[edge.next].dest] - dest;
+	}
+}
+
+void HalfEdgeMeshBeveler::AdjustBevel(float bevelFactor) {
+	if (bevelFactor > 1.0f || bevelFactor < 0.0f) { return; }
+	for (int i = 0; i < 2; ++i) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
+
+		// New Vertex Position = Old Position + (Bevel Factor)(Translation)
+		mesh.vertPos[edge.orig] = buf[i * 2] + bevelFactor * buf[i * 2 + 4];
+		mesh.vertPos[edge.dest] = buf[i * 2 + 1] + bevelFactor * buf[i * 2 + 5];
+	}
+}
 
 // HalfEdgeMesh
 uint HalfEdgeMesh::NewFace(uint faceEdge) {
@@ -555,11 +610,11 @@ Vec3f HalfEdgeMesh::GetVertexNormal(uint vertId) {
 		seg1.Normalize();
 			
 		Vec3f normal = seg1.Cross(seg0);
-		std::cout << normal << std::endl;
-
+		
 		float weight = 1.0f - seg0.Dot(seg1);
 		normalSum += normal * weight;
 		weightSum += weight;
+
 		temp = adjVertPos;
 		next = edges[edge.twin].next;
 	} while (next != last);
@@ -592,6 +647,87 @@ void HalfEdgeMesh::TranslateVertexOut(uint vertId, float factor) {
 	TranslateVertex(vertId, factor * GetVertexNormal(vertId));
 }
 
+void HalfEdgeMesh::GetOutGoingHalfEdges(uint vertId, std::vector<uint>& halfEdges) const {
+	if (vertId >= vertEdge.size())
+		return;
+	
+	uint next = vertEdge[vertId];
+	
+	if (next == MAX_UINT)
+		return; 
+
+	uint last = next;
+	uint step = 0; 
+
+	do {
+		if (step >= edges.size())
+			break; 
+		
+		halfEdges.push_back(next); 
+		const HalfEdge& edge = edges[next];
+
+		next = edges[edge.twin].next;
+		++step; 
+	} while (next != last);
+}
+
+uint HalfEdgeMesh::PickOutgoingHalfEdge(uint vertId, const Vec2f& dragDir, const Vec3f& camRight, const Vec3f& camUp) const {
+	std::vector<uint> halfEdges; 
+	GetOutGoingHalfEdges(vertId, halfEdges);
+	
+	if (halfEdges.empty())
+		return MAX_UINT; 
+
+	Matrix3f transformCache = getTransform3x3(); 
+	uint best = MAX_UINT;
+	float bestScore = -2.0f; 
+	float epsilon = 1e-12f;
+
+	for (auto& candidate : halfEdges) {
+		Vec3f world = transformCache * GetHalfEdgeVector(candidate); 
+		Vec2f screen = Vec2f(world.Dot(camRight), world.Dot(camUp)); 
+		
+		if (screen.LengthSquared() < epsilon)
+			continue; 
+		
+		screen.Normalize();
+		//dragDir must be a unit length
+		float score = screen.Dot(dragDir); 
+
+		if (score > bestScore) {
+			bestScore = score;
+			best = candidate;
+		}
+	}
+
+	return best; 
+}
+
+Vec3f HalfEdgeMesh::GetHalfEdgeVector(uint hEdgeId) const {
+	if (hEdgeId >= edges.size())
+		return Vec3f(0.0f); 
+
+	const HalfEdge& edge = edges[hEdgeId]; 
+	return vertPos[edge.dest] - vertPos[edge.orig]; 
+}
+
+void HalfEdgeMesh::TranslateVertexAlongEdge(uint vertId, uint hEdgeId, float distance) {
+	if (hEdgeId >= edges.size())
+		return; 
+	
+	if (edges[hEdgeId].orig != vertId)
+		return; 
+	
+	Vec3f dir = GetHalfEdgeVector(hEdgeId); 
+
+	float epsilon = 1e-12f;
+	if (dir.LengthSquared() < epsilon)
+		return; 
+	
+	dir.Normalize(); 
+	TranslateVertex(vertId, dir * distance); 
+}
+
 bool HalfEdgeMesh::IsTriangle(uint faceId) const {
 	uint edge = faceEdges[faceId];
 	return edges[edge].prev == edges[edges[edge].next].next;
@@ -607,7 +743,7 @@ bool HalfEdgeMesh::IsNGon(uint faceId) const {
 }
 
 // Used ChatGPT for finding a good relative epsilon
-bool isConvex(const Vec2f& vert1, const Vec2f& vert2, const Vec2f& vert3) {
+inline bool isConvex(const Vec2f& vert1, const Vec2f& vert2, const Vec2f& vert3) {
 	Vec2f seg0 = vert1 - vert2;
 	Vec2f seg1 = vert3 - vert2;
 
@@ -651,6 +787,10 @@ void HalfEdgeMesh::ClipCorner(uint hEdge, uint& innerClipId, uint& outerClipId, 
 
 	edges[edge.next].prev = outerClipId;
 	edges[prev.prev].next = outerClipId;
+
+	if (faceEdges[edge.face] == hEdge) {
+		faceEdges[edge.face] = outerClipId;
+	}
 
 	edge.face = cornerFace;
 	edge.next = innerClipId;
@@ -715,10 +855,12 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangles) 
 		PolygonCorner* prev;
 	};
 
+	Vec3f normal = NewellNormal(faceId);
+	if (std::isnan(normal.x)) { return; }
+
 	int numVertices = FaceEdgeCount(faceId);
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -778,10 +920,12 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 		PolygonCorner* prev;
 	};
 
+	Vec3f normal = NewellNormal(faceId);
+	if (std::isnan(normal.x)) { return; }
+
 	int numVertices = FaceEdgeCount(faceId);
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -1159,8 +1303,10 @@ void HalfEdgeMesh::tesselate() {
 
 	// Split every edge into two
 	uint prevMeshEdgeCount = edges.size();
+
 	for (uint edgeId = 0; edgeId < prevMeshEdgeCount; ++edgeId) {
-		if (edges[edgeId].next < prevMeshEdgeCount) { // If edge hasn't already been refined
+		const HalfEdge& edge = edges[edgeId];
+		if (edge.next < prevMeshEdgeCount) { // If edge hasn't already been refined
 			refineEdge(edgeId);
 		}
 	}
@@ -1168,77 +1314,39 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
-		if (FaceEdgeCount(faceId) > 8) { // Scrappy/easy n-gon fix for now. Improve code later.
+		int faceEdgeCount = FaceEdgeCount(faceId);
+
+		if (faceEdgeCount > 8) {
 			TriangulateFace(faceId);
 			continue;
 		}
 
 		uint faceEdgeId = faceEdges[faceId];
-		HalfEdge* faceEdge = &edges[faceEdgeId];
 
-		uint next = faceEdge->next;
-		int faceEdgeCount = 1; // Refers to edge count before splitting
+		if (faceEdgeCount == 6) { // Triangle
+			uint edgeId = edges[faceEdgeId].next;
+			uint innerClip, newFace;
 
-		// Iterate over each corner. Each one besides the first will be associated with a new face.
-		while (next != faceEdge->prev) {
-			HalfEdge& cornerEdge1 = edges[next];
-			HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
-
-			uint faceId = NewFace(next);
-			cornerEdge1.face = faceId;
-			cornerEdge2.face = faceId;
-
-			++faceEdgeCount;
-			next = cornerEdge2.next;
-		}
-
-		if (faceEdgeCount == 3) {
-			// Triangle
-
-			// Clip Each Corner
-			for (int i = 0; i < 3; ++i) {
-				uint newEdgeId;
-				HalfEdge& newEdge = NewEdge(newEdgeId);
-
-				faceEdge = &edges[faceEdgeId]; // Update reference since it could be invalidated
-				HalfEdge& faceEdgePrev = edges[faceEdge->prev];
-				uint nextCornerEdge = edges[faceEdge->next].next;
-
-				newEdge.orig = faceEdge->dest;
-				newEdge.dest = faceEdgePrev.orig;
-				newEdge.face = faceEdge->face;
-				newEdge.next = faceEdge->prev;
-				newEdge.prev = faceEdgeId;
-
-				faceEdge->next = newEdgeId;
-				faceEdgePrev.prev = newEdgeId;
-
-				faceEdgeId = nextCornerEdge;
-				faceEdge = &edges[faceEdgeId];
-			}
-
-			uint centerFaceId = faceEdges.size();
-			uint centerFaceFirstEdgeId = edges.size();
-			uint centerFaceLastEdgeId = centerFaceFirstEdgeId + 2;
-			faceEdges.push_back(centerFaceFirstEdgeId);
-
-			for (uint i = centerFaceFirstEdgeId - 3; i < centerFaceFirstEdgeId; ++i) {
-				uint twinId = NewEdge();
-
-				HalfEdge& edge = edges[i];
-				edge.twin = twinId;
-
-				HalfEdge& twin = edges[twinId];
-				twin.twin = i;
-				twin.orig = edge.dest;
-				twin.dest = edge.orig;
-				twin.face = centerFaceId;
-				twin.next = WrapInc(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
-				twin.prev = WrapDec(twinId, centerFaceLastEdgeId, centerFaceFirstEdgeId);
-			}
+			ClipCorner(edgeId, innerClip, edgeId, newFace);
+			edgeId = edges[edgeId].next;
+			ClipCorner(edgeId, innerClip, edgeId, newFace);
 		}
 		else {
 			// Quad
+			HalfEdge* faceEdge = &edges[faceEdgeId];
+			uint next = faceEdge->next;
+			// Iterate over each corner. Each one besides the first will be associated with a new face.
+			while (next != faceEdge->prev) {
+				HalfEdge& cornerEdge1 = edges[next];
+				HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
+
+				uint faceId = NewFace(next);
+				cornerEdge1.face = faceId;
+				cornerEdge2.face = faceId;
+
+				next = cornerEdge2.next;
+			}
+
 			Vec3f positionSum = vertPos[faceEdge->orig];
 			next = faceEdge->next;
 			for (uint i = 0; i < 3; ++i) {
@@ -1292,12 +1400,262 @@ void HalfEdgeMesh::tesselate() {
 	return;
 }
 
-void HalfEdgeMesh::extrude() {
+void HalfEdgeMesh::Extrude(uint faceId) {
+	uint faceEdgeCount = FaceEdgeCount(faceId);
+	uint edgesToAdd = faceEdgeCount * 4; // Number of new edges
 
+	uint edgeStartIndex = edges.size(); // Index of first new edge
+	uint vertStartIndex = vertPos.size(); // Index of first new vertex
+
+	edges.insert(edges.end(), edgesToAdd, HalfEdge()); // Insert new edges
+
+	// Store certain edge boundaries related to the new end cap face
+	// and the bridge that connects this to the old face's edge loop
+	uint totalEdges = edges.size();
+	uint lastCapEdge = totalEdges - 1;
+	uint firstCapEdge = totalEdges - faceEdgeCount;
+	uint lastBridgeEdge = firstCapEdge - 1;
+
+	// First iteration state
+	uint edgeId = faceEdges[faceId];
+	uint offset = edgeStartIndex;
+	HalfEdge* newEdges = edges.data() + offset;
+
+	// For each edge in the old face's edge loop, create a bridge face (always a quad)
+	for (uint i = 0; i < faceEdgeCount; ++i) {
+		uint newFace = NewFace(edgeId);
+
+		// ogEdge refers to the current edge in the old face's edge loop
+		HalfEdge& ogEdge = edges[edgeId];
+		uint next = ogEdge.next;
+
+		ogEdge.next = offset;
+		ogEdge.prev = offset + 2;
+		ogEdge.face = newFace;
+
+		// oppEdge refers to the edge opposite of ogEdge in the bridge face
+		uint oppEdge = offset + 1;
+		uint oppOrig = NewVertex(vertPos[ogEdge.dest], oppEdge);
+		uint oppDest = vertStartIndex + WrapDec(i, faceEdgeCount - 1);
+
+		// Set outgoing edge
+		HalfEdge* newEdge = newEdges;
+		newEdge->prev = edgeId;
+		newEdge->next = oppEdge;
+		newEdge->twin = WrapAdd(offset, 5, lastBridgeEdge, edgeStartIndex);
+		newEdge->face = newFace;
+		newEdge->orig = ogEdge.dest;
+		newEdge->dest = oppOrig;
+
+		// Set opposite edge
+		++newEdge;
+		newEdge->prev = offset;
+		newEdge->next = ogEdge.prev;
+		newEdge->twin = firstCapEdge + i;
+		newEdge->face = newFace;
+		newEdge->orig = oppOrig;
+		newEdge->dest = oppDest;
+		edges[newEdge->twin].twin = oppEdge; // Connect end cap edge to bridge
+
+		// Set incoming edge
+		++newEdge;
+		newEdge->prev = oppEdge;
+		newEdge->next = edgeId;
+		newEdge->twin = WrapSub(offset, 3, lastBridgeEdge, edgeStartIndex);
+		newEdge->face = newFace;
+		newEdge->orig = oppDest;
+		newEdge->dest = ogEdge.orig;
+
+		// Progress iteration
+		edgeId = next;
+		offset += 3;
+		newEdges += 3;
+	}
+
+	// Set edges of end cap face (connect them and set vertices)
+	for (uint i = firstCapEdge; i < totalEdges; ++i) {
+		HalfEdge& edge = edges[i];
+		HalfEdge& twin = edges[edge.twin];
+
+		edge.dest = twin.orig;
+		edge.orig = twin.dest;
+		edge.face = faceId;
+		edge.next = WrapInc(i, lastCapEdge, firstCapEdge);
+		edge.prev = WrapDec(i, lastCapEdge, firstCapEdge);
+	}
+
+	// faceId now refers to the new end cap face
+	faceEdges[faceId] = firstCapEdge;
 }
 
-void HalfEdgeMesh::bevel() {
+void HalfEdgeMesh::TwinsShareAdjFace(uint edgeId, bool shareAdjFace[2]) const {
+	const HalfEdge& e1 = edges[edgeId];
+	const HalfEdge& e2 = edges[e1.twin];
+	
+	shareAdjFace[0] = edges[edges[e1.prev].twin].face == edges[edges[e2.next].twin].face;
+	shareAdjFace[1] = edges[edges[e2.prev].twin].face == edges[edges[e1.next].twin].face;
+}
 
+void HalfEdgeMesh::BevelHalfEdgeCase1(HalfEdge& e1, HalfEdge& e2) {
+	HalfEdge& e2Next = edges[e2.next];
+	HalfEdge& e2NextTwin = edges[e2Next.twin];
+
+	// Insert new edge
+	uint newEdgeTwinId = edges[e1.twin].next;
+	uint newEdgeId = edges[newEdgeTwinId].twin;
+	uint newVert = edges[newEdgeTwinId].dest;
+
+	HalfEdge& newEdge = edges[newEdgeId];
+	newEdge.twin = newEdgeTwinId;
+	newEdge.next = e2NextTwin.next;
+	newEdge.prev = e2Next.twin;
+	newEdge.face = e2NextTwin.face;
+	newEdge.orig = newVert;
+	newEdge.dest = e1.orig;
+
+	edges[e2NextTwin.next].prev = newEdgeId;
+	e2NextTwin.next = newEdgeId;
+
+	// Incorporate new vertex
+	e2.dest = newVert;
+	e2Next.orig = newVert;
+	e2NextTwin.dest = newVert;
+}
+
+void HalfEdgeMesh::BevelHalfEdgeCase2(HalfEdge& e1, HalfEdge& e2) {
+	uint bevelFaceEdgeId = edges[e1.twin].next;
+	HalfEdge& bevelFaceEdge = edges[bevelFaceEdgeId];
+
+	uint ogVert = e1.orig;
+
+	uint newEdge1Id = bevelFaceEdge.twin; // base for all new edges
+	uint triFaceId = NewFace(newEdge1Id);
+	
+	// Set first triangle edge
+	HalfEdge& triEdge1 = edges[newEdge1Id];
+	triEdge1.twin = bevelFaceEdgeId;
+	triEdge1.prev = newEdge1Id + 2;
+	triEdge1.next = newEdge1Id + 1;
+	triEdge1.dest = bevelFaceEdge.orig; // New Vertex 1
+	triEdge1.orig = bevelFaceEdge.dest; // New Vertex 2
+	triEdge1.face = triFaceId;
+
+	// Set second triangle edge
+	HalfEdge& triEdge2 = edges[triEdge1.next];
+	triEdge2.twin = newEdge1Id + 3;
+	triEdge2.prev = newEdge1Id;
+	triEdge2.next = triEdge1.prev;
+	triEdge2.orig = triEdge1.dest;
+	triEdge2.dest = ogVert;
+	triEdge2.face = triFaceId;
+
+	// Set third triangle edge
+	HalfEdge& triEdge3 = edges[triEdge2.next];
+	triEdge3.twin = newEdge1Id + 4;
+	triEdge3.prev = triEdge1.next;
+	triEdge3.next = newEdge1Id;
+	triEdge3.dest = triEdge1.orig;
+	triEdge3.orig = ogVert;
+	triEdge3.face = triFaceId;
+
+	// Incorporate new vertex 1
+	e1.orig = bevelFaceEdge.orig; // New Vertex 1
+	edges[e1.prev].dest = e1.orig;
+
+	uint e1PrevTwinId = edges[e1.prev].twin;
+	HalfEdge& e1PrevTwin = edges[e1PrevTwinId];
+	e1PrevTwin.orig = e1.orig;
+	
+	// Add first triangle edge twin into e1.prev's adjacent face
+	HalfEdge* triEdgeTwin = edges.data() + triEdge2.twin;
+	triEdgeTwin->next = e1PrevTwinId;
+	triEdgeTwin->prev = e1PrevTwin.prev;
+	triEdgeTwin->face = e1PrevTwin.face;
+	triEdgeTwin->orig = ogVert;
+	triEdgeTwin->dest = e1PrevTwin.orig;
+	triEdgeTwin->twin = triEdge1.next;
+
+	edges[e1PrevTwin.prev].next = triEdge2.twin;
+	e1PrevTwin.prev = triEdge2.twin;
+
+	// Incorporate new vertex 2
+	e2.dest = bevelFaceEdge.dest; // New Vertex 2
+	edges[e2.next].orig = e2.dest;
+
+	uint e2NextTwinId = edges[e2.next].twin;
+	HalfEdge& e2NextTwin = edges[e2NextTwinId];
+	e2NextTwin.dest = e2.dest;
+
+	// Add second triangle edge twin into e2.next's adjacent face
+	++triEdgeTwin;
+	triEdgeTwin->prev = e2NextTwinId;
+	triEdgeTwin->next = e2NextTwin.next;
+	triEdgeTwin->face = e2NextTwin.face;
+	triEdgeTwin->dest = ogVert;
+	triEdgeTwin->orig = e2NextTwin.dest;
+	triEdgeTwin->twin = triEdge2.next;
+
+	edges[e2NextTwin.next].prev = triEdge3.twin;
+	e2NextTwin.next = triEdge3.twin;
+}
+
+void HalfEdgeMesh::BevelEdge(uint edgeId) {
+	bool shareAdjFace[2];
+	TwinsShareAdjFace(edgeId, shareAdjFace);
+
+	uint newEdgeCount = 6;
+	for (int i = 0; i < 2; ++i) { newEdgeCount += int(!shareAdjFace[i]) * 4; }
+	
+	uint firstNewEdge = edges.size();
+	edges.insert(edges.end(), newEdgeCount, HalfEdge());
+	HalfEdge* newEdgeOffset = edges.data() + firstNewEdge;
+
+	// Build new face
+	uint e1Id = edgeId;
+	HalfEdge& e1 = edges[e1Id];
+
+	uint e2Id = e1.twin;
+	HalfEdge& e2 = edges[e2Id];
+
+	e1.twin = firstNewEdge;
+	e2.twin = firstNewEdge + 2;
+
+	newEdgeOffset[0].twin = e1Id;
+	newEdgeOffset[1].twin = firstNewEdge + 4;
+	newEdgeOffset[2].twin = e2Id;
+
+	uint vertices[4];
+	
+	if (shareAdjFace[0]) { 
+		vertices[0] = e1.orig;
+		newEdgeOffset[3].twin = firstNewEdge + 5;
+	}
+	else { 
+		vertices[0] = NewVertex(vertPos[e1.orig], e1Id);
+		newEdgeOffset[3].twin = firstNewEdge + 9;
+	}
+	vertices[1] = NewVertex(vertPos[e2.dest], e2.twin);
+
+	if (shareAdjFace[1]) { vertices[2] = e2.orig; }
+	else { vertices[2] = NewVertex(vertPos[e2.orig], e2Id); }
+	vertices[3] = NewVertex(vertPos[e1.dest], e1.twin);
+
+	uint newFace = NewFace(e1.twin);
+	for (int i = 0; i < 4; ++i) {
+		HalfEdge& newEdge = newEdgeOffset[i];
+		newEdge.prev = firstNewEdge + WrapDec(i, 3);
+		newEdge.next = firstNewEdge + WrapInc(i, 3);
+		newEdge.dest = vertices[i];
+		newEdge.orig = vertices[WrapDec(i, 3)];
+		newEdge.face = newFace;
+	}
+
+	// Incorporate face into adjacent topology (may build additional faces)
+	for (int i = 0; i < 2; ++i) {
+		if (shareAdjFace[i])	{ BevelHalfEdgeCase1(edges[e1Id], edges[e2Id]); }
+		else					{ BevelHalfEdgeCase2(edges[e1Id], edges[e2Id]); }
+		std::swap(e1Id, e2Id);
+	}
 }
 
 void HalfEdgeMesh::subdivide() {
@@ -1353,14 +1711,14 @@ ImportReport HalfEdgeMesh::load(const char* file) {
 	if (!success) { report.status = ImportReport::FileError; return report; }
 
 	vertPos.swap(faceList.Vertices()); // constant time
-	if (!build(faceList.Faces(), basicVertexCountFunc)) { report.status = ImportReport::InvalidTopology; }
+	if (!build(faceList.Polygons(), polyVertexCount)) { report.status = ImportReport::InvalidTopology; }
 
 	return report;
 }
 
 bool HalfEdgeMesh::load(const FaceList& faceList) {
 	vertPos = faceList.Vertices();
-	return build(faceList.Faces(), basicVertexCountFunc);
+	return build(faceList.Polygons(), polyVertexCount);
 }
 
 ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
@@ -1386,7 +1744,7 @@ ImportReport loadMeshes(const char* file, std::vector<HalfEdgeMesh>& meshes) {
 	// All or nothing: one rejected part rejects the file, so a failed import never
 	// leaves half a model behind.
 	for (const FaceList& part : parts) {
-		if (part.Faces().empty()) { continue; } // Vertices with no faces, nothing to build
+		if (part.FaceCount() == 0) { continue; } // Vertices with no faces, nothing to build
 
 		built.emplace_back();
 		if (!built.back().load(part)) { report.status = ImportReport::InvalidTopology; return report; }
@@ -1475,19 +1833,22 @@ void HalfEdgeMesh::appendStlTriangles(std::vector<Triangle>& tris) const {
 	worldPos.reserve(vertPos.size()); 
 	GetWorldVertexPositions(worldPos); 
 
+	std::vector<Vec3u> triangles; 
+	triangles.reserve(16); //Reused across faces below, so this allocates once
+
 	uint faceCount = faceEdges.size(); 
 	for (uint faceId = 0; faceId < faceCount; ++faceId) {
-		uint verts[4];
-		GetQuadVertices(faceId, verts); 
+		triangles.clear(); //Keeps capactiy
+		GetTriangulation(faceId, triangles); 
 
-		Vec3f v0 = worldPos[verts[0]]; 
-		Vec3f v1 = worldPos[verts[1]]; 
-		Vec3f v2 = worldPos[verts[2]]; 
-		
-		tris.push_back({ v0, v1, v2 }); 
+		for (const Vec3u& t : triangles) {
+			const Vec3f& v0 = worldPos[t[0]]; 
+			const Vec3f& v1 = worldPos[t[1]]; 
+			const Vec3f& v2 = worldPos[t[2]];
 
-		if (verts[3] != MAX_UINT)
-			tris.push_back({ v0, v2, worldPos[verts[3]] }); 
+			if (IsDegenerateFace(v0, v1, v2)) continue; 
+			tris.push_back({ v0, v1, v2 }); 
+		}
 	}
 }
 

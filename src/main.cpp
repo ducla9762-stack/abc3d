@@ -259,7 +259,7 @@ void extrudeCallback(Fl_Widget* w, void* data) {
 	extrudeToolPanel->show();
 
 	activeTool = EXTRUDE_TOOL;
-	viewport->setActiveAction(TRANSLATE_FREE);
+	viewport->setActiveAction(EXTRUDE);
 }
 
 void subdivisionPanelCallback(Fl_Widget* w, void*) {

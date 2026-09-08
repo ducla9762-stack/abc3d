@@ -95,6 +95,21 @@ void Viewport::mouseDrag() {
 
 	if (change.y == 0 && change.x == 0) return;
 
+	// A middle-button drag always rotates the camera and must not invoke the
+	// active modeling action, even when an item is selected.
+	if (Fl::event_button2()) {
+		camPos.x -= change.x;
+		camPos.y += change.y;
+		clamp(camPos.y, 1.0f, 179.0f);
+		activeRenderer->SetCamera(sphericalToCartesian(camPos));
+
+		firstDragCallback = false;
+		mouseDragPrevPos = pos;
+		mouseDragPrevPosUV = uv;
+		redraw();
+		return;
+	}
+
 	bool camera = true;
 
 	// Transformation drag depending on action.
@@ -104,13 +119,20 @@ void Viewport::mouseDrag() {
 	else if (activeAction == TRANSLATE_FREE) {
 		camera = !translateFreeDrag(pos, uv);
 	}
+	else if (activeAction == TRANSLATE_EDGE) {
+		camera = !translateAlongEdgeDrag(pos);
+	}
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
 	}
 	else if (activeAction == ROTATE) {
 		camera = !rotateDrag(pos);
 	}
-	
+	else if (activeAction == EXTRUDE) {
+		camera = !extrudeDrag(pos, uv);
+	}
+
+	// Comment out to disable LMB drag camera rotation.
 	// Otherwise, we rotate the camera position.
 	if (camera) {
 		camPos.x -= change.x;
@@ -118,7 +140,7 @@ void Viewport::mouseDrag() {
 		clamp(camPos.y, 1.0f, 179.0f);
 		activeRenderer->SetCamera(sphericalToCartesian(camPos));
 	}
-
+	
 	firstDragCallback = false;
 	mouseDragPrevPos = pos;
 	mouseDragPrevPosUV = uv;
@@ -128,7 +150,7 @@ void Viewport::mouseDrag() {
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	// If the action action is not scale, and there are no selections, do nothing.
 	// Todo: edge and face scale.
-	if (selectionManager.getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
+	if (getActiveElement() != OBJECT || activeAction != SCALE || selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
@@ -163,9 +185,9 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	// If there are no selected elements, do nothing.
 	if (selectionManager.getSelectedItems().empty()) { return false; }
-
+	
 	// If we are selecting objects, translate free instead of out.
-	if (activeElement == OBJECT) {
+	if (getActiveElement() == OBJECT) {
 		return translateFreeDrag(pos, uv);
 	}
 
@@ -174,7 +196,7 @@ bool Viewport::translateOutDrag(const Vec2f& pos, const Vec2f& uv) {
 	float scale = 0.01f * change.Dot(initialDragDir);
 
 	// If we are selecting vertices, do vertex translation.
-	if (activeElement == VERTEX) {
+	if (getActiveElement() == VERTEX) {
 		return translateOutVertexDrag(scale);
 	}
 
@@ -268,6 +290,53 @@ bool Viewport::translateOutVertexDrag(float scale) {
 	return true;
 }
 
+bool Viewport::translateAlongEdgeDrag(const Vec2f& pos) {
+	// If the active element is not vertex, do nothing.
+	if (getActiveElement() != VERTEX)
+		return false;
+	
+	Vec3f f, u, r; 
+	modelingRenderer.GetCameraDirs(f, u, r);
+
+	// Use unordered set for fast lookup.
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Get the selected mesh.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		// Calculate the direction.
+		if (firstDragCallback) {
+			Vec2f dragDir = Vec2f(initialDragDir.x, -initialDragDir.y);
+			actionEdge = mesh->PickOutgoingHalfEdge(item.componentId, dragDir, r, u);
+		}
+
+		if (actionEdge == MAX_UINT)
+			return false;
+
+		// Translate the vertex along the edge.
+		Vec2f change = pos - mouseDragPrevPos;
+		float distance = 0.01f * change.Dot(initialDragDir);
+		mesh->TranslateVertexAlongEdge(item.componentId, actionEdge, distance);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	
+	if (primarySelectionCallback)
+		primarySelectionCallback(); 
+	
+	return true; 
+}
+
 bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	Vec3f f, u, r;
 	modelingRenderer.GetCameraDirs(f, u, r);
@@ -291,8 +360,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		switch (item.type) {
 		case OBJECT:
 			if (transformedObjects.insert(item.meshId).second) {
-				//mesh->pos += translation;
-				mesh->Pos(translation);
+				mesh->TranslatePos(translation);
 				transformed = true;
 			}
 			break;
@@ -315,7 +383,8 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		return false;
 	}
 
-	switch (activeElement) {
+	// Breaking stuff?
+	/*switch (activeElement) {
 	case OBJECT:
 		scene[selectionIds.x - 1]->TranslatePos(translation);
 		
@@ -328,7 +397,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 		translation = scene[selectionIds.x - 1]->WorldDirToLocalDir(translation);
 		scene[selectionIds.x - 1]->TranslateFace(selectionIds.y, translation);
 		break;
-	}
+	}*/
 
 	modelingRenderer.UpdateRenderBuffers(scene);
 
@@ -397,7 +466,15 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 }
 
 int Viewport::mousePush() {
-	// For now, we ignore right mouse button events.
+	// Middle mouse starts a camera drag without changing the selection.
+	if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+		mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+		mouseDragPrevPos = mouseDragStartPos;
+		firstDragCallback = false;
+		return 1;
+	}
+
+	// For now, we ignore other non-left mouse button events.
 	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
 	// Get position of mouse press.
@@ -405,7 +482,7 @@ int Viewport::mousePush() {
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
 	// Get the selection ids at this position.
-	selectionIds = modelingRenderer.SelectionIds(x, y);
+	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// Create a selection item to send to the selection manager.
 	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
@@ -435,6 +512,7 @@ int Viewport::mousePush() {
 	mouseDragPrevPosUV = mouseDragStartPosUV;
 	firstDragCallback = true;
 	//redraw();
+	return 1;
 }
 
 void Viewport::mouseWheel() {
@@ -450,6 +528,10 @@ void Viewport::mouseWheel() {
 
 void Viewport::keyDown() {
 	switch (Fl::event_key()) {
+	case 'e': 
+		selectionManager.setActiveElement(VERTEX); 
+		activeAction = TRANSLATE_EDGE; 
+		break; 
 	case 's':
 		subdivision();
 		break;
@@ -469,7 +551,7 @@ void Viewport::keyDown() {
 		duplicateElement(); 
 		break;
 	case 'v':
-		activeElement = EDGE;
+		selectionManager.setActiveElement(EDGE);
 		activeAction = TRANSLATE_OUT;
 		break;
 	case FL_Control_L:
@@ -494,7 +576,7 @@ void Viewport::keyUp() {
 
 std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 {
-	switch (selectionManager.getActiveElement()) {
+	switch (getActiveElement()) {
 	case OBJECT:
 		// Normal hit.
 		if (ids.x != 0 && ids.x != MAX_UINT) {
@@ -559,6 +641,12 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+
+	//scene[0]->Extrude(5);
+	//scene[0]->TranslateFace(5, scene[0]->GetFaceNormal(5));
+	//HalfEdgeMeshBeveler beveler(*scene[0]);
+	//beveler.StartEdgeBevel(17);
+	//beveler.AdjustBevel(0.5f);
 }
 
 float Viewport::getScale(int component, float scale) {
@@ -601,8 +689,58 @@ void Viewport::bevel() {
 	// todo
 }
 
-void Viewport::extrude() {
-	// todo
+bool Viewport::extrudeDrag(const Vec2f& pos, const Vec2f& uv) {
+	// Extrusion only works on selected faces.
+	if (selectionManager.getSelectedItems().empty() || getActiveElement() != FACE) { return false; }
+
+	// Project this mouse movement onto the initial drag direction.
+	Vec2f change = pos - mouseDragPrevPos;
+	float scale = 0.01f * change.Dot(initialDragDir);
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	// Capture the face normals before changing. Extrude() replaces
+	// the selected face's edge loop with the new cap, so the same face id can be
+	// translated immediately after the extrusion.
+	if (firstDragCallback) {
+		dragActionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.type != FACE || item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			dragActionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+		}
+	}
+
+	bool transformed = false;
+	for (size_t i = 0; i < selectedItems.size(); ++i) {
+		const SelectionItem& item = selectedItems[i];
+		if (item.type != FACE || item.meshId >= scene.MeshCount() ||
+			i >= dragActionDirs.size()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		if (firstDragCallback) {
+			mesh->Extrude(item.componentId);
+		}
+
+		// Extrude() creates the bridge and cap at the original position. Move
+		// that cap to make the extrusion visible and interactive.
+		mesh->TranslateFace(item.componentId, dragActionDirs[i] * scale);
+		transformed = true;
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
+	if (primarySelectionCallback) { primarySelectionCallback(); }
+	modelingRenderer.UpdateRenderBuffers(scene);
+
+	return true;
 }
 
 void Viewport::subdivision() {
@@ -934,7 +1072,6 @@ Action Viewport::getActiveAction() { return activeAction; }
 void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 
 void Viewport::setActiveElement(Element element) { 
-	activeElement = element;
 	selectionManager.setActiveElement(element);
 	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
 	if (primarySelectionCallback) {
