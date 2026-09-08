@@ -485,10 +485,11 @@ int Viewport::mousePush() {
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
 	// If the selection is an arrow.
-	if (selectionIds.x == 0xFFFFFFFEu) {
+	if (selectionIds.x == ARROW_IDENTIFIER) {
 		// Handle Arrow Selection.
-		std::cout << "Arrow:" << selectionIds.y << ", " << selectionIds.z << std::endl;
+		std::cout << "Arrow: " << selectionIds.y << ", " << selectionIds.z << std::endl;
 	}
+	// Else process like any other selection.
 	else {
 		// Create a selection item to send to the selection manager.
 		std::optional<SelectionItem> item = createSelectionItem(selectionIds);

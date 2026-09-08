@@ -80,6 +80,12 @@ public:
 	/// <param name="arrows">List of arrows</param>
 	/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
 	void SetArrows(const std::vector<Arrow>& arrows, GLenum usage = GL_STATIC_DRAW);
+
+	/// <summary>
+	/// Creates a vector of arrows to be drawn.
+	/// </summary>
+	/// <returns> Arrows to draw. </returns>
+	std::vector<Arrow> CreateArrows();
 };
 
 class ModelingRenderer : public Renderer {

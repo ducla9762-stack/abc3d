@@ -123,15 +123,15 @@ bool ModelingRenderer::Initialize() {
 
 	// Initialize arrow renderer
 	arrowRenderer.Initialize();
-	std::vector<ArrowRenderer::Arrow> arrows;
-	arrows.emplace_back();
-	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
-	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
-	arrows.back().length = 10.0f;
-	arrows.back().radius = 0.25;
-	arrows.back().tipHeight = 2.0f;
-	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
-	arrows.back().ids = Vec2u(0, 0);
+	std::vector<ArrowRenderer::Arrow> arrows = arrowRenderer.CreateArrows();
+	//arrows.emplace_back();
+	//arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	//arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	//arrows.back().length = 10.0f;
+	//arrows.back().radius = 0.25;
+	//arrows.back().tipHeight = 2.0f;
+	//arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
+	//arrows.back().ids = Vec2u(0, 0);
 	arrowRenderer.SetArrows(arrows);
 
 	// Set clear color & blend function
@@ -475,7 +475,7 @@ bool ArrowRenderer::Initialize() {
 	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, radius));
 	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, tipHeight));
 	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, color));
-	glVertexAttribPointer(7, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
+	glVertexAttribIPointer(7, 2, GL_UNSIGNED_INT, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
 
 	for (int i = 1; i < 8; ++i) {
 		glEnableVertexAttribArray(i);
@@ -489,6 +489,39 @@ void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
 	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Arrow) * arrows.size(), arrows.data(), usage);
 	instanceCount = arrows.size();
+}
+
+std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows() {
+	std::vector<ArrowRenderer::Arrow> arrows;
+	// Y (up) - Blue
+	arrows.emplace_back();
+	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().length = 10.0f;
+	arrows.back().radius = 0.25;
+	arrows.back().tipHeight = 2.0f;
+	arrows.back().color = Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().ids = Vec2u(0, 0);
+	// X - Green
+	arrows.emplace_back();
+	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	arrows.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().length = 10.0f;
+	arrows.back().radius = 0.25;
+	arrows.back().tipHeight = 2.0f;
+	arrows.back().color = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().ids = Vec2u(1, 0);
+	// Z - Red
+	arrows.emplace_back();
+	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	arrows.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().length = 10.0f;
+	arrows.back().radius = 0.25;
+	arrows.back().tipHeight = 2.0f;
+	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().ids = Vec2u(2, 0);
+
+	return arrows;
 }
 
 void ArrowRenderer::Draw() {

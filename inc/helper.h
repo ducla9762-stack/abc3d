@@ -24,6 +24,7 @@ typedef Vec4<int> Vec4i;
 typedef Vec4<uint> Vec4u;
 
 #define MAX_UINT std::numeric_limits<uint>::max()
+#define ARROW_IDENTIFIER std::numeric_limits<uint>::max() - 1
 
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
