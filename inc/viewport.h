@@ -84,15 +84,56 @@ class Viewport : public Fl_Gl_Window {
 	/// </summary>
 	void mouseDrag();
 
+	/// <summary>
+	/// Translates the selected elements out to pos.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="uv"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
+
+	/// <summary>
+	/// Translates selected elements along an edge to pos.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateAlongEdgeDrag(const Vec2f& pos); 
+
+	/// <summary>
+	/// Translates the selected vertices out.
+	/// </summary>
+	/// <param name="scale"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateOutVertexDrag(float scale);
 
+	/// <summary>
+	/// Translates selected elements in free mode.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="uv"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
 
+	/// <summary>
+	/// Uniformly scales selected elements.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if scale occurred. </returns>
 	bool uniformScaleDrag(const Vec2f& pos);
 
+	/// <summary>
+	/// Rotates selected elements.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if rotation occurred. </returns>
 	bool rotateDrag(const Vec2f& pos);
+	
+	/// <summary>
+	/// Determines what to do when an arrow is dragged.
+	/// </summary>
+	/// <param name="ids"> The arrow selection ids. </param>
+	/// <returns> True if the arrows were handled. </returns>
+	bool arrowDrag(Vec2u ids);
 
 	/// <summary>
 	/// Logic executed on a mouse button press event.
@@ -221,17 +262,6 @@ public:
 	/// Duplicates all selected meshes.
 	/// </summary>
 	void duplicateElement();
-
-	/// <summary>
-	/// Set selection status of mesh at id.
-	/// </summary>
-	/// <param name="id"> id of mesh in scene. </param>
-	void selectMesh(uint id);
-
-	/// <summary>
-	/// Deselect all meshes in scene.
-	/// </summary>
-	void deselectMeshes();
 
 	/// <summary>
 	/// Set the rotation of component of mesh to angle.

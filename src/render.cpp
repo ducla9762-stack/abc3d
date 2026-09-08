@@ -493,16 +493,8 @@ void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
 
 std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows() {
 	std::vector<ArrowRenderer::Arrow> arrows;
-	// Y (up) - Blue
-	arrows.emplace_back();
-	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
-	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
-	arrows.back().length = 10.0f;
-	arrows.back().radius = 0.25;
-	arrows.back().tipHeight = 2.0f;
-	arrows.back().color = Vec3f(0.0f, 0.0f, 1.0f);
-	arrows.back().ids = Vec2u(0, 0);
-	// X - Green
+	// Translation, ID = 0.
+	// X - Green, Sub-ID = 0
 	arrows.emplace_back();
 	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
 	arrows.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
@@ -510,8 +502,17 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows() {
 	arrows.back().radius = 0.25;
 	arrows.back().tipHeight = 2.0f;
 	arrows.back().color = Vec3f(0.0f, 1.0f, 0.0f);
-	arrows.back().ids = Vec2u(1, 0);
-	// Z - Red
+	arrows.back().ids = Vec2u(0, 0);
+	// Y (up) - Blue, Sub-ID = 1
+	arrows.emplace_back();
+	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
+	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().length = 10.0f;
+	arrows.back().radius = 0.25;
+	arrows.back().tipHeight = 2.0f;
+	arrows.back().color = Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().ids = Vec2u(0, 1);
+	// Z - Red, Sub-ID = 2
 	arrows.emplace_back();
 	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
 	arrows.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
@@ -519,7 +520,7 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows() {
 	arrows.back().radius = 0.25;
 	arrows.back().tipHeight = 2.0f;
 	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
-	arrows.back().ids = Vec2u(2, 0);
+	arrows.back().ids = Vec2u(0, 2);
 
 	return arrows;
 }

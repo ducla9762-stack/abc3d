@@ -465,6 +465,10 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 	return true;
 }
 
+bool Viewport::arrowDrag(Vec2u ids) {
+	return false;
+}
+
 int Viewport::mousePush() {
 	// Middle mouse starts a camera drag without changing the selection.
 	if (Fl::event_button() == FL_MIDDLE_MOUSE) {
@@ -487,7 +491,7 @@ int Viewport::mousePush() {
 	// If the selection is an arrow.
 	if (selectionIds.x == ARROW_IDENTIFIER) {
 		// Handle Arrow Selection.
-		std::cout << "Arrow: " << selectionIds.y << ", " << selectionIds.z << std::endl;
+		std::cout << "Arrow: Transformation: " << selectionIds.y << ", Axis: " << selectionIds.z << std::endl;
 	}
 	// Else process like any other selection.
 	else {
@@ -510,17 +514,17 @@ int Viewport::mousePush() {
 		std::cout << "Object Id: " << selectionIds.x << std::endl;
 		std::cout << "Component Id: " << selectionIds.y << std::endl;
 		std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-
-		// Drag stuff, refactor later.
-		mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
-		mouseDragPrevPos = mouseDragStartPos;
-		mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
-		mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
-		mouseDragPrevPosUV = mouseDragStartPosUV;
-		firstDragCallback = true;
-		//redraw();
-		return 1;
 	}
+
+	// Drag stuff, refactor later.
+	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragPrevPos = mouseDragStartPos;
+	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
+	mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
+	mouseDragPrevPosUV = mouseDragStartPosUV;
+	firstDragCallback = true;
+	//redraw();
+	return 1;
 }
 
 void Viewport::mouseWheel() {
