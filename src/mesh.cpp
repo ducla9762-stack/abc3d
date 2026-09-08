@@ -324,6 +324,36 @@ bool FaceList::LoadSTL(const char* stl) {
 	}
 }
 
+void HalfEdgeMeshBeveler::StartEdgeBevel(uint edgeId) {
+	elements[0] = edgeId;
+	elements[1] = mesh.edges[edgeId].twin;
+	mesh.BevelEdge(edgeId);
+
+	if (!buf) { buf = new Vec3f[8]; }
+
+	for (int i = 0; i < 2; ++i) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
+		Vec3f orig = mesh.vertPos[edge.orig];
+		Vec3f dest = mesh.vertPos[edge.dest];
+
+		buf[i * 2] = orig;
+		buf[i * 2 + 1] = dest;
+
+		buf[i * 2 + 4] = mesh.vertPos[mesh.edges[edge.prev].orig] - orig;
+		buf[i * 2 + 5] = mesh.vertPos[mesh.edges[edge.next].dest] - dest;
+	}
+}
+
+void HalfEdgeMeshBeveler::AdjustBevel(float bevelFactor) {
+	if (bevelFactor > 1.0f || bevelFactor < 0.0f) { return; }
+	for (int i = 0; i < 2; ++i) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
+
+		// New Vertex Position = Old Position + (Bevel Factor)(Translation)
+		mesh.vertPos[edge.orig] = buf[i * 2] + bevelFactor * buf[i * 2 + 4];
+		mesh.vertPos[edge.dest] = buf[i * 2 + 1] + bevelFactor * buf[i * 2 + 5];
+	}
+}
 
 // HalfEdgeMesh
 uint HalfEdgeMesh::NewFace(uint faceEdge) {
@@ -688,7 +718,7 @@ bool HalfEdgeMesh::IsNGon(uint faceId) const {
 }
 
 // Used ChatGPT for finding a good relative epsilon
-bool isConvex(const Vec2f& vert1, const Vec2f& vert2, const Vec2f& vert3) {
+inline bool isConvex(const Vec2f& vert1, const Vec2f& vert2, const Vec2f& vert3) {
 	Vec2f seg0 = vert1 - vert2;
 	Vec2f seg1 = vert3 - vert2;
 
@@ -1433,8 +1463,174 @@ void HalfEdgeMesh::Extrude(uint faceId) {
 	faceEdges[faceId] = firstCapEdge;
 }
 
-void HalfEdgeMesh::bevel() {
+void HalfEdgeMesh::TwinsShareAdjFace(uint edgeId, bool shareAdjFace[2]) const {
+	const HalfEdge& e1 = edges[edgeId];
+	const HalfEdge& e2 = edges[e1.twin];
+	
+	shareAdjFace[0] = edges[edges[e1.prev].twin].face == edges[edges[e2.next].twin].face;
+	shareAdjFace[1] = edges[edges[e2.prev].twin].face == edges[edges[e1.next].twin].face;
+}
 
+void HalfEdgeMesh::BevelHalfEdgeCase1(HalfEdge& e1, HalfEdge& e2) {
+	HalfEdge& e2Next = edges[e2.next];
+	HalfEdge& e2NextTwin = edges[e2Next.twin];
+
+	// Insert new edge
+	uint newEdgeTwinId = edges[e1.twin].next;
+	uint newEdgeId = edges[newEdgeTwinId].twin;
+	uint newVert = edges[newEdgeTwinId].dest;
+
+	HalfEdge& newEdge = edges[newEdgeId];
+	newEdge.twin = newEdgeTwinId;
+	newEdge.next = e2NextTwin.next;
+	newEdge.prev = e2Next.twin;
+	newEdge.face = e2NextTwin.face;
+	newEdge.orig = newVert;
+	newEdge.dest = e1.orig;
+
+	edges[e2NextTwin.next].prev = newEdgeId;
+	e2NextTwin.next = newEdgeId;
+
+	// Incorporate new vertex
+	e2.dest = newVert;
+	e2Next.orig = newVert;
+	e2NextTwin.dest = newVert;
+}
+
+void HalfEdgeMesh::BevelHalfEdgeCase2(HalfEdge& e1, HalfEdge& e2) {
+	uint bevelFaceEdgeId = edges[e1.twin].next;
+	HalfEdge& bevelFaceEdge = edges[bevelFaceEdgeId];
+
+	uint ogVert = e1.orig;
+
+	uint newEdge1Id = bevelFaceEdge.twin; // base for all new edges
+	uint triFaceId = NewFace(newEdge1Id);
+	
+	// Set first triangle edge
+	HalfEdge& triEdge1 = edges[newEdge1Id];
+	triEdge1.twin = bevelFaceEdgeId;
+	triEdge1.prev = newEdge1Id + 2;
+	triEdge1.next = newEdge1Id + 1;
+	triEdge1.dest = bevelFaceEdge.orig; // New Vertex 1
+	triEdge1.orig = bevelFaceEdge.dest; // New Vertex 2
+	triEdge1.face = triFaceId;
+
+	// Set second triangle edge
+	HalfEdge& triEdge2 = edges[triEdge1.next];
+	triEdge2.twin = newEdge1Id + 3;
+	triEdge2.prev = newEdge1Id;
+	triEdge2.next = triEdge1.prev;
+	triEdge2.orig = triEdge1.dest;
+	triEdge2.dest = ogVert;
+	triEdge2.face = triFaceId;
+
+	// Set third triangle edge
+	HalfEdge& triEdge3 = edges[triEdge2.next];
+	triEdge3.twin = newEdge1Id + 4;
+	triEdge3.prev = triEdge1.next;
+	triEdge3.next = newEdge1Id;
+	triEdge3.dest = triEdge1.orig;
+	triEdge3.orig = ogVert;
+	triEdge3.face = triFaceId;
+
+	// Incorporate new vertex 1
+	e1.orig = bevelFaceEdge.orig; // New Vertex 1
+	edges[e1.prev].dest = e1.orig;
+
+	uint e1PrevTwinId = edges[e1.prev].twin;
+	HalfEdge& e1PrevTwin = edges[e1PrevTwinId];
+	e1PrevTwin.orig = e1.orig;
+	
+	// Add first triangle edge twin into e1.prev's adjacent face
+	HalfEdge* triEdgeTwin = edges.data() + triEdge2.twin;
+	triEdgeTwin->next = e1PrevTwinId;
+	triEdgeTwin->prev = e1PrevTwin.prev;
+	triEdgeTwin->face = e1PrevTwin.face;
+	triEdgeTwin->orig = ogVert;
+	triEdgeTwin->dest = e1PrevTwin.orig;
+	triEdgeTwin->twin = triEdge1.next;
+
+	edges[e1PrevTwin.prev].next = triEdge2.twin;
+	e1PrevTwin.prev = triEdge2.twin;
+
+	// Incorporate new vertex 2
+	e2.dest = bevelFaceEdge.dest; // New Vertex 2
+	edges[e2.next].orig = e2.dest;
+
+	uint e2NextTwinId = edges[e2.next].twin;
+	HalfEdge& e2NextTwin = edges[e2NextTwinId];
+	e2NextTwin.dest = e2.dest;
+
+	// Add second triangle edge twin into e2.next's adjacent face
+	++triEdgeTwin;
+	triEdgeTwin->prev = e2NextTwinId;
+	triEdgeTwin->next = e2NextTwin.next;
+	triEdgeTwin->face = e2NextTwin.face;
+	triEdgeTwin->dest = ogVert;
+	triEdgeTwin->orig = e2NextTwin.dest;
+	triEdgeTwin->twin = triEdge2.next;
+
+	edges[e2NextTwin.next].prev = triEdge3.twin;
+	e2NextTwin.next = triEdge3.twin;
+}
+
+void HalfEdgeMesh::BevelEdge(uint edgeId) {
+	bool shareAdjFace[2];
+	TwinsShareAdjFace(edgeId, shareAdjFace);
+
+	uint newEdgeCount = 6;
+	for (int i = 0; i < 2; ++i) { newEdgeCount += int(!shareAdjFace[i]) * 4; }
+	
+	uint firstNewEdge = edges.size();
+	edges.insert(edges.end(), newEdgeCount, HalfEdge());
+	HalfEdge* newEdgeOffset = edges.data() + firstNewEdge;
+
+	// Build new face
+	uint e1Id = edgeId;
+	HalfEdge& e1 = edges[e1Id];
+
+	uint e2Id = e1.twin;
+	HalfEdge& e2 = edges[e2Id];
+
+	e1.twin = firstNewEdge;
+	e2.twin = firstNewEdge + 2;
+
+	newEdgeOffset[0].twin = e1Id;
+	newEdgeOffset[1].twin = firstNewEdge + 4;
+	newEdgeOffset[2].twin = e2Id;
+
+	uint vertices[4];
+	
+	if (shareAdjFace[0]) { 
+		vertices[0] = e1.orig;
+		newEdgeOffset[3].twin = firstNewEdge + 5;
+	}
+	else { 
+		vertices[0] = NewVertex(vertPos[e1.orig], e1Id);
+		newEdgeOffset[3].twin = firstNewEdge + 9;
+	}
+	vertices[1] = NewVertex(vertPos[e2.dest], e2.twin);
+
+	if (shareAdjFace[1]) { vertices[2] = e2.orig; }
+	else { vertices[2] = NewVertex(vertPos[e2.orig], e2Id); }
+	vertices[3] = NewVertex(vertPos[e1.dest], e1.twin);
+
+	uint newFace = NewFace(e1.twin);
+	for (int i = 0; i < 4; ++i) {
+		HalfEdge& newEdge = newEdgeOffset[i];
+		newEdge.prev = firstNewEdge + WrapDec(i, 3);
+		newEdge.next = firstNewEdge + WrapInc(i, 3);
+		newEdge.dest = vertices[i];
+		newEdge.orig = vertices[WrapDec(i, 3)];
+		newEdge.face = newFace;
+	}
+
+	// Incorporate face into adjacent topology (may build additional faces)
+	for (int i = 0; i < 2; ++i) {
+		if (shareAdjFace[i])	{ BevelHalfEdgeCase1(edges[e1Id], edges[e2Id]); }
+		else					{ BevelHalfEdgeCase2(edges[e1Id], edges[e2Id]); }
+		std::swap(e1Id, e2Id);
+	}
 }
 
 void HalfEdgeMesh::subdivide() {

@@ -75,6 +75,21 @@ public:
 	std::vector<FaceList> SplitObjects() const;
 };
 
+class HalfEdgeMesh;
+
+class HalfEdgeMeshBeveler {
+	HalfEdgeMesh& mesh;
+	uint elements[2];
+	Vec3f* buf;
+public:
+	HalfEdgeMeshBeveler(HalfEdgeMesh& mesh) : mesh(mesh) { }
+	~HalfEdgeMeshBeveler() { if (buf) delete[] buf; }
+	void StartEdgeBevel(uint edgeId);
+	void AdjustBevel(float bevelFactor);
+
+	void EndBevel() { }
+};
+
 class HalfEdgeMesh {
 
 	struct HalfEdge {
@@ -104,6 +119,7 @@ class HalfEdgeMesh {
 	};
 
 	friend class RenderBufferBuilder;
+	friend class HalfEdgeMeshBeveler;
 
 	/// <summary>
 	/// Adds a new face.
@@ -244,6 +260,11 @@ class HalfEdgeMesh {
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <returns>True if the face has more than 4 vertices. Otherwise, false.</returns>
 	bool IsNGon(uint faceId) const;
+
+	void BevelHalfEdgeCase2(HalfEdge& e1, HalfEdge& e2);
+	void BevelHalfEdgeCase1(HalfEdge& e1, HalfEdge& e2);
+	/// <summary>Not yet implemented.</summary>
+	void BevelEdge(uint edgeId);
 
 	std::vector<uint> faceEdges; // Each faces' first edge
 
@@ -424,9 +445,7 @@ public:
 	///		A half-edge of the edge to be split.
 	/// </param>
 	void refineEdge(uint hEdgeId);
-
-	/// <summary>Not yet implemented.</summary>
-	void bevel();
+	void TwinsShareAdjFace(uint edgeId, bool shareAdjFace[2]) const;
 	/// <summary>
 	/// Essentially pops a face out from its edge loop, creating new topology that connects
 	/// the face to its previous edge loop. Initially, this new topological bridge will have
