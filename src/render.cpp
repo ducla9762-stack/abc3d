@@ -162,6 +162,9 @@ void ModelingRenderer::Draw() {
 		glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
 	}
 
+	// Draw the arrows before checking the selection texture.
+	arrowRenderer.Draw();
+
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 	glReadPixels(0, 0, width, height, GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -195,7 +198,7 @@ void ModelingRenderer::Draw() {
 	}
 	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 
-	arrowRenderer.Draw();
+	//arrowRenderer.Draw();
 
 	/*int selectBufSize = pixel_w() * pixel_h();
 

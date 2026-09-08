@@ -484,35 +484,42 @@ int Viewport::mousePush() {
 	// Get the selection ids at this position.
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
-	// Create a selection item to send to the selection manager.
-	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
-
-	// query the selection maanger with the item.
-	selectionManager.processSelection(item, additiveSelection);
-
-	// Tell the renderer to update the selection visuals.
-	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
-	
-	if (primarySelectionCallback) {
-		primarySelectionCallback();
+	// If the selection is an arrow.
+	if (selectionIds.x == 0xFFFFFFFEu) {
+		// Handle Arrow Selection.
+		std::cout << "Arrow:" << selectionIds.y << ", " << selectionIds.z << std::endl;
 	}
+	else {
+		// Create a selection item to send to the selection manager.
+		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
 
-	redraw();
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item, additiveSelection);
 
-	// Print selection ids.
-	std::cout << "Object Id: " << selectionIds.x << std::endl;
-	std::cout << "Component Id: " << selectionIds.y << std::endl;
-	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-	
-	// Drag stuff, refactor later.
-	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
-	mouseDragPrevPos = mouseDragStartPos;
-	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
-	mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
-	mouseDragPrevPosUV = mouseDragStartPosUV;
-	firstDragCallback = true;
-	//redraw();
-	return 1;
+		// Tell the renderer to update the selection visuals.
+		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+
+		if (primarySelectionCallback) {
+			primarySelectionCallback();
+		}
+
+		redraw();
+
+		// Print selection ids.
+		std::cout << "Object Id: " << selectionIds.x << std::endl;
+		std::cout << "Component Id: " << selectionIds.y << std::endl;
+		std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
+
+		// Drag stuff, refactor later.
+		mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+		mouseDragPrevPos = mouseDragStartPos;
+		mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
+		mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
+		mouseDragPrevPosUV = mouseDragStartPosUV;
+		firstDragCallback = true;
+		//redraw();
+		return 1;
+	}
 }
 
 void Viewport::mouseWheel() {
