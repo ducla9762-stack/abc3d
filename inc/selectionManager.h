@@ -58,7 +58,7 @@ public:
 
 		// If the item is null (likely a background hit)
 		if (!item) {
-			//clearSelection();
+			clearSelection();
 			return false;
 		}
 		// This shouldn't happen.

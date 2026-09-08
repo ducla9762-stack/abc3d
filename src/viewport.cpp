@@ -95,6 +95,21 @@ void Viewport::mouseDrag() {
 
 	if (change.y == 0 && change.x == 0) return;
 
+	// A middle-button drag always rotates the camera and must not invoke the
+	// active modeling action, even when an item is selected.
+	if (Fl::event_button2()) {
+		camPos.x -= change.x;
+		camPos.y += change.y;
+		clamp(camPos.y, 1.0f, 179.0f);
+		activeRenderer->SetCamera(sphericalToCartesian(camPos));
+
+		firstDragCallback = false;
+		mouseDragPrevPos = pos;
+		mouseDragPrevPosUV = uv;
+		redraw();
+		return;
+	}
+
 	bool camera = true;
 
 	// Transformation drag depending on action.
@@ -116,7 +131,8 @@ void Viewport::mouseDrag() {
 	else if (activeAction == EXTRUDE) {
 		camera = !extrudeDrag(pos, uv);
 	}
-	
+
+	// Comment out to disable LMB drag camera rotation.
 	// Otherwise, we rotate the camera position.
 	if (camera) {
 		camPos.x -= change.x;
@@ -124,7 +140,7 @@ void Viewport::mouseDrag() {
 		clamp(camPos.y, 1.0f, 179.0f);
 		activeRenderer->SetCamera(sphericalToCartesian(camPos));
 	}
-
+	
 	firstDragCallback = false;
 	mouseDragPrevPos = pos;
 	mouseDragPrevPosUV = uv;
@@ -450,7 +466,15 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 }
 
 int Viewport::mousePush() {
-	// For now, we ignore right mouse button events.
+	// Middle mouse starts a camera drag without changing the selection.
+	if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+		mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+		mouseDragPrevPos = mouseDragStartPos;
+		firstDragCallback = false;
+		return 1;
+	}
+
+	// For now, we ignore other non-left mouse button events.
 	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
 	// Get position of mouse press.
