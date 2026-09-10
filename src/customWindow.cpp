@@ -5,17 +5,14 @@ int customWindow::keyDown() {
 			break;
 		case 'p':
 			viewport->togglePoints();
-			viewport->redraw();
 			return 1;
 			break;
 		case 'g':
 			viewport->toggleGrid();
-			viewport->redraw();
 			return 1;
 			break;
 		case FL_Control_L:
 			viewport->enableAdditiveSelection();
-			viewport->redraw();
 			return 1;
 			break;
 		default:
@@ -29,7 +26,6 @@ int customWindow::keyDown() {
 			break;
 		case FL_Control_L:
 			viewport->disableAdditiveSelection();
-			viewport->redraw();
 			return 1;
 			break;
 		default:
