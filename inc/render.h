@@ -42,7 +42,7 @@ class ArrowRenderer {
 	GLSLProgram program; // Shader program
 	GLuint vao, vbo, ebo; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
 	GLuint instancedVbo; // VBO for arrow data (Arrow struct)
-	GLsizei instanceCount; // Number of arrows
+	GLsizei instanceCount = 0; // Number of arrows
 
 public:
 
@@ -72,7 +72,7 @@ public:
 	/// Sets the View-Projection transformation.
 	/// </summary>
 	/// <param name="data">View-Projection Matrix</param>
-	void SetViewProjectionUniform(float data[16]);
+	void SetViewProjectionUniform(float data[16], float fov, int viewportHeight);
 
 	/// <summary>
 	/// Sets the arrows to draw.
@@ -85,7 +85,7 @@ public:
 	/// Creates a vector of arrows to be drawn.
 	/// </summary>
 	/// <returns> Arrows to draw. </returns>
-	std::vector<Arrow> CreateArrows();
+	std::vector<Arrow> CreateArrows(const Vec3f& base);
 };
 
 class ModelingRenderer : public Renderer {
@@ -165,6 +165,16 @@ public:
 	void Resize(int width, int height) override;
 
 	void UpdateRenderBuffers(const Scene& scene);
+
+	/// <summary>
+	/// Shows the translation arrows at the supplied world-space position.
+	/// </summary>
+	void UpdateArrows(const Vec3f& base);
+
+	/// <summary>
+	/// Hides all arrows.
+	/// </summary>
+	void ClearArrows();
 
 	void UpdateSelectionTexture(std::vector<bool> selections);
 

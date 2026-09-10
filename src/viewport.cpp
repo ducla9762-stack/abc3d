@@ -20,6 +20,7 @@ void Viewport::draw() {
 		modelingRenderer.UpdateRenderBuffers(scene);
 		if (!success) { return; }
 		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		updateArrows();
 		modeChanged = false;
 	}
 	if (!valid()) {
@@ -144,7 +145,58 @@ void Viewport::mouseDrag() {
 	firstDragCallback = false;
 	mouseDragPrevPos = pos;
 	mouseDragPrevPosUV = uv;
+	updateArrows();
 	redraw();
+}
+
+void Viewport::updateArrows() {
+	const bool translationAction =
+		activeAction == TRANSLATE_FREE ||
+		activeAction == TRANSLATE_OUT ||
+		activeAction == TRANSLATE_EDGE;
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (!translationAction || selectedItems.empty()) {
+		modelingRenderer.ClearArrows();
+		return;
+	}
+
+	Vec3f positionSum(0.0f);
+	uint positionCount = 0;
+
+	for (const SelectionItem& item : selectedItems) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		Vec3f worldPosition = mesh->Pos();
+
+		switch (item.type) {
+		case OBJECT:
+			// An object is positioned at its local origin.
+			break;
+		case VERTEX:
+			worldPosition += mesh->getTransform3x3() * mesh->GetVertexPosition(item.componentId);
+			break;
+		case EDGE:
+			worldPosition += mesh->getTransform3x3() * mesh->GetEdgeCenter(item.componentId);
+			break;
+		case FACE:
+			worldPosition += mesh->getTransform3x3() * mesh->faceCentroid(item.componentId);
+			break;
+		}
+
+		positionSum += worldPosition;
+		++positionCount;
+	}
+
+	if (positionCount == 0) {
+		modelingRenderer.ClearArrows();
+		return;
+	}
+
+	modelingRenderer.UpdateArrows(positionSum / float(positionCount));
 }
 
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
@@ -176,6 +228,7 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -284,6 +337,7 @@ bool Viewport::translateOutVertexDrag(float scale) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -400,6 +454,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	}*/
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -503,6 +558,7 @@ int Viewport::mousePush() {
 
 		// Tell the renderer to update the selection visuals.
 		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		updateArrows();
 
 		if (primarySelectionCallback) {
 			primarySelectionCallback();
@@ -694,6 +750,7 @@ void Viewport::setScale(int component, float scale) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -783,6 +840,7 @@ void Viewport::subdivision() {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -907,6 +965,7 @@ void Viewport::deleteElement() {
 
 	selectionManager.clearSelection();
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	primarySelection = MAX_UINT;
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
@@ -973,6 +1032,7 @@ void Viewport::setRot(int component, float angle) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -1009,6 +1069,7 @@ void Viewport::setPos(int component, float pos) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -1086,13 +1147,18 @@ void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 void Viewport::setActiveElement(Element element) { 
 	selectionManager.setActiveElement(element);
 	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	updateArrows();
 	if (primarySelectionCallback) {
 		primarySelectionCallback();
 	}
 	redraw();
 }
 
-void Viewport::setActiveAction(Action action) { activeAction = action; }
+void Viewport::setActiveAction(Action action) {
+	activeAction = action;
+	updateArrows();
+	redraw();
+}
 
 const HalfEdgeMesh* Viewport::primarySelectedItem() {
 

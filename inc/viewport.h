@@ -127,6 +127,9 @@ class Viewport : public Fl_Gl_Window {
 	/// <param name="pos"></param>
 	/// <returns> True if rotation occurred. </returns>
 	bool rotateDrag(const Vec2f& pos);
+
+	/// Updates the translation gizmo from the current selection and action.
+	void updateArrows();
 	
 	/// <summary>
 	/// Determines what to do when an arrow is dragged.
