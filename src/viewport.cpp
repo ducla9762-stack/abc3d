@@ -20,6 +20,7 @@ void Viewport::draw() {
 		modelingRenderer.UpdateRenderBuffers(scene);
 		if (!success) { return; }
 		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
 		updateArrows();
 		modeChanged = false;
 	}
@@ -39,6 +40,19 @@ int Viewport::handle(int event) {
 	}
 
 	if (context() == nullptr) { return 0; }
+
+	// FLTK's group handling can consume motion events before they reach the
+	// event switch below, so handle viewport hover events first.
+	if (event == FL_MOVE) {
+		make_current();
+		mouseMove();
+		return 1;
+	}
+	if (event == FL_LEAVE) {
+		make_current();
+		mouseLeave();
+		return 1;
+	}
 
 	if (Fl_Group::handle(event)) {
 		return 1;
@@ -74,6 +88,69 @@ int Viewport::handle(int event) {
 	std::cout << "Window Event: " << fl_eventnames[event] << std::endl;
 
 	return 1;
+}
+
+void Viewport::mouseLeave() {
+	// Check if we are hovering over something new.
+	const bool hoverChanged =
+		hoveredArrowAxis != MAX_UINT ||
+		hoveredSelectionIds.x != MAX_UINT ||
+		hoveredSelectionIds.y != MAX_UINT ||
+		hoveredSelectionIds.z != MAX_UINT;
+	// Don't do anything if nothing has changed.
+	if (!hoverChanged) {
+		return;
+	}
+
+	// Set hover selection to be invalid.
+	hoveredArrowAxis = MAX_UINT;
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	// Update renderer, redraw.
+	modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
+	updateArrows();
+	redraw();
+}
+
+void Viewport::mouseMove() {
+	if (w() <= 0 || h() <= 0 || pixel_w() <= 0 || pixel_h() <= 0) {
+		return;
+	}
+
+	uint x = static_cast<uint>((float(Fl::event_x()) / w()) * pixel_w());
+	uint y = static_cast<uint>((1.0f - (float(Fl::event_y()) / h())) * pixel_h());
+	x = x >= static_cast<uint>(pixel_w()) ? pixel_w() - 1 : x;
+	y = y >= static_cast<uint>(pixel_h()) ? pixel_h() - 1 : y;
+
+	// Get what is at the mouse pointer.
+	const Vec3u ids = modelingRenderer.SelectionIds(x, y);
+	// Get the axis of the arrow we are hovering over.
+	const uint newHoveredAxis =
+		// Only if we are in translate axis mode, and touching a valid arrow.
+		(activeAction == TRANSLATE_AXIS && ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3)
+		// If true, get the axis component of the arrow id.
+		? ids.z
+		// Else not valid, give max uint.
+		: MAX_UINT;
+
+	// Check if we changed hover.
+	const bool idsChanged = ids.x != hoveredSelectionIds.x || ids.y != hoveredSelectionIds.y || ids.z != hoveredSelectionIds.z;
+	// Check if we are hovering over a new arrow.
+	const bool arrowChanged = newHoveredAxis != hoveredArrowAxis;
+
+	hoveredSelectionIds = ids;
+	// Update hover in renderer.
+	modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
+	// If no change in hover, do nothing.
+	if (!idsChanged && !arrowChanged) {
+		return;
+	}
+
+	// Else, update.
+	hoveredArrowAxis = newHoveredAxis;
+	if (arrowChanged) {
+		updateArrows();
+	}
+	redraw();
 }
 
 void Viewport::mouseDrag() {
@@ -151,9 +228,7 @@ void Viewport::mouseDrag() {
 
 void Viewport::updateArrows() {
 	const bool translationAction =
-		activeAction == TRANSLATE_FREE ||
-		activeAction == TRANSLATE_OUT ||
-		activeAction == TRANSLATE_EDGE;
+		activeAction == TRANSLATE_AXIS;
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
 	if (!translationAction || selectedItems.empty()) {
@@ -196,7 +271,7 @@ void Viewport::updateArrows() {
 		return;
 	}
 
-	modelingRenderer.UpdateArrows(positionSum / float(positionCount));
+	modelingRenderer.UpdateArrows(positionSum / float(positionCount), hoveredArrowAxis);
 }
 
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
@@ -1147,6 +1222,7 @@ void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 void Viewport::setActiveElement(Element element) { 
 	selectionManager.setActiveElement(element);
 	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	modelingRenderer.UpdateHover(hoveredSelectionIds, element);
 	updateArrows();
 	if (primarySelectionCallback) {
 		primarySelectionCallback();
@@ -1156,6 +1232,9 @@ void Viewport::setActiveElement(Element element) {
 
 void Viewport::setActiveAction(Action action) {
 	activeAction = action;
+	if (activeAction != TRANSLATE_AXIS) {
+		hoveredArrowAxis = MAX_UINT;
+	}
 	updateArrows();
 	redraw();
 }

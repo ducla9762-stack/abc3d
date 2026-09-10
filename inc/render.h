@@ -85,7 +85,7 @@ public:
 	/// Creates a vector of arrows to be drawn.
 	/// </summary>
 	/// <returns> Arrows to draw. </returns>
-	std::vector<Arrow> CreateArrows(const Vec3f& base);
+	std::vector<Arrow> CreateArrows(const Vec3f& base, uint hoveredAxis);
 };
 
 class ModelingRenderer : public Renderer {
@@ -169,7 +169,7 @@ public:
 	/// <summary>
 	/// Shows the translation arrows at the supplied world-space position.
 	/// </summary>
-	void UpdateArrows(const Vec3f& base);
+	void UpdateArrows(const Vec3f& base, uint hoveredAxis);
 
 	/// <summary>
 	/// Hides all arrows.
@@ -186,6 +186,9 @@ public:
 	/// </summary>
 	/// <param name="selectedItems"></param>
 	void UpdateSelection(const std::vector<SelectionItem>& selectedItems);
+
+	/// Updates the active-element hover state from raw framebuffer IDs.
+	void UpdateHover(const Vec3u& selectionIds, Element activeElement);
 
 private:
 

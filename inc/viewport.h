@@ -54,6 +54,8 @@ class Viewport : public Fl_Gl_Window {
 	std::vector<Vec3f> dragActionDirs;
 	Vec3f initialActionState = Vec3f(0.0f);
 	bool firstDragCallback = false;
+	uint hoveredArrowAxis = MAX_UINT;
+	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 
@@ -83,6 +85,12 @@ class Viewport : public Fl_Gl_Window {
 	/// todo: fill this out.
 	/// </summary>
 	void mouseDrag();
+
+	/// Updates the hovered translation arrow from the selection framebuffer.
+	void mouseMove();
+
+	/// Clears the hovered translation arrow when the cursor leaves the viewport.
+	void mouseLeave();
 
 	/// <summary>
 	/// Translates the selected elements out to pos.

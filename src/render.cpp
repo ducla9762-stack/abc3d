@@ -50,7 +50,12 @@ void ModelingRenderer::SetCamera(const Vec3f& pos, const Vec3f& target) {
 	updateUniforms();
 }
 
-Vec3u ModelingRenderer::SelectionIds(uint x, uint y) { return idSelectBuf.at(x + y * width); }
+Vec3u ModelingRenderer::SelectionIds(uint x, uint y) {
+	if (x >= static_cast<uint>(width) || y >= static_cast<uint>(height) || idSelectBuf.empty()) {
+		return Vec3u(0u, 0u, 0u);
+	}
+	return idSelectBuf.at(x + y * width);
+}
 
 bool ModelingRenderer::Initialize() {
 	// Create VAO for grid
@@ -394,8 +399,8 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	updateTextureUniforms();
 }
 
-void ModelingRenderer::UpdateArrows(const Vec3f& base) {
-	arrowRenderer.SetArrows(arrowRenderer.CreateArrows(base));
+void ModelingRenderer::UpdateArrows(const Vec3f& base, uint hoveredAxis) {
+	arrowRenderer.SetArrows(arrowRenderer.CreateArrows(base, hoveredAxis));
 }
 
 void ModelingRenderer::ClearArrows() {
@@ -439,6 +444,50 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 	pointProgram.SetUniform("selectionCount", static_cast<GLuint>(selectionCount));
 	pointProgram.SetUniform3(
 		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
+}
+
+void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElement) {
+	GLuint hoveredItem[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
+
+	// Arrows and the background must not produce a mesh-element hover.
+	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT && selectionIds.x != ARROW_IDENTIFIER) {
+		switch (activeElement) {
+		case OBJECT:
+			hoveredItem[0] = OBJECT;
+			hoveredItem[1] = selectionIds.x;
+			break;
+		case FACE:
+			hoveredItem[0] = FACE;
+			hoveredItem[1] = selectionIds.x;
+			hoveredItem[2] = selectionIds.y;
+			break;
+		case EDGE:
+			if (selectionIds.z != MAX_UINT) {
+				hoveredItem[0] = EDGE;
+				hoveredItem[1] = selectionIds.x;
+				hoveredItem[2] = selectionIds.z;
+			}
+			break;
+		case VERTEX:
+			break;
+		}
+	}
+	else if (activeElement == OBJECT && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
+		// Vertex-point rendering stores the object ID in the second component.
+		hoveredItem[0] = OBJECT;
+		hoveredItem[1] = selectionIds.y;
+	}
+	else if (activeElement == VERTEX && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
+		// Vertex-point rendering stores (object ID, vertex ID) in y/z.
+		hoveredItem[0] = VERTEX;
+		hoveredItem[1] = selectionIds.y;
+		hoveredItem[2] = selectionIds.z;
+	}
+
+	meshProgram.Bind();
+	meshProgram.SetUniform3("hoveredItem", hoveredItem);
+	pointProgram.Bind();
+	pointProgram.SetUniform3("hoveredItem", hoveredItem);
 }
 
 // Arrow renderer
@@ -494,7 +543,7 @@ void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
 	instanceCount = arrows.size();
 }
 
-std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base) {
+std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base, uint hoveredAxis) {
 	std::vector<ArrowRenderer::Arrow> arrows;
 	// Translation, ID = 0.
 	// X - Green, Sub-ID = 0
@@ -504,7 +553,7 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base)
 	arrows.back().length = 0.5f;
 	arrows.back().radius = 0.025f;
 	arrows.back().tipHeight = 0.25f;
-	arrows.back().color = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().color = hoveredAxis == 0 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 1.0f, 0.0f);
 	arrows.back().ids = Vec2u(0, 0);
 	// Y (up) - Blue, Sub-ID = 1
 	arrows.emplace_back();
@@ -513,7 +562,7 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base)
 	arrows.back().length = 0.5f;
 	arrows.back().radius = 0.025f;
 	arrows.back().tipHeight = 0.25f;
-	arrows.back().color = Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().color = hoveredAxis == 1 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 0.0f, 1.0f);
 	arrows.back().ids = Vec2u(0, 1);
 	// Z - Red, Sub-ID = 2
 	arrows.emplace_back();
@@ -522,7 +571,7 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base)
 	arrows.back().length = 0.5f;
 	arrows.back().radius = 0.025f;
 	arrows.back().tipHeight = 0.25f;
-	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().color = hoveredAxis == 2 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(1.0f, 0.0f, 0.0f);
 	arrows.back().ids = Vec2u(0, 2);
 
 	return arrows;

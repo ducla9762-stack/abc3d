@@ -115,7 +115,7 @@ class TranslationToolPanel : public ToolPanel {
 		viewport->setPos(component, spinnerVal);
 	}
 
-	Fl_Radio_Button* buttons[2] = { nullptr, nullptr };
+	Fl_Radio_Button* buttons[3] = { nullptr, nullptr, nullptr };
 
 	Fl_Simple_Counter* spinners[3] = { nullptr, nullptr, nullptr };
 	Fl_Window* spinnerContainer = nullptr;
@@ -124,7 +124,7 @@ public:
 	TranslationToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h, title) {
 		begin();
 
-		spinnerContainer = new Fl_Window(0, 45, w, 0);
+		spinnerContainer = new Fl_Window(0, 65, w, 0);
 		BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Position", 1.0, 0.2)
 		spinnerContainer->end();
 		spinnerContainer->size(w, yPos);
@@ -144,7 +144,13 @@ public:
 		buttons[1]->align(FL_ALIGN_INSIDE);
 		buttons[1]->value(1);
 
-		resize(x, y, w, yPos + 45);
+		// Axis Translation Button
+		buttons[2] = new Fl_Radio_Button(0, 40, w, 20, "Axis");
+		buttons[2]->selection_color(10);
+		buttons[2]->box(FL_UP_BOX);
+		buttons[2]->align(FL_ALIGN_INSIDE);
+
+		resize(x, y, w, yPos + 65);
 
 		end();
 	}
@@ -166,16 +172,19 @@ public:
 		ToolPanel::show();
 		buttons[0]->value(0);
 		buttons[1]->value(1);
+		buttons[2]->value(0);
 	}
 
 	void hideButtons() {
-		buttons[0]->hide();
-		buttons[1]->hide();
+		for (Fl_Radio_Button* button : buttons) {
+			button->hide();
+		}
 	}
 
 	void showButtons() {
-		buttons[0]->show();
-		buttons[1]->show();
+		for (Fl_Radio_Button* button : buttons) {
+			button->show();
+		}
 	}
 
 	template <typename T>
