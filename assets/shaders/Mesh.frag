@@ -14,6 +14,7 @@ const uint MAX_SELECTION_ITEMS = 64u;
 uniform uint selectionCount;
 // The array of selected items.
 uniform uvec3 selectedItems[MAX_SELECTION_ITEMS];
+// AI-generated code: Active-element hover matching and color precedence.
 uniform uvec3 hoveredItem;
 
 // uint mapping of the Elements enum.

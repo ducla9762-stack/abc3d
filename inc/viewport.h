@@ -54,6 +54,7 @@ class Viewport : public Fl_Gl_Window {
 	std::vector<Vec3f> dragActionDirs;
 	Vec3f initialActionState = Vec3f(0.0f);
 	bool firstDragCallback = false;
+	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredArrowAxis = MAX_UINT;
 	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 

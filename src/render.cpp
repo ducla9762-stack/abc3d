@@ -446,6 +446,7 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
 }
 
+// AI-generated code: Converts framebuffer IDs into shader hover state.
 void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElement) {
 	GLuint hoveredItem[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
 
@@ -543,6 +544,7 @@ void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
 	instanceCount = arrows.size();
 }
 
+// AI-generated code: Builds the translation-axis gizmo and applies hover color.
 std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base, uint hoveredAxis) {
 	std::vector<ArrowRenderer::Arrow> arrows;
 	// Translation, ID = 0.
@@ -585,6 +587,7 @@ void ArrowRenderer::Draw() {
 	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
 }
 
+// AI-generated code: Keeps the arrow gizmo at a constant screen size.
 void ArrowRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	program.Bind();
 	program.SetUniformMatrix4("viewProj", data);

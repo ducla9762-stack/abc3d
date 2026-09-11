@@ -41,6 +41,7 @@ int Viewport::handle(int event) {
 
 	if (context() == nullptr) { return 0; }
 
+	// AI-generated code: Routes viewport hover events before Fl_Group handling.
 	// FLTK's group handling can consume motion events before they reach the
 	// event switch below, so handle viewport hover events first.
 	if (event == FL_MOVE) {
@@ -90,6 +91,7 @@ int Viewport::handle(int event) {
 	return 1;
 }
 
+// AI-generated code: Clears mesh-element and arrow hover state on exit.
 void Viewport::mouseLeave() {
 	// Check if we are hovering over something new.
 	const bool hoverChanged =
@@ -111,6 +113,7 @@ void Viewport::mouseLeave() {
 	redraw();
 }
 
+// AI-generated code: Reads the hovered framebuffer ID and updates highlights.
 void Viewport::mouseMove() {
 	if (w() <= 0 || h() <= 0 || pixel_w() <= 0 || pixel_h() <= 0) {
 		return;
@@ -226,6 +229,7 @@ void Viewport::mouseDrag() {
 	redraw();
 }
 
+// AI-generated code: Positions the translation gizmo at the selection average.
 void Viewport::updateArrows() {
 	const bool translationAction =
 		activeAction == TRANSLATE_AXIS;
@@ -618,6 +622,7 @@ int Viewport::mousePush() {
 	// Get the selection ids at this position.
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
+	// AI-generated code: Keeps arrow clicks separate from mesh selection.
 	// If the selection is an arrow.
 	if (selectionIds.x == ARROW_IDENTIFIER) {
 		// Handle Arrow Selection.

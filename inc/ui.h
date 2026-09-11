@@ -115,6 +115,7 @@ class TranslationToolPanel : public ToolPanel {
 		viewport->setPos(component, spinnerVal);
 	}
 
+	// AI-generated code: Translation mode controls, including Axis mode.
 	Fl_Radio_Button* buttons[3] = { nullptr, nullptr, nullptr };
 
 	Fl_Simple_Counter* spinners[3] = { nullptr, nullptr, nullptr };

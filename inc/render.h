@@ -187,6 +187,7 @@ public:
 	/// <param name="selectedItems"></param>
 	void UpdateSelection(const std::vector<SelectionItem>& selectedItems);
 
+	// AI-generated code: Renderer interface for active-element hover state.
 	/// Updates the active-element hover state from raw framebuffer IDs.
 	void UpdateHover(const Vec3u& selectionIds, Element activeElement);
 

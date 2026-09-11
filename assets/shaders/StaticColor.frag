@@ -7,6 +7,7 @@ flat in uvec2 ids;
 
 const uint MAX_SELECTION_ITEMS = 64u;
 const uint VERTEX = 3u;
+// AI-generated code: Vertex hover coloring while preserving selection color.
 const vec4 HOVER_COLOR = vec4(1.0f, 0.5f, 0.0f, 1.0f);
 
 uniform uint selectionCount;
