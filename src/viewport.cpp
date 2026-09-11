@@ -20,6 +20,8 @@ void Viewport::draw() {
 		modelingRenderer.UpdateRenderBuffers(scene);
 		if (!success) { return; }
 		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
+		updateArrows();
 		modeChanged = false;
 	}
 	if (!valid()) {
@@ -38,6 +40,28 @@ int Viewport::handle(int event) {
 	}
 
 	if (context() == nullptr) { return 0; }
+
+	// AI-generated code: Routes viewport hover events before Fl_Group handling.
+	// FLTK's group handling can consume motion events before they reach the
+	// event switch below, so handle viewport hover events first.
+	if (event == FL_MOVE) {
+		make_current();
+		mouseMove();
+		return 1;
+	}
+	if (event == FL_LEAVE) {
+		make_current();
+		mouseLeave();
+		return 1;
+	}
+	if (event == FL_RELEASE) {
+		// AI-generated code: End the captured arrow drag when the mouse button is
+		// released so a later drag cannot reuse the previous axis.
+		draggingArrow = false;
+		draggedArrowAxis = MAX_UINT;
+		firstDragCallback = false;
+		return 1;
+	}
 
 	if (Fl_Group::handle(event)) {
 		return 1;
@@ -73,6 +97,71 @@ int Viewport::handle(int event) {
 	std::cout << "Window Event: " << fl_eventnames[event] << std::endl;
 
 	return 1;
+}
+
+// AI-generated code: Clears mesh-element and arrow hover state on exit.
+void Viewport::mouseLeave() {
+	// Check if we are hovering over something new.
+	const bool hoverChanged =
+		hoveredArrowAxis != MAX_UINT ||
+		hoveredSelectionIds.x != MAX_UINT ||
+		hoveredSelectionIds.y != MAX_UINT ||
+		hoveredSelectionIds.z != MAX_UINT;
+	// Don't do anything if nothing has changed.
+	if (!hoverChanged) {
+		return;
+	}
+
+	// Set hover selection to be invalid.
+	hoveredArrowAxis = MAX_UINT;
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	// Update renderer, redraw.
+	modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
+	updateArrows();
+	redraw();
+}
+
+// AI-generated code: Reads the hovered framebuffer ID and updates highlights.
+void Viewport::mouseMove() {
+	if (w() <= 0 || h() <= 0 || pixel_w() <= 0 || pixel_h() <= 0) {
+		return;
+	}
+
+	uint x = static_cast<uint>((float(Fl::event_x()) / w()) * pixel_w());
+	uint y = static_cast<uint>((1.0f - (float(Fl::event_y()) / h())) * pixel_h());
+	x = x >= static_cast<uint>(pixel_w()) ? pixel_w() - 1 : x;
+	y = y >= static_cast<uint>(pixel_h()) ? pixel_h() - 1 : y;
+
+	// Get what is at the mouse pointer.
+	const Vec3u ids = modelingRenderer.SelectionIds(x, y);
+	// Get the axis of the arrow we are hovering over.
+	const uint newHoveredAxis =
+		// Only if we are in translate axis mode, and touching a valid arrow.
+		(activeAction == TRANSLATE_AXIS && ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3)
+		// If true, get the axis component of the arrow id.
+		? ids.z
+		// Else not valid, give max uint.
+		: MAX_UINT;
+
+	// Check if we changed hover.
+	const bool idsChanged = ids.x != hoveredSelectionIds.x || ids.y != hoveredSelectionIds.y || ids.z != hoveredSelectionIds.z;
+	// Check if we are hovering over a new arrow.
+	const bool arrowChanged = newHoveredAxis != hoveredArrowAxis;
+
+	hoveredSelectionIds = ids;
+	// Update hover in renderer.
+	modelingRenderer.UpdateHover(hoveredSelectionIds, getActiveElement());
+	// If no change in hover, do nothing.
+	if (!idsChanged && !arrowChanged) {
+		return;
+	}
+
+	// Else, update.
+	hoveredArrowAxis = newHoveredAxis;
+	if (arrowChanged) {
+		updateArrows();
+	}
+	redraw();
 }
 
 void Viewport::mouseDrag() {
@@ -122,6 +211,9 @@ void Viewport::mouseDrag() {
 	else if (activeAction == TRANSLATE_EDGE) {
 		camera = !translateAlongEdgeDrag(pos);
 	}
+	else if (activeAction == TRANSLATE_AXIS) {
+		camera = !arrowDrag(pos);
+	}
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
 	}
@@ -144,7 +236,57 @@ void Viewport::mouseDrag() {
 	firstDragCallback = false;
 	mouseDragPrevPos = pos;
 	mouseDragPrevPosUV = uv;
+	updateArrows();
 	redraw();
+}
+
+// AI-generated code: Positions the translation gizmo at the selection average.
+void Viewport::updateArrows() {
+	const bool translationAction =
+		activeAction == TRANSLATE_AXIS;
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (!translationAction || selectedItems.empty()) {
+		modelingRenderer.ClearArrows();
+		return;
+	}
+
+	Vec3f positionSum(0.0f);
+	uint positionCount = 0;
+
+	for (const SelectionItem& item : selectedItems) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		Vec3f worldPosition = mesh->Pos();
+
+		switch (item.type) {
+		case OBJECT:
+			// An object is positioned at its local origin.
+			break;
+		case VERTEX:
+			worldPosition += mesh->getTransform3x3() * mesh->GetVertexPosition(item.componentId);
+			break;
+		case EDGE:
+			worldPosition += mesh->getTransform3x3() * mesh->GetEdgeCenter(item.componentId);
+			break;
+		case FACE:
+			worldPosition += mesh->getTransform3x3() * mesh->faceCentroid(item.componentId);
+			break;
+		}
+
+		positionSum += worldPosition;
+		++positionCount;
+	}
+
+	if (positionCount == 0) {
+		modelingRenderer.ClearArrows();
+		return;
+	}
+
+	modelingRenderer.UpdateArrows(positionSum / float(positionCount), hoveredArrowAxis);
 }
 
 bool Viewport::uniformScaleDrag(const Vec2f& pos) {
@@ -176,6 +318,7 @@ bool Viewport::uniformScaleDrag(const Vec2f& pos) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -284,6 +427,7 @@ bool Viewport::translateOutVertexDrag(float scale) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -400,6 +544,7 @@ bool Viewport::translateFreeDrag(const Vec2f& pos, const Vec2f& uv) {
 	}*/
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 
@@ -465,6 +610,108 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 	return true;
 }
 
+// AI-generated code: Constrains mouse motion to the world-space axis of the
+// translation arrow that was pressed, then applies that translation to the
+// current selection.
+bool Viewport::arrowDrag(const Vec2f& pos) {
+	if (!draggingArrow || draggedArrowAxis >= 3) {
+		return false;
+	}
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	if (selectedItems.empty()) {
+		return false;
+	}
+
+	// Get the world-space direction of the camera basis. GetCameraDirs uses the
+	// same right/up convention as translateFreeDrag(), so the mouse delta below
+	// is expressed in that same basis.
+	Vec3f forward, up, right;
+	modelingRenderer.GetCameraDirs(forward, up, right);
+
+	Vec3f axis;
+	switch (draggedArrowAxis) {
+	case 0:
+		axis = Vec3f(1.0f, 0.0f, 0.0f);
+		break;
+	case 1:
+		axis = Vec3f(0.0f, 1.0f, 0.0f);
+		break;
+	case 2:
+		axis = Vec3f(0.0f, 0.0f, 1.0f);
+		break;
+	default:
+		return false;
+	}
+
+	// Project the world axis into the screen plane. If the projected length is
+	// nearly zero, the axis points almost directly at the camera and there is
+	// no stable screen direction from which to infer a drag distance.
+	Vec2f axisScreen(axis.Dot(right), axis.Dot(up));
+	const float axisScreenLength = axisScreen.Length();
+	if (axisScreenLength < 1e-6f) {
+		return false;
+	}
+	axisScreen /= axisScreenLength;
+
+	// Convert the mouse movement into the camera's screen-right/screen-up
+	// convention. The sign matches translateFreeDrag().
+	Vec2f change;
+	change.x = mouseDragPrevPos.x - pos.x;
+	change.y = pos.y - mouseDragPrevPos.y;
+
+	// This sensitivity is the same kind of screen-pixel-to-world scaling used
+	// by the existing drag tools. The resulting vector is still exactly along
+	// the selected world axis.
+	const float distance = 0.01f * change.Dot(axisScreen);
+	const Vec3f worldTranslation = axis * distance;
+
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectedItems) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (item.type) {
+		case OBJECT:
+			// Objects store their position in world space.
+			if (transformedObjects.insert(item.meshId).second) {
+				mesh->TranslatePos(worldTranslation);
+				transformed = true;
+			}
+			break;
+		case VERTEX:
+			mesh->TranslateVertex(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		case EDGE:
+			mesh->TranslateEdge(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		case FACE:
+			mesh->TranslateFace(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		}
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
+	}
+
+	return true;
+}
+
 int Viewport::mousePush() {
 	// Middle mouse starts a camera drag without changing the selection.
 	if (Fl::event_button() == FL_MIDDLE_MOUSE) {
@@ -484,26 +731,46 @@ int Viewport::mousePush() {
 	// Get the selection ids at this position.
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
-	// Create a selection item to send to the selection manager.
-	std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+	// AI-generated code: Capture the pressed arrow axis once at mouse-down so
+	// the drag remains constrained even when the gizmo moves under the cursor.
+	const bool arrowHit =
+		activeAction == TRANSLATE_AXIS &&
+		selectionIds.x == ARROW_IDENTIFIER &&
+		selectionIds.y == 0 &&
+		selectionIds.z < 3;
+	draggingArrow = arrowHit;
+	draggedArrowAxis = arrowHit ? selectionIds.z : MAX_UINT;
 
-	// query the selection maanger with the item.
-	selectionManager.processSelection(item, additiveSelection);
+	// AI-generated code: Keeps arrow clicks separate from mesh selection.
+	// If the selection is an arrow.
+	if (arrowHit) {
+		// Handle Arrow Selection.
+		std::cout << "Arrow: Transformation: " << selectionIds.y << ", Axis: " << selectionIds.z << std::endl;
+	}
+	// Else process like any other selection.
+	else {
+		// Create a selection item to send to the selection manager.
+		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
 
-	// Tell the renderer to update the selection visuals.
-	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
-	
-	if (primarySelectionCallback) {
-		primarySelectionCallback();
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item, additiveSelection);
+
+		// Tell the renderer to update the selection visuals.
+		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		updateArrows();
+
+		if (primarySelectionCallback) {
+			primarySelectionCallback();
+		}
+
+		redraw();
+
+		// Print selection ids.
+		std::cout << "Object Id: " << selectionIds.x << std::endl;
+		std::cout << "Component Id: " << selectionIds.y << std::endl;
+		std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 	}
 
-	redraw();
-
-	// Print selection ids.
-	std::cout << "Object Id: " << selectionIds.x << std::endl;
-	std::cout << "Component Id: " << selectionIds.y << std::endl;
-	std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-	
 	// Drag stuff, refactor later.
 	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
 	mouseDragPrevPos = mouseDragStartPos;
@@ -682,6 +949,7 @@ void Viewport::setScale(int component, float scale) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -771,6 +1039,7 @@ void Viewport::subdivision() {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -895,6 +1164,7 @@ void Viewport::deleteElement() {
 
 	selectionManager.clearSelection();
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	primarySelection = MAX_UINT;
 	if (primarySelectionCallback) { primarySelectionCallback(); }
 	redraw();
@@ -961,6 +1231,7 @@ void Viewport::setRot(int component, float angle) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -997,6 +1268,7 @@ void Viewport::setPos(int component, float pos) {
 	}
 
 	modelingRenderer.UpdateRenderBuffers(scene);
+	updateArrows();
 	redraw();
 }
 
@@ -1074,13 +1346,22 @@ void Viewport::setActiveMode(Mode mode) { activeMode = mode; }
 void Viewport::setActiveElement(Element element) { 
 	selectionManager.setActiveElement(element);
 	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	modelingRenderer.UpdateHover(hoveredSelectionIds, element);
+	updateArrows();
 	if (primarySelectionCallback) {
 		primarySelectionCallback();
 	}
 	redraw();
 }
 
-void Viewport::setActiveAction(Action action) { activeAction = action; }
+void Viewport::setActiveAction(Action action) {
+	activeAction = action;
+	if (activeAction != TRANSLATE_AXIS) {
+		hoveredArrowAxis = MAX_UINT;
+	}
+	updateArrows();
+	redraw();
+}
 
 const HalfEdgeMesh* Viewport::primarySelectedItem() {
 

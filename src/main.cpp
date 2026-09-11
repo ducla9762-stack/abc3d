@@ -462,11 +462,12 @@ int main(int argc, char* argv[]) {
 	scaleToolPanel = new ScaleToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SCALE_TOOL] = scaleToolPanel;
 
-	// actionChangedCallback is only used here, determining whether to use translate out or translate free
+	// Action callbacks determine which translation mode is active.
 	translateToolPanel = new TranslationToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[TRANSLATE_TOOL] = translateToolPanel;
 	translateToolPanel->buttonCallback(0, actionChangedCallback<TRANSLATE_OUT>);
 	translateToolPanel->buttonCallback(1, actionChangedCallback<TRANSLATE_FREE>);
+	translateToolPanel->buttonCallback(2, actionChangedCallback<TRANSLATE_AXIS>);
 
 	subdivideToolPanel = new SubdivideToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SUBDIVIDE_TOOL] = subdivideToolPanel;
