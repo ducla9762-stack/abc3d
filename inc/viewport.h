@@ -57,6 +57,10 @@ class Viewport : public Fl_Gl_Window {
 	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredArrowAxis = MAX_UINT;
 	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	// AI-generated code: The arrow pressed at the start of an axis drag must
+	// remain active even if the cursor moves away from the gizmo.
+	uint draggedArrowAxis = MAX_UINT;
+	bool draggingArrow = false;
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 
@@ -143,9 +147,9 @@ class Viewport : public Fl_Gl_Window {
 	/// <summary>
 	/// Determines what to do when an arrow is dragged.
 	/// </summary>
-	/// <param name="ids"> The arrow selection ids. </param>
+	/// <param name="pos"> The current mouse position. </param>
 	/// <returns> True if the arrows were handled. </returns>
-	bool arrowDrag(Vec2u ids);
+	bool arrowDrag(const Vec2f& pos);
 
 	/// <summary>
 	/// Logic executed on a mouse button press event.

@@ -54,6 +54,14 @@ int Viewport::handle(int event) {
 		mouseLeave();
 		return 1;
 	}
+	if (event == FL_RELEASE) {
+		// AI-generated code: End the captured arrow drag when the mouse button is
+		// released so a later drag cannot reuse the previous axis.
+		draggingArrow = false;
+		draggedArrowAxis = MAX_UINT;
+		firstDragCallback = false;
+		return 1;
+	}
 
 	if (Fl_Group::handle(event)) {
 		return 1;
@@ -202,6 +210,9 @@ void Viewport::mouseDrag() {
 	}
 	else if (activeAction == TRANSLATE_EDGE) {
 		camera = !translateAlongEdgeDrag(pos);
+	}
+	else if (activeAction == TRANSLATE_AXIS) {
+		camera = !arrowDrag(pos);
 	}
 	else if (activeAction == SCALE) {
 		camera = !uniformScaleDrag(pos);
@@ -599,8 +610,106 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 	return true;
 }
 
-bool Viewport::arrowDrag(Vec2u ids) {
-	return false;
+// AI-generated code: Constrains mouse motion to the world-space axis of the
+// translation arrow that was pressed, then applies that translation to the
+// current selection.
+bool Viewport::arrowDrag(const Vec2f& pos) {
+	if (!draggingArrow || draggedArrowAxis >= 3) {
+		return false;
+	}
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+	if (selectedItems.empty()) {
+		return false;
+	}
+
+	// Get the world-space direction of the camera basis. GetCameraDirs uses the
+	// same right/up convention as translateFreeDrag(), so the mouse delta below
+	// is expressed in that same basis.
+	Vec3f forward, up, right;
+	modelingRenderer.GetCameraDirs(forward, up, right);
+
+	Vec3f axis;
+	switch (draggedArrowAxis) {
+	case 0:
+		axis = Vec3f(1.0f, 0.0f, 0.0f);
+		break;
+	case 1:
+		axis = Vec3f(0.0f, 1.0f, 0.0f);
+		break;
+	case 2:
+		axis = Vec3f(0.0f, 0.0f, 1.0f);
+		break;
+	default:
+		return false;
+	}
+
+	// Project the world axis into the screen plane. If the projected length is
+	// nearly zero, the axis points almost directly at the camera and there is
+	// no stable screen direction from which to infer a drag distance.
+	Vec2f axisScreen(axis.Dot(right), axis.Dot(up));
+	const float axisScreenLength = axisScreen.Length();
+	if (axisScreenLength < 1e-6f) {
+		return false;
+	}
+	axisScreen /= axisScreenLength;
+
+	// Convert the mouse movement into the camera's screen-right/screen-up
+	// convention. The sign matches translateFreeDrag().
+	Vec2f change;
+	change.x = mouseDragPrevPos.x - pos.x;
+	change.y = pos.y - mouseDragPrevPos.y;
+
+	// This sensitivity is the same kind of screen-pixel-to-world scaling used
+	// by the existing drag tools. The resulting vector is still exactly along
+	// the selected world axis.
+	const float distance = 0.01f * change.Dot(axisScreen);
+	const Vec3f worldTranslation = axis * distance;
+
+	bool transformed = false;
+	std::unordered_set<uint> transformedObjects;
+	for (const SelectionItem& item : selectedItems) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (item.type) {
+		case OBJECT:
+			// Objects store their position in world space.
+			if (transformedObjects.insert(item.meshId).second) {
+				mesh->TranslatePos(worldTranslation);
+				transformed = true;
+			}
+			break;
+		case VERTEX:
+			mesh->TranslateVertex(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		case EDGE:
+			mesh->TranslateEdge(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		case FACE:
+			mesh->TranslateFace(item.componentId,
+				mesh->WorldDirToLocalDir(worldTranslation));
+			transformed = true;
+			break;
+		}
+	}
+
+	if (!transformed) {
+		return false;
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	if (primarySelectionCallback) {
+		primarySelectionCallback();
+	}
+
+	return true;
 }
 
 int Viewport::mousePush() {
@@ -622,9 +731,19 @@ int Viewport::mousePush() {
 	// Get the selection ids at this position.
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
 
+	// AI-generated code: Capture the pressed arrow axis once at mouse-down so
+	// the drag remains constrained even when the gizmo moves under the cursor.
+	const bool arrowHit =
+		activeAction == TRANSLATE_AXIS &&
+		selectionIds.x == ARROW_IDENTIFIER &&
+		selectionIds.y == 0 &&
+		selectionIds.z < 3;
+	draggingArrow = arrowHit;
+	draggedArrowAxis = arrowHit ? selectionIds.z : MAX_UINT;
+
 	// AI-generated code: Keeps arrow clicks separate from mesh selection.
 	// If the selection is an arrow.
-	if (selectionIds.x == ARROW_IDENTIFIER) {
+	if (arrowHit) {
 		// Handle Arrow Selection.
 		std::cout << "Arrow: Transformation: " << selectionIds.y << ", Axis: " << selectionIds.z << std::endl;
 	}
