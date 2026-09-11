@@ -7,6 +7,10 @@
 #include <FL/Fl_Simple_Counter.H>
 #include <FL/Fl_Radio_Button.H>
 #include <iostream>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Image.H>
+#include <Fl/Fl_PNG_Image.H>
+
 #undef max
 
 #include "viewport.h"
@@ -396,25 +400,38 @@ public:
 };
 
 class RadioButton : public Fl_Radio_Button {
+	Fl_Window* rightClickPanel;
 public:
-	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h, title) {}
+	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h, title) {
+		rightClickPanel = new Fl_Window(0, 0, 40, 40);
+		rightClickPanel->end();
+		rightClickPanel->hide();
+
+		type(FL_ROUNDED_BOX);
+		color(8);
+		selection_color(fl_rgb_color(196,196,196));
+		labelcolor(FL_WHITE);
+	}
 
 private:
 	int handle(int event) {
 		switch (event) {
-			
+		case FL_PUSH:
+			return push(event);
+		default:
+			return 0;
 		}
 	}
 
-	int push() {
+	int push(int event) {
 		switch (Fl::event_button()) {
 			case FL_RIGHT_MOUSE:
 				rightClickPanel->position(Fl::event_x(), Fl::event_y());
 				rightClickPanel->show();
-				return 1;
+				return Fl_Radio_Button::handle(event);
 			case FL_LEFT_MOUSE:
 				rightClickPanel->hide();
-				return 1;
+				return Fl_Radio_Button::handle(event);
 			}
 	}
 };

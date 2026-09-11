@@ -54,7 +54,7 @@ int Viewport::handle(int event) {
 		take_focus();
 		return mousePush();
 	case FL_DRAG:
-		mouseDrag();
+		if (Fl::event_button() == FL_LEFT_MOUSE) { mouseDrag(); }
 		break;
 	case FL_MOUSEWHEEL:
 		mouseWheel();
@@ -275,27 +275,20 @@ bool Viewport::rotateDrag(const Vec2f& pos) {
 }
 
 int Viewport::mousePush() {
-	bool panelShown = false;
 	// Get position of mouse press.
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
 
 	if (Fl::event_button() == FL_RIGHT_MOUSE) {
-		panelShown = true;
-		std::cout << panelShown << std::endl;
 		rightClickPanel->position(Fl::event_x(), Fl::event_y());
 		rightClickPanel->show();
 		return 1;
 	}
 
 	else if (Fl::event_button() == FL_LEFT_MOUSE) {
-		std::cout << panelShown << std::endl;
-		if (panelShown == true) {
-			rightClickPanel->hide();
-			panelShown = false;
-		}
-
+		rightClickPanel->hide();
+	
 		// Get the selection ids at this position.
 		selectionIds = modelingRenderer.SelectionIds(x, y);
 
@@ -409,7 +402,7 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	// Load default mesh (cube).
 
 	rightClickPanel = new Fl_Window(0, 0, 40, 60, 0);
-	rightClickPanel->color(6);
+	rightClickPanel->color(8);
 	rightClickPanel->hide();
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);

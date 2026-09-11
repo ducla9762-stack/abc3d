@@ -16,6 +16,7 @@
 #include <FL/fl_ask.H>
 #include <Fl/Fl_PNG_Image.H>
 #include <FL/Fl_Tooltip.H>
+#include <FL/Fl_Help_View.H>
 #include <print>
 #undef max
 
@@ -28,10 +29,12 @@
 #include "ui.h"
 #include "customWindow.h"
 
-customWindow* tutorialPanel;
+Fl_Window* topRightPanel;
 customWindow* rightPanel;
 customSlider* slider;
 customWindow* window;
+Fl_Window* tutorialPanel;
+Fl_Window* scenePanel;
 
 // Enum that describes which tool is selected by the user
 enum Tool { SELECT_TOOL, TRANSLATE_TOOL, SCALE_TOOL, ROTATE_TOOL, SUBDIVIDE_TOOL, SHAPE_TOOL, EXTRUDE_TOOL, BEVEL_TOOL };
@@ -54,7 +57,7 @@ Fl_PNG_Image* toolIcons[TOOL_COUNT];
 Fl_PNG_Image* selectionIcons[SELECT_MODES];
 Tool activeTool = SELECT_TOOL;
 
-Fl_Window* rightClickPanel;
+//Fl_Window* rightClickPanel;
 
 void primarySelectionCallback() {
 	toolPanels[activeTool]->updateValues();
@@ -157,12 +160,22 @@ void simpleModeCallback(Fl_Widget* w, void*) {
 
 }
 
-void tutorialModeCallback(Fl_Widget* w, void*) {
+void cameraModeCallback(Fl_Widget* w, void*) {
 
 }
 
-void cameraModeCallback(Fl_Widget* w, void*) {
+void tutorialMenuCallback(Fl_Widget* w, void*) {
+	scenePanel->hide();
+	tutorialPanel->show();
+}
 
+void loadTutorialCallback(Fl_Widget* w, void*) {
+
+}
+
+void sceneMenuCallback(Fl_Widget* w, void*) {
+	tutorialPanel->hide();
+	scenePanel->show();
 }
 
 
@@ -182,10 +195,10 @@ void selectCallback(Fl_Widget* w, void*) {
 	}
 
 	toolPanels[activeTool]->hide();
-
 	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
 	toolIcons[SELECT_TOOL]->color_average(FL_WHITE, 0.0f);
 	w->redraw();
+
 
 	selectToolPanel->show();
 	selectToolPanel->updateValues();
@@ -358,6 +371,7 @@ int main(int argc, char* argv[]) {
 	Fl_Menu_Bar* topMenu = new Fl_Menu_Bar(0, -2, VIEWPORT_W, TOP_TOOLBAR_H);
 	topMenu->selection_color(10);
 	topMenu->color(8);
+	topMenu->textcolor(fl_rgb_color(224,224,192));
 
 	// File -> Import Menu Button
 	topMenu->add("&File/&Import/&Model", "^o", importModelCallback);
@@ -370,7 +384,6 @@ int main(int argc, char* argv[]) {
 	topMenu->add("&File/&Export/&Scene", 0, importStlCallback);
 	topMenu->add("&File/&Export/&Lesson");
 
-	topMenu->add("&File/&Save", FL_CTRL + 's', saveCallback);
 	topMenu->add("&File/&Save", FL_CTRL + 's', saveCallback);
 	topMenu->add("&File/&Settings");
 	topMenu->add("&File/&Exit", 27, exitCallback);
@@ -387,46 +400,79 @@ int main(int argc, char* argv[]) {
 
 	topMenu->add("Simple Mode", 0, simpleModeCallback);
 
-	topMenu->add("Tutorial", 0, tutorialModeCallback);
-
 	topMenu->add("Camera", 0, cameraModeCallback);
+
+
+	/* Top Right panel for the tutorial and scene hierarchy panels */
+	topRightPanel = new Fl_Window(VIEWPORT_W, -2, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
+	topRightPanel->resizable(nullptr);
+	topRightPanel->begin();
+
+	Fl_Menu_Bar* topRightMenu = new Fl_Menu_Bar(0, 0, RIGHT_PANEL_W, TOP_TOOLBAR_H);
+	topRightMenu->color(8);
+	topRightMenu->textcolor(fl_rgb_color(224, 224, 192));
+	topRightMenu->add("Tutorial", 0, tutorialMenuCallback);
+	topRightMenu->add("Scene Hierarchy", 0, sceneMenuCallback);
+
+
+	tutorialPanel = new Fl_Window(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H + TOP_TOOLBAR_H);
+
+	Fl_Help_View* htmlViewer = new Fl_Help_View(0, 0, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
+	// Get this to load a tutorial from file path
+	//htmlViewer->load(); */
+	
+	Fl_Radio_Button* loadTutorialButton = new Fl_Radio_Button(0, TUTORIAL_PANEL_H, 75, TOP_TOOLBAR_H, "Load Tutorial");
+	loadTutorialButton->callback(loadTutorialCallback);
+
+	tutorialPanel->end();
+	tutorialPanel->show();
+
+
+	scenePanel = new Fl_Window(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
+	scenePanel->color(8);
+		//for(HalfEdgeMesh in Meshes()) {
+		//	scenePanel->add(HalfEdgeMesh);
+		//}
+	scenePanel->hide();
+	scenePanel->end();
+
+	topRightPanel->add(tutorialPanel);
+	topRightPanel->add(scenePanel);
+	//topRightPanel->resizable(tutorialPanel);
+	topRightPanel->end();
+	topRightPanel->show();
 
 	/* Left Toolbar that's always present. Creates a window and fills it with radio buttons
 	* Includes buttons for select, translate, rotate, scale, shape, extrude, subdivision, and bevel */
 	viewport->begin();
 	customWindow* sideToolbar = new customWindow(20, 70, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H, 0);
+	sideToolbar->color(8);
 
 	RadioButton* selectButton = new RadioButton(0, 0, 64, 64, "Select");
 	selectButton->value(1);
-	selectButton->selection_color(0);
 	selectButton->callback(selectCallback);
 	toolIcons[SELECT_TOOL] = new Fl_PNG_Image("../assets/images/select_tool.png");
-	toolIcons[SELECT_TOOL]->color_average(FL_WHITE, 0.0f);
 	selectButton->image(toolIcons[SELECT_TOOL]);
 	selectButton->align(FL_ALIGN_CENTER);
 	selectButton->tooltip("Select Tool");
 	//selectButton->shortcut();
 
 	RadioButton* translationButton = new RadioButton(0, 64, 64, 64, "Translation");
-	translationButton->selection_color(0);
 	translationButton->callback(translationCallback);
 	toolIcons[TRANSLATE_TOOL] = new Fl_PNG_Image("../assets/images/move_tool.png");
 	translationButton->image(toolIcons[TRANSLATE_TOOL]);
 	translationButton->align(FL_ALIGN_CENTER);
 	translationButton->tooltip("Move Tool");
-	translationButton->shortcut();
+	//translationButton->shortcut();
 
 	RadioButton* rotateButton = new RadioButton(0, 2 * 64, 64, 64, "Rotate");
-	rotateButton->selection_color(0);
 	rotateButton->callback(rotateCallback);
 	toolIcons[ROTATE_TOOL] = new Fl_PNG_Image("../assets/images/rotate_tool.png");
 	rotateButton->image(toolIcons[ROTATE_TOOL]);
 	rotateButton->tooltip("Rotate Tool");
-	rotateButton->image(toolIcons[ROTATE_TOOL]);
 	rotateButton->shortcut('r');
 
 	RadioButton* scaleButton = new RadioButton(0, 3 * 64, 64, 64, "Scale");
-	scaleButton->selection_color(0);
 	scaleButton->callback(scaleCallback);
 	toolIcons[SCALE_TOOL] = new Fl_PNG_Image("../assets/images/scale_tool.png");
 	scaleButton->image(toolIcons[SCALE_TOOL]);
@@ -434,7 +480,6 @@ int main(int argc, char* argv[]) {
 	scaleButton->shortcut();
 
 	RadioButton* shapeButton = new RadioButton(0, 4 * 64, 64, 64, "Shape");
-	shapeButton->selection_color(0);
 	shapeButton->callback(shapeCallback);
 	toolIcons[SHAPE_TOOL] = new Fl_PNG_Image("../assets/images/shape_tool.png");
 	shapeButton->image(toolIcons[SHAPE_TOOL]);
@@ -443,7 +488,6 @@ int main(int argc, char* argv[]) {
 	// buttons for resolutions?
 
 	RadioButton* extrudeButton = new RadioButton(0, 5 * 64, 64, 64, "Extrude");
-	extrudeButton->selection_color(0);
 	extrudeButton->callback(extrudeCallback, rightPanel);
 	toolIcons[EXTRUDE_TOOL] = new Fl_PNG_Image("../assets/images/extrude_tool.png");
 	extrudeButton->image(toolIcons[EXTRUDE_TOOL]);
@@ -451,7 +495,6 @@ int main(int argc, char* argv[]) {
 	extrudeButton->shortcut('e');
 
 	RadioButton* subdivisionButton = new RadioButton(0, 6 * 64, 64, 64, "Subdivide");
-	subdivisionButton->selection_color(0);
 	subdivisionButton->callback(subdivisionPanelCallback);
 	toolIcons[SUBDIVIDE_TOOL] = new Fl_PNG_Image("../assets/images/subdiv_tool.png");
 	subdivisionButton->image(toolIcons[SUBDIVIDE_TOOL]);
@@ -460,28 +503,19 @@ int main(int argc, char* argv[]) {
 	
 
 	RadioButton* bevelButton = new RadioButton(0, 7 * 64, 64, 64, "Bevel");
-	bevelButton->selection_color(0);
 	bevelButton->callback(bevelCallback);
 	toolIcons[BEVEL_TOOL] = new Fl_PNG_Image("../assets/images/bevel_tool.png");
 	bevelButton->image(toolIcons[BEVEL_TOOL]);
 	bevelButton->tooltip("Bevel Tool");
 	bevelButton->shortcut('b');
 
-	rightClickPanel = new Fl_Window(0, 0, 20, 20);
-	rightClickPanel->color(6);
-	rightClickPanel->hide();
+	//rightClickPanel = new Fl_Window(0, 0, 20, 20);
+	//rightClickPanel->color(6);
+	//rightClickPanel->hide();
 
 	//sideToolbar->resizable(sideToolbar);
 	sideToolbar->end();
 	viewport->end();
-
-
-	/* Top Right panel for the tutorials */
-	tutorialPanel = new customWindow(VIEWPORT_W, 0, RIGHT_PANEL_W, TUTORIAL_PANEL_H, 0);
-	tutorialPanel->resizable(nullptr);
-	tutorialPanel->color(FL_DARK_RED);
-	tutorialPanel->begin();
-	tutorialPanel->end();
 
 	/* Right panel tools that pop up when a button is selected. Mapping tools and panels
 	* Creates a new window and fills it with options relevant to the selected left toolbar button
@@ -535,30 +569,30 @@ int main(int argc, char* argv[]) {
 
 	RadioButton* vertexButton = new RadioButton(0, 0, 64, 64, "Vertex");
 	vertexButton->callback(elementSelectCallback<VERTEX>);
-	vertexButton->selection_color(0);
 	selectionIcons[VERTEX_SELECT] = new Fl_PNG_Image("../assets/images/vertex_select.png");
+	vertexButton->image(selectionIcons[VERTEX_SELECT]);
 	vertexButton->tooltip("Vertex Selection");
 	vertexButton->shortcut('v');
 
 	RadioButton* edgeButton = new RadioButton(64, 0, 64, 64, "Edge");
 	edgeButton->callback(elementSelectCallback<EDGE>);
-	edgeButton->selection_color(0);
 	selectionIcons[EDGE_SELECT] = new Fl_PNG_Image("../assets/images/edge_select.png");
+	edgeButton->image(selectionIcons[EDGE_SELECT]);
 	edgeButton->tooltip("Edge Selection");
 	edgeButton->shortcut('e');
 
 	RadioButton* faceButton = new RadioButton(2 * 64, 0, 64, 64, "Face");
 	faceButton->callback(elementSelectCallback<FACE>);
-	faceButton->selection_color(0);
 	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/face_select.png");
+	faceButton->image(selectionIcons[FACE_SELECT]);
 	faceButton->tooltip("Face Selection");
 	faceButton->shortcut('f');
 
 	RadioButton* objectButton = new RadioButton(3 * 64, 0, 64, 64, "Object");
 	objectButton->callback(elementSelectCallback<OBJECT>);
-	objectButton->selection_color(0);
 	objectButton->value(1);
-	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/face_select.png");
+	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/object_select.png");
+	objectButton->image(selectionIcons[OBJECT_SELECT]);
 	objectButton->tooltip("Object Selection");
 	objectButton->shortcut('o');
 
