@@ -796,6 +796,7 @@ void Viewport::mouseWheel() {
 void Viewport::keyDown() {
 	switch (Fl::event_key()) {
 	case 'e': 
+		// DEBUG TEMP
 		selectionManager.setActiveElement(VERTEX); 
 		activeAction = TRANSLATE_EDGE; 
 		break; 
@@ -818,6 +819,7 @@ void Viewport::keyDown() {
 		duplicateElement(); 
 		break;
 	case 'v':
+		// DEBUG TEMP
 		selectionManager.setActiveElement(EDGE);
 		activeAction = TRANSLATE_OUT;
 		break;
@@ -935,7 +937,7 @@ void Viewport::setScale(int component, float scale) {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
@@ -1025,15 +1027,15 @@ void Viewport::subdivision() {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
-			// todo
+			// Not necessary?
 			break;
 
 		case FACE:
-			// todo
+			// Not necessary?
 			break;
 		}
 	}
@@ -1118,7 +1120,7 @@ void Viewport::tesselate() {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
@@ -1217,15 +1219,15 @@ void Viewport::setRot(int component, float angle) {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
-			// todo
+			// Unsure?
 			break;
 
 		case FACE:
-			// todo
+			// Unsure?
 			break;
 		}
 	}
@@ -1248,21 +1250,55 @@ void Viewport::setPos(int component, float pos) {
 
 		HalfEdgeMesh* mesh = scene[item.meshId];
 
+		// Sets world position.
 		switch (item.type) {
-		case OBJECT:
+		case OBJECT: {
 			mesh->Pos(component, pos);
 			break;
+		}
 
-		case VERTEX:
-			// todo
-			break;
+		case VERTEX: {
+			// Get the local position of the vertex.
+			Vec3f localCenter = mesh->GetVertexPosition(item.componentId);
 
-		case EDGE:
-			// todo
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of vertex.
+			mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
 			break;
+		}
+
+		case EDGE: {
+			// Get the local center of the edge.
+			Vec3f localCenter = mesh->GetEdgeCenter(item.componentId);
+
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of the edge.
+			mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
+			break;
+		}
 
 		case FACE:
-			// todo
+			// Get the local center of the face.
+			Vec3f localCenter = mesh->faceCentroid(item.componentId);
+
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of the edge.
+			scene[item.meshId]->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
 			break;
 		}
 	}
