@@ -349,37 +349,6 @@ bool FaceList::LoadSTL(const char* stl) {
 	}
 }
 
-void HalfEdgeMeshBeveler::StartEdgeBevel(uint edgeId) {
-	elements[0] = edgeId;
-	elements[1] = mesh.edges[edgeId].twin;
-	mesh.BevelEdge(edgeId);
-
-	if (!buf) { buf = new Vec3f[8]; }
-
-	for (int i = 0; i < 2; ++i) {
-		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
-		Vec3f orig = mesh.vertPos[edge.orig];
-		Vec3f dest = mesh.vertPos[edge.dest];
-
-		buf[i * 2] = orig;
-		buf[i * 2 + 1] = dest;
-
-		buf[i * 2 + 4] = mesh.vertPos[mesh.edges[edge.prev].orig] - orig;
-		buf[i * 2 + 5] = mesh.vertPos[mesh.edges[edge.next].dest] - dest;
-	}
-}
-
-void HalfEdgeMeshBeveler::AdjustBevel(float bevelFactor) {
-	if (bevelFactor > 1.0f || bevelFactor < 0.0f) { return; }
-	for (int i = 0; i < 2; ++i) {
-		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
-
-		// New Vertex Position = Old Position + (Bevel Factor)(Translation)
-		mesh.vertPos[edge.orig] = buf[i * 2] + bevelFactor * buf[i * 2 + 4];
-		mesh.vertPos[edge.dest] = buf[i * 2 + 1] + bevelFactor * buf[i * 2 + 5];
-	}
-}
-
 // HalfEdgeMesh
 uint HalfEdgeMesh::NewFace(uint faceEdge) {
 	uint face = faceEdges.size();

@@ -9,6 +9,7 @@
 #include <array>
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
@@ -109,20 +110,7 @@ public:
 	std::vector<FaceList> SplitObjects() const;
 };
 
-class HalfEdgeMesh;
-
-class HalfEdgeMeshBeveler {
-	HalfEdgeMesh& mesh;
-	uint elements[2];
-	Vec3f* buf;
-public:
-	HalfEdgeMeshBeveler(HalfEdgeMesh& mesh) : mesh(mesh) { }
-	~HalfEdgeMeshBeveler() { if (buf) delete[] buf; }
-	void StartEdgeBevel(uint edgeId);
-	void AdjustBevel(float bevelFactor);
-
-	void EndBevel() { }
-};
+class HalfEdgeMeshBeveler;
 
 class HalfEdgeMesh {
 
@@ -684,5 +672,340 @@ void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<V
 	vertPos.insert(vertPos.end(), vertices.begin(), vertices.end());
 	(void)build(faces, basicVertexCountFunc);
 }
+
+class HalfEdgeMeshBeveler {
+	struct VMesh {
+		uint vertexId;
+		uint patchEdgeCount;
+		uint degree;
+		Vec2u* incidentEdges;
+		bool* edgeIsBevel;
+		VMesh(uint vertexId) : vertexId(vertexId) { patchEdgeCount = 0; degree = 0; }
+		~VMesh() {
+			if (incidentEdges) { delete[] incidentEdges; }
+			if (edgeIsBevel) { delete[] edgeIsBevel; }
+		}
+	};
+
+	HalfEdgeMesh& mesh;
+	std::vector<uint> vertices;
+	std::vector<Vec3f> vertTransforms; // vert positions and translations
+
+	void BuildVMesh(VMesh& vMesh, const std::unordered_map<uint, uint>& edgeSelected) {
+		uint firstEdge = mesh.vertEdge[vMesh.vertexId];
+		uint currEdge = firstEdge;
+
+		do {
+			HalfEdgeMesh::HalfEdge& edge = mesh.edges[currEdge];
+			++vMesh.degree;
+			currEdge = mesh.edges[edge.twin].next;
+		} while (currEdge != firstEdge);
+
+		vMesh.incidentEdges = new Vec2u[vMesh.degree];
+		vMesh.edgeIsBevel = new bool[vMesh.degree];
+
+		for (uint i = 0; i < vMesh.degree; ++i) {
+			HalfEdgeMesh::HalfEdge& edge = mesh.edges[currEdge];
+			vMesh.incidentEdges[i] = Vec2u(currEdge, 0);
+			vMesh.edgeIsBevel[i] = edgeSelected.count(currEdge);
+			currEdge = mesh.edges[edge.twin].next;
+		}
+
+		for (uint i = 0; i < vMesh.degree - 1; ++i) {
+			uint edgeId = vMesh.incidentEdges[i][0];
+			vMesh.incidentEdges[i][1] = vMesh.patchEdgeCount;
+			if (vMesh.edgeIsBevel[i] || !vMesh.edgeIsBevel[i + 1]) {
+				++vMesh.patchEdgeCount;
+			}
+		}
+
+		if (!vMesh.edgeIsBevel[vMesh.degree - 1] && vMesh.edgeIsBevel[0]) {
+			//--vMesh.patchEdgeCount;
+			vMesh.incidentEdges[vMesh.degree - 1][1] = 0;
+		}
+		else {
+			vMesh.incidentEdges[vMesh.degree - 1][1] = vMesh.patchEdgeCount;
+			++vMesh.patchEdgeCount;
+		}
+	}
+
+	void SetTwins(uint edgeId, uint twinId, uint orig, uint dest) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeId];
+		edge.orig = orig;
+		edge.dest = dest;
+		edge.twin = twinId;
+
+		HalfEdgeMesh::HalfEdge& twin = mesh.edges[twinId];
+		twin.orig = dest;
+		twin.dest = orig;
+		twin.twin = edgeId;
+	}
+
+	void InsertPrev(uint edgeId, uint newPrevId) {
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeId];
+		HalfEdgeMesh::HalfEdge& newPrev = mesh.edges[newPrevId];
+
+		newPrev.next = edgeId;
+		newPrev.prev = edge.prev;
+		newPrev.face = edge.face;
+
+		mesh.edges[edge.prev].next = newPrevId;
+		edge.prev = newPrevId;
+	}
+
+	uint NewTwin(uint edgeId, uint face) {
+		uint twinId = mesh.NewEdge();
+		HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeId];
+		HalfEdgeMesh::HalfEdge& twin = mesh.edges[twinId];
+
+		twin.twin = edgeId;
+		twin.orig = edge.dest;
+		twin.dest = edge.orig;
+		twin.face = face;
+
+		return twinId;
+	}
+
+	void IncorporateVEdge(const VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
+		if (vMesh.degree != 3 && vMesh.degree != 4) { return; }
+
+		uint edgeId = mesh.NewEdge();
+		uint twinId = mesh.NewEdge();
+
+		// degree can be 3, or 4 (if 2, you cannot bevel the edge)
+		if (vMesh.degree == 4) {
+			uint orig = vMesh.vertexId;
+			uint dest = vMesh.incidentEdges[2][1];
+
+			uint offset = !vMesh.edgeIsBevel[0];
+			bevelMap[vMesh.incidentEdges[0 + offset][0]] = edgeId;
+			bevelMap[vMesh.incidentEdges[2 + offset][0]] = twinId;
+
+			SetTwins(edgeId, twinId, orig, dest);
+
+			return;
+		}
+
+		// degree == 3
+		uint bevelDegree = 0;
+		uint bevelEdges[2] = { MAX_UINT, MAX_UINT };
+		for (uint i = 0; i < 3; ++i) {
+			if (vMesh.edgeIsBevel[i]) {
+				bevelEdges[bevelDegree] = i;
+				++bevelDegree;
+			}
+		}
+
+		uint orig = vMesh.incidentEdges[bevelEdges[0]][1];
+		uint dest = vMesh.incidentEdges[WrapInc(bevelEdges[0], 2)][1];
+		SetTwins(edgeId, twinId, orig, dest);
+
+		bevelMap[vMesh.incidentEdges[bevelEdges[0]][0]] = edgeId;
+
+		if (bevelDegree == 1) {
+			InsertPrev(vMesh.incidentEdges[WrapDec(bevelEdges[0], 2)][0], twinId);
+		}
+		else {
+			bevelMap[vMesh.incidentEdges[bevelEdges[1]][0]] = twinId;
+		}
+	}
+
+	void IncorporateVMesh(VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
+		// later put this in build
+		uint vertOffset = mesh.vertPos.size() - 1;
+		for (uint i = 0; i < vMesh.degree; ++i) {
+			Vec2u& edge = vMesh.incidentEdges[i];
+			if (edge[1] == 0) { edge[1] = vMesh.vertexId; }
+			else { edge[1] += vertOffset; }
+		}
+
+		mesh.vertPos.insert(mesh.vertPos.end(), vMesh.patchEdgeCount - 1, mesh.vertPos[vMesh.vertexId]);
+		mesh.vertEdge.insert(mesh.vertEdge.end(), vMesh.patchEdgeCount - 1, 0);
+
+		// Set Each Incident Edge's New Vertex (since this vertex is becoming a junction face/edge)
+		uint firstNewVertex = mesh.vertPos.size();
+		for (uint i = 0; i < vMesh.degree; ++i) {
+			const Vec2u& edgeIds = vMesh.incidentEdges[i];
+			HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeIds[0]];
+
+			uint vertexId = edgeIds[1];
+
+			edge.orig = vertexId;
+
+			if (vMesh.edgeIsBevel[i]) {
+				mesh.edges[edge.twin].dest = vMesh.incidentEdges[WrapInc(i, vMesh.degree - 1)][1];
+			}
+			else {
+				mesh.edges[edge.twin].dest = vertexId;
+			}
+
+			mesh.vertEdge[vertexId] = edgeIds[0]; // set vertEdge for this vert (may happen multiple times but that's fine)
+		}
+
+		// Set Vertex Tracks
+		uint prevEdge = vMesh.incidentEdges[vMesh.degree - 1][0];
+		bool prevWasBevel = vMesh.edgeIsBevel[vMesh.degree - 1];
+		const Vec3f& vertPos = mesh.vertPos[vMesh.vertexId];
+		for (uint i = 0; i < vMesh.degree; ++i) {
+			Vec2u& edgeIds = vMesh.incidentEdges[i];
+
+			if (!vMesh.edgeIsBevel[i]) {
+				vertices.push_back(edgeIds[1]);
+				vertTransforms.push_back(vertPos);
+				vertTransforms.push_back(mesh.vertPos[mesh.edges[edgeIds[0]].dest] - vertPos);
+				vertTransforms.back() *= 0.5f;
+				// vert edgeIds[1] slides down edgeIds[0]
+			}
+			else if (prevWasBevel) {
+				vertices.push_back(edgeIds[1]);
+				vertTransforms.push_back(vertPos);
+				vertTransforms.push_back(mesh.vertPos[mesh.edges[edgeIds[0]].dest] - vertPos);
+				vertTransforms.back() += mesh.vertPos[mesh.edges[prevEdge].dest] - vertPos;
+				vertTransforms.back() *= 0.5f;
+				// vert edgeIds[1] slides down edgeIds[0] and prevEdge
+			}
+			prevWasBevel = vMesh.edgeIsBevel[i];
+			prevEdge = edgeIds[0];
+		}
+
+		// If junction is a single edge
+		if (vMesh.patchEdgeCount <= 2) {
+			IncorporateVEdge(vMesh, bevelMap);
+			return;
+		}
+
+		// Build Junction Face
+		uint firstNewEdge = mesh.edges.size();
+		uint juncFace = mesh.NewFace(firstNewEdge);
+
+		uint edgeIndex = 0;
+		uint prevJunctionVertId = vMesh.incidentEdges[vMesh.degree - 1][1];
+		prevWasBevel = vMesh.edgeIsBevel[vMesh.degree - 1];
+		for (uint i = 0; i < vMesh.degree; ++i) {
+			const Vec2u& edgeIds = vMesh.incidentEdges[i];
+
+			if (edgeIds[1] == prevJunctionVertId && !prevWasBevel && !vMesh.edgeIsBevel[i]) {
+				prevJunctionVertId = edgeIds[1];
+				prevWasBevel = false;
+				continue;
+			}
+
+			uint juncEdgeOrig;
+			uint juncEdgeDest;
+
+			if (vMesh.edgeIsBevel[i]) {
+				juncEdgeOrig = vMesh.incidentEdges[WrapInc(i, vMesh.degree - 1)][1];
+				juncEdgeDest = edgeIds[1];
+			}
+			else {
+				juncEdgeOrig = edgeIds[1];
+				juncEdgeDest = prevJunctionVertId;
+			}
+
+			// Create new edge from prevJunctionVertId to currJunctionVertId
+			uint juncEdgeId = mesh.NewEdge();
+			uint juncTwinId = mesh.NewEdge();
+			SetTwins(juncEdgeId, juncTwinId, juncEdgeOrig, juncEdgeDest);
+
+			HalfEdgeMesh::HalfEdge& juncEdge = mesh.edges[juncEdgeId];
+			juncEdge.face = juncFace;
+			juncEdge.next = firstNewEdge + (2 * WrapDec(edgeIndex, vMesh.patchEdgeCount - 1));
+			juncEdge.prev = firstNewEdge + (2 *  WrapInc(edgeIndex, vMesh.patchEdgeCount - 1));
+			++edgeIndex;
+
+			if (vMesh.edgeIsBevel[i]) {
+				// twin can be set by bevel face construction
+				bevelMap[edgeIds[0]] = juncTwinId;
+			}
+			else {
+				InsertPrev(edgeIds[0], juncTwinId);
+			}
+
+			prevJunctionVertId = edgeIds[1];
+			prevWasBevel = vMesh.edgeIsBevel[i];
+
+		}
+	}
+
+public:
+	HalfEdgeMeshBeveler(HalfEdgeMesh& mesh) : mesh(mesh) {}
+	void StartEdgeBevel(uint edgeId){}
+	void StartEdgeBevel(const std::vector<uint>& edges) {
+		std::unordered_map<uint, uint> vertMap;
+		std::unordered_map<uint, uint> edgeMap; // used for edge and vertex duplication
+
+		uint reserveSize = edges.size() * 2;
+		vertMap.reserve(reserveSize);
+		edgeMap.reserve(reserveSize);
+		vertices.reserve(reserveSize);
+		vertTransforms.reserve(reserveSize * 2);
+
+		std::vector<VMesh> vertexMeshes;
+		vertexMeshes.reserve(reserveSize);
+
+		// Build vertex meshes
+		for (uint edgeId : edges) {
+			HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeId];
+
+			if (edgeMap.count(edgeId) || edgeMap.count(edge.twin)) { continue; }
+
+			edgeMap[edgeId] = 0;
+			edgeMap[edge.twin] = 0;
+
+			if (!vertMap.count(edge.orig)) {
+				vertMap[edge.orig] = 0;
+				vertexMeshes.emplace_back(edge.orig);
+			}
+
+			if (!vertMap.count(edge.dest)) {
+				vertMap[edge.dest] = 0;
+				vertexMeshes.emplace_back(edge.dest);
+			}
+		}
+
+		// Build Vertex Meshes
+		for (VMesh& vMesh : vertexMeshes) {
+			BuildVMesh(vMesh, edgeMap);
+		}
+
+		// Incorporate Vertex Meshes
+		for (VMesh& vMesh : vertexMeshes) {
+			// TODO: Actually add vertices to mesh
+			IncorporateVMesh(vMesh, edgeMap);
+		}
+
+		// Build Bevel Strips
+		for (uint hEdge1Id : edges) {
+			if (edgeMap[hEdge1Id] == MAX_UINT) { continue; }
+
+			uint hEdge2Id = mesh.edges[hEdge1Id].twin;
+			uint side1 = edgeMap[hEdge1Id];
+			uint side2 = edgeMap[hEdge2Id];
+			uint face = mesh.NewFace(side1);
+
+			uint faceEdges[4] = { NewTwin(hEdge1Id, face), side1, NewTwin(hEdge2Id, face), side2 };
+
+			for (uint i = 0; i < 4; ++i) {
+				HalfEdgeMesh::HalfEdge& edge = mesh.edges[faceEdges[i]];
+
+				edge.next = faceEdges[WrapInc(i, 3)];
+				edge.prev = faceEdges[WrapDec(i, 3)];
+			}
+
+			mesh.edges[side1].face = face;
+			mesh.edges[side2].face = face;
+
+			edgeMap[hEdge1Id] = MAX_UINT;
+			edgeMap[hEdge2Id] = MAX_UINT;
+		}
+	}
+	void AdjustBevel(float bevelFactor) {
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			size_t transIndex = i * 2;
+			mesh.vertPos[vertices[i]] = vertTransforms[transIndex] + (vertTransforms[transIndex + 1] * bevelFactor);
+		}
+	}
+	void EndBevel() {}
+};
 
 #endif

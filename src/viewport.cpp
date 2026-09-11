@@ -620,9 +620,13 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 
 	//scene[0]->Extrude(5);
 	//scene[0]->TranslateFace(5, scene[0]->GetFaceNormal(5));
-	//HalfEdgeMeshBeveler beveler(*scene[0]);
-	//beveler.StartEdgeBevel(17);
-	//beveler.AdjustBevel(0.5f);
+	HalfEdgeMeshBeveler beveler(*scene[0]);
+	//std::vector<uint> edges = { 17, 32 };
+	std::vector<uint> edges = { 17, 16, 21 };
+	//std::vector<uint> edges = { 17, 16 };
+	//std::vector<uint> edges = { 17 };
+	beveler.StartEdgeBevel(edges);
+	beveler.AdjustBevel(0.5f);
 }
 
 float Viewport::getScale(int component, float scale) {
