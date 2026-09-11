@@ -54,6 +54,13 @@ class Viewport : public Fl_Gl_Window {
 	std::vector<Vec3f> dragActionDirs;
 	Vec3f initialActionState = Vec3f(0.0f);
 	bool firstDragCallback = false;
+	// AI-generated code: Cursor hover state for arrows and active elements.
+	uint hoveredArrowAxis = MAX_UINT;
+	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	// AI-generated code: The arrow pressed at the start of an axis drag must
+	// remain active even if the cursor moves away from the gizmo.
+	uint draggedArrowAxis = MAX_UINT;
+	bool draggingArrow = false;
 
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 
@@ -84,15 +91,65 @@ class Viewport : public Fl_Gl_Window {
 	/// </summary>
 	void mouseDrag();
 
+	/// Updates the hovered translation arrow from the selection framebuffer.
+	void mouseMove();
+
+	/// Clears the hovered translation arrow when the cursor leaves the viewport.
+	void mouseLeave();
+
+	/// <summary>
+	/// Translates the selected elements out to pos.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="uv"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateOutDrag(const Vec2f& pos, const Vec2f& uv);
+
+	/// <summary>
+	/// Translates selected elements along an edge to pos.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateAlongEdgeDrag(const Vec2f& pos); 
+
+	/// <summary>
+	/// Translates the selected vertices out.
+	/// </summary>
+	/// <param name="scale"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateOutVertexDrag(float scale);
 
+	/// <summary>
+	/// Translates selected elements in free mode.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="uv"></param>
+	/// <returns> True if translation occurred. </returns>
 	bool translateFreeDrag(const Vec2f& pos, const Vec2f& uv);
 
+	/// <summary>
+	/// Uniformly scales selected elements.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if scale occurred. </returns>
 	bool uniformScaleDrag(const Vec2f& pos);
 
+	/// <summary>
+	/// Rotates selected elements.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <returns> True if rotation occurred. </returns>
 	bool rotateDrag(const Vec2f& pos);
+
+	/// Updates the translation gizmo from the current selection and action.
+	void updateArrows();
+	
+	/// <summary>
+	/// Determines what to do when an arrow is dragged.
+	/// </summary>
+	/// <param name="pos"> The current mouse position. </param>
+	/// <returns> True if the arrows were handled. </returns>
+	bool arrowDrag(const Vec2f& pos);
 
 	/// <summary>
 	/// Logic executed on a mouse button press event.
@@ -221,17 +278,6 @@ public:
 	/// Duplicates all selected meshes.
 	/// </summary>
 	void duplicateElement();
-
-	/// <summary>
-	/// Set selection status of mesh at id.
-	/// </summary>
-	/// <param name="id"> id of mesh in scene. </param>
-	void selectMesh(uint id);
-
-	/// <summary>
-	/// Deselect all meshes in scene.
-	/// </summary>
-	void deselectMeshes();
 
 	/// <summary>
 	/// Set the rotation of component of mesh to angle.

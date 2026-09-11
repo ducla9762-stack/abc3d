@@ -13,6 +13,7 @@ out vec3 drawClr;
 out uvec2 drawIds;
 
 uniform mat4 viewProj;
+uniform float screenScale;
 
 const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
 const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
@@ -26,6 +27,13 @@ void main(){
 	// Adjust the length of the arrow
 	pos.y += float(gl_VertexID > 7) * length;
 	pos.y += float(gl_VertexID == 20) * arrowTipHeight;
+
+	// Scale the complete arrow by its distance from the camera so its
+	// projected height remains constant in screen space.
+	vec4 baseClip = viewProj * vec4(base, 1.0f);
+	float localHeight = max(length + arrowTipHeight, 0.001f);
+	float depthScale = max(baseClip.w, 0.001f) * screenScale / localHeight;
+	pos *= depthScale;
 
 	// Rotate the arrow
 	bool dirIsZ = abs(dir.z) > 0.99f;
