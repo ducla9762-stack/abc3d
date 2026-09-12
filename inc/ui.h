@@ -304,6 +304,7 @@ public:
 		cubeButton->box(FL_UP_BOX);
 		cubeButton->callback(cubeCallback);
 		cubeButton->align(FL_ALIGN_INSIDE);
+		cubeButton->tooltip("Creates a cube in the scene");
 		yPos += interval;
 
 		// UV Sphere Shape Button
@@ -312,6 +313,7 @@ public:
 		UVSphereButton->box(FL_UP_BOX);
 		UVSphereButton->callback(UVSphereCallback);
 		UVSphereButton->align(FL_ALIGN_INSIDE);
+		UVSphereButton->tooltip("Creates a UV sphere in the scene");
 		yPos += interval;
 
 		// ICO Sphere Shape Button
@@ -320,6 +322,7 @@ public:
 		icoSphereButton->box(FL_UP_BOX);
 		icoSphereButton->callback(icoSphereCallback);
 		icoSphereButton->align(FL_ALIGN_INSIDE);
+		icoSphereButton->tooltip("Creates an ico sphere in the scene");
 		yPos += interval;
 
 		// Pyramid Shape Button
@@ -328,6 +331,7 @@ public:
 		pyramidButton->box(FL_UP_BOX);
 		pyramidButton->callback(pyramidCallback);
 		pyramidButton->align(FL_ALIGN_INSIDE);
+		pyramidButton->tooltip("Creates a pyramid in the scene");
 		yPos += interval;
 
 		// Cylinder Button
@@ -336,6 +340,7 @@ public:
 		cylinderButton->box(FL_UP_BOX);
 		cylinderButton->callback(cylinderCallback);
 		cylinderButton->align(FL_ALIGN_INSIDE);
+		cylinderButton->tooltip("Creates a cylinder in the scene");
 		yPos += interval;
 
 		// Torus Shape Button
@@ -344,6 +349,7 @@ public:
 		torusButton->box(FL_UP_BOX);
 		torusButton->callback(torusCallback);
 		torusButton->align(FL_ALIGN_INSIDE);
+		torusButton->tooltip("Creates a torus in the scene - 'the donut'");
 		
 		end();
 	}
@@ -371,6 +377,7 @@ public:
 		subdivideButton->box(FL_UP_BOX);
 		subdivideButton->callback(subdivisionCallback);
 		subdivideButton->align(FL_ALIGN_INSIDE);
+		subdivideButton->tooltip("Subdivision Tool\n _______ \nRestricted to object-level");
 
 		// Tesselate Button
 		Fl_Button* tesselateButton = new Fl_Button(0, buttonH, w, buttonH, "Tesselation");
@@ -378,7 +385,7 @@ public:
 		tesselateButton->box(FL_UP_BOX);
 		tesselateButton->callback(tesselationCallback);
 		tesselateButton->align(FL_ALIGN_INSIDE);
-
+		tesselateButton->tooltip("Tesselation Tool\n _____ \n");
 		end();
 	}
 };
@@ -403,36 +410,9 @@ class RadioButton : public Fl_Radio_Button {
 	Fl_Window* rightClickPanel;
 public:
 	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h, title) {
-		rightClickPanel = new Fl_Window(0, 0, 40, 40);
-		rightClickPanel->end();
-		rightClickPanel->hide();
-
-		type(FL_ROUNDED_BOX);
 		color(8);
 		selection_color(fl_rgb_color(196,196,196));
 		labelcolor(FL_WHITE);
-	}
-
-private:
-	int handle(int event) {
-		switch (event) {
-		case FL_PUSH:
-			return push(event);
-		default:
-			return 0;
-		}
-	}
-
-	int push(int event) {
-		switch (Fl::event_button()) {
-			case FL_RIGHT_MOUSE:
-				rightClickPanel->position(Fl::event_x(), Fl::event_y());
-				rightClickPanel->show();
-				return Fl_Radio_Button::handle(event);
-			case FL_LEFT_MOUSE:
-				rightClickPanel->hide();
-				return Fl_Radio_Button::handle(event);
-			}
 	}
 };
 #endif

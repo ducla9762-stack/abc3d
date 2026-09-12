@@ -35,6 +35,7 @@ customSlider* slider;
 customWindow* window;
 Fl_Window* tutorialPanel;
 Fl_Window* scenePanel;
+Fl_Help_View* htmlViewer;
 
 // Enum that describes which tool is selected by the user
 enum Tool { SELECT_TOOL, TRANSLATE_TOOL, SCALE_TOOL, ROTATE_TOOL, SUBDIVIDE_TOOL, SHAPE_TOOL, EXTRUDE_TOOL, BEVEL_TOOL };
@@ -170,7 +171,12 @@ void tutorialMenuCallback(Fl_Widget* w, void*) {
 }
 
 void loadTutorialCallback(Fl_Widget* w, void*) {
-
+	// loads a tutorial from file path
+	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
+	fileChooser.directory("../assets/tutorials/");
+	if (fileChooser.show() == 0) {
+		htmlViewer->load(fileChooser.filename());
+	}
 }
 
 void sceneMenuCallback(Fl_Widget* w, void*) {
@@ -417,22 +423,23 @@ int main(int argc, char* argv[]) {
 
 	tutorialPanel = new Fl_Window(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H + TOP_TOOLBAR_H);
 
-	Fl_Help_View* htmlViewer = new Fl_Help_View(0, 0, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
-	// Get this to load a tutorial from file path
-	//htmlViewer->load(); */
-	
-	Fl_Radio_Button* loadTutorialButton = new Fl_Radio_Button(0, TUTORIAL_PANEL_H, 75, TOP_TOOLBAR_H, "Load Tutorial");
+	Fl_Button* loadTutorialButton = new Fl_Button(0, 0, 100, TOP_TOOLBAR_H, "Load Tutorial");
 	loadTutorialButton->callback(loadTutorialCallback);
 
+	htmlViewer = new Fl_Help_View(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
+	// Get this to load a tutorial from file path
+	htmlViewer->load("../assets/tutorials/test.html");
+
+	
 	tutorialPanel->end();
 	tutorialPanel->show();
 
 
 	scenePanel = new Fl_Window(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
 	scenePanel->color(8);
-		//for(HalfEdgeMesh in Meshes()) {
-		//	scenePanel->add(HalfEdgeMesh);
-		//}
+	//for(HalfEdgeMesh mesh : Meshes()) {
+	//	scenePanel->add(mesh);
+	//}
 	scenePanel->hide();
 	scenePanel->end();
 
@@ -476,14 +483,14 @@ int main(int argc, char* argv[]) {
 	scaleButton->callback(scaleCallback);
 	toolIcons[SCALE_TOOL] = new Fl_PNG_Image("../assets/images/scale_tool.png");
 	scaleButton->image(toolIcons[SCALE_TOOL]);
-	scaleButton->tooltip("Scale Tool");
+	scaleButton->tooltip("Scale Tool\n");
 	scaleButton->shortcut();
 
 	RadioButton* shapeButton = new RadioButton(0, 4 * 64, 64, 64, "Shape");
 	shapeButton->callback(shapeCallback);
 	toolIcons[SHAPE_TOOL] = new Fl_PNG_Image("../assets/images/shape_tool.png");
 	shapeButton->image(toolIcons[SHAPE_TOOL]);
-	shapeButton->tooltip("Shape Tool");
+	shapeButton->tooltip("Shape Tool\nAllows placement of new shapes in scene\n");
 	shapeButton->shortcut();
 	// buttons for resolutions?
 
@@ -498,7 +505,7 @@ int main(int argc, char* argv[]) {
 	subdivisionButton->callback(subdivisionPanelCallback);
 	toolIcons[SUBDIVIDE_TOOL] = new Fl_PNG_Image("../assets/images/subdiv_tool.png");
 	subdivisionButton->image(toolIcons[SUBDIVIDE_TOOL]);
-	subdivisionButton->tooltip("Subdivision Tool");
+	subdivisionButton->tooltip("Subdivision and Tesselation Tool\n");
 	subdivisionButton->shortcut('s');
 	
 
@@ -571,21 +578,21 @@ int main(int argc, char* argv[]) {
 	vertexButton->callback(elementSelectCallback<VERTEX>);
 	selectionIcons[VERTEX_SELECT] = new Fl_PNG_Image("../assets/images/vertex_select.png");
 	vertexButton->image(selectionIcons[VERTEX_SELECT]);
-	vertexButton->tooltip("Vertex Selection");
+	vertexButton->tooltip("Vertex Selection\nAllows selection of a vertex\n'V' key shortcut");
 	vertexButton->shortcut('v');
 
 	RadioButton* edgeButton = new RadioButton(64, 0, 64, 64, "Edge");
 	edgeButton->callback(elementSelectCallback<EDGE>);
 	selectionIcons[EDGE_SELECT] = new Fl_PNG_Image("../assets/images/edge_select.png");
 	edgeButton->image(selectionIcons[EDGE_SELECT]);
-	edgeButton->tooltip("Edge Selection");
+	edgeButton->tooltip("Edge Selection\nAllows selection of an edge\n'E' key shortcut");
 	edgeButton->shortcut('e');
 
 	RadioButton* faceButton = new RadioButton(2 * 64, 0, 64, 64, "Face");
 	faceButton->callback(elementSelectCallback<FACE>);
 	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/face_select.png");
 	faceButton->image(selectionIcons[FACE_SELECT]);
-	faceButton->tooltip("Face Selection");
+	faceButton->tooltip("Face Selection\nAllows selection of a face\n'F' key shortcut");
 	faceButton->shortcut('f');
 
 	RadioButton* objectButton = new RadioButton(3 * 64, 0, 64, 64, "Object");
@@ -593,7 +600,7 @@ int main(int argc, char* argv[]) {
 	objectButton->value(1);
 	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/object_select.png");
 	objectButton->image(selectionIcons[OBJECT_SELECT]);
-	objectButton->tooltip("Object Selection");
+	objectButton->tooltip("Object Selection\nAllows selection of an entire object\n'O' key shortcut");
 	objectButton->shortcut('o');
 
 	bottomToolbar->resizable(bottomToolbar);

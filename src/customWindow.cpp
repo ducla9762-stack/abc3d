@@ -27,7 +27,6 @@ int customWindow::keyDown() {
 		case FL_Control_L:
 			viewport->disableAdditiveSelection();
 			return 1;
-			break;
 		default:
 			return 0;
 		}
