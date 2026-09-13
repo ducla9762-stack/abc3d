@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>360</height>
+    <width>1080</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -95,7 +95,7 @@
          <x>0</x>
          <y>0</y>
          <width>64</width>
-         <height>320</height>
+         <height>680</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -120,6 +120,9 @@
         <property name="spacing">
          <number>0</number>
         </property>
+        <property name="sizeConstraint">
+         <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+        </property>
         <property name="leftMargin">
          <number>0</number>
         </property>
@@ -133,7 +136,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="selectToolButton">
           <property name="minimumSize">
            <size>
             <width>64</width>
@@ -157,6 +160,194 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="translateToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Move</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="translateToolButton_2">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Out</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="scaleToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Scale</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="rotateToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Rotate</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="extrudeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Extrude</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="bevelToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Bevel</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="shapeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Shape</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -178,7 +369,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>640</width>
+     <width>1080</width>
      <height>21</height>
     </rect>
    </property>
@@ -198,10 +389,134 @@
    <class>Viewport</class>
    <extends>QOpenGLWidget</extends>
    <header>Viewport.h</header>
+   <slots>
+    <slot>setActionSelect()</slot>
+    <slot>setActionTranslateOut()</slot>
+    <slot>setActionTranslateFree()</slot>
+    <slot>setActionTranslateEdge()</slot>
+    <slot>setActionTranslateAxis()</slot>
+    <slot>setActionScale()</slot>
+    <slot>setActionRotate()</slot>
+    <slot>setActionBevel()</slot>
+    <slot>setActionExtrude()</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources>
   <include location="ABC3D.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionSelect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>100</x>
+     <y>83</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionTranslateFree()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>140</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>103</x>
+     <y>147</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionScale()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>57</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>103</x>
+     <y>209</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionRotate()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
+     <y>348</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>130</x>
+     <y>301</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionExtrude()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>392</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>119</x>
+     <y>348</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionBevel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>13</x>
+     <y>447</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>133</x>
+     <y>392</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton_2</sender>
+   <signal>released()</signal>
+   <receiver>openGLWidget</receiver>
+   <slot>setActionTranslateOut()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>38</x>
+     <y>201</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>111</x>
+     <y>197</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

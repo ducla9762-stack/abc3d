@@ -172,6 +172,14 @@ private:
 		update();
 	}
 
+	bool translateOutDrag() { return false; }
+	bool translateFreeDrag() { return false; }
+	bool translateEdgeDrag() { return false; }
+	bool bevelDrag() { return false; }
+	bool extrudeDrag() { return false; }
+	bool scaleDrag() { return false; }
+	bool rotateDrag() { return false; }
+
 	void mouseMoveEvent(QMouseEvent* event) override {
 		// Accept the event and make the OpenGL context current for renderer
 		event->accept();
@@ -181,26 +189,34 @@ private:
 		mouseAction.StartMouseDragStep(event->position().x(), this->height() - 1.0f - event->position().y(), this->width(), this->height());
 
 		// Perform drag action
-		bool camera = true;
+		bool actionPerformed = true;
 
 		switch (actionParams.action) {
 		case TRANSLATE_OUT:
+			actionPerformed = translateOutDrag();
 			break;
 		case TRANSLATE_FREE:
+			actionPerformed = translateFreeDrag();
 			break;
 		case TRANSLATE_EDGE:
+			actionPerformed = translateEdgeDrag();
 			break;
 		case SCALE:
+			actionPerformed = scaleDrag();
 			break;
 		case ROTATE:
+			actionPerformed = rotateDrag();
 			break;
 		case EXTRUDE:
+			actionPerformed = extrudeDrag();
 			break;
 		case BEVEL:
+			actionPerformed = bevelDrag();
 			break;
 		}
 
-		if (camera) {
+		// If no action performed, move the camera
+		if (!actionPerformed) {
 			camPos.x -= mouseAction.mouseDragChange.x;
 			camPos.y += mouseAction.mouseDragChange.y;
 			clamp(camPos.y, 1.0f, 179.0f);
@@ -240,5 +256,18 @@ private:
 public:
 	Viewport(QWidget *parent);
 	~Viewport();
+
+public slots:
+	void setActionExtrude() { actionParams.action = EXTRUDE; }
+	void setActionBevel() { actionParams.action = BEVEL; }
+	void setActionTranslateFree() { actionParams.action = TRANSLATE_FREE; }
+	void setActionTranslateOut() { actionParams.action = TRANSLATE_OUT; }
+	void setActionTranslateEdge() { actionParams.action = TRANSLATE_EDGE; }
+	void setActionTranslateAxis() { actionParams.action = TRANSLATE_AXIS; }
+	void setActionScale() { actionParams.action = SCALE; }
+	void setActionRotate() { actionParams.action = ROTATE; }
+	void setActionSelect() { actionParams.action = SELECT; }
+	void setActionCamera() { actionParams.action = CAMERA; }
+
 };
 
