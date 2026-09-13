@@ -19,7 +19,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE
 	};
 
 private:
@@ -27,13 +27,21 @@ private:
 	struct MouseAction {
 		Vec2f mouseDragStartPos = Vec2f(0.0f);
 		Vec2f mouseDragStartPosUV = Vec2f(0.0f);
+
 		Vec2f mouseDragPrevPos = Vec2f(0.0f);
 		Vec2f mouseDragPrevPosUV = Vec2f(0.0f);
+
+		Vec2f mouseDragPos = Vec2f(0.0f);
+		Vec2f mouseDragPosUV = Vec2f(0.0f);
+
+		Vec2f mouseDragChange = Vec2f(0.0f);
+
 		Vec2f initialDragDir = Vec2f(0.0f);
 		Vec2f initialDragDirUV = Vec2f(0.0f);
+
 		bool firstMoveEvent = false;
 
-		Vec2f ToUV(const Vec2f& coords, int w, int h) {
+		static Vec2f ToUV(const Vec2f& coords, int w, int h) {
 			Vec2f uv;
 			uv.x = coords.x / float(w - 1);
 			uv.y = coords.y / float(h - 1);
@@ -50,19 +58,24 @@ private:
 			firstMoveEvent = true;
 		}
 
-		void StartMouseDrag(const Vec2f& pos, const Vec2f& posUV, const Vec2f& dir, const Vec2f& dirUV) {
-			mouseDragPrevPos = pos;
-			mouseDragPrevPosUV = posUV;
+		void StartMouseDragStep(float x, float y, int w, int h) {
+			mouseDragPos.Set(x, y);
+			mouseDragPosUV = ToUV(mouseDragPos, x, y);
+			mouseDragChange = mouseDragPos - mouseDragPrevPos;
 
-			initialDragDir = dir;
-			initialDragDirUV = dirUV;
+			if (firstMoveEvent) {
+				initialDragDir = mouseDragPos - mouseDragStartPos;
+				initialDragDir.Normalize();
 
-			firstMoveEvent = false;
+				initialDragDirUV = mouseDragPosUV - mouseDragStartPosUV;
+				initialDragDirUV.Normalize();
+			}
 		}
 
-		void ContinueMouseDrag(const Vec2f& pos, const Vec2f& posUV) {
-			mouseDragPrevPos = pos;
-			mouseDragPrevPosUV = posUV;
+		void EndMouseDragStep() {
+			mouseDragPrevPos = mouseDragPos;
+			mouseDragPrevPosUV = mouseDragPosUV;
+			firstMoveEvent = false;
 		}
 	};
 
@@ -113,6 +126,7 @@ private:
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
 	}
 
+	// Ported directly from FLTK version
 	std::optional<SelectionItem> createSelectionItem(Vec3u ids);
 
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
@@ -128,7 +142,7 @@ private:
 	}
 
 	void mousePressEvent(QMouseEvent* event) override {
-		// Only accept event if the left mouse button is held
+		// Only accept event if the left mouse button is clicked
 		if (!(event->button() & Qt::LeftButton)) {
 			event->ignore();
 			return;
@@ -139,10 +153,10 @@ private:
 		makeCurrent();
 
 		// Retrieve the current logical (not physical) pixel position
-		Vec2f pos(event->position().x(), event->position().y());
+		Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
 		// Retrieve selection ids from corresponding physical pixel and print them
-		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (this->height() - 1.0f - pos.y));
+		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 		
 		std::cout << "Object Id: " << ids.x << std::endl;
 		std::cout << "Component Id: " << ids.y << std::endl;
@@ -155,6 +169,48 @@ private:
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
 		// Update Viewport
+		update();
+	}
+
+	void mouseMoveEvent(QMouseEvent* event) override {
+		// Accept the event and make the OpenGL context current for renderer
+		event->accept();
+		makeCurrent();
+
+		// Update MouseAction struct
+		mouseAction.StartMouseDragStep(event->position().x(), this->height() - 1.0f - event->position().y(), this->width(), this->height());
+
+		// Perform drag action
+		bool camera = true;
+
+		switch (actionParams.action) {
+		case TRANSLATE_OUT:
+			break;
+		case TRANSLATE_FREE:
+			break;
+		case TRANSLATE_EDGE:
+			break;
+		case SCALE:
+			break;
+		case ROTATE:
+			break;
+		case EXTRUDE:
+			break;
+		case BEVEL:
+			break;
+		}
+
+		if (camera) {
+			camPos.x -= mouseAction.mouseDragChange.x;
+			camPos.y += mouseAction.mouseDragChange.y;
+			clamp(camPos.y, 1.0f, 179.0f);
+			renderer.SetCamera(sphericalToCartesian(camPos));
+		}
+
+		// Update MouseAction struct
+		mouseAction.EndMouseDragStep();
+
+		// Udpate viewport
 		update();
 	}
 
