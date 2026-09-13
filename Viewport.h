@@ -9,22 +9,87 @@
 #include "helper.h"
 #include "selectionManager.h"
 
+inline bool initGlew = true;
+
 class Viewport  : public QOpenGLWidget
 {
 	Q_OBJECT
+
+public:
+
+	enum Action {
+		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
+		SCALE, EXTRUDE, BEVEL, SHAPE
+	};
+
+private:
+
+	struct MouseAction {
+		Vec2f mouseDragStartPos = Vec2f(0.0f);
+		Vec2f mouseDragStartPosUV = Vec2f(0.0f);
+		Vec2f mouseDragPrevPos = Vec2f(0.0f);
+		Vec2f mouseDragPrevPosUV = Vec2f(0.0f);
+		Vec2f initialDragDir = Vec2f(0.0f);
+		Vec2f initialDragDirUV = Vec2f(0.0f);
+		bool firstMoveEvent = false;
+
+		Vec2f ToUV(const Vec2f& coords, int w, int h) {
+			Vec2f uv;
+			uv.x = coords.x / float(w - 1);
+			uv.y = coords.y / float(h - 1);
+			return uv;
+		}
+
+		void MousePress(float x, float y, int w, int h) {
+			mouseDragStartPos.Set(x, y);
+			mouseDragPrevPos = mouseDragStartPos;
+
+			mouseDragStartPosUV = ToUV(mouseDragStartPos, w, h);
+			mouseDragPrevPosUV = mouseDragStartPosUV;
+
+			firstMoveEvent = true;
+		}
+
+		void StartMouseDrag(const Vec2f& pos, const Vec2f& posUV, const Vec2f& dir, const Vec2f& dirUV) {
+			mouseDragPrevPos = pos;
+			mouseDragPrevPosUV = posUV;
+
+			initialDragDir = dir;
+			initialDragDirUV = dirUV;
+
+			firstMoveEvent = false;
+		}
+
+		void ContinueMouseDrag(const Vec2f& pos, const Vec2f& posUV) {
+			mouseDragPrevPos = pos;
+			mouseDragPrevPosUV = posUV;
+		}
+	};
+
+	struct ActionParams {
+		Action action = SELECT;
+		Vec3f initialActionState = Vec3f(0.0f);
+		Vec3f actionDir = Vec3f(0.0f);
+	};
 
 	SelectionManager selectionManager;
 	ModelingRenderer renderer;
 	Scene scene;
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
+	MouseAction mouseAction;
+	ActionParams actionParams;
+	bool additiveSelection = false;
 
 	void initializeGL() override {
-		GLenum error = glewInit();
-		if (error != GLEW_OK) {
-			std::cout << "Failed to initialize glew: " << glewGetErrorString(error) << std::endl;
-			return;
+		if (initGlew) {
+			GLenum error = glewInit();
+			if (error != GLEW_OK) {
+				std::cout << "Failed to initialize glew: " << glewGetErrorString(error) << std::endl;
+				return;
+			}
+			initGlew = false;
 		}
-
+		
 		const GLubyte* version = glGetString(GL_VERSION);
 		std::cout << "OpenGL Version: " << version << std::endl;
 
@@ -48,11 +113,49 @@ class Viewport  : public QOpenGLWidget
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
 	}
 
+	std::optional<SelectionItem> createSelectionItem(Vec3u ids);
+
+	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
+	void handleSelection(const Vec3u& selectionIds) {
+		// Create a selection item to send to the selection manager.
+		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item, additiveSelection);
+
+		// Tell the renderer to update the selection visuals.
+		renderer.UpdateSelection(selectionManager.getSelectedItems());
+	}
+
 	void mousePressEvent(QMouseEvent* event) override {
+		// Only accept event if the left mouse button is held
+		if (!(event->button() & Qt::LeftButton)) {
+			event->ignore();
+			return;
+		}
+
+		// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 		event->accept();
 		makeCurrent();
-		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * event->position().x(), devicePixelRatio() * (this->height() - 1 - event->position().y()));
-		std::cout << ids << std::endl;
+
+		// Retrieve the current logical (not physical) pixel position
+		Vec2f pos(event->position().x(), event->position().y());
+
+		// Retrieve selection ids from corresponding physical pixel and print them
+		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (this->height() - 1.0f - pos.y));
+		
+		std::cout << "Object Id: " << ids.x << std::endl;
+		std::cout << "Component Id: " << ids.y << std::endl;
+		std::cout << "Sub-Component Id: " << ids.z << std::endl;
+
+		// Handle selection
+		handleSelection(ids);
+
+		// Update MouseAction struct
+		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+
+		// Update Viewport
+		update();
 	}
 
 public:

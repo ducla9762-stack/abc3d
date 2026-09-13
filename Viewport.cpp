@@ -24,3 +24,64 @@ Viewport::Viewport(QWidget *parent)
 Viewport::~Viewport()
 {}
 
+std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
+{
+	switch (selectionManager.getActiveElement()) {
+	case OBJECT:
+		// Normal hit.
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				OBJECT,
+				ids.x - 1,
+				MAX_UINT
+			};
+		}
+		// Vertex hit belonging to object.
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				OBJECT,
+				ids.y - 1,
+				MAX_UINT
+			};
+		}
+
+		break;
+
+	case VERTEX:
+		if (ids.x == MAX_UINT && ids.y != 0) {
+			return SelectionItem{
+				VERTEX,
+				ids.y - 1,
+				ids.z
+			};
+		}
+
+		break;
+
+	case FACE:
+		if (ids.x != 0 && ids.x != MAX_UINT) {
+			return SelectionItem{
+				FACE,
+				ids.x - 1,
+				ids.y
+			};
+		}
+
+		break;
+
+	case EDGE:
+		if (ids.x != 0 && ids.x != MAX_UINT && ids.z != MAX_UINT) {
+			return SelectionItem{
+				EDGE,
+				ids.x - 1,
+				ids.z
+			};
+		}
+
+		break;
+	}
+
+	// Null if background hit.
+	return std::nullopt;
+}
+
