@@ -173,7 +173,46 @@ private:
 		update();
 	}
 
-	bool translateFreeDrag() { return false; }
+	bool translateFreeDrag() { 
+		if (selectionManager.getSelectedItems().empty()) { return false; }
+
+		Vec3f f, u, r;
+		renderer.GetCameraDirs(f, u, r);
+
+		const float SCALE = 0.01f;
+		const Vec2f& uv = mouseAction.mouseDragChange;
+		Vec3f translation = -SCALE * (uv.x * r + uv.y * u);
+
+		bool transformed = false;
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			// Translate depending on which element type.
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			switch (item.type) {
+			case OBJECT:
+				mesh->TranslatePos(translation);
+				break;
+			case VERTEX:
+				mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			case EDGE:
+				mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			case FACE:
+				mesh->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			}
+
+			transformed = true;
+		}
+
+		return transformed; 
+	}
+
 	bool translateOutDrag() { 
 		// If there are no selected elements, do nothing.
 		if (selectionManager.getSelectedItems().empty()) { return false; }
@@ -299,14 +338,12 @@ private:
 			clamp(camPos.y, 1.0f, 179.0f);
 			renderer.SetCamera(sphericalToCartesian(camPos));
 		}
+		else if (updateRenderBuffers) {
+			renderer.UpdateRenderBuffers(scene);
+		}
 
 		// Update MouseAction struct
 		mouseAction.EndMouseDragStep();
-
-		// Udpate viewport
-		if (updateRenderBuffers) {
-			renderer.UpdateRenderBuffers(scene);
-		}
 
 		update();
 	}
