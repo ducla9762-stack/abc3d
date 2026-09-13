@@ -153,7 +153,6 @@ void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
 
 	glBindVertexArray(meshVAO);
 	meshProgram.Bind();
-	meshProgram.Bind();
 
 	glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
@@ -291,7 +290,7 @@ void ModelingRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 
 	glGenRenderbuffers(1, &fboDepth);
 	glBindRenderbuffer(GL_RENDERBUFFER, fboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 
 	glBindTexture(GL_TEXTURE_2D, clrTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);

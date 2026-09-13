@@ -14,6 +14,8 @@ Viewport::Viewport(QWidget *parent)
 	format.setGreenBufferSize(8);
 	format.setAlphaBufferSize(8);
 	format.setDepthBufferSize(24);
+	format.setStencilBufferSize(0);
+	format.setSamples(0);
 	setFormat(format);
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
