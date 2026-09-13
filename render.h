@@ -1,6 +1,7 @@
 #ifndef _ABC3D_RENDER_H_
 #define _ABC3D_RENDER_H_
 
+#define GLEW_STATIC
 #include <GL/glew.h>
 
 #include <iostream>
