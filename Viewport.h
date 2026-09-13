@@ -60,7 +60,7 @@ private:
 
 		void StartMouseDragStep(float x, float y, int w, int h) {
 			mouseDragPos.Set(x, y);
-			mouseDragPosUV = ToUV(mouseDragPos, x, y);
+			mouseDragPosUV = ToUV(mouseDragPos, w, h);
 			mouseDragChange = mouseDragPos - mouseDragPrevPos;
 
 			if (firstMoveEvent) {
@@ -82,7 +82,8 @@ private:
 	struct ActionParams {
 		Action action = SELECT;
 		Vec3f initialActionState = Vec3f(0.0f);
-		Vec3f actionDir = Vec3f(0.0f);
+		std::vector<Vec3f> actionDirs;
+		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
 	};
 
 	SelectionManager selectionManager;
@@ -172,8 +173,77 @@ private:
 		update();
 	}
 
-	bool translateOutDrag() { return false; }
 	bool translateFreeDrag() { return false; }
+	bool translateOutDrag() { 
+		// If there are no selected elements, do nothing.
+		if (selectionManager.getSelectedItems().empty()) { return false; }
+
+		// If we are selecting objects, translate free instead of out.
+		if (selectionManager.getActiveElement() == OBJECT) {
+			return translateFreeDrag();
+		}
+
+		// else get all selected items.
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		// If this is the first drag, establish direction.
+		if (mouseAction.firstMoveEvent) {
+			bool noValidItems = true;
+			actionParams.actionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+
+			// For each selected item, transform.
+			for (size_t i = 0; i < selectedItems.size(); ++i) {
+				const SelectionItem& item = selectedItems[i];
+				if (item.meshId >= scene.MeshCount()) {
+					continue;
+				}
+
+				switch (selectionManager.getActiveElement()) {
+				case VERTEX:
+					actionParams.actionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+					break;
+				case EDGE:
+					actionParams.actionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+					break;
+				case FACE:
+					actionParams.actionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+					break;
+				}
+
+				noValidItems = false;
+			}
+
+			if (noValidItems) { actionParams.ClearActionDirs(); }
+		}
+
+		if (actionParams.actionDirs.empty()) { return false; }
+
+		const float SCALE_COEF = 0.01f;
+		float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+		// Translate
+		for (size_t i = 0; i < actionParams.actionDirs.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case VERTEX:
+				scene[item.meshId]->TranslateVertex(item.componentId, actionParams.actionDirs[i] * scale);
+				break;
+			case EDGE:
+				scene[item.meshId]->TranslateEdge(item.componentId, actionParams.actionDirs[i] * scale);
+				break;
+			case FACE:
+				scene[item.meshId]->TranslateFace(item.componentId, actionParams.actionDirs[i] * scale);
+				break;
+			}
+		}
+
+		return true;
+	}
+
 	bool translateEdgeDrag() { return false; }
 	bool bevelDrag() { return false; }
 	bool extrudeDrag() { return false; }
@@ -189,7 +259,11 @@ private:
 		mouseAction.StartMouseDragStep(event->position().x(), this->height() - 1.0f - event->position().y(), this->width(), this->height());
 
 		// Perform drag action
-		bool actionPerformed = true;
+		bool actionPerformed = false;
+
+		// Later we'll want to not update render buffers for simple transforms like object level scale, rotate, and translate.
+		// We'll do this with a buffer containing objects' model transformations in the shader & renderer
+		bool updateRenderBuffers = true; 
 
 		switch (actionParams.action) {
 		case TRANSLATE_OUT:
@@ -213,6 +287,9 @@ private:
 		case BEVEL:
 			actionPerformed = bevelDrag();
 			break;
+		default:
+			updateRenderBuffers = false;
+			break;
 		}
 
 		// If no action performed, move the camera
@@ -227,6 +304,10 @@ private:
 		mouseAction.EndMouseDragStep();
 
 		// Udpate viewport
+		if (updateRenderBuffers) {
+			renderer.UpdateRenderBuffers(scene);
+		}
+
 		update();
 	}
 

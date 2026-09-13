@@ -19,6 +19,8 @@ Viewport::Viewport(QWidget *parent)
 	setFormat(format);
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+
+	selectionManager.setActiveElement(FACE);
 }
 
 Viewport::~Viewport()
