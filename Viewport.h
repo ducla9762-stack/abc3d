@@ -214,6 +214,29 @@ private:
 		update();
 	}
 
+	void wheelEvent(QWheelEvent* event) override {
+		// Accept event and get change in wheel
+		event->accept();
+		QPoint change = event->angleDelta();
+
+		// Convert change in wheel to change in camera
+		Vec2f camChange(change.x(), change.y());
+		const float SCALE = 0.025f;
+		camChange *= SCALE;
+
+		// Update camera
+		camPos.z += float(camChange.y);
+		if (camPos.z < 0.0f) { camPos.z = 0.0f; }
+
+		camPos.x += camChange.x;
+
+		// Update renderer and viewport
+		makeCurrent();
+		renderer.SetCamera(sphericalToCartesian(camPos));
+
+		update();
+	}
+
 public:
 	Viewport(QWidget *parent);
 	~Viewport();
