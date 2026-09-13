@@ -81,7 +81,6 @@ private:
 
 	struct ActionParams {
 		Action action = SELECT;
-		Vec3f initialActionState = Vec3f(0.0f);
 		std::vector<Vec3f> actionDirs;
 		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
 	};
@@ -213,54 +212,45 @@ private:
 		return transformed; 
 	}
 
-	bool translateOutDrag() { 
-		// If there are no selected elements, do nothing.
-		if (selectionManager.getSelectedItems().empty()) { return false; }
-
-		// If we are selecting objects, translate free instead of out.
-		if (selectionManager.getActiveElement() == OBJECT) {
-			return translateFreeDrag();
-		}
-
-		// else get all selected items.
+	void initActionDirsToSelectedNormals() {
+		// Get all selected items.
 		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
-		// If this is the first drag, establish direction.
-		if (mouseAction.firstMoveEvent) {
-			bool noValidItems = true;
-			actionParams.actionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+		bool noValidItems = true;
+		actionParams.actionDirs.assign(selectedItems.size(), Vec3f(0.0f));
 
-			// For each selected item, transform.
-			for (size_t i = 0; i < selectedItems.size(); ++i) {
-				const SelectionItem& item = selectedItems[i];
-				if (item.meshId >= scene.MeshCount()) {
-					continue;
-				}
-
-				switch (selectionManager.getActiveElement()) {
-				case VERTEX:
-					actionParams.actionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
-					break;
-				case EDGE:
-					actionParams.actionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
-					break;
-				case FACE:
-					actionParams.actionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
-					break;
-				}
-
-				noValidItems = false;
+		// For each selected item, get normal direction
+		for (size_t i = 0; i < selectedItems.size(); ++i) {
+			const SelectionItem& item = selectedItems[i];
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
 			}
 
-			if (noValidItems) { actionParams.ClearActionDirs(); }
+			switch (selectionManager.getActiveElement()) {
+			case VERTEX:
+				actionParams.actionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+				break;
+			case EDGE:
+				actionParams.actionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+				break;
+			case FACE:
+				actionParams.actionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+				break;
+			}
+
+			noValidItems = false;
 		}
 
-		if (actionParams.actionDirs.empty()) { return false; }
+		if (noValidItems) { actionParams.ClearActionDirs(); }
+	}
 
+	void translateSelections() {
+		// Compute translation's scale factor
 		const float SCALE_COEF = 0.01f;
 		float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
 
-		// Translate
+		// Translate selected elements
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 		for (size_t i = 0; i < actionParams.actionDirs.size(); ++i) {
 			const SelectionItem& item = selectedItems[i];
 			if (item.meshId >= scene.MeshCount()) {
@@ -279,13 +269,68 @@ private:
 				break;
 			}
 		}
+	}
+
+	bool translateOutDrag() { 
+		// If there are no selected elements, do nothing.
+		if (selectionManager.getSelectedItems().empty()) { return false; }
+
+		// If we are selecting objects, translate free instead of out.
+		if (selectionManager.getActiveElement() == OBJECT) {
+			return translateFreeDrag();
+		}
+
+		// If this is the first drag step, compute normal directions
+		if (mouseAction.firstMoveEvent) {
+			initActionDirsToSelectedNormals();
+		}
+
+		if (actionParams.actionDirs.empty()) { return false; }
+
+		// Get all selected items.
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		// Translate
+		translateSelections();
 
 		return true;
 	}
 
 	bool translateEdgeDrag() { return false; }
 	bool bevelDrag() { return false; }
-	bool extrudeDrag() { return false; }
+
+	void extrudeSelectedElements() {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+
+			scene[item.meshId]->Extrude(item.componentId);
+		}
+	}
+
+	bool extrudeDrag() { 
+		if(selectionManager.getSelectedItems().empty()) { return false; }
+
+		// Extruding temporarily applies only to faces
+		if (selectionManager.getActiveElement() != FACE) { return false; }
+
+		// Compute normals if this is the first move event
+		if (mouseAction.firstMoveEvent) {
+			initActionDirsToSelectedNormals();
+		}
+
+		if (actionParams.actionDirs.empty()) { return false; }
+
+		// Extrude selected elements if this is the first move event
+		if (mouseAction.firstMoveEvent) {
+			extrudeSelectedElements();
+		}
+
+		// Translated extruded faces
+		translateSelections();
+
+		return true; 
+	}
+
 	bool scaleDrag() { return false; }
 	bool rotateDrag() { return false; }
 
