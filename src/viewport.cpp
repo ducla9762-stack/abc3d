@@ -283,6 +283,7 @@ int Viewport::mousePush() {
 	if (Fl::event_button() == FL_RIGHT_MOUSE) {
 		rightClickPanel->position(Fl::event_x(), Fl::event_y());
 		rightClickPanel->show();
+		redraw();
 		return 1;
 	}
 
@@ -319,8 +320,9 @@ int Viewport::mousePush() {
 		mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
 		mouseDragPrevPosUV = mouseDragStartPosUV;
 		firstDragCallback = true;
-		//redraw();
+		return 1;
 	}
+	return 0;
 }
 
 void Viewport::mouseWheel() {
@@ -401,7 +403,7 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
 
-	rightClickPanel = new Fl_Window(0, 0, 40, 60, 0);
+	rightClickPanel = new Fl_Window(0, 0, 150, 125, 0);
 	rightClickPanel->color(8);
 	rightClickPanel->hide();
 

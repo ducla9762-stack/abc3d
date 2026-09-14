@@ -17,6 +17,7 @@
 #include <Fl/Fl_PNG_Image.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/Fl_Help_View.H>
+#include <FL/Fl_Choice.H>
 #include <print>
 #undef max
 
@@ -175,7 +176,14 @@ void loadTutorialCallback(Fl_Widget* w, void*) {
 	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
 	fileChooser.directory("../assets/tutorials/");
 	if (fileChooser.show() == 0) {
-		htmlViewer->load(fileChooser.filename());
+		const char* path = fileChooser.filename();
+		const char* extension = fl_filename_ext(path);
+		if (extension != ".html") {
+			//std::cout << "Please choose an HTML file" << std::endl;
+		} 
+		else {
+			htmlViewer->load(fileChooser.filename());
+		}
 	}
 }
 
@@ -428,7 +436,7 @@ int main(int argc, char* argv[]) {
 
 	htmlViewer = new Fl_Help_View(0, TOP_TOOLBAR_H, RIGHT_PANEL_W, TUTORIAL_PANEL_H);
 	// Get this to load a tutorial from file path
-	htmlViewer->load("../assets/tutorials/test.html");
+	htmlViewer->load("../assets/tutorials/Welcome.html");
 
 	
 	tutorialPanel->end();
@@ -515,10 +523,6 @@ int main(int argc, char* argv[]) {
 	bevelButton->image(toolIcons[BEVEL_TOOL]);
 	bevelButton->tooltip("Bevel Tool");
 	bevelButton->shortcut('b');
-
-	//rightClickPanel = new Fl_Window(0, 0, 20, 20);
-	//rightClickPanel->color(6);
-	//rightClickPanel->hide();
 
 	//sideToolbar->resizable(sideToolbar);
 	sideToolbar->end();
