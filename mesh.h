@@ -889,7 +889,7 @@ class HalfEdgeMeshBeveler {
 		for (uint i = 0; i < vMesh.degree; ++i) {
 			const Vec2u& edgeIds = vMesh.incidentEdges[i];
 
-			if (edgeIds[1] == prevJunctionVertId && !prevWasBevel && !vMesh.edgeIsBevel[i]) {
+			if (prevWasBevel && !vMesh.edgeIsBevel[i]) {
 				prevJunctionVertId = edgeIds[1];
 				prevWasBevel = false;
 				continue;
