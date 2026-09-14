@@ -42,19 +42,19 @@ int Viewport::handle(int event) {
 
 	if (context() == nullptr) { return 0; }
 
-	if (Fl_Group::handle(event)) {
-		return 1;
-	}
-
-
+	if (Fl_Group::handle(event)) { return 1; }
+	
 	make_current();
+	
 	// Process event
 	switch (event) {
 	case FL_PUSH:
 		take_focus();
 		return mousePush();
 	case FL_DRAG:
-		if (Fl::event_button() == FL_LEFT_MOUSE) { mouseDrag(); }
+		if (Fl::event_button() == FL_LEFT_MOUSE) {
+			mouseDrag();
+		}
 		break;
 	case FL_MOUSEWHEEL:
 		mouseWheel();
@@ -279,15 +279,14 @@ int Viewport::mousePush() {
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
 
-
 	if (Fl::event_button() == FL_RIGHT_MOUSE) {
 		rightClickPanel->position(Fl::event_x(), Fl::event_y());
 		rightClickPanel->show();
-		redraw();
 		return 1;
 	}
+	
 
-	else if (Fl::event_button() == FL_LEFT_MOUSE) {
+	if (Fl::event_button() == FL_LEFT_MOUSE) {
 		rightClickPanel->hide();
 	
 		// Get the selection ids at this position.
@@ -400,12 +399,16 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
+
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
 
+	begin();
 	rightClickPanel = new Fl_Window(0, 0, 150, 125, 0);
 	rightClickPanel->color(8);
+	rightClickPanel->end();
 	rightClickPanel->hide();
+	end();
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }

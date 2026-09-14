@@ -463,63 +463,63 @@ int main(int argc, char* argv[]) {
 	customWindow* sideToolbar = new customWindow(20, 70, LEFT_TOOLBAR_W, LEFT_TOOLBAR_H, 0);
 	sideToolbar->color(8);
 
-	RadioButton* selectButton = new RadioButton(0, 0, 64, 64, "Select");
+	RadioButton* selectButton = new RadioButton(0, 0, 64, 64);
 	selectButton->value(1);
 	selectButton->callback(selectCallback);
-	toolIcons[SELECT_TOOL] = new Fl_PNG_Image("../assets/images/select_tool.png");
+	toolIcons[SELECT_TOOL] = new Fl_PNG_Image("../assets/icons/select_tool.png");
 	selectButton->image(toolIcons[SELECT_TOOL]);
 	selectButton->align(FL_ALIGN_CENTER);
 	selectButton->tooltip("Select Tool");
 	//selectButton->shortcut();
 
-	RadioButton* translationButton = new RadioButton(0, 64, 64, 64, "Translation");
+	RadioButton* translationButton = new RadioButton(0, 64, 64, 64);
 	translationButton->callback(translationCallback);
-	toolIcons[TRANSLATE_TOOL] = new Fl_PNG_Image("../assets/images/move_tool.png");
+	toolIcons[TRANSLATE_TOOL] = new Fl_PNG_Image("../assets/icons/move_tool.png");
 	translationButton->image(toolIcons[TRANSLATE_TOOL]);
 	translationButton->align(FL_ALIGN_CENTER);
 	translationButton->tooltip("Move Tool");
 	//translationButton->shortcut();
 
-	RadioButton* rotateButton = new RadioButton(0, 2 * 64, 64, 64, "Rotate");
+	RadioButton* rotateButton = new RadioButton(0, 2 * 64, 64, 64);
 	rotateButton->callback(rotateCallback);
-	toolIcons[ROTATE_TOOL] = new Fl_PNG_Image("../assets/images/rotate_tool.png");
+	toolIcons[ROTATE_TOOL] = new Fl_PNG_Image("../assets/icons/rotate_tool.png");
 	rotateButton->image(toolIcons[ROTATE_TOOL]);
 	rotateButton->tooltip("Rotate Tool");
 	rotateButton->shortcut('r');
 
-	RadioButton* scaleButton = new RadioButton(0, 3 * 64, 64, 64, "Scale");
+	RadioButton* scaleButton = new RadioButton(0, 3 * 64, 64, 64);
 	scaleButton->callback(scaleCallback);
-	toolIcons[SCALE_TOOL] = new Fl_PNG_Image("../assets/images/scale_tool.png");
+	toolIcons[SCALE_TOOL] = new Fl_PNG_Image("../assets/icons/scale_tool.png");
 	scaleButton->image(toolIcons[SCALE_TOOL]);
 	scaleButton->tooltip("Scale Tool\n");
 	scaleButton->shortcut();
 
-	RadioButton* shapeButton = new RadioButton(0, 4 * 64, 64, 64, "Shape");
+	RadioButton* shapeButton = new RadioButton(0, 4 * 64, 64, 64);
 	shapeButton->callback(shapeCallback);
-	toolIcons[SHAPE_TOOL] = new Fl_PNG_Image("../assets/images/shape_tool.png");
+	toolIcons[SHAPE_TOOL] = new Fl_PNG_Image("../assets/icons/shape_tool.png");
 	shapeButton->image(toolIcons[SHAPE_TOOL]);
 	shapeButton->tooltip("Shape Tool\nAllows placement of new shapes in scene\n");
 	shapeButton->shortcut();
 	// buttons for resolutions?
 
-	RadioButton* extrudeButton = new RadioButton(0, 5 * 64, 64, 64, "Extrude");
+	RadioButton* extrudeButton = new RadioButton(0, 5 * 64, 64, 64);
 	extrudeButton->callback(extrudeCallback, rightPanel);
-	toolIcons[EXTRUDE_TOOL] = new Fl_PNG_Image("../assets/images/extrude_tool.png");
+	toolIcons[EXTRUDE_TOOL] = new Fl_PNG_Image("../assets/icons/extrude_tool.png");
 	extrudeButton->image(toolIcons[EXTRUDE_TOOL]);
 	extrudeButton->tooltip("Extrude Tool");
 	extrudeButton->shortcut('e');
 
-	RadioButton* subdivisionButton = new RadioButton(0, 6 * 64, 64, 64, "Subdivide");
+	RadioButton* subdivisionButton = new RadioButton(0, 6 * 64, 64, 64);
 	subdivisionButton->callback(subdivisionPanelCallback);
-	toolIcons[SUBDIVIDE_TOOL] = new Fl_PNG_Image("../assets/images/subdiv_tool.png");
+	toolIcons[SUBDIVIDE_TOOL] = new Fl_PNG_Image("../assets/icons/subdiv_tool.png");
 	subdivisionButton->image(toolIcons[SUBDIVIDE_TOOL]);
 	subdivisionButton->tooltip("Subdivision and Tesselation Tool\n");
 	subdivisionButton->shortcut('s');
 	
 
-	RadioButton* bevelButton = new RadioButton(0, 7 * 64, 64, 64, "Bevel");
+	RadioButton* bevelButton = new RadioButton(0, 7 * 64, 64, 64);
 	bevelButton->callback(bevelCallback);
-	toolIcons[BEVEL_TOOL] = new Fl_PNG_Image("../assets/images/bevel_tool.png");
+	toolIcons[BEVEL_TOOL] = new Fl_PNG_Image("../assets/icons/bevel_tool.png");
 	bevelButton->image(toolIcons[BEVEL_TOOL]);
 	bevelButton->tooltip("Bevel Tool");
 	bevelButton->shortcut('b');
@@ -580,21 +580,21 @@ int main(int argc, char* argv[]) {
 
 	RadioButton* vertexButton = new RadioButton(0, 0, 64, 64, "Vertex");
 	vertexButton->callback(elementSelectCallback<VERTEX>);
-	selectionIcons[VERTEX_SELECT] = new Fl_PNG_Image("../assets/images/vertex_select.png");
+	selectionIcons[VERTEX_SELECT] = new Fl_PNG_Image("../assets/icons/vertex_select.png");
 	vertexButton->image(selectionIcons[VERTEX_SELECT]);
 	vertexButton->tooltip("Vertex Selection\nAllows selection of a vertex\n'V' key shortcut");
 	vertexButton->shortcut('v');
 
 	RadioButton* edgeButton = new RadioButton(64, 0, 64, 64, "Edge");
 	edgeButton->callback(elementSelectCallback<EDGE>);
-	selectionIcons[EDGE_SELECT] = new Fl_PNG_Image("../assets/images/edge_select.png");
+	selectionIcons[EDGE_SELECT] = new Fl_PNG_Image("../assets/icons/edge_select.png");
 	edgeButton->image(selectionIcons[EDGE_SELECT]);
 	edgeButton->tooltip("Edge Selection\nAllows selection of an edge\n'E' key shortcut");
 	edgeButton->shortcut('e');
 
 	RadioButton* faceButton = new RadioButton(2 * 64, 0, 64, 64, "Face");
 	faceButton->callback(elementSelectCallback<FACE>);
-	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/face_select.png");
+	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/icons/face_select.png");
 	faceButton->image(selectionIcons[FACE_SELECT]);
 	faceButton->tooltip("Face Selection\nAllows selection of a face\n'F' key shortcut");
 	faceButton->shortcut('f');
@@ -602,7 +602,7 @@ int main(int argc, char* argv[]) {
 	RadioButton* objectButton = new RadioButton(3 * 64, 0, 64, 64, "Object");
 	objectButton->callback(elementSelectCallback<OBJECT>);
 	objectButton->value(1);
-	selectionIcons[FACE_SELECT] = new Fl_PNG_Image("../assets/images/object_select.png");
+	selectionIcons[OBJECT_SELECT] = new Fl_PNG_Image("../assets/icons/object_select.png");
 	objectButton->image(selectionIcons[OBJECT_SELECT]);
 	objectButton->tooltip("Object Selection\nAllows selection of an entire object\n'O' key shortcut");
 	objectButton->shortcut('o');
