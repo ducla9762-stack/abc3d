@@ -117,6 +117,7 @@ class HalfEdgeMeshBeveler;
 
 class HalfEdgeMesh {
 
+public:
 	struct HalfEdge {
 
 		HalfEdge(){}
@@ -136,6 +137,8 @@ class HalfEdgeMesh {
 		uint next = MAX_UINT;
 		uint prev = MAX_UINT;
 	};
+
+private:
 
 	struct VertexAdjacentInfo {
 		uint edgeCount = 0;
@@ -302,6 +305,10 @@ class HalfEdgeMesh {
 	Vec3f pos = Vec3f(0.0f);
 	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
 public:
+
+	HalfEdge GetEdge(uint edgeId) {
+		return edges.at(edgeId);
+	}
 
 	/// <returns>Mesh's scale factor.</returns>
 	const Vec3f& Scale() const { return scale; }
@@ -768,6 +775,8 @@ class HalfEdgeMeshBeveler {
 		twin.dest = edge.orig;
 		twin.face = face;
 
+		edge.twin = twinId;
+
 		return twinId;
 	}
 
@@ -828,7 +837,6 @@ class HalfEdgeMeshBeveler {
 		mesh.vertEdge.insert(mesh.vertEdge.end(), vMesh.patchEdgeCount - 1, 0);
 
 		// Set Each Incident Edge's New Vertex (since this vertex is becoming a junction face/edge)
-		uint firstNewVertex = mesh.vertPos.size();
 		for (uint i = 0; i < vMesh.degree; ++i) {
 			const Vec2u& edgeIds = vMesh.incidentEdges[i];
 			HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeIds[0]];
@@ -1003,6 +1011,7 @@ public:
 			edgeMap[hEdge2Id] = MAX_UINT;
 		}
 	}
+
 	void AdjustBevel(float bevelFactor) {
 		bevelFactor = std::min(bevelFactor, 1.0f);
 		bevelFactor = std::max(bevelFactor, 0.0f);
