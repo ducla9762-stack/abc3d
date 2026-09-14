@@ -16,6 +16,9 @@
 
 #include "helper.h"
 
+#undef min
+#undef max
+
 using std::string;
 using std::ifstream;
 using std::ostream;
@@ -1001,6 +1004,9 @@ public:
 		}
 	}
 	void AdjustBevel(float bevelFactor) {
+		bevelFactor = std::min(bevelFactor, 1.0f);
+		bevelFactor = std::max(bevelFactor, 0.0f);
+
 		for (size_t i = 0; i < vertices.size(); ++i) {
 			size_t transIndex = i * 2;
 			mesh.vertPos[vertices[i]] = vertTransforms[transIndex] + (vertTransforms[transIndex + 1] * bevelFactor);

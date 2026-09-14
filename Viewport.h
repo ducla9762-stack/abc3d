@@ -4,9 +4,11 @@
 #include <GL/glew.h>
 #include <QOpenGLWidget>
 #include <QMouseEvent>
+#include <QPushButton>
 
 #include "render.h"
 #include "helper.h"
+#include "mesh.h"
 #include "selectionManager.h"
 
 inline bool initGlew = true;
@@ -85,9 +87,11 @@ private:
 		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
 	};
 
+	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ModelingRenderer renderer;
 	Scene scene;
+	HalfEdgeMeshBeveler* beveler;
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseAction mouseAction;
 	ActionParams actionParams;
@@ -297,7 +301,39 @@ private:
 	}
 
 	bool translateEdgeDrag() { return false; }
-	bool bevelDrag() { return false; }
+	bool bevelDrag() { 
+		if (selectionManager.getSelectedItems().empty()) { return false; }
+
+		// Bevel temporarily only works with edges
+		if (selectionManager.getActiveElement() != EDGE) { return false; }
+
+		if (mouseAction.firstMoveEvent) {
+			if (beveler) { delete beveler; }
+
+			uint meshId = selectionManager.getSelectedItems()[0].meshId;
+			if (meshId >= scene.MeshCount()) { return false; }
+	
+			std::vector<uint> edges;
+			edges.reserve(selectionManager.getSelectedItems().size());
+			
+			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+				if (meshId >= scene.MeshCount()) { continue; }
+				edges.push_back(item.componentId);
+			}
+
+			beveler = new HalfEdgeMeshBeveler(*scene[meshId]);
+			beveler->StartEdgeBevel(edges);
+		}
+
+		if (!beveler) { return false; }
+
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		beveler->AdjustBevel(factor);
+
+		return true; 
+	}
 
 	void extrudeSelectedElements() {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
@@ -416,6 +452,19 @@ private:
 		update();
 	}
 
+	void resizeEvent(QResizeEvent* event) override {
+		QOpenGLWidget::resizeEvent(event);
+
+		const int X_PADDING = 5;
+		const int Y_PADDING = 5;
+
+		for (int i = 0; i < 4; ++i) {
+			int x = Y_PADDING * (i + 1) + 64 * i;
+			int y = this->height() - 1 - Y_PADDING - 64;
+			elementButtons[i]->move(x, y);
+		}
+	}
+
 public:
 	Viewport(QWidget *parent);
 	~Viewport();
@@ -431,6 +480,11 @@ public slots:
 	void setActionRotate() { actionParams.action = ROTATE; }
 	void setActionSelect() { actionParams.action = SELECT; }
 	void setActionCamera() { actionParams.action = CAMERA; }
+
+	void setElementObject() { selectionManager.setActiveElement(OBJECT); }
+	void setElementFace() { selectionManager.setActiveElement(FACE); }
+	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
+	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
 
 };
 
