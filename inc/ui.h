@@ -381,8 +381,9 @@ class SubdivideToolPanel : public ToolPanel {
 	}
 
 	static void triangulationCallback(Fl_Widget*, void*) {
-		//viewport->Triangulate
+		viewport->triangulate();
 	}
+
 public:
 	SubdivideToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) {
 		begin();
