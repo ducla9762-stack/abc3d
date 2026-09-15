@@ -120,7 +120,7 @@ class TranslationToolPanel : public ToolPanel {
 	}
 
 	// AI-generated code: Translation mode controls, including Axis mode.
-	Fl_Radio_Button* buttons[3] = { nullptr, nullptr, nullptr };
+	Fl_Radio_Button* buttons[4] = { nullptr, nullptr, nullptr, nullptr };
 
 	Fl_Simple_Counter* spinners[3] = { nullptr, nullptr, nullptr };
 	Fl_Window* spinnerContainer = nullptr;
@@ -129,7 +129,7 @@ public:
 	TranslationToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h, title) {
 		begin();
 
-		spinnerContainer = new Fl_Window(0, 65, w, 0);
+		spinnerContainer = new Fl_Window(0, 85, w, 0);
 		BASE_TRANSFORMATION_PANEL_CONSTRUCTOR("Position", 1.0, 0.2)
 		spinnerContainer->end();
 		spinnerContainer->size(w, yPos);
@@ -152,6 +152,12 @@ public:
 		buttons[2]->selection_color(10);
 		buttons[2]->box(FL_UP_BOX);
 		buttons[2]->align(FL_ALIGN_INSIDE);
+
+		// Axis Translation Button
+		buttons[3] = new Fl_Radio_Button(0, 60, w, 20, "Edge");
+		buttons[3]->selection_color(10);
+		buttons[3]->box(FL_UP_BOX);
+		buttons[3]->align(FL_ALIGN_INSIDE);
 
 		resize(x, y, w, yPos + 65);
 
@@ -405,11 +411,11 @@ public:
 
 		// Triangulate Button
 		Fl_Button* triangulateButton = new Fl_Button(0, 2 * buttonH, w, buttonH, "Triangulation");
-		tesselateButton->selection_color(10);
-		tesselateButton->box(FL_UP_BOX);
-		tesselateButton->callback(triangulationCallback);
-		tesselateButton->align(FL_ALIGN_INSIDE);
-		tesselateButton->tooltip("Triangulate Faces\n _____ \n");
+		triangulateButton->selection_color(10);
+		triangulateButton->box(FL_UP_BOX);
+		triangulateButton->callback(triangulationCallback);
+		triangulateButton->align(FL_ALIGN_INSIDE);
+		triangulateButton->tooltip("Triangulate Faces\n _____ \n");
 
 		end();
 	}
