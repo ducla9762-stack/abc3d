@@ -155,8 +155,30 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Select Tool">Select Tool</string>
+          </property>
+          <property name="toolTipDuration">
+           <number>-1</number>
+          </property>
           <property name="text">
-           <string>Select</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/select_tool.svg</normaloff>assets/icons/select_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -180,8 +202,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Move Tool">Move Tool</string>
+          </property>
           <property name="text">
-           <string>Move</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/move_tool.svg</normaloff>assets/icons/move_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -208,6 +249,18 @@
           <property name="text">
            <string>Out</string>
           </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
@@ -230,8 +283,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Scale Tool">Scale Tool</string>
+          </property>
           <property name="text">
-           <string>Scale</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/scale_tool.svg</normaloff>assets/icons/scale_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -255,8 +327,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Rotate Tool">Rotate Tool</string>
+          </property>
           <property name="text">
-           <string>Rotate</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/rotate_tool.svg</normaloff>assets/icons/rotate_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -280,8 +371,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Extrude Tool">Extrude Tool</string>
+          </property>
           <property name="text">
-           <string>Extrude</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/extrude_tool.svg</normaloff>assets/icons/extrude_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -305,8 +415,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Bevel Tool">Bevel Tool</string>
+          </property>
           <property name="text">
-           <string>Bevel</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/bevel_tool.svg</normaloff>assets/icons/bevel_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -330,8 +459,27 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string extracomment="Shape Tool">Shape Tool</string>
+          </property>
           <property name="text">
-           <string>Shape</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/shape_tool.svg</normaloff>assets/icons/shape_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
