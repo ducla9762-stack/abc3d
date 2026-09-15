@@ -151,7 +151,7 @@ public:
 	bool GridVisible() const; 
 	bool VertexPointsVisible() const;
 	void SetGridVisible(bool visible); 
-	void VertexPointsVisible(bool visible); 
+	void SetVertexPointsVisible(bool visible); 
 
 	Vec3f GetCamPos() override;
 	Vec3f GetCamTarget() override;
