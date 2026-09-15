@@ -11,11 +11,7 @@
 #include "scene.h"
 #include "helper.h"
 
-#include "customWindow.h"
-
 #undef max
-
-Fl_Window* rightClickPanel;
 
 void Viewport::draw() {
 	if (!context_valid() || modeChanged) {
@@ -73,19 +69,22 @@ int Viewport::handle(int event) {
 
 
 	make_current();
-	
 	// Process event
 	switch (event) {
 	case FL_PUSH:
 		take_focus();
 		return mousePush();
 	case FL_DRAG:
-		if (Fl::event_button() == FL_LEFT_MOUSE) {
-			mouseDrag();
-		}
+		mouseDrag();
 		break;
 	case FL_MOUSEWHEEL:
 		mouseWheel();
+		break;
+	case FL_KEYDOWN:
+		keyDown();
+		break;
+	case FL_KEYUP:
+		keyUp();
 		break;
 	case FL_FOCUS:
 	case FL_UNFOCUS:
@@ -201,8 +200,6 @@ void Viewport::mouseDrag() {
 	}
 
 	bool camera = true;
-
-	std::cout << activeAction << std::endl;
 
 	// Transformation drag depending on action.
 	if (activeAction == TRANSLATE_OUT) {
@@ -725,7 +722,7 @@ int Viewport::mousePush() {
 	}
 
 	// For now, we ignore other non-left mouse button events.
-	//if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
+	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
 	// Get position of mouse press.
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
@@ -752,50 +749,37 @@ int Viewport::mousePush() {
 	}
 	// Else process like any other selection.
 	else {
-		if (Fl::event_button() == FL_RIGHT_MOUSE) {
-			rightClickPanel->position(Fl::event_x(), Fl::event_y());
-			rightClickPanel->show();
-			return 1;
+		// Create a selection item to send to the selection manager.
+		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item, additiveSelection);
+
+		// Tell the renderer to update the selection visuals.
+		modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+		updateArrows();
+
+		if (primarySelectionCallback) {
+			primarySelectionCallback();
 		}
 
+		redraw();
 
-		if (Fl::event_button() == FL_LEFT_MOUSE) {
-			rightClickPanel->hide();
-
-			// Get the selection ids at this position.
-			selectionIds = modelingRenderer.SelectionIds(x, y);
-
-			// Create a selection item to send to the selection manager.
-			std::optional<SelectionItem> item = createSelectionItem(selectionIds);
-
-			// query the selection maanger with the item.
-			selectionManager.processSelection(item, additiveSelection);
-
-			// Tell the renderer to update the selection visuals.
-			modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
-
-			if (primarySelectionCallback) {
-				primarySelectionCallback();
-			}
-
-			redraw();
-
-			// Print selection ids.
-			std::cout << "Object Id: " << selectionIds.x << std::endl;
-			std::cout << "Component Id: " << selectionIds.y << std::endl;
-			std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
-
-			// Drag stuff, refactor later.
-			mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
-			mouseDragPrevPos = mouseDragStartPos;
-			mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
-			mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
-			mouseDragPrevPosUV = mouseDragStartPosUV;
-			firstDragCallback = true;
-			return 1;
-		}
+		// Print selection ids.
+		std::cout << "Object Id: " << selectionIds.x << std::endl;
+		std::cout << "Component Id: " << selectionIds.y << std::endl;
+		std::cout << "Sub-Component Id: " << selectionIds.z << std::endl;
 	}
-	return 0;
+
+	// Drag stuff, refactor later.
+	mouseDragStartPos.Set(Fl::event_x(), Fl::event_y());
+	mouseDragPrevPos = mouseDragStartPos;
+	mouseDragStartPosUV.Set(mouseDragStartPos.x / (w() - 1), mouseDragStartPos.y / (h() - 1));
+	mouseDragStartPosUV.y = 1.0f - mouseDragStartPosUV.y;
+	mouseDragPrevPosUV = mouseDragStartPosUV;
+	firstDragCallback = true;
+	//redraw();
+	return 1;
 }
 
 void Viewport::mouseWheel() {
@@ -921,17 +905,8 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
-
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
-
-	begin();
-	rightClickPanel = new Fl_Window(0, 0, 150, 125, 0);
-	rightClickPanel->color(8);
-	rightClickPanel->end();
-	rightClickPanel->hide();
-	end();
-
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
@@ -1404,22 +1379,3 @@ const HalfEdgeMesh* Viewport::primarySelectedItem() {
 void Viewport::setPrimarySelectionCallback(void (*callback)()) {
 	primarySelectionCallback = callback;
 }
-
-void Viewport::togglePoints() {
-	modelingRenderer.ToggleVertexPoints();
-	redraw();
-}
-
-void Viewport::toggleGrid() {
-	modelingRenderer.ToggleGrid();
-	redraw();
-}
-
-void Viewport::enableAdditiveSelection() {
-	additiveSelection = true;
-}
-
-void Viewport::disableAdditiveSelection() {
-	additiveSelection = false;
-}
-
