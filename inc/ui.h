@@ -138,14 +138,12 @@ public:
 		buttons[0] = new Fl_Radio_Button(0, 0, w, 20, "Outward");
 		buttons[0]->selection_color(10);
 		buttons[0]->box(FL_FLAT_BOX);
-		//buttons[0]->callback(actionChangedCallback<TRANSLATE_OUT>);
 		buttons[0]->align(FL_ALIGN_INSIDE);
 
 		// Free Translation Button
 		buttons[1] = new Fl_Radio_Button(0, 20, w, 20, "Free");
 		buttons[1]->selection_color(10);
 		buttons[1]->box(FL_UP_BOX);
-		//buttons[1]->callback(actionChangedCallback<TRANSLATE_FREE>);
 		buttons[1]->align(FL_ALIGN_INSIDE);
 		buttons[1]->value(1);
 

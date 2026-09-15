@@ -71,7 +71,6 @@ int Viewport::handle(int event) {
 		return 1;
 	}
 
-
 	make_current();
 	
 	// Process event
