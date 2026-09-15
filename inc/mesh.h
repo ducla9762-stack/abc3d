@@ -16,6 +16,9 @@
 
 #include "helper.h"
 
+#undef min
+#undef max
+
 using std::string;
 using std::ifstream;
 using std::ostream;
@@ -114,6 +117,7 @@ class HalfEdgeMeshBeveler;
 
 class HalfEdgeMesh {
 
+public:
 	struct HalfEdge {
 
 		HalfEdge(){}
@@ -133,6 +137,8 @@ class HalfEdgeMesh {
 		uint next = MAX_UINT;
 		uint prev = MAX_UINT;
 	};
+
+private:
 
 	struct VertexAdjacentInfo {
 		uint edgeCount = 0;
@@ -299,6 +305,10 @@ class HalfEdgeMesh {
 	Vec3f pos = Vec3f(0.0f);
 	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
 public:
+
+	HalfEdge GetEdge(uint edgeId) {
+		return edges.at(edgeId);
+	}
 
 	/// <returns>Mesh's scale factor.</returns>
 	const Vec3f& Scale() const { return scale; }
@@ -673,6 +683,8 @@ void HalfEdgeMesh::load(const std::array<Vec3f, V>& vertices, const std::array<V
 	(void)build(faces, basicVertexCountFunc);
 }
 
+// Half-Edge Mesh Beveler
+
 class HalfEdgeMeshBeveler {
 	struct VMesh {
 		uint vertexId;
@@ -763,6 +775,8 @@ class HalfEdgeMeshBeveler {
 		twin.dest = edge.orig;
 		twin.face = face;
 
+		edge.twin = twinId;
+
 		return twinId;
 	}
 
@@ -811,7 +825,7 @@ class HalfEdgeMeshBeveler {
 	}
 
 	void IncorporateVMesh(VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
-		// later put this in build
+		// later put this in build vmesh
 		uint vertOffset = mesh.vertPos.size() - 1;
 		for (uint i = 0; i < vMesh.degree; ++i) {
 			Vec2u& edge = vMesh.incidentEdges[i];
@@ -823,7 +837,6 @@ class HalfEdgeMeshBeveler {
 		mesh.vertEdge.insert(mesh.vertEdge.end(), vMesh.patchEdgeCount - 1, 0);
 
 		// Set Each Incident Edge's New Vertex (since this vertex is becoming a junction face/edge)
-		uint firstNewVertex = mesh.vertPos.size();
 		for (uint i = 0; i < vMesh.degree; ++i) {
 			const Vec2u& edgeIds = vMesh.incidentEdges[i];
 			HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeIds[0]];
@@ -884,7 +897,7 @@ class HalfEdgeMeshBeveler {
 		for (uint i = 0; i < vMesh.degree; ++i) {
 			const Vec2u& edgeIds = vMesh.incidentEdges[i];
 
-			if (edgeIds[1] == prevJunctionVertId && !prevWasBevel && !vMesh.edgeIsBevel[i]) {
+			if (prevWasBevel && !vMesh.edgeIsBevel[i]) {
 				prevJunctionVertId = edgeIds[1];
 				prevWasBevel = false;
 				continue;
@@ -923,7 +936,6 @@ class HalfEdgeMeshBeveler {
 
 			prevJunctionVertId = edgeIds[1];
 			prevWasBevel = vMesh.edgeIsBevel[i];
-
 		}
 	}
 
@@ -999,7 +1011,11 @@ public:
 			edgeMap[hEdge2Id] = MAX_UINT;
 		}
 	}
+
 	void AdjustBevel(float bevelFactor) {
+		bevelFactor = std::min(bevelFactor, 1.0f);
+		bevelFactor = std::max(bevelFactor, 0.0f);
+
 		for (size_t i = 0; i < vertices.size(); ++i) {
 			size_t transIndex = i * 2;
 			mesh.vertPos[vertices[i]] = vertTransforms[transIndex] + (vertTransforms[transIndex + 1] * bevelFactor);
