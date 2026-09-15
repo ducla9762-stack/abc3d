@@ -547,6 +547,7 @@ int main(int argc, char* argv[]) {
 	translateToolPanel->buttonCallback(0, actionChangedCallback<TRANSLATE_OUT>);
 	translateToolPanel->buttonCallback(1, actionChangedCallback<TRANSLATE_FREE>);
 	translateToolPanel->buttonCallback(2, actionChangedCallback<TRANSLATE_AXIS>);
+	translateToolPanel->buttonCallback(3, actionChangedCallback<TRANSLATE_EDGE>);
 
 	subdivideToolPanel = new SubdivideToolPanel(0, 0, RIGHT_PANEL_W, RIGHT_PANEL_H);
 	toolPanels[SUBDIVIDE_TOOL] = subdivideToolPanel;
