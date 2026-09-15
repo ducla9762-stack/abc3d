@@ -13,5 +13,18 @@ public:
 
 private:
     Ui::ABC3DClass ui;
+
+    void keyReleaseEvent(QKeyEvent* event) override {
+        if (event->key() == Qt::Key_Delete) {
+            event->accept();
+            emit deleteKeyPressed();
+            return;
+        }
+
+        QMainWindow::keyReleaseEvent(event);
+    }
+
+signals:
+    void deleteKeyPressed();
 };
 

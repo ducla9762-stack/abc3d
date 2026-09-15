@@ -353,13 +353,76 @@
      </widget>
     </item>
     <item>
-     <widget class="Viewport" name="openGLWidget">
+     <widget class="Viewport" name="viewport">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="rightPanel">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>256</width>
+        <height>0</height>
+       </size>
+      </property>
+      <widget class="QWidget" name="page"/>
+      <widget class="QWidget" name="shapePanel">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="1">
+         <widget class="QPushButton" name="torusButton">
+          <property name="text">
+           <string>Torus</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="pyramidButton">
+          <property name="text">
+           <string>Pyramid</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="cylinderButton">
+          <property name="text">
+           <string>Cylinder</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="cubeButton">
+          <property name="text">
+           <string>Cube</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="uvSphereButton">
+          <property name="text">
+           <string>UV Sphere</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="icoSphereButton">
+          <property name="text">
+           <string>Ico-Sphere</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -399,6 +462,12 @@
     <slot>setActionRotate()</slot>
     <slot>setActionBevel()</slot>
     <slot>setActionExtrude()</slot>
+    <slot>loadCube()</slot>
+    <slot>loadPyramid()</slot>
+    <slot>loadCylinder()</slot>
+    <slot>loadTorus()</slot>
+    <slot>loadUvSphere()</slot>
+    <slot>loadIcoSphere()</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -409,7 +478,7 @@
   <connection>
    <sender>selectToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionSelect()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -425,7 +494,7 @@
   <connection>
    <sender>translateToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionTranslateFree()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -441,7 +510,7 @@
   <connection>
    <sender>scaleToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionScale()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -457,7 +526,7 @@
   <connection>
    <sender>rotateToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionRotate()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -473,7 +542,7 @@
   <connection>
    <sender>extrudeToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionExtrude()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -489,7 +558,7 @@
   <connection>
    <sender>bevelToolButton</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionBevel()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -505,7 +574,7 @@
   <connection>
    <sender>translateToolButton_2</sender>
    <signal>released()</signal>
-   <receiver>openGLWidget</receiver>
+   <receiver>viewport</receiver>
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -515,6 +584,102 @@
     <hint type="destinationlabel">
      <x>111</x>
      <y>197</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cubeButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCube()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>879</x>
+     <y>201</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>773</x>
+     <y>201</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pyramidButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadPyramid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1008</x>
+     <y>204</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>765</x>
+     <y>234</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cylinderButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCylinder()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>870</x>
+     <y>381</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>724</x>
+     <y>389</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>torusButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadTorus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>983</x>
+     <y>375</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>643</x>
+     <y>313</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uvSphereButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadUvSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>863</x>
+     <y>554</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>766</x>
+     <y>543</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>icoSphereButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadIcoSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>987</x>
+     <y>555</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>746</x>
+     <y>516</y>
     </hint>
    </hints>
   </connection>

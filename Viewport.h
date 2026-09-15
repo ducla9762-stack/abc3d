@@ -10,10 +10,11 @@
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
+#include "shapes.h"
 
 inline bool initGlew = true;
 
-class Viewport  : public QOpenGLWidget
+class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
@@ -95,7 +96,7 @@ private:
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseAction mouseAction;
 	ActionParams actionParams;
-	bool additiveSelection = false;
+	bool additiveSelection = true;
 
 	void initializeGL() override {
 		if (initGlew) {
@@ -106,15 +107,15 @@ private:
 			}
 			initGlew = false;
 		}
-		
+
 		const GLubyte* version = glGetString(GL_VERSION);
 		std::cout << "OpenGL Version: " << version << std::endl;
 
 		makeCurrent();
 		bool success = renderer.Initialize(defaultFramebufferObject());
-		if (!success) { 
+		if (!success) {
 			std::cout << "Failed to initialize renderer" << std::endl;
-			return; 
+			return;
 		}
 
 		renderer.SetCamera(sphericalToCartesian(camPos));
@@ -161,13 +162,25 @@ private:
 
 		// Retrieve selection ids from corresponding physical pixel and print them
 		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
-		
+
 		std::cout << "Object Id: " << ids.x << std::endl;
 		std::cout << "Component Id: " << ids.y << std::endl;
 		std::cout << "Sub-Component Id: " << ids.z << std::endl;
 
+		if (ids.x > 0 && ids.x < MAX_UINT - 1) {
+			HalfEdgeMesh::HalfEdge edge = scene[0]->GetEdge(ids.z);
+			std::cout << "Twin: " << edge.twin << std::endl;
+			std::cout << "Orig: " << edge.orig << std::endl;
+			std::cout << "Dest: " << edge.dest << std::endl;
+			std::cout << "Next: " << edge.next << std::endl;
+			std::cout << "Prev: " << edge.prev << std::endl;
+			std::cout << "Face: " << edge.face << std::endl;
+		}
+
 		// Handle selection
-		handleSelection(ids);
+		if (ids.x != 0) {
+			handleSelection(ids);
+		}
 
 		// Update MouseAction struct
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
@@ -176,7 +189,7 @@ private:
 		update();
 	}
 
-	bool translateFreeDrag() { 
+	bool translateFreeDrag() {
 		if (selectionManager.getSelectedItems().empty()) { return false; }
 
 		Vec3f f, u, r;
@@ -213,7 +226,7 @@ private:
 			transformed = true;
 		}
 
-		return transformed; 
+		return transformed;
 	}
 
 	void initActionDirsToSelectedNormals() {
@@ -275,7 +288,7 @@ private:
 		}
 	}
 
-	bool translateOutDrag() { 
+	bool translateOutDrag() {
 		// If there are no selected elements, do nothing.
 		if (selectionManager.getSelectedItems().empty()) { return false; }
 
@@ -301,7 +314,7 @@ private:
 	}
 
 	bool translateEdgeDrag() { return false; }
-	bool bevelDrag() { 
+	bool bevelDrag() {
 		if (selectionManager.getSelectedItems().empty()) { return false; }
 
 		// Bevel temporarily only works with edges
@@ -312,10 +325,10 @@ private:
 
 			uint meshId = selectionManager.getSelectedItems()[0].meshId;
 			if (meshId >= scene.MeshCount()) { return false; }
-	
+
 			std::vector<uint> edges;
 			edges.reserve(selectionManager.getSelectedItems().size());
-			
+
 			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 				if (meshId >= scene.MeshCount()) { continue; }
 				edges.push_back(item.componentId);
@@ -332,7 +345,7 @@ private:
 
 		beveler->AdjustBevel(factor);
 
-		return true; 
+		return true;
 	}
 
 	void extrudeSelectedElements() {
@@ -343,8 +356,8 @@ private:
 		}
 	}
 
-	bool extrudeDrag() { 
-		if(selectionManager.getSelectedItems().empty()) { return false; }
+	bool extrudeDrag() {
+		if (selectionManager.getSelectedItems().empty()) { return false; }
 
 		// Extruding temporarily applies only to faces
 		if (selectionManager.getActiveElement() != FACE) { return false; }
@@ -364,7 +377,7 @@ private:
 		// Translated extruded faces
 		translateSelections();
 
-		return true; 
+		return true;
 	}
 
 	bool scaleDrag() { return false; }
@@ -383,7 +396,7 @@ private:
 
 		// Later we'll want to not update render buffers for simple transforms like object level scale, rotate, and translate.
 		// We'll do this with a buffer containing objects' model transformations in the shader & renderer
-		bool updateRenderBuffers = true; 
+		bool updateRenderBuffers = true;
 
 		switch (actionParams.action) {
 		case TRANSLATE_OUT:
@@ -465,8 +478,23 @@ private:
 		}
 	}
 
+	void mouseDoubleClickEvent(QMouseEvent* event) {
+		selectionManager.clearSelection();
+		makeCurrent();
+		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		update();
+	}
+
+	template<typename T, typename U>
+	void loadMesh(const T& vertices, const U& faces) {
+		scene.NewMesh()->load(vertices, faces);
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
 public:
-	Viewport(QWidget *parent);
+	Viewport(QWidget* parent);
 	~Viewport();
 
 public slots:
@@ -486,5 +514,60 @@ public slots:
 	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
 	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
 
+	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
+	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
+	void loadCylinder(){
+		std::vector<Vec3f> vertices;
+		std::vector<Vec4u> faces;
+		generateUnitCylinder(vertices, faces, 12);
+		loadMesh(vertices, faces);
+	}
+	void loadTorus(){
+		std::vector<Vec3f> vertices;
+		std::vector<Vec4u> faces;
+		generateUnitTorus(vertices, faces, 40, 20);
+		loadMesh(vertices, faces);
+	}
+	void loadUvSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
+	void loadIcoSphere(){
+		std::vector<Vec3f> vertices;
+		std::vector<Vec4u> faces;
+		generateUVSphere(vertices, faces, 10, 10);
+		loadMesh(vertices, faces);
+	}
+
+	// directly ported from FLTK Version's Viewport::deleteElement
+	void deleteSelection() {
+		std::cout << "delete" << std::endl;
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				scene.DeleteMesh(item.meshId);
+				break;
+
+			case VERTEX:
+				// todo
+				break;
+
+			case EDGE:
+				// todo
+				break;
+
+			case FACE:
+				// todo
+				break;
+			}
+		}
+
+		selectionManager.clearSelection();
+		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		// Need to call ModelingRenderer::UpdateSelection ???
+		update();
+	}
 };
 
