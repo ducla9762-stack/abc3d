@@ -933,12 +933,6 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	end();
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-
-	//scene[0]->Extrude(5);
-	//scene[0]->TranslateFace(5, scene[0]->GetFaceNormal(5));
-	//HalfEdgeMeshBeveler beveler(*scene[0]);
-	//beveler.StartEdgeBevel(17);
-	//beveler.AdjustBevel(0.5f);
 }
 
 float Viewport::getScale(int component, float scale) {
