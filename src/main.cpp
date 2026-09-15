@@ -178,12 +178,12 @@ void loadTutorialCallback(Fl_Widget* w, void*) {
 	if (fileChooser.show() == 0) {
 		const char* path = fileChooser.filename();
 		const char* extension = fl_filename_ext(path);
-		if (extension != ".html") {
+		//if (extension != "html") {
 			//std::cout << "Please choose an HTML file" << std::endl;
-		} 
-		else {
+		//} 
+		//else {
 			htmlViewer->load(fileChooser.filename());
-		}
+		//}
 	}
 }
 
