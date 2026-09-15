@@ -122,14 +122,17 @@ void saveCallback(Fl_Widget* w, void*) {
 }
 
 void openSceneCallback(Fl_Widget* w, void*) {
-	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_SAVE_FILE);
+	Fl_Native_File_Chooser fileChooser(Fl_Native_File_Chooser::BROWSE_FILE);
 	fileChooser.directory("../assets/models");
 
 	if (fileChooser.show() != 0)
 		return;
 
-	if (!viewport->saveScene(fileChooser.filename())) {
-		fl_alert("Could not open \"%s\".\n\n""It is not readable ABC3D scene file, it was written by a newer version, or one of its objects is not a valid mesh. \n\n. The current scene was left unchanged..", fileChooser.filename());
+	if (!viewport->openScene(fileChooser.filename())) {
+		fl_alert("Could not open \"%s\".\n\n"
+			"It is not a readable ABC3D scene file, it was written by a newer version, "
+			"or one of its objects is not a valid mesh.\n\n"
+			"The current scene was left unchanged.", fileChooser.filename());
 	}
 }
 

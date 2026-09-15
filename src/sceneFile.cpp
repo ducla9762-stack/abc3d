@@ -28,8 +28,9 @@ bool WriteSceneFile(const std::string& filePath, const SceneFile& doc) {
 	file << "\n[end]\n"; 
 
 	for (const SceneFileObject& obj : doc.objects) {
-		//weird formatting, but basically just putting the name in quotation marks
-		file << "[object id=" << obj.id << " name = \"" << obj.name << "\"]\n"; 
+		//The \" escapes are just quotation marks around the name, so a name with
+		//spaces in it stays one token: [object id=0 name="Base Plate"]
+		file << "[object id=" << obj.id << " name=\"" << obj.name << "\"]\n";
 		WriteVec(file, "pos", obj.pos); 
 		WriteVec(file, "rot", obj.rot); 
 		WriteVec(file, "scale", obj.scale); 
@@ -147,8 +148,11 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 			}
 
 			else {
-				//Should we through an exception here? 
-				continue; 
+				//Deliberately ignored, NOT an error. An unknown key means a newer ABC3D
+				//wrote a field this build has never heard of. Skipping it is exactly how
+				//an old build stays able to open new scene files. Rejecting here would
+				//turn every future field we add into a hard break for older builds.
+				continue;
 			}
 		}
 

@@ -38,7 +38,7 @@ struct SceneFile {
 };
 
 /// <returns>true if the whole document is written</returns>
-bool WriteSceneFile(const std::string filePaht, const SceneFile& doc);
+bool WriteSceneFile(const std::string& filePath, const SceneFile& doc);
 
 bool ReadSceneFile(const std::string& filePath, SceneFile& doc); 
 
