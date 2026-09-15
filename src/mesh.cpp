@@ -392,6 +392,45 @@ HalfEdgeMesh::HalfEdge& HalfEdgeMesh::NewEdge(const HalfEdge& hEdge, uint& id) {
 	return edges[id];
 }
 
+void HalfEdgeMesh::SetTwins(uint edgeId, uint twinId, uint orig, uint dest) {
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	edge.orig = orig;
+	edge.dest = dest;
+	edge.twin = twinId;
+
+	HalfEdgeMesh::HalfEdge& twin = edges[twinId];
+	twin.orig = dest;
+	twin.dest = orig;
+	twin.twin = edgeId;
+}
+
+void HalfEdgeMesh::InsertPrev(uint edgeId, uint newPrevId) {
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	HalfEdgeMesh::HalfEdge& newPrev = edges[newPrevId];
+
+	newPrev.next = edgeId;
+	newPrev.prev = edge.prev;
+	newPrev.face = edge.face;
+
+	edges[edge.prev].next = newPrevId;
+	edge.prev = newPrevId;
+}
+
+uint HalfEdgeMesh::NewTwin(uint edgeId, uint face) {
+	uint twinId = NewEdge();
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	HalfEdgeMesh::HalfEdge& twin = edges[twinId];
+
+	twin.twin = edgeId;
+	twin.orig = edge.dest;
+	twin.dest = edge.orig;
+	twin.face = face;
+
+	edge.twin = twinId;
+
+	return twinId;
+}
+
 uint HalfEdgeMesh::FaceEdgeCount(uint faceId) const {
 	uint edgeCount = 0;
 	uint first = faceEdges[faceId];
