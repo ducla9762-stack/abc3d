@@ -1097,6 +1097,38 @@ void Viewport::tesselate() {
 	redraw();
 }
 
+void Viewport::triangulate() {
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+
+		switch (item.type) {
+		case OBJECT:
+			mesh->Triangulate();
+			break;
+
+		case VERTEX:
+			// No definition.
+			break;
+
+		case EDGE:
+			// todo
+			break;
+
+		case FACE:
+			mesh->TriangulateFace(item.componentId);
+			// todo
+			break;
+		}
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	redraw();
+}
+
 void Viewport::deleteElement() {
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId >= scene.MeshCount()) {
