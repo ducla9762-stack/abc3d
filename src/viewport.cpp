@@ -908,16 +908,6 @@ Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-
-	//scene[0]->Extrude(5);
-	//scene[0]->TranslateFace(5, scene[0]->GetFaceNormal(5));
-	HalfEdgeMeshBeveler beveler(*scene[0]);
-	//std::vector<uint> edges = { 17, 32 };
-	std::vector<uint> edges = { 17, 16, 21 };
-	//std::vector<uint> edges = { 17, 16 };
-	//std::vector<uint> edges = { 17 };
-	beveler.StartEdgeBevel(edges);
-	beveler.AdjustBevel(0.5f);
 }
 
 float Viewport::getScale(int component, float scale) {
