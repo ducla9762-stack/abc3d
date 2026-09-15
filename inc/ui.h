@@ -365,6 +365,10 @@ class SubdivideToolPanel : public ToolPanel {
 	static void tesselationCallback(Fl_Widget*, void*) {
 		viewport->tesselate();
 	}
+
+	static void triangulationCallback(Fl_Widget*, void*) {
+		//viewport->Triangulate
+	}
 public:
 	SubdivideToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) {
 		begin();
@@ -379,6 +383,10 @@ public:
 		subdivideButton->align(FL_ALIGN_INSIDE);
 		subdivideButton->tooltip("Subdivision Tool\n _______ \nRestricted to object-level");
 
+		//if ( != "OBJECT") {
+		//	subdivideButton->deactivate();
+		//}
+
 		// Tesselate Button
 		Fl_Button* tesselateButton = new Fl_Button(0, buttonH, w, buttonH, "Tesselation");
 		tesselateButton->selection_color(10);
@@ -386,6 +394,15 @@ public:
 		tesselateButton->callback(tesselationCallback);
 		tesselateButton->align(FL_ALIGN_INSIDE);
 		tesselateButton->tooltip("Tesselation Tool\n _____ \n");
+
+		// Triangulate Button
+		Fl_Button* triangulateButton = new Fl_Button(0, 2 * buttonH, w, buttonH, "Triangulation");
+		tesselateButton->selection_color(10);
+		tesselateButton->box(FL_UP_BOX);
+		tesselateButton->callback(triangulationCallback);
+		tesselateButton->align(FL_ALIGN_INSIDE);
+		tesselateButton->tooltip("Triangulate Faces\n _____ \n");
+
 		end();
 	}
 };

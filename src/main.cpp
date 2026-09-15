@@ -312,7 +312,7 @@ void subdivisionPanelCallback(Fl_Widget* w, void*) {
 	if (activeTool == SUBDIVIDE_TOOL) {
 		return;
 	}
-
+	//subdivideToolPanel = new SubdivideToolPanel();
 	toolIcons[activeTool]->color_average(FL_BLACK, 0.0f);
 	toolIcons[SUBDIVIDE_TOOL]->color_average(FL_WHITE, 0.0f);
 	w->redraw();
