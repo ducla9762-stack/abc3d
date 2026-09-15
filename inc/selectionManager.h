@@ -41,6 +41,18 @@ public:
 	}
 
 	/// <summary>
+	/// Appends an object-level selection. Used to restore a saved scene for meshes selected. 
+	/// </summary>
+	/// <param name="meshId">mesh to select</param>
+	/// <returns>true if added</returns>
+	bool selectMesh(uint meshId) {
+		if (activeElement != OBJECT) return false; 
+		if (selectedItems.size() >= MAX_SELECTION_ITEMS) return false; 
+		selectedItems.push_back(SelectionItem{ OBJECT, meshId, MAX_UINT }); 
+		return true; 
+	}
+
+	/// <summary>
 	/// Returns the non-mutable list of selected items.
 	/// </summary>
 	/// <returns> The address of the list of selected items. </returns>
