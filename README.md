@@ -6,7 +6,9 @@ Run GENERATE_SLN.bat, this will prompt vcpkg to install all required packages, a
 
 ## Troubleshooting
 
-If any difficulty was encountered during the running of GENERATE_SLN.bat, delete the build folder before attempting to run again.
+If any difficulty was encountered during the running of GENERATE_SLN.bat, delete the build folder before attempting to run again. The setup script generates Visual Studio 2022 x64 files; Visual Studio 2022 must be installed.
+
+If CMake reports `NMake makefiles does not support platform specifications`, delete the build folder and run the script again. This means the build folder was previously configured with the NMake generator while the script requested the x64 platform, which is only supported by Visual Studio generators.
 
 ## Structure
 

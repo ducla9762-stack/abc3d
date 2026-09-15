@@ -447,6 +447,8 @@ public:
 	/// <param name="edgeId">An edge of the mesh.</param>
 	/// <returns>The unit normal direction of the edge.</returns>
 	Vec3f GetEdgeNormal(uint edgeId);
+	/// <returns>The local-space midpoint of an edge.</returns>
+	Vec3f GetEdgeCenter(uint edgeId) const;
 	/// <summary> Translates a face. </summary>
 	/// <param name="faceId">Face to translate.</param>
 	/// <param name="translation">Translation factor.</param>

@@ -1125,6 +1125,11 @@ Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
 	return normal / count;
 }
 
+Vec3f HalfEdgeMesh::GetEdgeCenter(uint edgeId) const {
+	const HalfEdge& edge = edges.at(edgeId);
+	return (vertPos.at(edge.orig) + vertPos.at(edge.dest)) * 0.5f;
+}
+
 void HalfEdgeMesh::TranslateFace(uint faceId, const Vec3f& translation) {
 	StartEdgeIteration(faceId)
 		TranslateVertex(edge.orig, translation);

@@ -42,7 +42,7 @@ class ArrowRenderer {
 	GLSLProgram program; // Shader program
 	GLuint vao, vbo, ebo; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
 	GLuint instancedVbo; // VBO for arrow data (Arrow struct)
-	GLsizei instanceCount; // Number of arrows
+	GLsizei instanceCount = 0; // Number of arrows
 
 public:
 
@@ -72,7 +72,7 @@ public:
 	/// Sets the View-Projection transformation.
 	/// </summary>
 	/// <param name="data">View-Projection Matrix</param>
-	void SetViewProjectionUniform(float data[16]);
+	void SetViewProjectionUniform(float data[16], float fov, int viewportHeight);
 
 	/// <summary>
 	/// Sets the arrows to draw.
@@ -80,6 +80,12 @@ public:
 	/// <param name="arrows">List of arrows</param>
 	/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
 	void SetArrows(const std::vector<Arrow>& arrows, GLenum usage = GL_STATIC_DRAW);
+
+	/// <summary>
+	/// Creates a vector of arrows to be drawn.
+	/// </summary>
+	/// <returns> Arrows to draw. </returns>
+	std::vector<Arrow> CreateArrows(const Vec3f& base, uint hoveredAxis);
 };
 
 class ModelingRenderer : public Renderer {
@@ -160,6 +166,16 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
+	/// <summary>
+	/// Shows the translation arrows at the supplied world-space position.
+	/// </summary>
+	void UpdateArrows(const Vec3f& base, uint hoveredAxis);
+
+	/// <summary>
+	/// Hides all arrows.
+	/// </summary>
+	void ClearArrows();
+
 	void UpdateSelectionTexture(std::vector<bool> selections);
 
 	/// <summary>
@@ -170,6 +186,10 @@ public:
 	/// </summary>
 	/// <param name="selectedItems"></param>
 	void UpdateSelection(const std::vector<SelectionItem>& selectedItems);
+
+	// AI-generated code: Renderer interface for active-element hover state.
+	/// Updates the active-element hover state from raw framebuffer IDs.
+	void UpdateHover(const Vec3u& selectionIds, Element activeElement);
 
 private:
 

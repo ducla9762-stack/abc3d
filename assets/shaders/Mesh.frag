@@ -14,12 +14,16 @@ const uint MAX_SELECTION_ITEMS = 64u;
 uniform uint selectionCount;
 // The array of selected items.
 uniform uvec3 selectedItems[MAX_SELECTION_ITEMS];
+// AI-generated code: Active-element hover matching and color precedence.
+uniform uvec3 hoveredItem;
 
 // uint mapping of the Elements enum.
 const uint OBJECT = 0u;
 const uint FACE   = 1u;
 const uint EDGE   = 2u;
 const uint VERTEX = 3u;
+const uint NO_HOVER = 4294967295u;
+const vec3 HOVER_COLOR = vec3(1.0f, 0.5f, 0.0f);
 
 const vec3 SURFACE_BASE_COLOR = vec3(1, 0, 0);
 
@@ -46,6 +50,16 @@ bool isSelected(uint type, uint objectId, uint componentId) {
 	return false;
 }
 
+bool isHovered(uint type, uint objectId, uint componentId) {
+	if (hoveredItem.x == NO_HOVER) {
+		return false;
+	}
+
+	bool sameElement = hoveredItem.x == type && hoveredItem.y == objectId;
+	bool sameComponent = type == OBJECT || hoveredItem.z == componentId;
+	return sameElement && sameComponent;
+}
+
 void main(){
 	vec3 normal = normalize(normalDir);
 	vec3 viewDir = -normalize(shadePos);
@@ -61,6 +75,9 @@ void main(){
 	bool objectSelected = isSelected(OBJECT, ids.x, 0u);
 	bool faceSelected = isSelected(FACE, ids.x, ids.y);
 	bool edgeSelected = isSelected(EDGE, ids.x, edgeId);
+	bool objectHovered = isHovered(OBJECT, ids.x, 0u);
+	bool faceHovered = isHovered(FACE, ids.x, ids.y);
+	bool edgeHovered = isHovered(EDGE, ids.x, edgeId);
 
 	float threshold = max(abs(dFdx(edgeDists[minEdge])), abs(dFdy(edgeDists[minEdge]))) * 2.0f;
 	float AA = threshold * 0.5f;
@@ -72,6 +89,15 @@ void main(){
 	}
 	if (faceSelected) {
 		color2 = mix(color2, vec3(0.0f, 1.0f, 0.0f), 0.65f);
+	}
+	if (objectHovered && !objectSelected) {
+		color2 = mix(color2, HOVER_COLOR, 0.45f);
+	}
+	if (faceHovered && !faceSelected) {
+		color2 = mix(color2, HOVER_COLOR, 0.75f);
+	}
+	if (edgeHovered && !edgeSelected) {
+		color1 = HOVER_COLOR;
 	}
 	float alpha = 1.0f - smoothstep(threshold - AA, threshold + AA, edgeDist);
 

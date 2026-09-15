@@ -50,7 +50,12 @@ void ModelingRenderer::SetCamera(const Vec3f& pos, const Vec3f& target) {
 	updateUniforms();
 }
 
-Vec3u ModelingRenderer::SelectionIds(uint x, uint y) { return idSelectBuf.at(x + y * width); }
+Vec3u ModelingRenderer::SelectionIds(uint x, uint y) {
+	if (x >= static_cast<uint>(width) || y >= static_cast<uint>(height) || idSelectBuf.empty()) {
+		return Vec3u(0u, 0u, 0u);
+	}
+	return idSelectBuf.at(x + y * width);
+}
 
 bool ModelingRenderer::Initialize() {
 	// Create VAO for grid
@@ -123,16 +128,7 @@ bool ModelingRenderer::Initialize() {
 
 	// Initialize arrow renderer
 	arrowRenderer.Initialize();
-	std::vector<ArrowRenderer::Arrow> arrows;
-	arrows.emplace_back();
-	arrows.back().base = Vec3f(0.0f, 2.0f, 0.0f);
-	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
-	arrows.back().length = 10.0f;
-	arrows.back().radius = 0.25;
-	arrows.back().tipHeight = 2.0f;
-	arrows.back().color = Vec3f(1.0f, 0.0f, 0.0f);
-	arrows.back().ids = Vec2u(0, 0);
-	arrowRenderer.SetArrows(arrows);
+	arrowRenderer.SetArrows({});
 
 	// Set clear color & blend function
 	glClearColor(0, 0, 0, 1);
@@ -161,6 +157,13 @@ void ModelingRenderer::Draw() {
 		pointProgram.Bind();
 		glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
 	}
+
+	// Draw the arrows before checking the selection texture.
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	arrowRenderer.Draw();
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 	glReadPixels(0, 0, width, height, GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
@@ -195,7 +198,7 @@ void ModelingRenderer::Draw() {
 	}
 	glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 
-	arrowRenderer.Draw();
+	//arrowRenderer.Draw();
 
 	/*int selectBufSize = pixel_w() * pixel_h();
 
@@ -243,7 +246,7 @@ void ModelingRenderer::UpdateProjectionUniforms() {
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
 
-	arrowRenderer.SetViewProjectionUniform(data);
+	arrowRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateUniforms() {
@@ -267,7 +270,7 @@ void ModelingRenderer::updateUniforms() {
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
 
-	arrowRenderer.SetViewProjectionUniform(data);
+	arrowRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateTextureUniforms() {
@@ -396,6 +399,14 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	updateTextureUniforms();
 }
 
+void ModelingRenderer::UpdateArrows(const Vec3f& base, uint hoveredAxis) {
+	arrowRenderer.SetArrows(arrowRenderer.CreateArrows(base, hoveredAxis));
+}
+
+void ModelingRenderer::ClearArrows() {
+	arrowRenderer.SetArrows({});
+}
+
 // OLD FUNCTION
 void ModelingRenderer::UpdateSelectionTexture(std::vector<bool> selections)
 {
@@ -435,6 +446,51 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 		"selectedItems[0]", gpuSelections.data(), static_cast<int>(selectionCount));
 }
 
+// AI-generated code: Converts framebuffer IDs into shader hover state.
+void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElement) {
+	GLuint hoveredItem[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
+
+	// Arrows and the background must not produce a mesh-element hover.
+	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT && selectionIds.x != ARROW_IDENTIFIER) {
+		switch (activeElement) {
+		case OBJECT:
+			hoveredItem[0] = OBJECT;
+			hoveredItem[1] = selectionIds.x;
+			break;
+		case FACE:
+			hoveredItem[0] = FACE;
+			hoveredItem[1] = selectionIds.x;
+			hoveredItem[2] = selectionIds.y;
+			break;
+		case EDGE:
+			if (selectionIds.z != MAX_UINT) {
+				hoveredItem[0] = EDGE;
+				hoveredItem[1] = selectionIds.x;
+				hoveredItem[2] = selectionIds.z;
+			}
+			break;
+		case VERTEX:
+			break;
+		}
+	}
+	else if (activeElement == OBJECT && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
+		// Vertex-point rendering stores the object ID in the second component.
+		hoveredItem[0] = OBJECT;
+		hoveredItem[1] = selectionIds.y;
+	}
+	else if (activeElement == VERTEX && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
+		// Vertex-point rendering stores (object ID, vertex ID) in y/z.
+		hoveredItem[0] = VERTEX;
+		hoveredItem[1] = selectionIds.y;
+		hoveredItem[2] = selectionIds.z;
+	}
+
+	meshProgram.Bind();
+	meshProgram.SetUniform3("hoveredItem", hoveredItem);
+	pointProgram.Bind();
+	pointProgram.SetUniform3("hoveredItem", hoveredItem);
+}
+
 // Arrow renderer
 
 bool ArrowRenderer::Initialize() {
@@ -472,7 +528,7 @@ bool ArrowRenderer::Initialize() {
 	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, radius));
 	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, tipHeight));
 	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, color));
-	glVertexAttribPointer(7, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
+	glVertexAttribIPointer(7, 2, GL_UNSIGNED_INT, sizeof(Arrow), (GLvoid*)offsetof(Arrow, ids));
 
 	for (int i = 1; i < 8; ++i) {
 		glEnableVertexAttribArray(i);
@@ -488,6 +544,41 @@ void ArrowRenderer::SetArrows(const std::vector<Arrow>& arrows, GLenum usage) {
 	instanceCount = arrows.size();
 }
 
+// AI-generated code: Builds the translation-axis gizmo and applies hover color.
+std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base, uint hoveredAxis) {
+	std::vector<ArrowRenderer::Arrow> arrows;
+	// Translation, ID = 0.
+	// X - Green, Sub-ID = 0
+	arrows.emplace_back();
+	arrows.back().base = base;
+	arrows.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().length = 0.5f;
+	arrows.back().radius = 0.025f;
+	arrows.back().tipHeight = 0.25f;
+	arrows.back().color = hoveredAxis == 0 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().ids = Vec2u(0, 0);
+	// Y (up) - Blue, Sub-ID = 1
+	arrows.emplace_back();
+	arrows.back().base = base;
+	arrows.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	arrows.back().length = 0.5f;
+	arrows.back().radius = 0.025f;
+	arrows.back().tipHeight = 0.25f;
+	arrows.back().color = hoveredAxis == 1 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().ids = Vec2u(0, 1);
+	// Z - Red, Sub-ID = 2
+	arrows.emplace_back();
+	arrows.back().base = base;
+	arrows.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
+	arrows.back().length = 0.5f;
+	arrows.back().radius = 0.025f;
+	arrows.back().tipHeight = 0.25f;
+	arrows.back().color = hoveredAxis == 2 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(1.0f, 0.0f, 0.0f);
+	arrows.back().ids = Vec2u(0, 2);
+
+	return arrows;
+}
+
 void ArrowRenderer::Draw() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBindVertexArray(vao);
@@ -496,9 +587,17 @@ void ArrowRenderer::Draw() {
 	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
 }
 
-void ArrowRenderer::SetViewProjectionUniform(float data[16]) {
+// AI-generated code: Keeps the arrow gizmo at a constant screen size.
+void ArrowRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	program.Bind();
 	program.SetUniformMatrix4("viewProj", data);
+
+	// Convert the desired on-screen height to a world-space scale at the
+	// arrow's depth. The shader divides this by each arrow's local height.
+	const float safeHeight = static_cast<float>(std::max(viewportHeight, 1));
+	const float screenScale =
+		2.0f * std::tan(degreesToRadians(fov) * 0.5f) / safeHeight * 100.0f;
+	program.SetUniform("screenScale", screenScale);
 }
 
 constexpr float HALF_SQR_2 = 0.7071068f;
