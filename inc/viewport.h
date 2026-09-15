@@ -163,16 +163,6 @@ class Viewport : public Fl_Gl_Window {
 	void mouseWheel();
 
 	/// <summary>
-	/// Logic executed on a key press event.
-	/// </summary>
-	void keyDown();
-
-	/// <summary>
-	/// Logic executed on a key release event.
-	/// </summary>
-	void keyUp();
-
-	/// <summary>
 	/// Constructs a selection item given the raw ids from the renderer.
 	/// Intended to be sent to the selection manager for processing.
 	/// </summary>
