@@ -201,18 +201,22 @@ std::vector<FaceList> FaceList::SplitObjects() const {
 	return parts;
 }
 
-bool FaceList::LoadObj(const char* obj) {
-	ifstream objFile(obj);
-	if (!objFile.is_open()) { return false; }
-
+bool FaceList::LoadObjStream(std::istream& in){
 	string line;
-	while (std::getline(objFile, line)) {
+	while (std::getline(in, line)) {
 		if (line.empty()) { continue; }
 		ProcessObjLine(line);
 	}
 
-	if (objFile.fail() && !objFile.eof()) { return false; }
+	if (in.fail() && !in.eof()) { return false; }
 	return true;
+}
+
+bool FaceList::LoadObj(const char* obj) {
+	ifstream objFile(obj);
+	if (!objFile.is_open()) { return false; }
+
+	return LoadObjStream(objFile); 
 }
 
 /// <summary>
@@ -1789,12 +1793,17 @@ std::string ensureExtension(const std::string& path, const char* ext) {
 	return hasExtension(path, ext) ? path : path + ext; 
 }
 
-void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset) const {
-	std::vector<Vec3f> worldPos;
-	worldPos.reserve(vertPos.size()); 
-	GetWorldVertexPositions(worldPos); 
+void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset, bool worldSpace) const {
+	std::vector<Vec3f> positions;
+	positions.reserve(vertPos.size());
 
-	for (const Vec3f& v : worldPos)
+	if (worldSpace)
+		GetWorldVertexPositions(positions);
+
+	else
+		positions = vertPos; 
+
+	for (const Vec3f& v : positions)
 		out << "v " << v.x << " " << v.y << " " << v.z << "\n"; 
 
 	uint faceCount = faceEdges.size(); 
@@ -1812,7 +1821,7 @@ void HalfEdgeMesh::appendObj(std::ostream& out, uint& vertOffset) const {
 		out << "\n"; 
 	}
 
-	vertOffset += static_cast<uint>(worldPos.size()); 
+	vertOffset += static_cast<uint>(positions.size()); 
 }
 
 /// <summary>
