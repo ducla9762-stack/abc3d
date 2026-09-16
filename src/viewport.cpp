@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "viewport.h"
+#include "sceneFile.h"
 #include "mesh.h"
 #include "shapes.h"
 #include "render.h"
@@ -1326,6 +1327,101 @@ bool Viewport::exportStl(const char* filepath) {
 		scene[id]->appendStlTriangles(tris); 
 	
 	return writeStl(ensureExtension(filepath, ".stl"), tris, true); 
+}
+
+bool Viewport::saveScene(const char* filepath) {
+	SceneFile doc;
+
+	doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
+	doc.grid = modelingRenderer.GridVisible();
+	doc.points = modelingRenderer.VertexPointsVisible();
+
+	//Object selection id just mesh id
+	//sub-object selection is not saved
+	if (getActiveElement() == OBJECT) {
+		for (const SelectionItem& item : selectionManager.getSelectedItems())
+			doc.selection.push_back(item.meshId);
+	}
+
+	for (uint id = 0; id < scene.MeshCount(); ++id) {
+		const HalfEdgeMesh* mesh = scene[id]; 
+		if (mesh->VertexCount() == 0)
+			continue;
+
+		SceneFileObject obj; 
+		obj.id = id; 
+		obj.name = "mesh" + std::to_string(id); 
+		obj.pos = mesh->Pos(); 
+		obj.rot = mesh->Rot(); 
+		obj.scale = mesh->Scale(); 
+
+		//Local space so we don't apply the transform above twice
+		std::ostringstream geometry; 
+		uint vertOffset = 0; 
+		mesh->appendObj(geometry, vertOffset, false); 
+		obj.objText = geometry.str(); 
+
+		doc.objects.push_back(std::move(obj)); 
+	}
+
+	return WriteSceneFile(filepath, doc); 
+}
+
+bool Viewport::openScene(const char* filepath) {
+	SceneFile doc;
+	if (!ReadSceneFile(filepath, doc))
+		return false; 
+	
+	//Build every mesh before touching a scene. If invalid file, we don't load. 
+	std::vector<HalfEdgeMesh> candidates; 
+	candidates.reserve(doc.objects.size()); 
+
+	//Saved ids are sparse because deleted are never written. 
+	//Remember where each saved id maps to so we can remap to the dense ids
+	std::unordered_map<uint, uint> idMap; 
+
+	for (const SceneFileObject& obj : doc.objects) {
+		std::istringstream geometry(obj.objText); 
+		FaceList faceList; 
+
+		if (!faceList.LoadObjStream(geometry))
+			return false; 
+
+		candidates.emplace_back(); 
+		if (!candidates.back().load(faceList))
+			return false; 
+		
+		candidates.back().Pos(obj.pos); 
+		candidates.back().Rot(obj.rot); 
+		candidates.back().Scale(obj.scale);
+
+		idMap[obj.id] = static_cast<uint>(candidates.size() - 1); 
+	}
+
+	scene.Clear(); 
+	for (HalfEdgeMesh& candidate : candidates) 
+		*scene.NewMesh() = std::move(candidate);
+
+	camPos = doc.camera; 
+	activeRenderer->SetCamera(sphericalToCartesian(camPos)); 
+	modelingRenderer.SetGridVisible(doc.grid); 
+	modelingRenderer.SetVertexPointsVisible(doc.points); 
+
+	setActiveElement(OBJECT); 
+	for (uint savedId : doc.selection) {
+		auto remapped = idMap.find(savedId); 
+		if (remapped != idMap.end())
+			selectionManager.selectMesh(remapped->second);
+	}
+
+	modelingRenderer.UpdateRenderBuffers(scene);
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
+	updateArrows();
+	if (primarySelectionCallback)
+		primarySelectionCallback();
+	redraw();
+
+	return true; 
 }
 
 Mode Viewport::getActiveMode() { return activeMode;  }
