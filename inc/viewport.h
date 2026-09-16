@@ -21,7 +21,7 @@
 inline bool initGlew = true;
 
 enum Mode { MODEL, SIMPLE, RENDER };
-enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL, SHAPE };
+enum Action { CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE, SCALE, ROTATE, EXTRUDE, BEVEL, SHAPE, SUBDIVIDE, TESSELATE};
 
 class Viewport : public Fl_Gl_Window {
 
@@ -161,16 +161,6 @@ class Viewport : public Fl_Gl_Window {
 	/// Logic executed on a mouse wheel event.
 	/// </summary>
 	void mouseWheel();
-
-	/// <summary>
-	/// Logic executed on a key press event.
-	/// </summary>
-	void keyDown();
-
-	/// <summary>
-	/// Logic executed on a key release event.
-	/// </summary>
-	void keyUp();
 
 	/// <summary>
 	/// Constructs a selection item given the raw ids from the renderer.
@@ -384,6 +374,14 @@ public:
 	/// </summary>
 	/// <param name="callback"></param>
 	void setPrimarySelectionCallback(void (*callback)());
+
+	void togglePoints();
+
+	void toggleGrid();
+
+	void enableAdditiveSelection();
+
+	void disableAdditiveSelection();
 };
 
 #endif

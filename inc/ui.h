@@ -6,6 +6,11 @@
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Simple_Counter.H>
 #include <FL/Fl_Radio_Button.H>
+#include <iostream>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Image.H>
+#include <Fl/Fl_PNG_Image.H>
+
 #undef max
 
 #include "viewport.h"
@@ -34,7 +39,6 @@ public:
 		spinners[i]->step(stepSize);\
 		spinners[i]->label(AXIS_LETTERS[i]);\
 		spinners[i]->align(FL_ALIGN_LEFT);\
-		spinners[i]->type(FL_FLOAT_INPUT);\
 		spinners[i]->range(-1000000000, 1000000000);\
 		yPos += 25;\
 	}\
@@ -134,14 +138,12 @@ public:
 		buttons[0] = new Fl_Radio_Button(0, 0, w, 20, "Outward");
 		buttons[0]->selection_color(10);
 		buttons[0]->box(FL_FLAT_BOX);
-		//buttons[0]->callback(actionChangedCallback<TRANSLATE_OUT>);
 		buttons[0]->align(FL_ALIGN_INSIDE);
 
 		// Free Translation Button
 		buttons[1] = new Fl_Radio_Button(0, 20, w, 20, "Free");
 		buttons[1]->selection_color(10);
 		buttons[1]->box(FL_UP_BOX);
-		//buttons[1]->callback(actionChangedCallback<TRANSLATE_FREE>);
 		buttons[1]->align(FL_ALIGN_INSIDE);
 		buttons[1]->value(1);
 
@@ -310,6 +312,7 @@ public:
 		cubeButton->box(FL_UP_BOX);
 		cubeButton->callback(cubeCallback);
 		cubeButton->align(FL_ALIGN_INSIDE);
+		cubeButton->tooltip("Creates a cube in the scene");
 		yPos += interval;
 
 		// UV Sphere Shape Button
@@ -318,6 +321,7 @@ public:
 		UVSphereButton->box(FL_UP_BOX);
 		UVSphereButton->callback(UVSphereCallback);
 		UVSphereButton->align(FL_ALIGN_INSIDE);
+		UVSphereButton->tooltip("Creates a UV sphere in the scene");
 		yPos += interval;
 
 		// ICO Sphere Shape Button
@@ -326,6 +330,7 @@ public:
 		icoSphereButton->box(FL_UP_BOX);
 		icoSphereButton->callback(icoSphereCallback);
 		icoSphereButton->align(FL_ALIGN_INSIDE);
+		icoSphereButton->tooltip("Creates an ico sphere in the scene");
 		yPos += interval;
 
 		// Pyramid Shape Button
@@ -334,6 +339,7 @@ public:
 		pyramidButton->box(FL_UP_BOX);
 		pyramidButton->callback(pyramidCallback);
 		pyramidButton->align(FL_ALIGN_INSIDE);
+		pyramidButton->tooltip("Creates a pyramid in the scene");
 		yPos += interval;
 
 		// Cylinder Button
@@ -342,6 +348,7 @@ public:
 		cylinderButton->box(FL_UP_BOX);
 		cylinderButton->callback(cylinderCallback);
 		cylinderButton->align(FL_ALIGN_INSIDE);
+		cylinderButton->tooltip("Creates a cylinder in the scene");
 		yPos += interval;
 
 		// Torus Shape Button
@@ -350,6 +357,7 @@ public:
 		torusButton->box(FL_UP_BOX);
 		torusButton->callback(torusCallback);
 		torusButton->align(FL_ALIGN_INSIDE);
+		torusButton->tooltip("Creates a torus in the scene - 'the donut'");
 		
 		end();
 	}
@@ -365,6 +373,10 @@ class SubdivideToolPanel : public ToolPanel {
 	static void tesselationCallback(Fl_Widget*, void*) {
 		viewport->tesselate();
 	}
+
+	static void triangulationCallback(Fl_Widget*, void*) {
+		//viewport->Triangulate
+	}
 public:
 	SubdivideToolPanel(int x, int y, int w, int h, const char* title = nullptr) : ToolPanel(x, y, w, h) {
 		begin();
@@ -377,6 +389,11 @@ public:
 		subdivideButton->box(FL_UP_BOX);
 		subdivideButton->callback(subdivisionCallback);
 		subdivideButton->align(FL_ALIGN_INSIDE);
+		subdivideButton->tooltip("Subdivision Tool\n _______ \nRestricted to object-level");
+
+		//if ( != "OBJECT") {
+		//	subdivideButton->deactivate();
+		//}
 
 		// Tesselate Button
 		Fl_Button* tesselateButton = new Fl_Button(0, buttonH, w, buttonH, "Tesselation");
@@ -384,6 +401,15 @@ public:
 		tesselateButton->box(FL_UP_BOX);
 		tesselateButton->callback(tesselationCallback);
 		tesselateButton->align(FL_ALIGN_INSIDE);
+		tesselateButton->tooltip("Tesselation Tool\n _____ \n");
+
+		// Triangulate Button
+		Fl_Button* triangulateButton = new Fl_Button(0, 2 * buttonH, w, buttonH, "Triangulation");
+		tesselateButton->selection_color(10);
+		tesselateButton->box(FL_UP_BOX);
+		tesselateButton->callback(triangulationCallback);
+		tesselateButton->align(FL_ALIGN_INSIDE);
+		tesselateButton->tooltip("Triangulate Faces\n _____ \n");
 
 		end();
 	}
@@ -406,10 +432,12 @@ public:
 };
 
 class RadioButton : public Fl_Radio_Button {
+	Fl_Window* rightClickPanel;
 public:
-	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h) {
-
+	RadioButton(int x, int y, int w, int h, const char* title = nullptr) : Fl_Radio_Button(x, y, w, h, title) {
+		color(8);
+		selection_color(fl_rgb_color(196,196,196));
+		labelcolor(FL_WHITE);
 	}
 };
-
 #endif

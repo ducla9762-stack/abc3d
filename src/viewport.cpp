@@ -12,7 +12,11 @@
 #include "scene.h"
 #include "helper.h"
 
+#include "customWindow.h"
+
 #undef max
+
+Fl_Window* rightClickPanel;
 
 void Viewport::draw() {
 	if (!context_valid() || modeChanged) {
@@ -68,24 +72,20 @@ int Viewport::handle(int event) {
 		return 1;
 	}
 
-
 	make_current();
+	
 	// Process event
 	switch (event) {
 	case FL_PUSH:
 		take_focus();
 		return mousePush();
 	case FL_DRAG:
-		mouseDrag();
+		if (Fl::event_button() == FL_LEFT_MOUSE) {
+			mouseDrag();
+		}
 		break;
 	case FL_MOUSEWHEEL:
 		mouseWheel();
-		break;
-	case FL_KEYDOWN:
-		keyDown();
-		break;
-	case FL_KEYUP:
-		keyUp();
 		break;
 	case FL_FOCUS:
 	case FL_UNFOCUS:
@@ -721,13 +721,20 @@ int Viewport::mousePush() {
 		firstDragCallback = false;
 		return 1;
 	}
+	else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+		rightClickPanel->position(Fl::event_x(), Fl::event_y());
+		rightClickPanel->show();
+		return 1;
+	}
 
 	// For now, we ignore other non-left mouse button events.
-	if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
+	// if (Fl::event_button() != FL_LEFT_MOUSE) return 0;
 
 	// Get position of mouse press.
 	uint x = (float(Fl::event_x()) / w()) * pixel_w();
 	uint y = (1.0f - (float(Fl::event_y()) / h())) * pixel_h();
+
+	rightClickPanel->hide();
 
 	// Get the selection ids at this position.
 	Vec3u selectionIds = modelingRenderer.SelectionIds(x, y);
@@ -791,54 +798,6 @@ void Viewport::mouseWheel() {
 	camPos.x += Fl::event_dx();
 
 	activeRenderer->SetCamera(sphericalToCartesian(camPos));
-	redraw();
-}
-
-void Viewport::keyDown() {
-	switch (Fl::event_key()) {
-	case 'e': 
-		selectionManager.setActiveElement(VERTEX); 
-		activeAction = TRANSLATE_EDGE; 
-		break; 
-	case 's':
-		subdivision();
-		break;
-	case 't':
-		tesselate();
-		break;
-	case 'p':
-		modelingRenderer.ToggleVertexPoints();
-		break;
-	case 'g':
-		modelingRenderer.ToggleGrid();
-		break;
-	case FL_Delete:
-		deleteElement();
-		break;
-	case 'd': 
-		duplicateElement(); 
-		break;
-	case 'v':
-		selectionManager.setActiveElement(EDGE);
-		activeAction = TRANSLATE_OUT;
-		break;
-	case FL_Control_L:
-		additiveSelection = true;
-		break;
-	default:
-		return;
-	}
-	redraw();
-}
-
-void Viewport::keyUp() {
-	switch (Fl::event_key()) {
-	case FL_Control_L:
-		additiveSelection = false;
-		break;
-	default:
-		return;
-	}
 	redraw();
 }
 
@@ -906,15 +865,18 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 Viewport::Viewport(int x, int y, int w, int h, const char* label)
 	: Fl_Gl_Window(x, y, w, h, label)
 {
+
 	Fl_Gl_Window::mode(FL_RGB8 | FL_ALPHA | FL_DEPTH | FL_DOUBLE | FL_OPENGL3);
 	// Load default mesh (cube).
-	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 
-	//scene[0]->Extrude(5);
-	//scene[0]->TranslateFace(5, scene[0]->GetFaceNormal(5));
-	//HalfEdgeMeshBeveler beveler(*scene[0]);
-	//beveler.StartEdgeBevel(17);
-	//beveler.AdjustBevel(0.5f);
+	begin();
+	rightClickPanel = new Fl_Window(0, 0, 150, 125, 0);
+	rightClickPanel->color(8);
+	rightClickPanel->end();
+	rightClickPanel->hide();
+	end();
+
+	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 }
 
 float Viewport::getScale(int component, float scale) {
@@ -936,7 +898,7 @@ void Viewport::setScale(int component, float scale) {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
@@ -1026,15 +988,15 @@ void Viewport::subdivision() {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
-			// todo
+			// Not necessary?
 			break;
 
 		case FACE:
-			// todo
+			// Not necessary?
 			break;
 		}
 	}
@@ -1119,7 +1081,7 @@ void Viewport::tesselate() {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
@@ -1218,15 +1180,15 @@ void Viewport::setRot(int component, float angle) {
 			break;
 
 		case VERTEX:
-			// todo
+			// No definition.
 			break;
 
 		case EDGE:
-			// todo
+			// Unsure?
 			break;
 
 		case FACE:
-			// todo
+			// Unsure?
 			break;
 		}
 	}
@@ -1249,21 +1211,55 @@ void Viewport::setPos(int component, float pos) {
 
 		HalfEdgeMesh* mesh = scene[item.meshId];
 
+		// Sets world position.
 		switch (item.type) {
-		case OBJECT:
+		case OBJECT: {
 			mesh->Pos(component, pos);
 			break;
+		}
 
-		case VERTEX:
-			// todo
-			break;
+		case VERTEX: {
+			// Get the local position of the vertex.
+			Vec3f localCenter = mesh->GetVertexPosition(item.componentId);
 
-		case EDGE:
-			// todo
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of vertex.
+			mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
 			break;
+		}
+
+		case EDGE: {
+			// Get the local center of the edge.
+			Vec3f localCenter = mesh->GetEdgeCenter(item.componentId);
+
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of the edge.
+			mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
+			break;
+		}
 
 		case FACE:
-			// todo
+			// Get the local center of the face.
+			Vec3f localCenter = mesh->faceCentroid(item.componentId);
+
+			// Calculate the world center.
+			Vec3f worldCenter = mesh->Pos() + mesh->getTransform3x3() * localCenter;
+
+			Vec3f worldDelta(0.0f);
+			worldDelta[component] = pos - worldCenter[component];
+
+			// Set position of the edge.
+			scene[item.meshId]->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(worldDelta));
 			break;
 		}
 	}
@@ -1481,3 +1477,22 @@ const HalfEdgeMesh* Viewport::primarySelectedItem() {
 void Viewport::setPrimarySelectionCallback(void (*callback)()) {
 	primarySelectionCallback = callback;
 }
+
+void Viewport::togglePoints() {
+	modelingRenderer.ToggleVertexPoints();
+	redraw();
+}
+
+void Viewport::toggleGrid() {
+	modelingRenderer.ToggleGrid();
+	redraw();
+}
+
+void Viewport::enableAdditiveSelection() {
+	additiveSelection = true;
+}
+
+void Viewport::disableAdditiveSelection() {
+	additiveSelection = false;
+}
+

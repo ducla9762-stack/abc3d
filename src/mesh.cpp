@@ -353,37 +353,6 @@ bool FaceList::LoadSTL(const char* stl) {
 	}
 }
 
-void HalfEdgeMeshBeveler::StartEdgeBevel(uint edgeId) {
-	elements[0] = edgeId;
-	elements[1] = mesh.edges[edgeId].twin;
-	mesh.BevelEdge(edgeId);
-
-	if (!buf) { buf = new Vec3f[8]; }
-
-	for (int i = 0; i < 2; ++i) {
-		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
-		Vec3f orig = mesh.vertPos[edge.orig];
-		Vec3f dest = mesh.vertPos[edge.dest];
-
-		buf[i * 2] = orig;
-		buf[i * 2 + 1] = dest;
-
-		buf[i * 2 + 4] = mesh.vertPos[mesh.edges[edge.prev].orig] - orig;
-		buf[i * 2 + 5] = mesh.vertPos[mesh.edges[edge.next].dest] - dest;
-	}
-}
-
-void HalfEdgeMeshBeveler::AdjustBevel(float bevelFactor) {
-	if (bevelFactor > 1.0f || bevelFactor < 0.0f) { return; }
-	for (int i = 0; i < 2; ++i) {
-		HalfEdgeMesh::HalfEdge& edge = mesh.edges[elements[i]];
-
-		// New Vertex Position = Old Position + (Bevel Factor)(Translation)
-		mesh.vertPos[edge.orig] = buf[i * 2] + bevelFactor * buf[i * 2 + 4];
-		mesh.vertPos[edge.dest] = buf[i * 2 + 1] + bevelFactor * buf[i * 2 + 5];
-	}
-}
-
 // HalfEdgeMesh
 uint HalfEdgeMesh::NewFace(uint faceEdge) {
 	uint face = faceEdges.size();
@@ -425,6 +394,45 @@ HalfEdgeMesh::HalfEdge& HalfEdgeMesh::NewEdge(const HalfEdge& hEdge, uint& id) {
 	id = edges.size();
 	edges.push_back(hEdge);
 	return edges[id];
+}
+
+void HalfEdgeMesh::SetTwins(uint edgeId, uint twinId, uint orig, uint dest) {
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	edge.orig = orig;
+	edge.dest = dest;
+	edge.twin = twinId;
+
+	HalfEdgeMesh::HalfEdge& twin = edges[twinId];
+	twin.orig = dest;
+	twin.dest = orig;
+	twin.twin = edgeId;
+}
+
+void HalfEdgeMesh::InsertPrev(uint edgeId, uint newPrevId) {
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	HalfEdgeMesh::HalfEdge& newPrev = edges[newPrevId];
+
+	newPrev.next = edgeId;
+	newPrev.prev = edge.prev;
+	newPrev.face = edge.face;
+
+	edges[edge.prev].next = newPrevId;
+	edge.prev = newPrevId;
+}
+
+uint HalfEdgeMesh::NewTwin(uint edgeId, uint face) {
+	uint twinId = NewEdge();
+	HalfEdgeMesh::HalfEdge& edge = edges[edgeId];
+	HalfEdgeMesh::HalfEdge& twin = edges[twinId];
+
+	twin.twin = edgeId;
+	twin.orig = edge.dest;
+	twin.dest = edge.orig;
+	twin.face = face;
+
+	edge.twin = twinId;
+
+	return twinId;
 }
 
 uint HalfEdgeMesh::FaceEdgeCount(uint faceId) const {
