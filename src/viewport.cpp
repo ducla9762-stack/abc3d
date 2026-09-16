@@ -1157,6 +1157,7 @@ void Viewport::deleteElement() {
 	}
 
 	selectionManager.clearSelection();
+	modelingRenderer.UpdateSelection(selectionManager.getSelectedItems());
 	modelingRenderer.UpdateRenderBuffers(scene);
 	updateArrows();
 	primarySelection = MAX_UINT;

@@ -159,7 +159,7 @@ public:
 		buttons[3]->box(FL_UP_BOX);
 		buttons[3]->align(FL_ALIGN_INSIDE);
 
-		resize(x, y, w, yPos + 65);
+		resize(x, y, w, yPos + 90);
 
 		end();
 	}
