@@ -19,7 +19,11 @@ public:
 	/// Clears the scene list by deleting it's meshes.
 	/// </summary>
 	~Scene();
-
+	/// <summary>
+	/// Deletes every mesh and reuse stack, leaving the scene empty. 
+	/// Mesh ids restart at 0 afterwards, so anything holding an id must remap. 
+	/// </summary>
+	void Clear(); 
 	/// <summary>
 	/// Delete the mesh at id from the mesh list.
 	/// </summary>

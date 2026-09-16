@@ -3,10 +3,16 @@
 #include "scene.h"
 
 Scene::~Scene() {
+	Clear(); 
+}
+
+void Scene::Clear() {
 	// Loop through all meshes and delete them.
-	for (HalfEdgeMesh* mesh : meshes) {
+	for (HalfEdgeMesh* mesh : meshes)
 		delete mesh;
-	}
+	
+	meshes.clear();
+	idStack.clear(); 
 }
 
 void Scene::DeleteMesh(uint id) {

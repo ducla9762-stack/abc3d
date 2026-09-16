@@ -314,6 +314,20 @@ public:
 	bool exportStl(const char* filepath);
 
 	/// <summary>
+	/// Writes the whole scene to an ABC3D scene file: camera, grid/point toggles, object level selection, and every object transform and local space geomtry
+	/// </summary>
+	/// <returns>true if written</returns>
+	bool saveScene(const char* filepath); 
+
+	/// <summary>
+	/// Replaces the current scene with ABC3D scene file. 
+	/// NOTE: Every mesh is built before anything is discarded, so a rejected/invalid file will STILL leave the current scene intact
+	/// </summary>
+	/// <param name="filepath">true if loaded</param>
+	/// <returns></returns>
+	bool openScene(const char* filepath); 
+
+	/// <summary>
 	/// Returns the active mode: model, simple, or render.
 	/// </summary>
 	/// <returns> Active mode. </returns>
