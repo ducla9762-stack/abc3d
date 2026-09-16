@@ -16,6 +16,11 @@
 void ModelingRenderer::ToggleGrid() { displayGrid = !displayGrid; }
 void ModelingRenderer::ToggleVertexPoints() { displayPoints = !displayPoints; }
 
+bool ModelingRenderer::GridVisible() const { return displayGrid;  }
+bool ModelingRenderer::VertexPointsVisible() const { return displayPoints;  }
+void ModelingRenderer::SetGridVisible(bool visible) { displayGrid = visible;  }
+void ModelingRenderer::SetVertexPointsVisible(bool visible) { displayPoints = visible; }
+
 Vec3f ModelingRenderer::GetCamPos() { return camPos; }
 Vec3f ModelingRenderer::GetCamTarget() { return camTarget; }
 

@@ -146,6 +146,13 @@ public:
 	void ToggleGrid();
 	void ToggleVertexPoints();
 
+	//Saving needs to read the current value of grid, vertex points visible
+	//current value and loading needs to set an value 
+	bool GridVisible() const; 
+	bool VertexPointsVisible() const;
+	void SetGridVisible(bool visible); 
+	void SetVertexPointsVisible(bool visible); 
+
 	Vec3f GetCamPos() override;
 	Vec3f GetCamTarget() override;
 	Vec3f GetCamUp();
