@@ -507,7 +507,7 @@ int main(int argc, char* argv[]) {
 	toolIcons[EXTRUDE_TOOL] = new Fl_PNG_Image("../assets/icons/extrude_tool.png");
 	extrudeButton->image(toolIcons[EXTRUDE_TOOL]);
 	extrudeButton->tooltip("Extrude Tool");
-	extrudeButton->shortcut('e');
+	extrudeButton->shortcut('x');
 
 	RadioButton* subdivisionButton = new RadioButton(0, 6 * 64, 64, 64);
 	subdivisionButton->callback(subdivisionPanelCallback);

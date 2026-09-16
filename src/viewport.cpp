@@ -1215,11 +1215,11 @@ void Viewport::setRot(int component, float angle) {
 			break;
 
 		case EDGE:
-			// Unsure?
+			// No definition.
 			break;
 
 		case FACE:
-			// Unsure?
+			// No definition.
 			break;
 		}
 	}
