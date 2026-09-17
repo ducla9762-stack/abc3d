@@ -104,6 +104,13 @@ public:
 	uint SkippedFaces() const;
 	void PrintContents() const;
 	bool LoadObj(const char* obj);
+	/// <summary>
+	/// Parses .obj text from an already open stream. LoadObj will use this helper function
+	/// This is so that a scene file's geometry uses the exact same line parser
+	/// </summary>
+	/// <param name="in"></param>
+	/// <returns></returns>
+	bool LoadObjStream(std::istream& in); 
 	bool LoadSTL(const char* stl); //Need to make a specialization of this for max faces to make loading only triangles from STL more memory efficient
 	/// <summary>
 	///		Splits this list into one FaceList per "o"/"g" group, remapping each part's
@@ -447,6 +454,8 @@ public:
 	/// <param name="edgeId">An edge of the mesh.</param>
 	/// <returns>The unit normal direction of the edge.</returns>
 	Vec3f GetEdgeNormal(uint edgeId);
+	/// <returns>The local-space midpoint of an edge.</returns>
+	Vec3f GetEdgeCenter(uint edgeId) const;
 	/// <summary> Translates a face. </summary>
 	/// <param name="faceId">Face to translate.</param>
 	/// <param name="translation">Translation factor.</param>
@@ -510,7 +519,14 @@ public:
 	bool exportObj(const char* filePath) const;
 	bool exportStl(const char* filePath, bool isBinary = true) const;
 
-	void appendObj(std::ostream& out, uint& vertOffset) const;
+	/// <summary>
+	/// For obj files, we always convert the vertices into world space. 
+	/// For scene management, we don't want this to be the case so there is a new parameter.  
+	/// </summary>
+	/// <param name="out"></param>
+	/// <param name="vertOffset"></param>
+	/// <param name="worldSpace"></param>
+	void appendObj(std::ostream& out, uint& vertOffset, bool worldSpace = true) const;
 	/// <summary>
 	/// Flatten every face into world-space triangles for .stl export
 	/// </summary>

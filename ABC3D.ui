@@ -352,6 +352,50 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="subdivButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Subdivision Tool">Subdivision Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/subdiv_tool.png</normaloff>assets/icons/subdiv_tool.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="extrudeToolButton">
           <property name="minimumSize">
            <size>
@@ -524,7 +568,7 @@
         <height>0</height>
        </size>
       </property>
-      <widget class="QWidget" name="page"/>
+      <widget class="QWidget" name="propertiesPanel"/>
       <widget class="QWidget" name="shapePanel">
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="1">
@@ -566,6 +610,24 @@
          <widget class="QPushButton" name="icoSphereButton">
           <property name="text">
            <string>Ico-Sphere</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="subdivPanel">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPushButton" name="pushButton_2">
+          <property name="text">
+           <string>Tessellate</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton">
+          <property name="text">
+           <string>Subdivide</string>
           </property>
          </widget>
         </item>
@@ -695,7 +757,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>45</x>
-     <y>392</y>
+     <y>486</y>
     </hint>
     <hint type="destinationlabel">
      <x>119</x>
@@ -711,7 +773,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>13</x>
-     <y>447</y>
+     <y>549</y>
     </hint>
     <hint type="destinationlabel">
      <x>133</x>
@@ -742,8 +804,8 @@
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>879</x>
-     <y>201</y>
+     <x>870</x>
+     <y>192</y>
     </hint>
     <hint type="destinationlabel">
      <x>773</x>
@@ -758,8 +820,8 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1008</x>
-     <y>204</y>
+     <x>992</x>
+     <y>192</y>
     </hint>
     <hint type="destinationlabel">
      <x>765</x>
@@ -775,7 +837,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>870</x>
-     <y>381</y>
+     <y>367</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -790,8 +852,8 @@
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>983</x>
-     <y>375</y>
+     <x>992</x>
+     <y>367</y>
     </hint>
     <hint type="destinationlabel">
      <x>643</x>
@@ -806,8 +868,8 @@
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>863</x>
-     <y>554</y>
+     <x>870</x>
+     <y>542</y>
     </hint>
     <hint type="destinationlabel">
      <x>766</x>
@@ -822,8 +884,8 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>987</x>
-     <y>555</y>
+     <x>992</x>
+     <y>542</y>
     </hint>
     <hint type="destinationlabel">
      <x>746</x>
