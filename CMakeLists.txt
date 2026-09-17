@@ -10,85 +10,97 @@ project(abc3d VERSION 1.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add dependencies
+# Add dependencies (glm not used)
 find_package(OpenGL REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
 find_package(FLTK CONFIG REQUIRED)
 
 
 # No C++20 modules
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF) 
 
-# Executable
-add_executable(abc3d)
+# Set configuration properties
+add_library(abc3d_flags INTERFACE)
 
-# Sources
-file(GLOB_RECURSE abc3d_SOURCES CONFIGURE_DEPENDS 
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+if(MSVC)
+    target_compile_options(abc3d_flags INTERFACE
+        /W3
+        /MP # multithreaded build
+        /WX- # warnings NOT as errors
+        $<$<CONFIG:Debug>:/ZI> # program database for edit and continue, debug only
+    )
+else()
+    target_compile_options(abc3d_flags INTERFACE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
+
+#abc3d_core: geometry and IO. No FLTK, no OpenGL, no main()
+#This is what tests link to
+add_library(abc3d_core STATIC
+    src/mesh.cpp
+    src/scene.cpp
+    inc/mesh.h
+    inc/helper.h
+    inc/shapes.h
+    inc/scene.h
+    inc/selection.h
+    inc/selectionManager.h
+    inc/renderBufferBuilder.h
 )
 
-# Headers
-file(GLOB_RECURSE abc3d_HEADERS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/inc/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/inc/*.hpp"
-)
-
-target_sources(abc3d PRIVATE 
-    ${abc3d_SOURCES}
-    ${abc3d_HEADERS}
-)
-
-# Include dirs
-target_include_directories(abc3d PRIVATE
+#PUBLIC to allow inheritance of these paths
+target_include_directories(abc3d_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/inc"
 )
-target_include_directories(abc3d SYSTEM PRIVATE
+
+target_link_libraries(abc3d_core PUBLIC abc3d_flags)
+
+target_include_directories(abc3d_core SYSTEM PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/external/cyCodeBase-master"
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/im3d"
 )
 
-# Preprocessor defines
-target_compile_definitions(abc3d PRIVATE
-    MY_TEST_DEFINE
+#abc3d_render: OpenGL context. No FLTK
+add_library(abc3d_render STATIC
+    src/render.cpp
+    inc/render.h
 )
 
-# Automatically links to these libs
-target_link_libraries(abc3d PRIVATE
+target_link_libraries(abc3d_render PUBLIC
+    abc3d_core
+    abc3d_flags
     OpenGL::GL
     GLEW::GLEW
-    glm::glm
+)
+
+#abc3d: FLTK application
+add_executable(abc3d
+    src/main.cpp
+    src/viewport.cpp
+    src/customWindow.cpp
+    src/customSlider.cpp
+    inc/viewport.h
+    inc/ui.h
+    inc/customWindow.h
+    inc/customSlider.h
+)
+
+target_link_libraries(abc3d PRIVATE
+    abc3d_render
+    abc3d_flags
     fltk
     fltk_gl
     fltk_images
 )
 
-# Add directories with any random loose .dlls or .libs here
-target_link_directories(abc3d PRIVATE
-  
-)
-
-# Set configuration properties
-if(MSVC)
-    target_compile_options(abc3d PRIVATE
-        /W3
-        /MP # multithreaded build
-        /WX- # warnings as errors
-        /ZI # program database for edit and continue
-    )
-else()
-    target_compile_options(abc3d PRIVATE 
-        -Wall 
-        -Wextra 
-        -Wpedantic
-    )
-endif()
-
 # Set abc3d as the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT abc3d)
 
-# Filters
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${abc3d_SOURCES})
+set_property(TARGET abc3d_core PROPERTY FOLDER "Libraries")
+set_property(TARGET abc3d_render PROPERTY FOLDER "Libraries")
+
 
 # Enable solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
