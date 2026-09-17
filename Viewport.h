@@ -314,6 +314,7 @@ private:
 	}
 
 	bool translateEdgeDrag() { return false; }
+
 	bool bevelDrag() {
 		if (selectionManager.getSelectedItems().empty()) { return false; }
 
@@ -380,7 +381,14 @@ private:
 		return true;
 	}
 
-	bool scaleDrag() { return false; }
+	bool scaleDrag() {
+		if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
+			return false;
+		}
+
+		return false;
+	}
+
 	bool rotateDrag() { return false; }
 
 	void mouseMoveEvent(QMouseEvent* event) override {
@@ -563,10 +571,10 @@ public slots:
 			}
 		}
 
+		makeCurrent();
 		selectionManager.clearSelection();
 		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
-		// Need to call ModelingRenderer::UpdateSelection ???
+		//renderer.UpdateSelection(selectionManager.getSelectedItems());
 		update();
 	}
 };

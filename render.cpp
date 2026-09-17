@@ -360,7 +360,9 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	for (unsigned int i = 0; i < scene.MeshCount(); i++)
 	{
 		const HalfEdgeMesh* mesh = scene[i];
-		bufBuilder.AddMesh(*mesh, i + 1);
+		if (mesh) {
+			bufBuilder.AddMesh(*mesh, i + 1);
+		}
 	}
 
 	size_t meshPosDataSize = sizeof(float) * 3 * bufBuilder.PosBuffer().size();
@@ -400,8 +402,6 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 
 	glEnableVertexAttribArray(4);
 	glVertexAttribIPointer(4, 3, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset3);
-
-	updateTextureUniforms();
 }
 
 void ModelingRenderer::UpdateArrows(const Vec3f& base, uint hoveredAxis) {
