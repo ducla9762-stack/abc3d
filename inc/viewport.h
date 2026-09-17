@@ -382,6 +382,8 @@ public:
 	void enableAdditiveSelection();
 
 	void disableAdditiveSelection();
+
+	void triangulate();
 };
 
 #endif

@@ -1341,11 +1341,13 @@ void HalfEdgeMesh::tesselate() {
 		uint faceEdgeId = faceEdges[faceId];
 
 		if (faceEdgeCount == 6) { // Triangle
-			uint edgeId = edges[faceEdgeId].next;
+			uint edgeId = faceEdgeId;
 			uint innerClip, newFace;
 
 			ClipCorner(edgeId, innerClip, edgeId, newFace);
-			edgeId = edges[edgeId].next;
+			edgeId = edges[edges[edgeId].next].next;
+			ClipCorner(edgeId, innerClip, edgeId, newFace);
+			edgeId = edges[edges[edgeId].next].next;
 			ClipCorner(edgeId, innerClip, edgeId, newFace);
 		}
 		else {
