@@ -14,6 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(OpenGL REQUIRED)
 find_package(GLEW CONFIG REQUIRED)
 find_package(FLTK CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 
 
 # No C++20 modules
@@ -101,6 +102,8 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT a
 set_property(TARGET abc3d_core PROPERTY FOLDER "Libraries")
 set_property(TARGET abc3d_render PROPERTY FOLDER "Libraries")
 
+enable_testing()
+add_subdirectory(tests)
 
 # Enable solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
