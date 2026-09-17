@@ -113,3 +113,6 @@ Thumbs.db
 *.stl
 *.mtl
 *.py
+*.pyc
+tools/PERFORMANCE.md
+*.abc3d
