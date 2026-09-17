@@ -554,6 +554,78 @@ public slots:
 	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
 	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
 
+	void tessellateSelection() {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				scene[item.meshId]->tesselate();
+				break;
+
+			case EDGE:
+				scene[item.meshId]->refineEdge(item.componentId);
+				break;
+
+			case FACE:
+				//scene[item.meshId]->tessFace(item.componentId);
+				break;
+
+			default:
+				return;
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void subdivideSelection() {
+		if (selectionManager.getActiveElement() != OBJECT) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				scene[item.meshId]->subdivide();
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void triangulateSelection() {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				scene[item.meshId]->Triangulate();
+				break;
+
+			case FACE:
+				scene[item.meshId]->TriangulateFace(item.componentId);
+				break;
+
+			default:
+				return;
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	//void setPrimarySelectionPos(const Vec3f& pos);
+	//void setPrimarySelectionScale(const Vec3f& scale);
+	//void setPrimarySelectionRot(const Vec3f& rot);
+
 	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
 	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
 	void loadCylinder(){
@@ -609,5 +681,10 @@ public slots:
 		//renderer.UpdateSelection(selectionManager.getSelectedItems());
 		update();
 	}
+
+signals:
+	void primarySelectionPosChanged(const Vec3f& pos);
+	void primarySelectionScaleChanged(const Vec3f& scale);
+	void primarySelectionRotChanged(const Vec3f& rot);
 };
 

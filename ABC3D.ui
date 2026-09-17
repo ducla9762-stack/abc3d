@@ -663,6 +663,9 @@
    <extends>QOpenGLWidget</extends>
    <header>Viewport.h</header>
    <slots>
+    <signal>primarySelectionPosChanged()</signal>
+    <signal>primarySelectionScaleChanged()</signal>
+    <signal>primarySelectionRotChanged()</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -678,6 +681,9 @@
     <slot>loadTorus()</slot>
     <slot>loadUvSphere()</slot>
     <slot>loadIcoSphere()</slot>
+    <slot>tessellateSelection()</slot>
+    <slot>subdivideSelection()</slot>
+    <slot>triangulateSelection()</slot>
    </slots>
   </customwidget>
  </customwidgets>
