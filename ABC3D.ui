@@ -552,9 +552,9 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
-       <widget class="QWidget" name="tutorialPanel" native="true">
+       <widget class="QWidget" name="tutorialPanel">
         <attribute name="title">
          <string>Tutorial</string>
         </attribute>
@@ -572,7 +572,7 @@
          </property>
         </widget>
        </widget>
-       <widget class="QWidget" name="sceneHierarchyPanel" native="true">
+       <widget class="QWidget" name="sceneHierarchyPanel">
         <attribute name="title">
          <string>Scene Hierarchy</string>
         </attribute>
@@ -694,28 +694,28 @@
          </property>
          <layout class="QVBoxLayout" name="transformModeLayout">
           <item>
-           <widget class="QPushButton" name="outwardModeButton_3">
+           <widget class="QRadioButton" name="outwardModeButton_3">
             <property name="text">
              <string>Outward Translation</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="freeModeButton_3">
+           <widget class="QRadioButton" name="freeModeButton_3">
             <property name="text">
              <string>Free Translation</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="axisModeButton">
+           <widget class="QRadioButton" name="axisModeButton">
             <property name="text">
              <string>Axis Translation</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="edgeModeButton">
+           <widget class="QRadioButton" name="edgeModeButton">
             <property name="text">
              <string>Edge Translation</string>
             </property>
@@ -1015,7 +1015,7 @@
    <sender>tesselationButton</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
-   <slot>setActionScale()</slot>
+   <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>839</x>
@@ -1127,7 +1127,7 @@
    <sender>triangulationButton</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
-   <slot>setActionScale()</slot>
+   <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>843</x>
@@ -1143,7 +1143,7 @@
    <sender>subdivisionButton</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
-   <slot>setActionScale()</slot>
+   <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>832</x>
@@ -1152,6 +1152,22 @@
     <hint type="destinationlabel">
      <x>527</x>
      <y>398</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivideToolButton</sender>
+   <signal>released()</signal>
+   <receiver>subdivisionButton</receiver>
+   <slot>showMenu()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>46</x>
+     <y>458</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>867</x>
+     <y>430</y>
     </hint>
    </hints>
   </connection>
