@@ -167,7 +167,7 @@ private:
 		std::cout << "Component Id: " << ids.y << std::endl;
 		std::cout << "Sub-Component Id: " << ids.z << std::endl;
 
-		// Handle selection
+		// Handle selection given the id is valid (not background).
 		if (ids.x != 0) {
 			handleSelection(ids);
 		}
