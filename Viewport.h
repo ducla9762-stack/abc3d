@@ -386,10 +386,52 @@ private:
 			return false;
 		}
 
-		return false;
+		float factor = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				scene[item.meshId]->AddScale(factor);
+			}
+		}
+
+		renderer.UpdateRenderBuffers(scene);
+
+		return true;
 	}
 
-	bool rotateDrag() { return false; }
+	bool rotateDrag() { 
+		if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
+			return false;
+		}
+
+		Vec3f f, u, r;
+		renderer.GetCameraDirs(f, u, r);
+
+		Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
+		float length = dir.Length();
+		if (length == 0.0f) {
+			return false;
+		}
+		dir /= length;
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+
+			Vec3f eulerRot = scene[item.meshId]->Rot();
+			Matrix3f origRot;
+			origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+			Matrix3f rot;
+			rot.SetRotation(dir, length * 0.01f);
+			rot *= origRot;
+
+			scene[item.meshId]->Rot(matrixToEulerAngle(rot));
+		}
+
+		renderer.UpdateRenderBuffers(scene);
+
+		return true;
+	}
 
 	void mouseMoveEvent(QMouseEvent* event) override {
 		// Accept the event and make the OpenGL context current for renderer
