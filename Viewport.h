@@ -167,16 +167,6 @@ private:
 		std::cout << "Component Id: " << ids.y << std::endl;
 		std::cout << "Sub-Component Id: " << ids.z << std::endl;
 
-		if (ids.x > 0 && ids.x < MAX_UINT - 1) {
-			HalfEdgeMesh::HalfEdge edge = scene[0]->GetEdge(ids.z);
-			std::cout << "Twin: " << edge.twin << std::endl;
-			std::cout << "Orig: " << edge.orig << std::endl;
-			std::cout << "Dest: " << edge.dest << std::endl;
-			std::cout << "Next: " << edge.next << std::endl;
-			std::cout << "Prev: " << edge.prev << std::endl;
-			std::cout << "Face: " << edge.face << std::endl;
-		}
-
 		// Handle selection
 		if (ids.x != 0) {
 			handleSelection(ids);
