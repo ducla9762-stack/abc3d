@@ -6,6 +6,8 @@
 
 #include "selection.h"
 
+#undef max
+
 class SelectionManager {
 private:
 	Element activeElement;
