@@ -50,6 +50,8 @@ private:
 		Vec2f initialDragDirUV = Vec2f(0.0f);
 
 		bool firstMoveEvent = false;
+		// Keep track of whether the mouse was dragged.
+		bool dragged = false;
 
 		static Vec2f ToUV(const Vec2f& coords, int w, int h) {
 			Vec2f uv;
@@ -66,12 +68,22 @@ private:
 			mouseDragPrevPosUV = mouseDragStartPosUV;
 
 			firstMoveEvent = true;
+			// If just a mouse press, no drag.
+			dragged = false;
 		}
 
 		void StartMouseDragStep(float x, float y, int w, int h) {
 			mouseDragPos.Set(x, y);
 			mouseDragPosUV = ToUV(mouseDragPos, w, h);
 			mouseDragChange = mouseDragPos - mouseDragPrevPos;
+
+			// Small threshold for mouse jitter and such.
+			const float DRAG_THRESHOLD = 3.0f;
+			// Check if the mouse was actually dragged.
+			if (!dragged && (mouseDragPos - mouseDragStartPos).LengthSquared() >=
+				DRAG_THRESHOLD * DRAG_THRESHOLD) {
+				dragged = true;
+			}
 
 			if (firstMoveEvent) {
 				initialDragDir = mouseDragPos - mouseDragStartPos;
@@ -215,6 +227,27 @@ private:
 		// Retrieve the current logical (not physical) pixel position
 		Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
+		// Update MouseAction struct
+		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+
+		// Update Viewport.
+		update();
+	}
+
+	void mouseReleaseEvent(QMouseEvent* event) override {
+		// Only accept event if the left mouse button is clicked
+		if (!(event->button() & Qt::LeftButton)) {
+			event->ignore();
+			return;
+		}
+
+		// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
+		event->accept();
+		makeCurrent();
+
+		// Retrieve the current logical (not physical) pixel position
+		Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+
 		// Retrieve selection ids from corresponding physical pixel and print them
 		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
@@ -222,13 +255,11 @@ private:
 		std::cout << "Component Id: " << ids.y << std::endl;
 		std::cout << "Sub-Component Id: " << ids.z << std::endl;
 
-		// Handle selection
-		if (ids.x != 0) {
+		// Only process selection if the mouse was clicked, not dragged.
+		// Also make sure the selection is valid (not background).
+		if (!mouseAction.dragged && ids.x != 0) {
 			handleSelection(ids);
 		}
-
-		// Update MouseAction struct
-		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
 		// Update Viewport
 		update();
