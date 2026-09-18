@@ -145,6 +145,7 @@ private:
 		if (selectionManager.getActiveElement() == VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			Vec3f pos = scene[item.meshId]->GetVertexPosition(item.componentId);
+			pos = scene[item.meshId]->LocalPosToWorldPos(pos);
 			emit primarySelectionPosChanged(pos);
 		}
 		else if (selectionManager.getActiveElement() == OBJECT) {
@@ -690,7 +691,8 @@ public slots:
 
 		if (selectionManager.getActiveElement() == VERTEX) {
 			if (selectionManager.itemCount() != 1) { return; }
-			scene[item.meshId]->SetVertexPosition(item.componentId, pos);
+			Vec3f vertPos = scene[item.meshId]->WorldDirToLocalDir(pos);
+			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
 		}
 		else {
 			scene[item.meshId]->Pos(pos);

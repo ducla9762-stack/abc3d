@@ -362,6 +362,16 @@ public:
 	/// <returns>The corresponding direction in local-space.</returns>
 	Vec3f WorldDirToLocalDir(const Vec3f& worldDir);
 
+	Vec3f LocalPosToWorldPos(const Vec3f& pos) {
+		return (getTransform3x3() * pos) + this->pos;
+	}
+
+	Vec3f WorldPosToLocalPos(const Vec3f& pos) {
+		Matrix3f inv = getTransform3x3();
+		inv.Invert();
+		return inv * (pos - this->pos);
+	}
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <param name="vertices">
 	/// Will contain the first 4 vertices of the face. 
