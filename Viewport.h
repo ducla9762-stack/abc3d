@@ -183,6 +183,19 @@ private:
 		emit primarySelectionRotChanged(rot);
 	}
 
+	void setActiveElement(Element element) {
+		selectionManager.setActiveElement(element);
+
+		// Changing element mode clears the selection in SelectionManager. Push the
+		// empty selection to the renderer immediately so the old highlight vanishes.
+		makeCurrent();
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		update();
+
+		emit primarySelectionChanged(false);
+		emit enableNonVertexSpinners(false);
+	}
+
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
 	void handleSelection(const Vec3u& selectionIds) {
 		// Create a selection item to send to the selection manager.
@@ -642,10 +655,10 @@ public slots:
 	void setActionSelect() { actionParams.action = SELECT; }
 	void setActionCamera() { actionParams.action = CAMERA; }
 
-	void setElementObject() { selectionManager.setActiveElement(OBJECT); }
-	void setElementFace() { selectionManager.setActiveElement(FACE); }
-	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
-	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
+	void setElementObject() { setActiveElement(OBJECT); }
+	void setElementFace() { setActiveElement(FACE); }
+	void setElementEdge() { setActiveElement(EDGE); }
+	void setElementVertex() { setActiveElement(VERTEX); }
 
 	void tessellateSelection() {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
