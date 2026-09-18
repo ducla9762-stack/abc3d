@@ -32,7 +32,11 @@ Viewport::Viewport(QWidget *parent)
 	for (int i = 0; i < 4; ++i) {
 		elementButtons[i]->setFixedWidth(64);
 		elementButtons[i]->setFixedHeight(64);
+		elementButtons[i]->setAutoExclusive(true);
+		elementButtons[i]->setCheckable(true);
 	}
+
+	elementButtons[3]->setChecked(true);
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 
