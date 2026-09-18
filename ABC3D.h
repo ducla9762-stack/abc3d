@@ -28,6 +28,9 @@ private:
         QMainWindow::keyReleaseEvent(event);
     }
 
+private slots:
+    void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(2); }
+
 signals:
     void deleteKeyPressed();
 };
