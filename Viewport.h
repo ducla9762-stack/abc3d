@@ -203,8 +203,24 @@ private:
 		
 		if (item.meshId == MAX_UINT) { return; }
 
-		// query the selection maanger with the item.
-		selectionManager.processSelection(item);
+		// If we are selecting edges, make sure to select both half-edges.
+		if (selectionManager.getActiveElement() == EDGE) {
+			// Get the edge from the click.
+			const HalfEdgeMesh::HalfEdge edge = scene[item.meshId]->GetEdge(item.componentId);
+			// If there is no valid twin, just select this one.
+			if (edge.twin == MAX_UINT || edge.twin == item.componentId) {
+				selectionManager.processSelection(item);
+			}
+			// Else the twin is valid, process both.
+			else {
+				SelectionItem twin{ item.meshId, edge.twin };
+				selectionManager.processPairedSelection(item, twin);
+			}
+		}
+		// Else we are not selecting edges.
+		else {
+			selectionManager.processSelection(item);
+		}
 
 		// Tell the renderer to update the selection visuals.
 		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());

@@ -123,6 +123,40 @@ public:
 		addItem(item);
 	}
 
+	/// <summary>
+	/// Checks a pair of selected items and decides what to do with them.
+	/// Intended for use with an edge and it's twin.
+	/// </summary>
+	/// <param name="edge"> An edge. </param>
+	/// <param name="twin"> The edge's twin. </param>
+	void processPairedSelection(const SelectionItem& edge, const SelectionItem& twin) {
+		const bool itemSelected = itemMap.count(edge) != 0;
+		const bool pairSelected = itemMap.count(twin) != 0;
+		const bool isSameItem = edge == twin;
+
+		// If either half-edge is selected, clicking the edge deselects both.
+		if ((itemSelected || pairSelected) && (additive || selectedItems.size() == 2)) {
+			if (itemSelected) {
+				deleteItem(edge);
+			}
+			if (pairSelected && !isSameItem) {
+				deleteItem(twin);
+			}
+			return;
+		}
+
+		// If not additive, replace the current selection with the pair.
+		if (!additive) {
+			clearSelection();
+		}
+
+		// Else add both to selection.
+		addItem(edge);
+		if (!isSameItem) {
+			addItem(twin);
+		}
+	}
+
 	uint itemCount() { return (uint) selectedItems.size(); }
 	uint itemCount(uint meshId) {
 		if (meshMap.count(meshId)) {
