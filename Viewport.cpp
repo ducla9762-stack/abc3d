@@ -46,22 +46,20 @@ Viewport::Viewport(QWidget *parent)
 Viewport::~Viewport()
 {}
 
-std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
+SelectionItem Viewport::createSelectionItem(const Vec3u& ids)
 {
 	switch (selectionManager.getActiveElement()) {
 	case OBJECT:
 		// Normal hit.
-		if (ids.x != 0 && ids.x != MAX_UINT) {
+		if (ids.x != 0 && ids.x < ARROW_IDENTIFIER) {
 			return SelectionItem{
-				OBJECT,
 				ids.x - 1,
 				MAX_UINT
 			};
 		}
 		// Vertex hit belonging to object.
-		if (ids.x == MAX_UINT && ids.y != 0) {
+		else if (ids.x == MAX_UINT && ids.y != 0) {
 			return SelectionItem{
-				OBJECT,
 				ids.y - 1,
 				MAX_UINT
 			};
@@ -72,7 +70,6 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 	case VERTEX:
 		if (ids.x == MAX_UINT && ids.y != 0) {
 			return SelectionItem{
-				VERTEX,
 				ids.y - 1,
 				ids.z
 			};
@@ -81,9 +78,8 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 		break;
 
 	case FACE:
-		if (ids.x != 0 && ids.x != MAX_UINT) {
+		if (ids.x != 0 && ids.x < ARROW_IDENTIFIER && ids.x != MAX_UINT) {
 			return SelectionItem{
-				FACE,
 				ids.x - 1,
 				ids.y
 			};
@@ -92,9 +88,8 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 		break;
 
 	case EDGE:
-		if (ids.x != 0 && ids.x != MAX_UINT && ids.z != MAX_UINT) {
+		if (ids.x != 0 && ids.x < ARROW_IDENTIFIER && ids.z != MAX_UINT) {
 			return SelectionItem{
-				EDGE,
 				ids.x - 1,
 				ids.z
 			};
@@ -103,7 +98,6 @@ std::optional<SelectionItem> Viewport::createSelectionItem(Vec3u ids)
 		break;
 	}
 
-	// Null if background hit.
-	return std::nullopt;
+	return { MAX_UINT, MAX_UINT };
 }
 

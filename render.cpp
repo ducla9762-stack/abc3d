@@ -425,7 +425,7 @@ void ModelingRenderer::UpdateSelectionTexture(std::vector<bool> selections)
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_R8UI, data.size(), 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, data.data());
 }
 
-void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selectedItems)
+void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selectedItems, Element element)
 {
 	// Pack the CPU selection list into the format used by the GLSL array:
 	// (element type, one-based GPU object ID, local component ID).
@@ -434,7 +434,7 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 
 	for (size_t i = 0; i < selectionCount; ++i) {
 		const SelectionItem& item = selectedItems[i];
-		gpuSelections[i * 3 + 0] = static_cast<GLuint>(item.type);
+		gpuSelections[i * 3 + 0] = static_cast<GLuint>(element);
 		gpuSelections[i * 3 + 1] = item.meshId + 1; // GPU IDs are one-based
 		gpuSelections[i * 3 + 2] = item.componentId;
 	}

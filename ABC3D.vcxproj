@@ -136,7 +136,6 @@
     <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="scene.h" />
-    <ClInclude Include="selection.h" />
     <ClInclude Include="selectionManager.h" />
     <ClInclude Include="shapes.h" />
     <QtUic Include="VectorInput.ui" />

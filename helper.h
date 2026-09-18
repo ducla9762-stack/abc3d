@@ -136,6 +136,13 @@ struct std::hash<cy::Vec2<T>> {
 	}
 };
 
+inline uint64_t packUints(uint x, uint y) { return (uint64_t(x) << 32) | uint64_t(y); }
+
+template<>
+struct std::hash<Vec2u> {
+	size_t operator()(const Vec2u& vec) const noexcept { return std::hash<uint64_t>{}(packUints(vec.x, vec.y)); }
+};
+
 // Vector Output Stream Overloads
 inline std::ostream& operator<<(std::ostream& out, const Vec4f& vec) {
 	out << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w;

@@ -80,9 +80,6 @@
     <ClInclude Include="scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="selection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="selectionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>

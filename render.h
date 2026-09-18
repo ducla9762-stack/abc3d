@@ -13,7 +13,7 @@
 #include "helper.h"
 #include "scene.h"
 #include "renderBufferBuilder.h"
-#include "selection.h"
+#include "selectionManager.h"
 
 using std::chrono::steady_clock;
 using std::chrono::milliseconds;
@@ -193,7 +193,7 @@ public:
 	/// implementation.
 	/// </summary>
 	/// <param name="selectedItems"></param>
-	void UpdateSelection(const std::vector<SelectionItem>& selectedItems);
+	void UpdateSelection(const std::vector<SelectionItem>& selectedItems, Element element);
 
 	// AI-generated code: Renderer interface for active-element hover state.
 	/// Updates the active-element hover state from raw framebuffer IDs.

@@ -96,7 +96,6 @@ private:
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseAction mouseAction;
 	ActionParams actionParams;
-	bool additiveSelection = true;
 
 	void initializeGL() override {
 		if (initGlew) {
@@ -120,7 +119,7 @@ private:
 
 		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
 	}
 
 	void paintGL() override {
@@ -131,19 +130,20 @@ private:
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
 	}
 
-	// Ported directly from FLTK version
-	std::optional<SelectionItem> createSelectionItem(Vec3u ids);
+	SelectionItem createSelectionItem(const Vec3u& ids);
 
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
 	void handleSelection(const Vec3u& selectionIds) {
 		// Create a selection item to send to the selection manager.
-		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+		SelectionItem item = createSelectionItem(selectionIds);
+		
+		if (item.meshId != MAX_UINT) {
+			// query the selection maanger with the item.
+			selectionManager.processSelection(item);
 
-		// query the selection maanger with the item.
-		selectionManager.processSelection(item, additiveSelection);
-
-		// Tell the renderer to update the selection visuals.
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+			// Tell the renderer to update the selection visuals.
+			renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		}
 	}
 
 	void mousePressEvent(QMouseEvent* event) override {
@@ -198,7 +198,7 @@ private:
 
 			// Translate depending on which element type.
 			HalfEdgeMesh* mesh = scene[item.meshId];
-			switch (item.type) {
+			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				mesh->TranslatePos(translation);
 				break;
@@ -521,7 +521,7 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent* event) {
 		selectionManager.clearSelection();
 		makeCurrent();
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
 		update();
 	}
 

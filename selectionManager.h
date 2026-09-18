@@ -1,17 +1,51 @@
 #ifndef _ABC3D_SELECTION_MANAGER_H_
 #define _ABC3D_SELECTION_MANAGER_H_
 
-#include <algorithm>
-#include <optional>
-
-#include "selection.h"
+#include "helper.h"
 
 #undef max
+
+enum Element { OBJECT, FACE, EDGE, VERTEX };
+
+// The maximum number of selected elements that is uploaded to the GPU.
+constexpr uint MAX_SELECTION_ITEMS = 64;
+
+struct SelectionItem {
+	uint meshId;
+	uint componentId;
+
+	bool operator==(const SelectionItem& other) const {
+		return (meshId == other.meshId && componentId == other.componentId);
+	}
+};
+
+template<>
+struct std::hash<SelectionItem> {
+	size_t operator()(const SelectionItem& item) const noexcept { return std::hash<uint64_t>{}(packUints(item.meshId, item.componentId)); }
+};
 
 class SelectionManager {
 private:
 	Element activeElement;
+	std::unordered_map<SelectionItem, uint> itemMap;
 	std::vector<SelectionItem> selectedItems;
+	bool additive = true;
+
+	void deleteItem(const SelectionItem& item) {
+		uint itemIndex = itemMap[item];
+		itemMap[selectedItems.back()] = itemIndex;
+
+		std::swap(selectedItems[itemIndex], selectedItems.back());
+		itemMap.erase(item);
+		selectedItems.pop_back();
+	}
+
+	void addItem(const SelectionItem& item) {
+		if (selectedItems.size() == MAX_SELECTION_ITEMS) { return; }
+
+		itemMap[item] = selectedItems.size();
+		selectedItems.push_back(item);
+	}
 
 public:
 	/// <summary>
@@ -35,23 +69,15 @@ public:
 		clearSelection();
 	}
 
+	bool isAdditive() { return additive; }
+	void setAdditive(bool additive) { this->additive = additive; }
+
 	/// <summary>
 	/// Clears the list of selected items.
 	/// </summary>
 	void clearSelection() {
+		itemMap.clear();
 		selectedItems.clear();
-	}
-
-	/// <summary>
-	/// Appends an object-level selection. Used to restore a saved scene for meshes selected. 
-	/// </summary>
-	/// <param name="meshId">mesh to select</param>
-	/// <returns>true if added</returns>
-	bool selectMesh(uint meshId) {
-		if (activeElement != OBJECT) return false; 
-		if (selectedItems.size() >= MAX_SELECTION_ITEMS) return false; 
-		selectedItems.push_back(SelectionItem{ OBJECT, meshId, MAX_UINT }); 
-		return true; 
 	}
 
 	/// <summary>
@@ -67,83 +93,25 @@ public:
 	/// </summary>
 	/// <param name="item"> A selection item at a point. </param>
 	/// <param name="additive"> If the selection is additive or single. </param>
-	/// <returns> True if added false if not. </returns>
-	bool processSelection(std::optional<SelectionItem>& item, bool additive) {
-
-		// If the item is null (likely a background hit)
-		if (!item) {
+	void processSelection(const SelectionItem& item) {
+		// if item contained
+		if (itemMap.count(item) && (additive || selectedItems.size() == 1)) {
+			deleteItem(item);
+			return;
+		}
+		
+		if (!additive) {
 			clearSelection();
-			return false;
 		}
-		// This shouldn't happen.
-		if (item->type != activeElement)
-		{
-			return false;
-		}
-
-		// Else a valid item has been selected.
-		else {
-			auto contained = std::find(selectedItems.begin(), selectedItems.end(), *item);
-				
-			// If the item is already selected.
-			if (contained != selectedItems.end()) {
-				// If we are doing additive selection, remove the selected item from the list, retain the rest.
-				if (additive) {
-					selectedItems.erase(contained);
-				}
-				// Else we are doing single selection.
-				else {
-					// If we were previously doing additive selection, clear the list but retain this.
-					if (selectedItems.size() > 1) {
-						selectedItems.clear();
-						selectedItems.push_back(*item);
-						return true;
-					}
-					// Else we want to toggle selection.
-					else {
-						selectedItems.clear();
-					}
-				}
-				return false;
-			}
-			// Else the item is new, add it to the list.
-			else {
-				// If we are doing single selection, clear the old selections and put this one in.
-				if (!additive)
-				{
-					selectedItems.clear();
-					selectedItems.push_back(*item);
-					return true;
-				}
-				// Else We are doing multiple selections.
-				else {
-					// If there are too many selections, don't add to the list.
-					if (selectedItems.size() >= MAX_SELECTION_ITEMS) {
-						return false;
-					}
-
-					// Else, add it to the selection.
-					selectedItems.push_back(*item);
-					return true;
-				}
-			}
-		}
+		
+		addItem(item);
 	}
 
-	/// <summary>
-	/// Returns whether or not the mesh at i is selected.
-	/// </summary>
-	/// <param name="i"> mesh id </param>
+	/// <param name="meshId"> Id of the mesh being queried </param>
 	/// <returns> True if contained false otherwise. </returns>
-	bool hasSelectedMesh(uint i) {
-		return std::any_of(
-			selectedItems.begin(),
-			selectedItems.end(),
-			[i](const SelectionItem& item) {
-				return item.meshId == i;
-			}
-		);
-	}
+	/*bool hasSelectedMesh(uint meshId) {
+		return itemMap.count({ meshId, uint(0) });
+	}*/
 };
 
 #endif
