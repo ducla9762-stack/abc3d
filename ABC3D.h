@@ -10,7 +10,6 @@ class ABC3D : public QMainWindow
 public:
     ABC3D(QWidget *parent = nullptr);
     ~ABC3D();
-
 private:
     Ui::ABC3DClass ui;
 
@@ -20,9 +19,17 @@ private:
             emit deleteKeyPressed();
             return;
         }
+        // Close the program is escape is clicked
+        else if (event->key() == Qt::Key_Escape) {
+            event->accept();
+            this->close();
+        }
 
         QMainWindow::keyReleaseEvent(event);
     }
+
+private slots:
+    void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
 
 signals:
     void deleteKeyPressed();

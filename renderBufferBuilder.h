@@ -78,6 +78,13 @@ public:
 			mesh.GetTriangulation(i ,triVertices, triEdges);
 			//std::cout << "Triangulated Face " << i << std::endl;
 			Vec3f normal = mesh.NewellNormal(i);
+
+			Vec3f inverseScale = Vec3f(1.0f) / mesh.Scale();
+			Matrix3f rot;
+			rot.SetRotationZYX(degreesToRadians(mesh.eulerRot.x), degreesToRadians(mesh.eulerRot.y), degreesToRadians(mesh.eulerRot.z));
+			normal = rot * (normal * inverseScale);
+
+			//normal = mesh.
 			ids[1] = i;
 
 			//std::cout << "Begin Adding Triangles For Face: " << i << std::endl;

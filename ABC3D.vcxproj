@@ -122,7 +122,9 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="scene.cpp" />
+    <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
+    <QtMoc Include="VectorInput.h" />
     <QtMoc Include="Viewport.h" />
     <QtRcc Include="ABC3D.qrc" />
     <QtUic Include="ABC3D.ui" />
@@ -134,9 +136,9 @@
     <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="scene.h" />
-    <ClInclude Include="selection.h" />
     <ClInclude Include="selectionManager.h" />
     <ClInclude Include="shapes.h" />
+    <QtUic Include="VectorInput.ui" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\Arrow.vert" />

@@ -52,9 +52,15 @@
     <ClCompile Include="scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VectorInput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Viewport.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="VectorInput.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -72,9 +78,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="selection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="selectionManager.h">
@@ -96,5 +99,10 @@
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="VectorInput.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
 </Project>

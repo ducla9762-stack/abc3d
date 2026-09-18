@@ -18,6 +18,13 @@ class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
+signals:
+	void primarySelectionPosChanged(const Vec3f& pos);
+	void primarySelectionScaleChanged(const Vec3f& scale);
+	void primarySelectionRotChanged(const Vec3f& rot);
+	void primarySelectionChanged(bool primarySelection);
+	void enableNonVertexSpinners(bool enable);
+
 public:
 
 	enum Action {
@@ -96,7 +103,6 @@ private:
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseAction mouseAction;
 	ActionParams actionParams;
-	bool additiveSelection = true;
 
 	void initializeGL() override {
 		if (initGlew) {
@@ -120,7 +126,7 @@ private:
 
 		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
 	}
 
 	void paintGL() override {
@@ -131,19 +137,68 @@ private:
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
 	}
 
-	// Ported directly from FLTK version
-	std::optional<SelectionItem> createSelectionItem(Vec3u ids);
+	SelectionItem createSelectionItem(const Vec3u& ids);
+
+	void emitPrimarySelectionPosChanged() {
+		if (selectionManager.meshCount() != 1) { return; }
+
+		if (selectionManager.getActiveElement() == VERTEX) {
+			const SelectionItem& item = selectionManager.getSelectedItems()[0];
+			Vec3f pos = scene[item.meshId]->GetVertexPosition(item.componentId);
+			pos = scene[item.meshId]->LocalPosToWorldPos(pos);
+			emit primarySelectionPosChanged(pos);
+		}
+		else if (selectionManager.getActiveElement() == OBJECT) {
+			const SelectionItem& item = selectionManager.getSelectedItems()[0];
+			Vec3f pos = scene[item.meshId]->Pos();
+			emit primarySelectionPosChanged(pos);
+		}
+	}
+
+	void emitPrimarySelectionScaleChanged() {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		Vec3f scale = scene[item.meshId]->Scale();
+		emit primarySelectionScaleChanged(scale);
+	}
+
+	void emitPrimarySelectionRotChanged() {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		Vec3f rot = scene[item.meshId]->Rot();
+		emit primarySelectionRotChanged(rot);
+	}
 
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
 	void handleSelection(const Vec3u& selectionIds) {
 		// Create a selection item to send to the selection manager.
-		std::optional<SelectionItem> item = createSelectionItem(selectionIds);
+		SelectionItem item = createSelectionItem(selectionIds);
+		
+		if (item.meshId == MAX_UINT) { return; }
 
 		// query the selection maanger with the item.
-		selectionManager.processSelection(item, additiveSelection);
+		selectionManager.processSelection(item);
 
 		// Tell the renderer to update the selection visuals.
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+
+		bool primSelectChange = selectionManager.meshCount() == 1;
+		bool isNotVertex = selectionManager.getActiveElement() != VERTEX;
+
+		if (isNotVertex) {
+			emit primarySelectionChanged(primSelectChange);
+		}
+		else {
+			emit primarySelectionChanged(primSelectChange && selectionManager.itemCount() == 1);
+		}
+
+		emit enableNonVertexSpinners(primSelectChange && isNotVertex);
+
+		emitPrimarySelectionPosChanged();
+		emitPrimarySelectionScaleChanged();
+		emitPrimarySelectionRotChanged();
 	}
 
 	void mousePressEvent(QMouseEvent* event) override {
@@ -198,7 +253,7 @@ private:
 
 			// Translate depending on which element type.
 			HalfEdgeMesh* mesh = scene[item.meshId];
-			switch (item.type) {
+			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				mesh->TranslatePos(translation);
 				break;
@@ -376,10 +431,52 @@ private:
 			return false;
 		}
 
-		return false;
+		float factor = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				scene[item.meshId]->AddScale(factor);
+			}
+		}
+
+		renderer.UpdateRenderBuffers(scene);
+
+		return true;
 	}
 
-	bool rotateDrag() { return false; }
+	bool rotateDrag() { 
+		if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
+			return false;
+		}
+
+		Vec3f f, u, r;
+		renderer.GetCameraDirs(f, u, r);
+
+		Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
+		float length = dir.Length();
+		if (length == 0.0f) {
+			return false;
+		}
+		dir /= length;
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+
+			Vec3f eulerRot = scene[item.meshId]->Rot();
+			Matrix3f origRot;
+			origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+			Matrix3f rot;
+			rot.SetRotation(dir, length * 0.01f);
+			rot *= origRot;
+
+			scene[item.meshId]->Rot(matrixToEulerAngle(rot));
+		}
+
+		renderer.UpdateRenderBuffers(scene);
+
+		return true;
+	}
 
 	void mouseMoveEvent(QMouseEvent* event) override {
 		// Accept the event and make the OpenGL context current for renderer
@@ -399,18 +496,23 @@ private:
 		switch (actionParams.action) {
 		case TRANSLATE_OUT:
 			actionPerformed = translateOutDrag();
+			if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 			break;
 		case TRANSLATE_FREE:
 			actionPerformed = translateFreeDrag();
+			if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 			break;
 		case TRANSLATE_EDGE:
 			actionPerformed = translateEdgeDrag();
+			if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 			break;
 		case SCALE:
 			actionPerformed = scaleDrag();
+			if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 			break;
 		case ROTATE:
 			actionPerformed = rotateDrag();
+			if (actionPerformed) { emitPrimarySelectionRotChanged(); }
 			break;
 		case EXTRUDE:
 			actionPerformed = extrudeDrag();
@@ -479,8 +581,10 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent* event) {
 		selectionManager.clearSelection();
 		makeCurrent();
-		renderer.UpdateSelection(selectionManager.getSelectedItems());
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
 		update();
+
+		emit primarySelectionChanged(false);
 	}
 
 	template<typename T, typename U>
@@ -511,6 +615,117 @@ public slots:
 	void setElementFace() { selectionManager.setActiveElement(FACE); }
 	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
 	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
+
+	void tessellateSelection() {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				scene[item.meshId]->tesselate();
+				break;
+
+			case EDGE:
+				scene[item.meshId]->refineEdge(item.componentId);
+				break;
+
+			case FACE:
+				//scene[item.meshId]->tessFace(item.componentId);
+				break;
+
+			default:
+				return;
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void subdivideSelection() {
+		if (selectionManager.getActiveElement() != OBJECT) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				scene[item.meshId]->subdivide();
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void triangulateSelection() {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				scene[item.meshId]->Triangulate();
+				break;
+
+			case FACE:
+				scene[item.meshId]->TriangulateFace(item.componentId);
+				break;
+
+			default:
+				return;
+			}
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void setPrimarySelectionPos(const Vec3f& pos) {
+		if (selectionManager.meshCount() != 1) { return; }
+
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+
+		if (selectionManager.getActiveElement() == VERTEX) {
+			if (selectionManager.itemCount() != 1) { return; }
+			Vec3f vertPos = scene[item.meshId]->WorldDirToLocalDir(pos);
+			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
+		}
+		else {
+			scene[item.meshId]->Pos(pos);
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
+	void setPrimarySelectionScale(const Vec3f& scale) {
+		if (selectionManager.meshCount() != 1) { return; }
+
+		if (selectionManager.getActiveElement() != VERTEX) {
+			const SelectionItem& item = selectionManager.getSelectedItems()[0];
+			scene[item.meshId]->Scale(scale);
+			makeCurrent();
+			renderer.UpdateRenderBuffers(scene);
+			update();
+		}
+	}
+
+	void setPrimarySelectionRot(const Vec3f& rot) {
+		if (selectionManager.meshCount() != 1) { return; }
+
+		if (selectionManager.getActiveElement() != VERTEX) {
+			const SelectionItem& item = selectionManager.getSelectedItems()[0];
+			scene[item.meshId]->Rot(rot);
+			makeCurrent();
+			renderer.UpdateRenderBuffers(scene);
+			update();
+		}
+	}
 
 	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
 	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
