@@ -177,8 +177,14 @@
           <property name="checkable">
            <bool>true</bool>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
           <property name="autoExclusive">
            <bool>true</bool>
+          </property>
+          <property name="autoDefault">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -601,77 +607,6 @@
        </item>
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
-         <widget class="QWidget" name="shapePanel_3">
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="cubeButton_5">
-             <property name="text">
-              <string>Cube</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QPushButton" name="uvSphereButton_5">
-             <property name="text">
-              <string>UV Sphere</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pyramidButton_5">
-             <property name="text">
-              <string>Pyramid</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="cylinderButton_5">
-             <property name="text">
-              <string>Cylinder</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="torusButton_5">
-             <property name="text">
-              <string>Torus</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="icoSphereButton_5">
-             <property name="text">
-              <string>Ico-Sphere</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="subdivisionPanel">
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="QPushButton" name="subdivisionButton">
-             <property name="text">
-              <string>Subdivide</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="tesselationButton">
-             <property name="text">
-              <string>Tesselate</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="triangulationButton">
-             <property name="text">
-              <string>Triangulate</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
          <widget class="QWidget" name="propertiesPanel">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <property name="spacing">
@@ -730,6 +665,9 @@
                  <string>Free</string>
                 </property>
                 <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
                  <bool>true</bool>
                 </property>
                 <property name="autoExclusive">
@@ -810,10 +748,81 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>10</height>
+               <height>0</height>
               </size>
              </property>
             </spacer>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="shapePanel_3">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="cubeButton_5">
+             <property name="text">
+              <string>Cube</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QPushButton" name="uvSphereButton_5">
+             <property name="text">
+              <string>UV Sphere</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pyramidButton_5">
+             <property name="text">
+              <string>Pyramid</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="cylinderButton_5">
+             <property name="text">
+              <string>Cylinder</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="torusButton_5">
+             <property name="text">
+              <string>Torus</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="icoSphereButton_5">
+             <property name="text">
+              <string>Ico-Sphere</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="subdivisionPanel">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QPushButton" name="subdivisionButton">
+             <property name="text">
+              <string>Subdivide</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="tesselationButton">
+             <property name="text">
+              <string>Tesselate</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="triangulationButton">
+             <property name="text">
+              <string>Triangulate</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -1215,8 +1224,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>387</y>
+     <x>1070</x>
+     <y>470</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1231,8 +1240,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>393</y>
+     <x>1070</x>
+     <y>559</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1247,8 +1256,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>399</y>
+     <x>1070</x>
+     <y>648</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1397,6 +1406,70 @@
     <hint type="destinationlabel">
      <x>390</x>
      <y>-8</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>shapeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateFree()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>44</x>
+     <y>321</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>262</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivideToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateFree()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>49</x>
+     <y>450</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>149</x>
+     <y>450</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
+     <y>371</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>347</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>54</x>
+     <y>504</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>525</x>
+     <y>-2</y>
     </hint>
    </hints>
   </connection>

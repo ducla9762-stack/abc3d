@@ -29,7 +29,7 @@ private:
     }
 
 private slots:
-    void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(2); }
+    void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
 
 signals:
     void deleteKeyPressed();
