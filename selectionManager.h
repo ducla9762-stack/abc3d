@@ -27,10 +27,12 @@ struct std::hash<SelectionItem> {
 class SelectionManager {
 private:
 	Element activeElement;
+	std::unordered_map<uint, uint> meshMap;
 	std::unordered_map<SelectionItem, uint> itemMap;
 	std::vector<SelectionItem> selectedItems;
 	bool additive = true;
 
+	// do not call if item is not added
 	void deleteItem(const SelectionItem& item) {
 		uint itemIndex = itemMap[item];
 		itemMap[selectedItems.back()] = itemIndex;
@@ -38,13 +40,26 @@ private:
 		std::swap(selectedItems[itemIndex], selectedItems.back());
 		itemMap.erase(item);
 		selectedItems.pop_back();
+
+		uint meshItemCount = --meshMap[item.meshId];
+		if (meshItemCount == 0) {
+			meshMap.erase(item.meshId);
+		}
 	}
 
+	// only call if item is not already added
 	void addItem(const SelectionItem& item) {
 		if (selectedItems.size() == MAX_SELECTION_ITEMS) { return; }
 
 		itemMap[item] = selectedItems.size();
 		selectedItems.push_back(item);
+
+		if (meshMap.count(item.meshId)) {
+			++meshMap[item.meshId];
+		}
+		else {
+			meshMap[item.meshId] = 1;
+		}
 	}
 
 public:
@@ -77,6 +92,7 @@ public:
 	/// </summary>
 	void clearSelection() {
 		itemMap.clear();
+		meshMap.clear();
 		selectedItems.clear();
 	}
 
@@ -107,11 +123,22 @@ public:
 		addItem(item);
 	}
 
+	uint itemCount() { return (uint) selectedItems.size(); }
+	uint itemCount(uint meshId) {
+		if (meshMap.count(meshId)) {
+			return meshMap[meshId];
+		}
+
+		return 0;
+	}
+
+	uint meshCount() { return (uint) meshMap.size(); }
+
 	/// <param name="meshId"> Id of the mesh being queried </param>
 	/// <returns> True if contained false otherwise. </returns>
-	/*bool hasSelectedMesh(uint meshId) {
-		return itemMap.count({ meshId, uint(0) });
-	}*/
+	bool hasSelectedMesh(uint meshId) {
+		return meshMap.count(meshId);
+	}
 };
 
 #endif

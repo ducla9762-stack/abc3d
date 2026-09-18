@@ -991,9 +991,11 @@
    <extends>QOpenGLWidget</extends>
    <header>Viewport.h</header>
    <slots>
-    <signal>primarySelectionPosChanged()</signal>
-    <signal>primarySelectionScaleChanged()</signal>
-    <signal>primarySelectionRotChanged()</signal>
+    <signal>primarySelectionPosChanged(Vec3f)</signal>
+    <signal>primarySelectionScaleChanged(Vec3f)</signal>
+    <signal>primarySelectionRotChanged(Vec3f)</signal>
+    <signal>primarySelectionChanged(bool)</signal>
+    <signal>enableNonVertexSpinners(bool)</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -1012,6 +1014,9 @@
     <slot>tessellateSelection()</slot>
     <slot>subdivideSelection()</slot>
     <slot>triangulateSelection()</slot>
+    <slot>setPrimarySelectionPos(Vec3f)</slot>
+    <slot>setPrimarySelectionScale(Vec3f)</slot>
+    <slot>setPrimarySelectionRot(Vec3f)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1019,6 +1024,10 @@
    <extends>QWidget</extends>
    <header>VectorInput.h</header>
    <container>1</container>
+   <slots>
+    <signal>valChanged(Vec3f)</signal>
+    <slot>setValue(Vec3f)</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources>
@@ -1144,8 +1153,8 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1002</x>
-     <y>467</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -1160,8 +1169,8 @@
    <slot>loadCylinder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>884</x>
-     <y>547</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>745</x>
@@ -1176,8 +1185,8 @@
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>994</x>
-     <y>552</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>684</x>
@@ -1192,8 +1201,8 @@
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>884</x>
-     <y>635</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>743</x>
@@ -1208,8 +1217,8 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>986</x>
-     <y>635</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -1224,8 +1233,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>470</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1240,8 +1249,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>559</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1256,8 +1265,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>648</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1352,8 +1361,8 @@
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>883</x>
-     <y>453</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -1470,6 +1479,182 @@
     <hint type="destinationlabel">
      <x>525</x>
      <y>-2</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionPosChanged(Vec3f)</signal>
+   <receiver>posInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>632</x>
+     <y>253</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>942</x>
+     <y>464</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionScaleChanged(Vec3f)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>786</x>
+     <y>425</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>893</x>
+     <y>499</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionRotChanged(Vec3f)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>594</x>
+     <y>498</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>919</x>
+     <y>525</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>posInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>538</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>876</x>
+     <y>469</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>601</x>
+     <y>459</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>857</x>
+     <y>498</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>539</x>
+     <y>484</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>844</x>
+     <y>522</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>582</x>
+     <y>504</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>853</x>
+     <y>493</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>560</x>
+     <y>502</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>965</x>
+     <y>529</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>posInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionPos(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>467</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>708</x>
+     <y>435</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionScale(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>968</x>
+     <y>495</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>727</x>
+     <y>473</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionRot(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>989</x>
+     <y>526</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>694</x>
+     <y>530</y>
     </hint>
    </hints>
   </connection>

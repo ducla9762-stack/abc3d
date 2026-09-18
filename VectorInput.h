@@ -24,6 +24,12 @@ private slots:
 		emit valChanged(val);
 	}
 
+	void setEnabled(bool enabled) {
+		ui.xSpinner->setEnabled(enabled);
+		ui.ySpinner->setEnabled(enabled);
+		ui.zSpinner->setEnabled(enabled);
+	}
+
 public slots:
 	void setValue(const Vec3f& val) {
 		ui.xSpinner->setValue(val.x);
