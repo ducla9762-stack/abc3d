@@ -8,22 +8,17 @@ Scene::~Scene() {
 
 void Scene::Clear() {
 	// Loop through all meshes and delete them.
-	for (HalfEdgeMesh* mesh : meshes)
+	for (HalfEdgeMesh* mesh : meshes) {
 		delete mesh;
+	}
 	
 	meshes.clear();
-	idStack.clear(); 
 }
 
 void Scene::DeleteMesh(uint id) {
-	// Get the mesh at id.
-	HalfEdgeMesh* mesh = meshes.at(id);
-	// If the mesh exists:
-	if (mesh) {
-		// Clear the mesh.
-		meshes.at(id)->Clear();
-		idStack.push_back(id);
-	}
+	delete meshes.at(id);
+	std::swap(meshes[id], meshes.back());
+	meshes.pop_back();
 }
 
 void Scene::DuplicateMesh(uint id) {
@@ -32,21 +27,8 @@ void Scene::DuplicateMesh(uint id) {
 }
 
 HalfEdgeMesh* Scene::NewMesh() {
-	// If there are no deleted meshes in the scene:
-	if (idStack.empty()) {
-		// Create a new mesh, push it back, and push back false by default for selection.
-		HalfEdgeMesh* newMesh = new HalfEdgeMesh();
-		meshes.push_back(newMesh);
-		return newMesh;
-	}
-
-	// Else there are deleted meshes in the scene.
-	// We can use their allocated space.
-
-	// Remove the earliest deleted mesh id.
-	uint index = idStack.back();
-	idStack.pop_back();
-	return meshes.at(index);
+	meshes.push_back(new HalfEdgeMesh());
+	return meshes.back();
 }
 
 HalfEdgeMesh* Scene::operator[](uint index) { return meshes.at(index); }

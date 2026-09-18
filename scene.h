@@ -12,7 +12,6 @@
 /// </summary>
 class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
-	std::vector<uint> idStack;
 
 public:
 	/// <summary>
