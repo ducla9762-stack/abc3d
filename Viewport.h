@@ -420,28 +420,51 @@ private:
 
 	bool translateEdgeDrag() { return false; }
 
+	void setupBevelDrag() {
+		if (beveler) { delete beveler; }
+
+		uint meshId = selectionManager.getSelectedItems()[0].meshId;
+		if (meshId >= scene.MeshCount()) { return; }
+
+		beveler = new HalfEdgeMeshBeveler(*scene[meshId]);
+
+		Element element = selectionManager.getActiveElement();
+		if (element == OBJECT) {
+			beveler->StartObjectBevel();
+			return;
+		}
+
+		std::vector<uint> elements;
+		elements.reserve(selectionManager.getSelectedItems().size());
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (meshId >= scene.MeshCount()) { continue; }
+			elements.push_back(item.componentId);
+		}
+
+		switch (element) {
+		case EDGE:
+			beveler->StartEdgeBevel(elements);
+			break;
+		case FACE:
+			beveler->StartFaceBevel(elements);
+			break;
+		case VERTEX:
+			// todo
+			break;
+		}
+
+		return;
+	}
+
 	bool bevelDrag() {
 		if (selectionManager.getSelectedItems().empty()) { return false; }
 
 		// Bevel temporarily only works with edges
-		if (selectionManager.getActiveElement() != EDGE) { return false; }
+		if (selectionManager.getActiveElement() == VERTEX) { return false; }
 
 		if (mouseAction.firstMoveEvent) {
-			if (beveler) { delete beveler; }
-
-			uint meshId = selectionManager.getSelectedItems()[0].meshId;
-			if (meshId >= scene.MeshCount()) { return false; }
-
-			std::vector<uint> edges;
-			edges.reserve(selectionManager.getSelectedItems().size());
-
-			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-				if (meshId >= scene.MeshCount()) { continue; }
-				edges.push_back(item.componentId);
-			}
-
-			beveler = new HalfEdgeMeshBeveler(*scene[meshId]);
-			beveler->StartEdgeBevel(edges);
+			setupBevelDrag();
 		}
 
 		if (!beveler) { return false; }

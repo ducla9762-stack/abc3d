@@ -396,6 +396,8 @@ public:
 	/// <returns>The first 3 edges of the face.</returns>
 	Vec3u GetTriEdges(uint faceId) const;
 
+	void GetFaceEdges(uint faceId, std::vector<uint>& edges) const;
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <param name="vertices">
 	/// Will contain the first 4 vertices of the face. 
@@ -994,7 +996,6 @@ class HalfEdgeMeshBeveler {
 
 public:
 	HalfEdgeMeshBeveler(HalfEdgeMesh& mesh) : mesh(mesh) {}
-	void StartEdgeBevel(uint edgeId){}
 	void StartEdgeBevel(const std::vector<uint>& edges) {
 		std::unordered_map<uint, uint> vertMap;
 		std::unordered_map<uint, uint> edgeMap; // used for edge and vertex duplication
@@ -1071,6 +1072,22 @@ public:
 			edgeMap[hEdge1Id] = MAX_UINT;
 			edgeMap[hEdge2Id] = MAX_UINT;
 		}
+	}
+
+	void StartFaceBevel(const std::vector<uint>& faceIds) {
+		std::vector<uint> edges;
+		edges.reserve(faceIds.size() * 4); // rough estimate for number of edges
+		for (uint face : faceIds) { mesh.GetFaceEdges(face, edges); }
+		StartEdgeBevel(edges);
+	}
+
+	void StartObjectBevel() {
+		std::vector<uint> edges;
+		edges.reserve((mesh.edges.size() / 2) + 1);
+		for (uint i = 0; i < mesh.edges.size(); ++i) {
+			if (mesh.edges[i].twin > i) { edges.push_back(i); }
+		}
+		StartEdgeBevel(edges);
 	}
 
 	void AdjustBevel(float bevelFactor) {
