@@ -200,27 +200,11 @@ private:
 	void handleSelection(const Vec3u& selectionIds) {
 		// Create a selection item to send to the selection manager.
 		SelectionItem item = createSelectionItem(selectionIds);
-		
+
 		if (item.meshId == MAX_UINT) { return; }
 
-		// If we are selecting edges, make sure to select both half-edges.
-		if (selectionManager.getActiveElement() == EDGE) {
-			// Get the edge from the click.
-			const HalfEdgeMesh::HalfEdge edge = scene[item.meshId]->GetEdge(item.componentId);
-			// If there is no valid twin, just select this one.
-			if (edge.twin == MAX_UINT || edge.twin == item.componentId) {
-				selectionManager.processSelection(item);
-			}
-			// Else the twin is valid, process both.
-			else {
-				SelectionItem twin{ item.meshId, edge.twin };
-				selectionManager.processPairedSelection(item, twin);
-			}
-		}
-		// Else we are not selecting edges.
-		else {
-			selectionManager.processSelection(item);
-		}
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item);
 
 		// Tell the renderer to update the selection visuals.
 		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
@@ -636,7 +620,7 @@ private:
 		camChange *= SCALE;
 
 		// Update camera
-		camPos.z += float(camChange.y);
+		camPos.z -= float(camChange.y);
 		if (camPos.z < 0.0f) { camPos.z = 0.0f; }
 
 		camPos.x += camChange.x;
