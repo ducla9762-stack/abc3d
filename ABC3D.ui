@@ -32,507 +32,72 @@
      <height>0</height>
     </size>
    </property>
-   <widget class="QScrollArea" name="leftToolbar">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>66</width>
-      <height>512</height>
-     </rect>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="spacing">
+     <number>0</number>
     </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
+    <property name="leftMargin">
+     <number>0</number>
     </property>
-    <property name="minimumSize">
-     <size>
-      <width>66</width>
-      <height>0</height>
-     </size>
+    <property name="topMargin">
+     <number>0</number>
     </property>
-    <property name="maximumSize">
-     <size>
-      <width>66</width>
-      <height>16777215</height>
-     </size>
+    <property name="rightMargin">
+     <number>0</number>
     </property>
-    <property name="baseSize">
-     <size>
-      <width>32</width>
-      <height>300</height>
-     </size>
+    <property name="bottomMargin">
+     <number>0</number>
     </property>
-    <property name="verticalScrollBarPolicy">
-     <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-    </property>
-    <property name="horizontalScrollBarPolicy">
-     <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-    </property>
-    <property name="sizeAdjustPolicy">
-     <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>64</width>
-       <height>512</height>
-      </rect>
-     </property>
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>64</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>64</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="spacing">
-       <number>0</number>
+    <item>
+     <widget class="QScrollArea" name="leftToolbar">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="sizeConstraint">
-       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+      <property name="minimumSize">
+       <size>
+        <width>66</width>
+        <height>0</height>
+       </size>
       </property>
-      <property name="leftMargin">
-       <number>0</number>
+      <property name="maximumSize">
+       <size>
+        <width>66</width>
+        <height>16777215</height>
+       </size>
       </property>
-      <property name="topMargin">
-       <number>0</number>
+      <property name="baseSize">
+       <size>
+        <width>32</width>
+        <height>300</height>
+       </size>
       </property>
-      <property name="rightMargin">
-       <number>0</number>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
       </property>
-      <property name="bottomMargin">
-       <number>0</number>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
       </property>
-      <item>
-       <widget class="QPushButton" name="selectToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Select Tool">Select Tool</string>
-        </property>
-        <property name="toolTipDuration">
-         <number>-1</number>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/select_tool.svg</normaloff>assets/icons/select_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="translateToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Move Tool">Move Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/move_tool.svg</normaloff>assets/icons/move_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="scaleToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Scale Tool">Scale Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/scale_tool.svg</normaloff>assets/icons/scale_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="rotateToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Rotate Tool">Rotate Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/rotate_tool.svg</normaloff>assets/icons/rotate_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="shapeToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Shape Tool">Shape Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/shape_tool.svg</normaloff>assets/icons/shape_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="extrudeToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Extrude Tool">Extrude Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/extrude_tool.svg</normaloff>assets/icons/extrude_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="subdivideToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="baseSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Subdivision Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/subdiv_tool.svg</normaloff>assets/icons/subdiv_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="bevelToolButton">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>32</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string extracomment="Bevel Tool">Bevel Tool</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset>
-          <normaloff>assets/icons/bevel_tool.svg</normaloff>assets/icons/bevel_tool.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>64</width>
-          <height>64</height>
-         </size>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="autoExclusive">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-     <zorder>selectToolButton</zorder>
-     <zorder>scaleToolButton</zorder>
-     <zorder>extrudeToolButton</zorder>
-     <zorder>rotateToolButton</zorder>
-     <zorder>shapeToolButton</zorder>
-     <zorder>subdivideToolButton</zorder>
-     <zorder>translateToolButton</zorder>
-     <zorder>bevelToolButton</zorder>
-    </widget>
-   </widget>
-   <widget class="Viewport" name="viewport">
-    <property name="geometry">
-     <rect>
-      <x>60</x>
-      <y>-10</y>
-      <width>761</width>
-      <height>682</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>3</verstretch>
-     </sizepolicy>
-    </property>
-   </widget>
-   <widget class="QWidget" name="verticalLayoutWidget_4">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>0</y>
-      <width>261</width>
-      <height>671</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" name="rightSidePanels">
-     <item>
-      <widget class="QTabWidget" name="topRightPanels">
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>64</width>
+         <height>680</height>
+        </rect>
+       </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -541,193 +106,611 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>256</width>
+         <width>64</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>16777215</width>
-         <height>682</height>
+         <width>64</width>
+         <height>16777215</height>
         </size>
        </property>
-       <property name="currentIndex">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="sizeConstraint">
+         <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="selectToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Select Tool">Select Tool</string>
+          </property>
+          <property name="toolTipDuration">
+           <number>-1</number>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/select_tool.svg</normaloff>assets/icons/select_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="translateToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Move Tool">Move Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/move_tool.svg</normaloff>assets/icons/move_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="scaleToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Scale Tool">Scale Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/scale_tool.svg</normaloff>assets/icons/scale_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="rotateToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Rotate Tool">Rotate Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/rotate_tool.svg</normaloff>assets/icons/rotate_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="shapeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Shape Tool">Shape Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/shape_tool.svg</normaloff>assets/icons/shape_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="extrudeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Extrude Tool">Extrude Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/extrude_tool.svg</normaloff>assets/icons/extrude_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="subdivideToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="baseSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Subdivision Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/subdiv_tool.svg</normaloff>assets/icons/subdiv_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="bevelToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="sizeIncrement">
+           <size>
+            <width>32</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string extracomment="Bevel Tool">Bevel Tool</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/bevel_tool.svg</normaloff>assets/icons/bevel_tool.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+       <zorder>selectToolButton</zorder>
+       <zorder>scaleToolButton</zorder>
+       <zorder>extrudeToolButton</zorder>
+       <zorder>rotateToolButton</zorder>
+       <zorder>shapeToolButton</zorder>
+       <zorder>subdivideToolButton</zorder>
+       <zorder>translateToolButton</zorder>
+       <zorder>bevelToolButton</zorder>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="Viewport" name="viewport">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>4</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWidget" name="rightPanel" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QVBoxLayout" name="rightSidePanels">
+       <property name="spacing">
         <number>0</number>
        </property>
-       <widget class="QWidget" name="tutorialPanel">
-        <attribute name="title">
-         <string>Tutorial</string>
-        </attribute>
-        <widget class="QPushButton" name="loadTutorialButton">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>30</y>
-           <width>80</width>
-           <height>24</height>
-          </rect>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QTabWidget" name="topRightPanels">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="text">
-          <string>Load Tutorial</string>
+         <property name="minimumSize">
+          <size>
+           <width>256</width>
+           <height>0</height>
+          </size>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>682</height>
+          </size>
+         </property>
+         <property name="currentIndex">
+          <number>1</number>
+         </property>
+         <widget class="QWidget" name="tutorialPanel">
+          <attribute name="title">
+           <string>Tutorial</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QPushButton" name="loadTutorialButton">
+             <property name="text">
+              <string>Load Tutorial</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="sceneHierarchyPanel">
+          <attribute name="title">
+           <string>Scene Hierarchy</string>
+          </attribute>
+         </widget>
         </widget>
-       </widget>
-       <widget class="QWidget" name="sceneHierarchyPanel">
-        <attribute name="title">
-         <string>Scene Hierarchy</string>
-        </attribute>
-       </widget>
-      </widget>
-     </item>
-     <item>
-      <widget class="QStackedWidget" name="bottomRightPanels">
-       <widget class="QWidget" name="shapePanel_3">
-        <widget class="QWidget" name="verticalLayoutWidget_2">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>159</width>
-           <height>369</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="shapeButtonLayout">
-          <item>
-           <widget class="QPushButton" name="cubeButton_5">
-            <property name="text">
-             <string>Cube</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="uvSphereButton_5">
-            <property name="text">
-             <string>UV Sphere</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="icoSphereButton_5">
-            <property name="text">
-             <string>Ico-Sphere</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pyramidButton_5">
-            <property name="text">
-             <string>Pyramid</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="cylinderButton_5">
-            <property name="text">
-             <string>Cylinder</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="torusButton_5">
-            <property name="text">
-             <string>Torus</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+       </item>
+       <item>
+        <widget class="QStackedWidget" name="bottomRightPanels">
+         <widget class="QWidget" name="shapePanel_3">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="cubeButton_5">
+             <property name="text">
+              <string>Cube</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QPushButton" name="uvSphereButton_5">
+             <property name="text">
+              <string>UV Sphere</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pyramidButton_5">
+             <property name="text">
+              <string>Pyramid</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="cylinderButton_5">
+             <property name="text">
+              <string>Cylinder</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="torusButton_5">
+             <property name="text">
+              <string>Torus</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="icoSphereButton_5">
+             <property name="text">
+              <string>Ico-Sphere</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="subdivisionPanel">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QPushButton" name="subdivisionButton">
+             <property name="text">
+              <string>Subdivide</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="tesselationButton">
+             <property name="text">
+              <string>Tesselate</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="triangulationButton">
+             <property name="text">
+              <string>Triangulate</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="propertiesPanel">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="transformModeLayout">
+             <item>
+              <widget class="QRadioButton" name="outwardModeButton_3">
+               <property name="text">
+                <string>Outward Translation</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="freeModeButton_3">
+               <property name="text">
+                <string>Free Translation</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="axisModeButton">
+               <property name="text">
+                <string>Axis Translation</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="edgeModeButton">
+               <property name="text">
+                <string>Edge Translation</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
         </widget>
-       </widget>
-       <widget class="QWidget" name="subdivisionPanel">
-        <widget class="QWidget" name="verticalLayoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>-10</y>
-           <width>258</width>
-           <height>271</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="QPushButton" name="subdivisionButton">
-            <property name="text">
-             <string>Subdivide</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="tesselationButton">
-            <property name="text">
-             <string>Tesselate</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="triangulationButton">
-            <property name="text">
-             <string>Triangulate</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-       <widget class="QWidget" name="propertiesPanel">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>30</y>
-           <width>72</width>
-           <height>22</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QWidget" name="verticalLayoutWidget_5">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>60</y>
-           <width>160</width>
-           <height>311</height>
-          </rect>
-         </property>
-         <layout class="QVBoxLayout" name="transformModeLayout">
-          <item>
-           <widget class="QRadioButton" name="outwardModeButton_3">
-            <property name="text">
-             <string>Outward Translation</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="freeModeButton_3">
-            <property name="text">
-             <string>Free Translation</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="axisModeButton">
-            <property name="text">
-             <string>Axis Translation</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="edgeModeButton">
-            <property name="text">
-             <string>Edge Translation</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-      </widget>
-     </item>
-    </layout>
-   </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -1012,66 +995,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>tesselationButton</sender>
+   <sender>cubeButton_5</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
-   <slot>tessellateSelection()</slot>
+   <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>839</x>
-     <y>490</y>
+     <x>890</x>
+     <y>455</y>
     </hint>
     <hint type="destinationlabel">
-     <x>732</x>
-     <y>480</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>torusButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadTorus()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>841</x>
-     <y>690</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>786</x>
-     <y>676</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uvSphereButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadUvSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>832</x>
-     <y>462</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>786</x>
+     <x>766</x>
      <y>447</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cylinderButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCylinder()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>830</x>
-     <y>633</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>795</x>
-     <y>628</y>
     </hint>
    </hints>
   </connection>
@@ -1082,12 +1017,60 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>825</x>
-     <y>576</y>
+     <x>1002</x>
+     <y>467</y>
     </hint>
     <hint type="destinationlabel">
-     <x>812</x>
-     <y>559</y>
+     <x>719</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cylinderButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCylinder()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>884</x>
+     <y>547</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>745</x>
+     <y>524</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>torusButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadTorus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>994</x>
+     <y>552</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>684</x>
+     <y>531</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uvSphereButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadUvSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>884</x>
+     <y>635</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>743</x>
+     <y>607</y>
     </hint>
    </hints>
   </connection>
@@ -1098,44 +1081,12 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>841</x>
-     <y>519</y>
+     <x>986</x>
+     <y>635</y>
     </hint>
     <hint type="destinationlabel">
-     <x>779</x>
-     <y>515</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cubeButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCube()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>841</x>
-     <y>405</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>788</x>
-     <y>393</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>triangulationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>triangulateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>843</x>
-     <y>566</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>784</x>
-     <y>561</y>
+     <x>676</x>
+     <y>612</y>
     </hint>
    </hints>
   </connection>
@@ -1146,28 +1097,44 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>832</x>
-     <y>416</y>
+     <x>966</x>
+     <y>464</y>
     </hint>
     <hint type="destinationlabel">
-     <x>527</x>
-     <y>398</y>
+     <x>724</x>
+     <y>455</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>subdivideToolButton</sender>
+   <sender>tesselationButton</sender>
    <signal>released()</signal>
-   <receiver>subdivisionButton</receiver>
-   <slot>showMenu()</slot>
+   <receiver>viewport</receiver>
+   <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>46</x>
-     <y>458</y>
+     <x>907</x>
+     <y>549</y>
     </hint>
     <hint type="destinationlabel">
-     <x>867</x>
-     <y>430</y>
+     <x>696</x>
+     <y>533</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>triangulationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>triangulateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>914</x>
+     <y>641</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>626</y>
     </hint>
    </hints>
   </connection>
