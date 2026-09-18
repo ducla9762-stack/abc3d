@@ -570,7 +570,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="tutorialPanel">
           <attribute name="title">
@@ -674,30 +674,54 @@
            <item>
             <layout class="QVBoxLayout" name="transformModeLayout">
              <item>
-              <widget class="QRadioButton" name="outwardModeButton_3">
+              <widget class="QPushButton" name="freeModeTranslationButton">
                <property name="text">
-                <string>Outward Translation</string>
+                <string>Free</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="freeModeButton_3">
+              <widget class="QPushButton" name="outModeTranslationButton">
                <property name="text">
-                <string>Free Translation</string>
+                <string>Outward</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="axisModeButton">
+              <widget class="QPushButton" name="axisModeTranslationButton">
                <property name="text">
-                <string>Axis Translation</string>
+                <string>Axis</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="edgeModeButton">
+              <widget class="QPushButton" name="edgeModeTranslationButton">
                <property name="text">
-                <string>Edge Translation</string>
+                <string>Edge</string>
+               </property>
+               <property name="checkable">
+                <bool>true</bool>
+               </property>
+               <property name="autoExclusive">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -1097,8 +1121,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>966</x>
-     <y>464</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1113,8 +1137,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>907</x>
-     <y>549</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1129,12 +1153,76 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>641</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
      <y>626</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>freeModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateFree()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>930</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>735</x>
+     <y>438</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>outModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateOut()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>904</x>
+     <y>537</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>506</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>axisModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>916</x>
+     <y>606</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>713</x>
+     <y>584</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>edgeModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>874</x>
+     <y>667</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>746</x>
+     <y>644</y>
     </hint>
    </hints>
   </connection>
