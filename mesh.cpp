@@ -1071,16 +1071,16 @@ void HalfEdgeMesh::Triangulate() {
 							uint first = faceEdges[faceId];\
 							uint next = first;\
 							do {\
-								HalfEdge& edge = edges[next];\
-								next = edge.next;
-#define EndEdgeIteration	} while (next != first);
+								HalfEdge& edge = edges[next];
+								
+#define EndEdgeIteration		next = edge.next; \
+							} while (next != first);
 
 #define StartEdgeIterationConst(faceId) \
 							uint first = faceEdges[faceId];\
 							uint next = first;\
 							do {\
-								const HalfEdge& edge = edges[next];\
-								next = edge.next;
+								const HalfEdge& edge = edges[next];
 
 // https://www.sciencedirect.com/science/chapter/edited-volume/pii/B978008050755250052X
 Vec3f HalfEdgeMesh::NewellNormal(uint faceId) const {
@@ -1095,7 +1095,7 @@ Vec3f HalfEdgeMesh::NewellNormal(uint faceId) const {
 
 	Vec3<double> normal(0.0);
 
-	StartEdgeIterationConst(faceId, const)
+	StartEdgeIterationConst(faceId)
 		Vec3f orig = vertPos[edge.orig];
 		Vec3f dest = vertPos[edge.dest];
 		normal.x += (orig.y - dest.y) * (orig.z + dest.z);
@@ -1684,6 +1684,12 @@ void HalfEdgeMesh::subdivide() {
 	tesselate();
 	deform();
 	return;
+}
+
+void HalfEdgeMesh::GetFaceEdges(uint faceId, std::vector<uint>& edgeList) const {
+	StartEdgeIterationConst(faceId)
+		edgeList.push_back(next);
+	EndEdgeIteration
 }
 
 void HalfEdgeMesh::Clear() {
