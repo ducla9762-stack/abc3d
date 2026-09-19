@@ -800,9 +800,7 @@ void HalfEdgeMesh::ClipCorner(uint hEdge, uint& innerClipId, uint& outerClipId, 
 	edges[edge.next].prev = outerClipId;
 	edges[prev.prev].next = outerClipId;
 
-	if (faceEdges[edge.face] == hEdge) {
-		faceEdges[edge.face] = outerClipId;
-	}
+	faceEdges[edge.face] = outerClipId;
 
 	edge.face = cornerFace;
 	edge.next = innerClipId;
@@ -1016,7 +1014,7 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 
 	PolygonCorner* corner = polyCorners;
 
-	while (numVertices > 2) {
+	while (numVertices > 3) {
 		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
 			corner = corner->next;
 			continue;
