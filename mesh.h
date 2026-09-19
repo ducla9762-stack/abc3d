@@ -493,6 +493,20 @@ public:
 	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
+	uint VertexDegree(uint vertex) {
+		uint firstEdge = vertEdge[vertex];
+		uint currEdge = firstEdge;
+		uint degree = 0;
+
+		do {
+			HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
+			++degree;
+			currEdge = edges[edge.twin].next;
+		} while (currEdge != firstEdge);
+
+		return degree;
+	}
+
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
 	///		half-edge (one with the vertex as it's origin). Additionally, adjacent faces
@@ -1099,6 +1113,90 @@ public:
 			mesh.vertPos[vertices[i]] = vertTransforms[transIndex] + (vertTransforms[transIndex + 1] * bevelFactor);
 		}
 	}
+
+	void StartVertexBevel(const std::vector<uint>& vertexIds) {
+		std::unordered_map<uint, uint> vertMap;
+
+		vertMap.reserve(vertices.size());
+		vertices.reserve(vertices.size());
+		vertTransforms.reserve(vertices.size() * 2);
+
+		uint newVertices = 0;
+		uint newEdges = 0;
+
+		for (uint vertex : vertexIds) {
+			if (vertMap.count(vertex)) { continue; }
+
+			uint degree = mesh.VertexDegree(vertex);
+			newVertices += degree - 1;
+			newEdges += degree;
+			vertMap[vertex] = degree;
+		}
+
+		newEdges *= 2;
+
+		mesh.vertPos.reserve(mesh.vertPos.size() + newVertices);
+		mesh.vertEdge.reserve(mesh.vertEdge.size() + newVertices);
+		mesh.edges.reserve(mesh.edges.size() + newEdges);
+
+		for (uint vertex : vertexIds) {
+			uint degree = vertMap[vertex];
+			if (degree == MAX_UINT) { continue; }
+
+			uint firstEdge = mesh.vertEdge[vertex];
+			uint currEdge = mesh.edges[mesh.edges[firstEdge].twin].next;
+			Vec3f vertPos = mesh.vertPos[vertex];
+
+			uint firstNewEdge = mesh.edges.size();
+			mesh.edges.insert(mesh.edges.end(), degree, HalfEdgeMesh::HalfEdge());
+
+			uint vFace = mesh.NewFace(firstNewEdge);
+
+			uint prevVert = vertex;
+			for(uint i = 1; i < degree; ++i) {
+				uint vFaceTwin = mesh.NewEdge();
+
+				HalfEdgeMesh::HalfEdge& edge = mesh.edges[currEdge];
+				
+				edge.orig = mesh.NewVertex(vertPos, currEdge);
+				mesh.edges[edge.twin].dest = edge.orig;
+
+				uint vFaceEdgeId = firstNewEdge + i;
+				HalfEdgeMesh::HalfEdge& vFaceEdge = mesh.edges[vFaceEdgeId];
+
+				mesh.SetTwins(vFaceEdgeId, vFaceTwin, edge.orig, prevVert);
+				mesh.InsertPrev(currEdge, vFaceTwin);
+
+				vFaceEdge.face = vFace;
+				vFaceEdge.prev = firstNewEdge + WrapInc(i, degree - 1, firstNewEdge);
+				vFaceEdge.next = vFaceEdgeId - 1;
+
+				vertices.push_back(edge.orig);
+				vertTransforms.push_back(vertPos);
+				vertTransforms.push_back(0.5f * (mesh.vertPos[edge.dest] - vertPos));
+
+				prevVert = edge.orig;
+				currEdge = mesh.edges[edge.twin].next;
+			}
+
+			uint vFaceTwin = mesh.NewEdge();
+			HalfEdgeMesh::HalfEdge& vFaceEdge = mesh.edges[firstNewEdge];
+
+			mesh.SetTwins(firstNewEdge, vFaceTwin, vertex, prevVert);
+			mesh.InsertPrev(firstEdge, vFaceTwin);
+
+			vFaceEdge.face = vFace;
+			vFaceEdge.prev = firstNewEdge + 1;
+			vFaceEdge.next = firstNewEdge + degree - 1;
+
+			vertices.push_back(vertex);
+			vertTransforms.push_back(vertPos);
+			vertTransforms.push_back(0.5f * (mesh.vertPos[mesh.edges[firstEdge].dest] - vertPos));
+
+			vertMap[vertex] = MAX_UINT;
+		}
+	}
+
 	void EndBevel() {}
 };
 

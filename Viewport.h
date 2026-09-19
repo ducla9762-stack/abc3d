@@ -421,7 +421,7 @@ private:
 			beveler->StartFaceBevel(elements);
 			break;
 		case VERTEX:
-			// todo
+			beveler->StartVertexBevel(elements);
 			break;
 		}
 
@@ -430,9 +430,6 @@ private:
 
 	bool bevelDrag() {
 		if (selectionManager.getSelectedItems().empty()) { return false; }
-
-		// Bevel temporarily only works with edges
-		if (selectionManager.getActiveElement() == VERTEX) { return false; }
 
 		if (mouseAction.firstMoveEvent) {
 			setupBevelDrag();
