@@ -14,12 +14,16 @@ const uint MAX_SELECTION_ITEMS = 64u;
 uniform uint selectionCount;
 // The array of selected items.
 uniform uvec3 selectedItems[MAX_SELECTION_ITEMS];
+// Up to two (element type, object ID, component ID) values under the mouse
+// cursor. Edges use both half-edge IDs; other element types use only [0].
+uniform uvec3 hoveredItems[2];
 
 // uint mapping of the Elements enum.
 const uint OBJECT = 0u;
 const uint FACE   = 1u;
 const uint EDGE   = 2u;
 const uint VERTEX = 3u;
+const vec3 HOVER_COLOR = vec3(1.0f, 0.5f, 0.0f);
 
 const vec3 SURFACE_BASE_COLOR = vec3(1, 0, 0);
 
@@ -46,6 +50,26 @@ bool isSelected(uint type, uint objectId, uint componentId) {
 	return false;
 }
 
+// AI-generated: Matches a fragment against either hovered half-edge so both
+// sides of a geometric edge receive the same hover color.
+bool isHovered(uint type, uint objectId, uint componentId) {
+	const uint NO_HOVER = 4294967295u;
+	for (uint i = 0u; i < 2u; ++i) {
+		uvec3 hoveredItem = hoveredItems[i];
+		if (hoveredItem.x == NO_HOVER) {
+			continue;
+		}
+
+		bool sameElement = hoveredItem.x == type && hoveredItem.y == objectId;
+		bool sameComponent = type == OBJECT || hoveredItem.z == componentId;
+		if (sameElement && sameComponent) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void main(){
 	vec3 normal = normalize(normalDir);
 	vec3 viewDir = -normalize(shadePos);
@@ -61,17 +85,31 @@ void main(){
 	bool objectSelected = isSelected(OBJECT, ids.x, 0u);
 	bool faceSelected = isSelected(FACE, ids.x, ids.y);
 	bool edgeSelected = isSelected(EDGE, ids.x, edgeId);
+	bool objectHovered = isHovered(OBJECT, ids.x, 0u);
+	bool faceHovered = isHovered(FACE, ids.x, ids.y);
+	bool edgeHovered = isHovered(EDGE, ids.x, edgeId);
 
 	float threshold = max(abs(dFdx(edgeDists[minEdge])), abs(dFdy(edgeDists[minEdge]))) * 2.0f;
 	float AA = threshold * 0.5f;
 
-	vec3 color1 = (objectSelected || edgeSelected) ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 1.0f, 0.0f);
+	vec3 color1 = (objectSelected || edgeSelected) ? vec3(0.0f, 1.0f, 0.0f) :
+		(objectHovered || edgeHovered) ? vec3(1.0f, 0.5f, 0.0f) :
+		vec3(1.0f, 1.0f, 0.0f);
 	vec3 color2 = abs(dot(normal, viewDir)) * SURFACE_BASE_COLOR;
 	if (objectSelected) {
 		color2 = mix(color2, vec3(0.0f, 1.0f, 0.0f), 0.25f);
 	}
 	if (faceSelected) {
 		color2 = mix(color2, vec3(0.0f, 1.0f, 0.0f), 0.65f);
+	}
+	if (objectHovered && !objectSelected) {
+		color2 = mix(color2, HOVER_COLOR, 0.45f);
+	}
+	if (faceHovered && !faceSelected) {
+		color2 = mix(color2, HOVER_COLOR, 0.75f);
+	}
+	if (edgeHovered && !edgeSelected) {
+		color1 = HOVER_COLOR;
 	}
 	float alpha = 1.0f - smoothstep(threshold - AA, threshold + AA, edgeDist);
 

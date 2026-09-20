@@ -18,6 +18,7 @@ Viewport::Viewport(QWidget *parent)
 	format.setStencilBufferSize(0);
 	format.setSamples(0);
 	setFormat(format);
+	setMouseTracking(true);
 
 	elementButtons[0] = new QPushButton("Vertex", this);
 	elementButtons[1] = new QPushButton("Edge", this);

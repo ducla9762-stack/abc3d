@@ -159,6 +159,15 @@ private:
 		renderer.UpdateSelection(renderItems, activeElement);
 	}
 
+	// AI-generated: Reads the ID buffer at the Qt cursor position and forwards
+	// the hovered object/component state to both mesh and vertex shaders.
+	void updateHoverVisual(const Vec2f& pos) {
+		const Vec3u ids = renderer.SelectionIds(
+			static_cast<uint>(devicePixelRatio() * pos.x),
+			static_cast<uint>(devicePixelRatio() * pos.y));
+		renderer.UpdateHover(ids, selectionManager.getActiveElement(), scene);
+	}
+
 	void initializeGL() override {
 		if (initGlew) {
 			GLenum error = glewInit();
@@ -183,6 +192,7 @@ private:
 		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
+		renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
 	}
 
 	void paintGL() override {
@@ -256,6 +266,7 @@ private:
 		// empty selection to the renderer immediately so the old highlight vanishes.
 		makeCurrent();
 		updateSelectionVisuals();
+		renderer.UpdateHover(Vec3u(0u), element, scene);
 		update();
 
 		emit primarySelectionChanged(false);
@@ -570,7 +581,8 @@ private:
 	bool rotateDrag() { 
 		if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
 			return false;
-		}
+		}const uint NO_HOVER = 4294967295u;
+
 
 		Vec3f f, u, r;
 		renderer.GetCameraDirs(f, u, r);
@@ -602,12 +614,27 @@ private:
 	}
 
 	void mouseMoveEvent(QMouseEvent* event) override {
-		// Accept the event and make the OpenGL context current for renderer
+		// Accept the event and make the OpenGL context current for renderer.
 		event->accept();
 		makeCurrent();
 
+		// AI-generated: Separates passive hover tracking from active drag handling
+		// so enabling Qt mouse tracking does not turn ordinary movement into camera movement.
+		const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+		const bool dragging = event->buttons() & Qt::LeftButton;
+		
+		// Update hover visuals.
+		updateHoverVisual(pos);
+
+		// With mouse tracking enabled, mouseMoveEvent also runs without a button
+		// pressed. Hovering must not be interpreted as a camera drag.
+		if (!dragging) {
+			update();
+			return;
+		}
+
 		// Update MouseAction struct
-		mouseAction.StartMouseDragStep(event->position().x(), this->height() - 1.0f - event->position().y(), this->width(), this->height());
+		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 
 		// Perform drag action
 		bool actionPerformed = false;
@@ -662,6 +689,13 @@ private:
 		// Update MouseAction struct
 		mouseAction.EndMouseDragStep();
 
+		update();
+	}
+
+	void leaveEvent(QEvent* event) override {
+		event->accept();
+		makeCurrent();
+		renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
 		update();
 	}
 

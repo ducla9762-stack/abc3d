@@ -452,26 +452,37 @@ void ModelingRenderer::UpdateSelection(const std::vector<SelectionItem>& selecte
 }
 
 // AI-generated code: Converts framebuffer IDs into shader hover state.
-void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElement) {
-	GLuint hoveredItem[3] = { MAX_UINT, MAX_UINT, MAX_UINT };
+void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElement, const Scene& scene) {
+	GLuint hoveredItems[2][3] = {
+		{ MAX_UINT, MAX_UINT, MAX_UINT },
+		{ MAX_UINT, MAX_UINT, MAX_UINT }
+	};
 
 	// Arrows and the background must not produce a mesh-element hover.
 	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT && selectionIds.x != ARROW_IDENTIFIER) {
 		switch (activeElement) {
 		case OBJECT:
-			hoveredItem[0] = OBJECT;
-			hoveredItem[1] = selectionIds.x;
+			hoveredItems[0][0] = OBJECT;
+			hoveredItems[0][1] = selectionIds.x;
 			break;
 		case FACE:
-			hoveredItem[0] = FACE;
-			hoveredItem[1] = selectionIds.x;
-			hoveredItem[2] = selectionIds.y;
+			hoveredItems[0][0] = FACE;
+			hoveredItems[0][1] = selectionIds.x;
+			hoveredItems[0][2] = selectionIds.y;
 			break;
+		// Edge will also send it's twin.
 		case EDGE:
-			if (selectionIds.z != MAX_UINT) {
-				hoveredItem[0] = EDGE;
-				hoveredItem[1] = selectionIds.x;
-				hoveredItem[2] = selectionIds.z;
+			if (selectionIds.z != MAX_UINT && selectionIds.x - 1 < scene.MeshCount()) {
+				hoveredItems[0][0] = EDGE;
+				hoveredItems[0][1] = selectionIds.x;
+				hoveredItems[0][2] = selectionIds.z;
+
+				const uint twinId = scene[selectionIds.x - 1]->GetEdge(selectionIds.z).twin;
+				if (twinId != MAX_UINT && twinId != selectionIds.z) {
+					hoveredItems[1][0] = EDGE;
+					hoveredItems[1][1] = selectionIds.x;
+					hoveredItems[1][2] = twinId;
+				}
 			}
 			break;
 		case VERTEX:
@@ -480,20 +491,20 @@ void ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElem
 	}
 	else if (activeElement == OBJECT && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
 		// Vertex-point rendering stores the object ID in the second component.
-		hoveredItem[0] = OBJECT;
-		hoveredItem[1] = selectionIds.y;
+		hoveredItems[0][0] = OBJECT;
+		hoveredItems[0][1] = selectionIds.y;
 	}
 	else if (activeElement == VERTEX && selectionIds.x == MAX_UINT && selectionIds.y != 0) {
 		// Vertex-point rendering stores (object ID, vertex ID) in y/z.
-		hoveredItem[0] = VERTEX;
-		hoveredItem[1] = selectionIds.y;
-		hoveredItem[2] = selectionIds.z;
+		hoveredItems[0][0] = VERTEX;
+		hoveredItems[0][1] = selectionIds.y;
+		hoveredItems[0][2] = selectionIds.z;
 	}
 
 	meshProgram.Bind();
-	meshProgram.SetUniform3("hoveredItem", hoveredItem);
+	meshProgram.SetUniform3("hoveredItems[0]", &hoveredItems[0][0], 2);
 	pointProgram.Bind();
-	pointProgram.SetUniform3("hoveredItem", hoveredItem);
+	pointProgram.SetUniform3("hoveredItems[0]", &hoveredItems[0][0], 2);
 }
 
 // Arrow renderer

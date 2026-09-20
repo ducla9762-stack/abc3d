@@ -317,7 +317,7 @@ private:
 	Vec3f eulerRot = Vec3f(0.0f); // Should later use quaternion instead of euler angles
 public:
 
-	HalfEdge GetEdge(uint edgeId) {
+	HalfEdge GetEdge(uint edgeId) const {
 		return edges.at(edgeId);
 	}
 
