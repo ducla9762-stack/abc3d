@@ -226,17 +226,17 @@ private:
 	}
 
 	void emitSelectionChanged() {
-		bool primSelectChange = selectionManager.meshCount() == 1;
+		bool primSelect = selectionManager.meshCount() == 1;
 		bool isNotVertex = selectionManager.getActiveElement() != VERTEX;
 
 		if (isNotVertex) {
-			emit primarySelectionChanged(primSelectChange);
+			emit primarySelectionChanged(primSelect);
 		}
 		else {
-			emit primarySelectionChanged(primSelectChange && selectionManager.itemCount() == 1);
+			emit primarySelectionChanged(primSelect && selectionManager.itemCount() == 1);
 		}
 
-		emit enableNonVertexSpinners(primSelectChange && isNotVertex);
+		emit enableNonVertexSpinners(primSelect && isNotVertex);
 
 		emitPrimarySelectionPosChanged();
 		emitPrimarySelectionScaleChanged();
@@ -253,7 +253,6 @@ private:
 		update();
 
 		emit primarySelectionChanged(false);
-		emit enableNonVertexSpinners(false);
 	}
 
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
