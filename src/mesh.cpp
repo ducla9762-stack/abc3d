@@ -1371,7 +1371,7 @@ bool HalfEdgeMesh::Validate(std::string& err) const {
 			return fail(atE(e) + atF(edges[e].face) + "for this edge and face, this edge claims this face, but the cycle finds a different"); 
 	}
 
-	//Check for 4: 
+	//Check for 4: Make sure we come back to the vertex after traversing all the edges the vertex is adjacent to
 	for (uint v = 0; v < V; ++v) {
 		//stray vertex no connected to any edge, legal
 		if (vertEdge[v] == MAX_UINT)
