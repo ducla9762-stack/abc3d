@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <QFileDialog>
 #include "ui_ABC3D.h"
 
 class ABC3D : public QMainWindow
@@ -30,6 +31,32 @@ private:
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
+
+    void modelFileDialog() {
+        QStringList files = QFileDialog::getOpenFileNames(
+                                this,
+                                "Select one or more models",
+                                "assets/models/",
+                                "3D Models (*.obj *.stl)"
+                            );
+
+        for (QString& file : files) {
+            ui.viewport->loadFile(file.toUtf8().constData());
+        }
+    }
+
+    void sceneFileDialog() {
+        QString file = QFileDialog::getOpenFileName(
+                            this,
+                            "Select a project",
+                            "assets/",
+                            "ABC3D Projects (*.abc3d)"
+                        );
+
+        if (!file.isNull()) {
+            ui.viewport->openScene(file.toUtf8().constData());
+        }
+    }
 
 signals:
     void deleteKeyPressed();

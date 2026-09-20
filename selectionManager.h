@@ -104,6 +104,11 @@ public:
 		return selectedItems;
 	}
 
+	bool selectMesh(uint meshId) {
+		if (activeElement != OBJECT || meshMap.count(meshId)) { return false; }
+		addItem({ meshId, MAX_UINT });
+	}
+
 	/// <summary>
 	/// Checks a selection item and decides what to do with it.
 	/// </summary>

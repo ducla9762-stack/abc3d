@@ -21,6 +21,8 @@ ABC3D::ABC3D(QWidget *parent)
     QObject::connect(ui.shapeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(1);
         });
+
+
 }
 
 ABC3D::~ABC3D()

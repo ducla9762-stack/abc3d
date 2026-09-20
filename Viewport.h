@@ -11,6 +11,7 @@
 #include "mesh.h"
 #include "selectionManager.h"
 #include "shapes.h"
+#include "sceneFile.h"
 
 inline bool initGlew = true;
 
@@ -183,19 +184,7 @@ private:
 		emit primarySelectionRotChanged(rot);
 	}
 
-	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
-	void handleSelection(const Vec3u& selectionIds) {
-		// Create a selection item to send to the selection manager.
-		SelectionItem item = createSelectionItem(selectionIds);
-		
-		if (item.meshId == MAX_UINT) { return; }
-
-		// query the selection maanger with the item.
-		selectionManager.processSelection(item);
-
-		// Tell the renderer to update the selection visuals.
-		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
-
+	void emitSelectionChanged() {
 		bool primSelectChange = selectionManager.meshCount() == 1;
 		bool isNotVertex = selectionManager.getActiveElement() != VERTEX;
 
@@ -211,6 +200,22 @@ private:
 		emitPrimarySelectionPosChanged();
 		emitPrimarySelectionScaleChanged();
 		emitPrimarySelectionRotChanged();
+	}
+
+	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
+	void handleSelection(const Vec3u& selectionIds) {
+		// Create a selection item to send to the selection manager.
+		SelectionItem item = createSelectionItem(selectionIds);
+		
+		if (item.meshId == MAX_UINT) { return; }
+
+		// query the selection maanger with the item.
+		selectionManager.processSelection(item);
+
+		// Tell the renderer to update the selection visuals.
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+
+		emitSelectionChanged();
 	}
 
 	void mousePressEvent(QMouseEvent* event) override {
@@ -798,6 +803,98 @@ public slots:
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, 10, 10);
 		loadMesh(vertices, faces);
+	}
+
+	/// <summary>
+	/// Loads the file at filepath as a mesh.
+	/// </summary>
+	/// <param name="filepath"></param>
+	/// <returns></returns>
+	ImportReport loadFile(const char* filepath) {
+		// Build into local meshes first so a rejected file leaves the scene untouched.
+		// Adding to the scene up front would strand empty meshes on every failed import.
+		std::vector<HalfEdgeMesh> candidates;
+		ImportReport report = loadMeshes(filepath, candidates);
+		if (!report.ok()) { return report; }
+
+		for (HalfEdgeMesh& candidate : candidates) {
+			*scene.NewMesh() = std::move(candidate);
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return report;
+	}
+
+	/// <summary>
+	/// Replaces the current scene with ABC3D scene file. 
+	/// NOTE: Every mesh is built before anything is discarded, so a rejected/invalid file will STILL leave the current scene intact
+	/// </summary>
+	/// <param name="filepath">true if loaded</param>
+	/// <returns></returns>
+	bool openScene(const char* filepath) {
+		SceneFile doc;
+		if (!ReadSceneFile(filepath, doc)) {
+			return false;
+		}
+
+		//Build every mesh before touching a scene. If invalid file, we don't load. 
+		std::vector<HalfEdgeMesh> candidates;
+		candidates.reserve(doc.objects.size());
+
+		//Saved ids are sparse because deleted are never written. 
+		//Remember where each saved id maps to so we can remap to the dense ids
+		std::unordered_map<uint, uint> idMap;
+
+		for (const SceneFileObject& obj : doc.objects) {
+			std::istringstream geometry(obj.objText);
+			FaceList faceList;
+
+			if (!faceList.LoadObjStream(geometry)) {
+				return false;
+			}
+
+			candidates.emplace_back();
+			if (!candidates.back().load(faceList)) {
+				return false;
+			}
+
+			candidates.back().Pos(obj.pos);
+			candidates.back().Rot(obj.rot);
+			candidates.back().Scale(obj.scale);
+
+			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
+		}
+
+		scene.Clear();
+		for (HalfEdgeMesh& candidate : candidates) {
+			*scene.NewMesh() = std::move(candidate);
+		}
+
+		//camPos = doc.camera;
+		//renderer.SetCamera(sphericalToCartesian(camPos));
+		renderer.SetGridVisible(doc.grid);
+		//renderer.SetVertexPointsVisible(doc.points);
+
+		//setElementObject();
+		selectionManager.clearSelection();
+
+		for (uint savedId : doc.selection) {
+			auto remapped = idMap.find(savedId);
+			if (remapped != idMap.end()) {
+				selectionManager.selectMesh(remapped->second);
+			}
+		}
+
+		emitSelectionChanged();
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		update();
+
+		return true;
 	}
 
 	// directly ported from FLTK Version's Viewport::deleteElement

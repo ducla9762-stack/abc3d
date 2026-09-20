@@ -122,6 +122,7 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="scene.cpp" />
+    <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <QtMoc Include="VectorInput.h" />
@@ -136,6 +137,7 @@
     <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="scene.h" />
+    <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />
     <ClInclude Include="shapes.h" />
     <QtUic Include="VectorInput.ui" />

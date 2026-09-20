@@ -1658,8 +1658,42 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionModel</sender>
+   <signal>triggered()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>modelFileDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>359</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionScene</sender>
+   <signal>triggered()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>sceneFileDialog()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>359</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showPropertiesPanel()</slot>
+  <slot>modelFileDialog()</slot>
+  <slot>sceneFileDialog()</slot>
  </slots>
 </ui>
