@@ -126,7 +126,7 @@ bool ModelingRenderer::Initialize(GLuint defaultFrameBuffer) {
 	}
 
 	pointProgram.Bind();
-	pointProgram.SetUniform("scale", pointScale);
+	pointProgram.SetUniform("offset", pointOffset);
 
 	updateUniforms();
 	// Initialize the selection boolean for the mesh shader program.

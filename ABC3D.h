@@ -31,6 +31,7 @@ private:
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
+    void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
     void modelFileDialog() {
         QStringList files = QFileDialog::getOpenFileNames(

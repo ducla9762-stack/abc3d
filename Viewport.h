@@ -116,6 +116,7 @@ private:
 	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseAction mouseAction;
 	ActionParams actionParams;
+	bool verticesAlwaysVisible = false;
 
 	/// <summary>
 	/// Update the selection visuals for the renderer.
@@ -178,6 +179,7 @@ private:
 			return;
 		}
 
+		renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
@@ -245,6 +247,10 @@ private:
 
 	void setActiveElement(Element element) {
 		selectionManager.setActiveElement(element);
+
+		if (!verticesAlwaysVisible) {
+			renderer.SetVertexPointsVisible(element == VERTEX);
+		}
 
 		// Changing element mode clears the selection in SelectionManager. Push the
 		// empty selection to the renderer immediately so the old highlight vanishes.
@@ -936,8 +942,8 @@ public slots:
 			*scene.NewMesh() = std::move(candidate);
 		}
 
-		//camPos = doc.camera;
-		//renderer.SetCamera(sphericalToCartesian(camPos));
+		camPos = doc.camera;
+		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.SetGridVisible(doc.grid);
 		//renderer.SetVertexPointsVisible(doc.points);
 
@@ -959,6 +965,18 @@ public slots:
 		update();
 
 		return true;
+	}
+
+	void setCameraPosition(const Vec3f& camPos) {
+
+	}
+
+	void setAlwaysShowVertices(bool show) {
+		verticesAlwaysVisible = show;
+		if(selectionManager.getActiveElement() != VERTEX){
+			renderer.SetVertexPointsVisible(verticesAlwaysVisible);
+			update();
+		}
 	}
 
 	// directly ported from FLTK Version's Viewport::deleteElement

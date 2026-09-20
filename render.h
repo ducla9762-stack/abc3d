@@ -130,7 +130,7 @@ class ModelingRenderer : public Renderer {
 	uint meshVertDrawCount = 0;
 	uint pointVertDrawCount = 0;
 
-	float pointScale = 1.02f; // For rendering vertex points
+	float pointOffset = 0.01f; // For rendering vertex points
 
 	bool displayPoints = true;
 	bool displayGrid = true;
