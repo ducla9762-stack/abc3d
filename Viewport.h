@@ -117,6 +117,47 @@ private:
 	MouseAction mouseAction;
 	ActionParams actionParams;
 
+	/// <summary>
+	/// Update the selection visuals for the renderer.
+	/// </summary>
+	void updateSelectionVisuals() {
+		// Get the selected items from the selection manager, these determine what gets operated on.
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		// Allocate a buffer for items that get rendered.
+		// Edges also have a twin, which should appear selected, but will not be operated on.
+		std::vector<SelectionItem> renderItems;
+		renderItems.reserve(selectedItems.size() * 2);
+
+		const Element activeElement = selectionManager.getActiveElement();
+
+		// Check all selected items.
+		for (const SelectionItem& item : selectedItems) {
+			// If the selection size is exceeded, don't do anything.
+			if (renderItems.size() >= MAX_SELECTION_ITEMS) {
+				break;
+			}
+
+			// Else, put the selection in the buffer.
+			renderItems.push_back(item);
+
+			// If the element is not an edge, don't continue on looking for the twin.
+			if (activeElement != EDGE || item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			// Get the twin of the edge, if valid add to the buffer.
+			const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
+			if (twinId != MAX_UINT && twinId != item.componentId &&
+				renderItems.size() < MAX_SELECTION_ITEMS) {
+				renderItems.push_back(SelectionItem{ item.meshId, twinId });
+			}
+		}
+
+		// Send the render buffer to the renderer for rendering (render render render).
+		renderer.UpdateSelection(renderItems, activeElement);
+	}
+
 	void initializeGL() override {
 		if (initGlew) {
 			GLenum error = glewInit();
@@ -139,7 +180,7 @@ private:
 
 		renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		updateSelectionVisuals();
 	}
 
 	void paintGL() override {
@@ -202,6 +243,19 @@ private:
 		emitPrimarySelectionRotChanged();
 	}
 
+	void setActiveElement(Element element) {
+		selectionManager.setActiveElement(element);
+
+		// Changing element mode clears the selection in SelectionManager. Push the
+		// empty selection to the renderer immediately so the old highlight vanishes.
+		makeCurrent();
+		updateSelectionVisuals();
+		update();
+
+		emit primarySelectionChanged(false);
+		emit enableNonVertexSpinners(false);
+	}
+
 	// Brett's selection logic ported from FLTK Version's Viewport::mousePush
 	void handleSelection(const Vec3u& selectionIds) {
 		// Create a selection item to send to the selection manager.
@@ -209,8 +263,19 @@ private:
 		
 		if (item.meshId == MAX_UINT) { return; }
 
-		// query the selection maanger with the item.
+		// Store one half-edge for each logical edge.
+		// Render both half-edges as selected.
+		if (selectionManager.getActiveElement() == EDGE && item.meshId < scene.MeshCount()) {
+			const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
+			if (twinId != MAX_UINT && twinId < item.componentId) {
+				item.componentId = twinId;
+			}
+		}
+
 		selectionManager.processSelection(item);
+
+		// Tell the renderer to update the selection visuals.
+		updateSelectionVisuals();
 
 		// Tell the renderer to update the selection visuals.
 		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
@@ -609,7 +674,7 @@ private:
 		camChange *= SCALE;
 
 		// Update camera
-		camPos.z += float(camChange.y);
+		camPos.z -= float(camChange.y);
 		if (camPos.z < 0.0f) { camPos.z = 0.0f; }
 
 		camPos.x += camChange.x;
@@ -637,7 +702,7 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent* event) {
 		selectionManager.clearSelection();
 		makeCurrent();
-		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		updateSelectionVisuals();
 		update();
 
 		emit primarySelectionChanged(false);
@@ -667,10 +732,10 @@ public slots:
 	void setActionSelect() { actionParams.action = SELECT; }
 	void setActionCamera() { actionParams.action = CAMERA; }
 
-	void setElementObject() { selectionManager.setActiveElement(OBJECT); }
-	void setElementFace() { selectionManager.setActiveElement(FACE); }
-	void setElementEdge() { selectionManager.setActiveElement(EDGE); }
-	void setElementVertex() { selectionManager.setActiveElement(VERTEX); }
+	void setElementObject() { setActiveElement(OBJECT); }
+	void setElementFace() { setActiveElement(FACE); }
+	void setElementEdge() { setActiveElement(EDGE); }
+	void setElementVertex() { setActiveElement(VERTEX); }
 
 	void tessellateSelection() {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
