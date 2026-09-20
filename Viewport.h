@@ -282,9 +282,6 @@ private:
 		// Tell the renderer to update the selection visuals.
 		updateSelectionVisuals();
 
-		// Tell the renderer to update the selection visuals.
-		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
-
 		emitSelectionChanged();
 	}
 
@@ -961,7 +958,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateSelection(selectionManager.getSelectedItems(), selectionManager.getActiveElement());
+		updateSelectionVisuals();
 		update();
 
 		return true;
