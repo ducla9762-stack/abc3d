@@ -117,6 +117,17 @@ namespace{
     }
 }
 
+
+//We find this issue: 
+// step  0: refineEdge(14)    V=8  F=6   -- inserts midpoint v8 at (0,-1,1),
+//                                            exactly between v7 (-1,-1,1) and
+//   v3 (1,-1,1)
+//   step  2: ClipCorner(24)    V=9  F=7   -- clips the corner AT that midpoint
+//                                            -> face 7 = triangle (8,7,3), all
+//   collinear, area 0
+//   step 15: Extrude(14)       F=23       -- degenerate faces: 1 -> 5
+//   step 16: Extrude(9)        F=27       -- degenerate faces: 5 -> 9
+//   step 48: TriangulateFace(43)          -- hangs
 TEST(MeshFuzz, RandomOpSequencesKeepCubeValid){
     constexpr uint32_t kSeeds = 32; 
     constexpr int kSteps = 200; 

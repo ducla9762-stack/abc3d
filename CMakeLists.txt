@@ -43,10 +43,12 @@ endif()
 add_library(abc3d_core STATIC
     src/mesh.cpp
     src/scene.cpp
+    src/sceneFile.cpp
     inc/mesh.h
     inc/helper.h
     inc/shapes.h
     inc/scene.h
+    inc/sceneFile.h
     inc/selection.h
     inc/selectionManager.h
     inc/renderBufferBuilder.h
