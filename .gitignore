@@ -31,10 +31,9 @@ install_manifest.txt
 compile_commands.json
 *x64/
 
-# CMake presets (team builds via GENERATE_SLN.bat / Visual Studio)
+# CMake user presets (optional: keep if you want shared presets)
 
 CMakeUserPresets.json
-CMakePresets.json
 
 # =========================
 
@@ -102,7 +101,6 @@ Thumbs.db
 *.swp
 *.swo
 *.idea/
-.vscode/
 
 # =========================
 
@@ -116,6 +114,3 @@ Thumbs.db
 *.stl
 *.mtl
 *.py
-*.pyc
-tools/PERFORMANCE.md
-*.abc3d
