@@ -114,3 +114,10 @@ Thumbs.db
 *.stl
 *.mtl
 *.py
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
+CMakePresets.json
+tools/__pycache__/generate_stress_mesh.cpython-312.pyc
+tools/PERFORMANCE.md
