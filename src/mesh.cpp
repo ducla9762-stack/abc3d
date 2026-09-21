@@ -1271,6 +1271,141 @@ uint HalfEdgeMesh::VertexCount() const {
 	return vertPos.size();
 }
 
+bool HalfEdgeMesh::Validate(std::string& err) const {
+	const uint V = static_cast<uint>(vertPos.size());
+	const uint F = static_cast<uint>(faceEdges.size());
+	const uint E = static_cast<uint>(edges.size());
+
+	//Report only the first failure and stop. One bad index is usually the root cause
+	//These lambdas are helper functions that modify the &err string passed by reference
+	auto fail = [&err](const std::string& what) {
+		err = what;
+		return false;
+		};
+
+	auto at = [](const char* what, uint id) {
+		return std::string(what) + " " + std::to_string(id) + ": ";
+	};
+
+	auto atE = [&at](uint e) {return at("edge", e);};
+	auto atF = [&at](uint f) {return at("face", f); };
+	auto atV = [&at](uint v) {return at("vertex", v); };
+
+
+	//Basic check, the edge vector must be equal to the vertex positions vector size
+	if (vertEdge.size() != V)
+		return fail("vertEdge size mismatch with vertPos");
+
+	//Check for 1: Every twin symmetric
+	for (uint e = 0; e < E; ++e) {
+		const HalfEdge& h = edges[e]; 
+
+		if (h.orig >= V || h.dest >= V)
+			return fail(atE(e) + "index past the vertex array");
+
+		if (h.orig == h.dest)
+			return fail(atE(e) + "self-loop or degenerate edge"); 
+
+		if (h.twin >= E || h.twin == e || edges[h.twin].twin != e)
+			return fail(atE(e) + "twin symmetry");
+		
+		if (edges[h.twin].orig != h.dest || edges[h.twin].dest != h.orig)
+			return fail(atE(e) + "twin points the same way instead of back");
+
+		if (h.next >= E || h.prev >= E)
+			return fail(atE(e) + "index past the edge array");
+		
+		if (edges[h.next].prev != e || edges[h.prev].next != e)
+			return fail(atE(e) + "next/prev disagree");
+		
+		if (edges[h.next].orig != h.dest)
+			return fail(atE(e) + "loop is not geometrically continuous");
+
+		if (h.face != MAX_UINT && h.face >= F)
+			return fail(atE(e) + "face index past the face array"); 
+
+		if (edges[h.next].face != h.face)
+			return fail("a next-cycle changes the face midway"); 
+	}
+
+	//Check for 2: Every next/prev cycle closes and matches FaceEdgeCount. 
+	std::vector<uint> seen(E, MAX_UINT); 
+	for (uint f = 0; f < F; ++f) {
+		if (faceEdges[f] >= E)
+			return fail(atF(f) + "the first edge of this face is out of bounds of edges"); 
+
+		if (edges[faceEdges[f]].face != f)
+			return fail(atF(f) + "the edges when referenced by faceEdges does NOT return the face"); 
+
+		
+		const uint start = faceEdges[f]; 
+		uint cur = start; 
+
+		for (uint i = 0; i < E; ++i) {
+			if (seen[cur] != MAX_UINT)
+				return fail(atF(f) + atE(cur) + (seen[cur] == f
+					? "walk revisits this edge before returning to the start"
+					: "edge already claimed by face " + std::to_string(seen[cur])));
+			
+			seen[cur] = f; 
+
+			cur = edges[cur].next; 
+
+			if (edges[cur].face != f)
+				return fail(atF(f) + atE(cur) + "for this face and edge, the edge does not have a face equal to f. We traverse an edge not belonging to the current face before reaching the start halfedge."); 
+
+			if (cur == start) {
+				//Must have a cycle >= 3 for at least a triangle
+				if (i < 2)
+					return fail(atF(f) + atE(cur) + "for this face and edge, there are less than 3 edges for this face"); 
+				
+				break; 
+			}
+		}
+
+		if (cur != start)
+			return fail(atF(f) + "this face never has a closed loop."); 
+	}
+
+	//Check for 3: Every edge e that has a face (edges[e].face != MAX_UINT), we check if our cycle from step 2 CONFIRMS this
+	for (uint e = 0; e < E; ++e) {
+		if (edges[e].face != MAX_UINT && seen[e] != edges[e].face)
+			return fail(atE(e) + atF(edges[e].face) + "for this edge and face, this edge claims this face, but the cycle finds a different"); 
+	}
+
+	//Check for 4: Make sure we come back to the vertex after traversing all the edges the vertex is adjacent to
+	for (uint v = 0; v < V; ++v) {
+		//stray vertex no connected to any edge, legal
+		if (vertEdge[v] == MAX_UINT)
+			continue; 
+
+		if (vertEdge[v] >= E)
+			return fail(atV(v) + "this vertex has vertEdge that is out of bounds for all edges.");
+		
+		if (edges[vertEdge[v]].orig != v)
+			return fail(atV(v) + "the first edge in vertEdge did not actually originate here"); 
+
+		uint start = vertEdge[v];
+		uint cur = start;
+
+		for (uint e = 0; e < E; ++e) {
+			cur = edges[edges[cur].twin].next;
+				
+			if (edges[cur].orig != v)
+				return fail(atV(v) + atE(e) + "the half edge does not have the same v as the start");
+
+			if (cur == start)
+				break; 
+		}
+
+		if (cur != start)
+			return fail(atV(v) + "the one-ring around this vertex never closes");
+	}
+
+	err.clear(); 
+	return true; 
+}
+
 /// <summary>
 ///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
 ///		half-edge (one with the vertex as it's origin). Additionally, adjacent faces
