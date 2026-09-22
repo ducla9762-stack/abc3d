@@ -292,6 +292,9 @@ private:
 	/// <returns>Unit normal direction of the face.</returns>
 	Vec3f NewellNormal(uint faceId) const;
 
+	// helper function for tessellate and tessellate face
+	void splitRefinedFace(uint faceId);
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <returns>True if the face has three vertices. Otherwise, false.</returns>
 	bool IsTriangle(uint faceId) const;
@@ -569,6 +572,7 @@ public:
 	void Extrude(uint faceId);
 	/// <summary>Tesselates the mesh. N-gons are triangulated.</summary>
 	void tesselate();
+	void tessellateFaces(const std::vector<uint>& faceIds);
 	/// <summary>
 	/// Subdivides the mesh according to a subdivision scheme that hybridizes
 	/// the Catmull-Clark and Loop schemes.

@@ -143,7 +143,7 @@ private:
 	}
 
 // ---------------------------------------------------------------------------------------------
-// Signal Helpers ---------------------------------------------------------------------------------
+// Signal Helpers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
 	void emitPrimarySelectionPosChanged();
@@ -152,7 +152,7 @@ private:
 	void emitSelectionChanged();
 
 // ---------------------------------------------------------------------------------------------
-// Event Handlers -------------------------------------------------------------------------------
+// Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
 	void mousePressEvent(QMouseEvent* event) override;
@@ -250,6 +250,14 @@ public slots:
 	void setElementVertex() { setActiveElement(VERTEX); }
 
 	void tessellateSelection() {
+		if (selectionManager.getSelectedItems().empty()) { return; }
+
+		std::vector<uint> meshes;
+		std::unordered_map<uint, std::vector<uint>> meshMap;
+		if (selectionManager.getActiveElement() == FACE) {
+			meshMap.reserve(selectionManager.meshCount());
+		}
+
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
@@ -265,11 +273,29 @@ public slots:
 				break;
 
 			case FACE:
-				//scene[item.meshId]->tessFace(item.componentId);
+				if (!meshMap.count(item.meshId)) {
+					meshMap[item.meshId].reserve(selectionManager.itemCount(item.meshId));
+					meshes.push_back(item.meshId);
+				}
+
+				meshMap[item.meshId].push_back(item.componentId);
 				break;
+
+			case VERTEX: {
+				HalfEdgeMeshBeveler beveler(*scene[item.meshId]);
+				beveler.StartVertexBevel({ item.componentId });
+				beveler.AdjustBevel(0.5f);
+				break;
+			}
 
 			default:
 				return;
+			}
+		}
+
+		if (selectionManager.getActiveElement() == FACE) {
+			for (uint mesh : meshes) {
+				scene[mesh]->tessellateFaces(meshMap[mesh]);
 			}
 		}
 

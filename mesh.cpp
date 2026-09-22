@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cctype>
 #include <cstdint>
+#include <cassert>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
@@ -1312,9 +1313,119 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	hTwin2.twin = hEdgeId;
 }
 
+void HalfEdgeMesh::splitRefinedFace(uint faceId) {
+	int faceEdgeCount = FaceEdgeCount(faceId);
+
+	assert(faceEdgeCount <= 8);
+
+	uint faceEdgeId = faceEdges[faceId];
+
+	if (faceEdgeCount == 6) { // Triangle
+		uint edgeId = faceEdgeId;
+		uint innerClip, newFace;
+
+		ClipCorner(edgeId, innerClip, edgeId, newFace);
+		edgeId = edges[edges[edgeId].next].next;
+		ClipCorner(edgeId, innerClip, edgeId, newFace);
+		edgeId = edges[edges[edgeId].next].next;
+		ClipCorner(edgeId, innerClip, edgeId, newFace);
+	}
+	else {
+		// Quad
+		HalfEdge* faceEdge = &edges[faceEdgeId];
+		uint next = faceEdge->next;
+		// Iterate over each corner. Each one besides the first will be associated with a new face.
+		while (next != faceEdge->prev) {
+			HalfEdge& cornerEdge1 = edges[next];
+			HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
+
+			uint faceId = NewFace(next);
+			cornerEdge1.face = faceId;
+			cornerEdge2.face = faceId;
+
+			next = cornerEdge2.next;
+		}
+
+		Vec3f positionSum = vertPos[faceEdge->orig];
+		next = faceEdge->next;
+		for (uint i = 0; i < 3; ++i) {
+			positionSum += vertPos[edges[next].dest];
+			next = edges[edges[next].next].next; // Second Next
+		}
+
+		uint firstNewEdge = edges.size();
+		uint lastNewEdge = firstNewEdge + 7;
+
+		Vec3f newVertexPos = positionSum / 4.0f;
+		uint newVertexId = NewVertex(newVertexPos, lastNewEdge);
+
+		next = faceEdgeId;
+		for (uint i = 0; i < 4; ++i) {
+			uint newEdgeId = NewEdge();
+			uint newEdgeTwinId = NewEdge();
+
+			uint edgeId = next;
+			HalfEdge& edge = edges[edgeId];
+
+			uint nextEdgeId = edge.next;
+			HalfEdge& nextEdge = edges[nextEdgeId];
+
+			next = nextEdge.next;
+
+			edge.next = newEdgeId;
+			nextEdge.prev = newEdgeTwinId;
+
+			HalfEdge& newEdge = edges[newEdgeId];
+			HalfEdge& newEdgeTwin = edges[newEdgeTwinId];
+
+			newEdge.twin = newEdgeTwinId;
+			newEdgeTwin.twin = newEdgeId;
+
+			newEdge.dest = newVertexId;
+			newEdge.orig = edge.dest;
+			newEdge.face = edge.face;
+			newEdge.prev = edgeId;
+			newEdge.next = WrapDec(newEdgeId, lastNewEdge, firstNewEdge);
+
+			newEdgeTwin.dest = newEdge.orig;
+			newEdgeTwin.orig = newEdge.dest;
+			newEdgeTwin.face = nextEdge.face;
+			newEdgeTwin.next = nextEdgeId;
+			newEdgeTwin.prev = WrapInc(newEdgeTwinId, lastNewEdge, firstNewEdge);
+		}
+	}
+}
+
+void HalfEdgeMesh::tessellateFaces(const std::vector<uint>& faceIds) {
+	for (uint faceId : faceIds) {
+		if (IsNGon(faceId)) { TriangulateFace(faceId); }
+	}
+
+	uint prevMeshEdgeCount = edges.size();
+
+	for (uint faceId : faceIds) {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		do {
+			if (curr < prevMeshEdgeCount && edges[curr].next < prevMeshEdgeCount) {
+				refineEdge(curr);
+			}
+
+			curr = edges[curr].next;
+
+		} while (curr != first);
+	}
+
+	for (uint faceId : faceIds) { splitRefinedFace(faceId); }
+}
+
 void HalfEdgeMesh::tesselate() {
 	// Basic limit for demo
 	if (faceEdges.size() * 4 > 100000) { return; }
+
+	for (uint faceId = 0; faceId < faceEdges.size(); ++faceId) {
+		if (IsNGon(faceId)) { TriangulateFace(faceId); }
+	}
 
 	// Split every edge into two
 	uint prevMeshEdgeCount = edges.size();
@@ -1329,89 +1440,7 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
-		int faceEdgeCount = FaceEdgeCount(faceId);
-
-		if (faceEdgeCount > 8) {
-			TriangulateFace(faceId);
-			continue;
-		}
-
-		uint faceEdgeId = faceEdges[faceId];
-
-		if (faceEdgeCount == 6) { // Triangle
-			uint edgeId = faceEdgeId;
-			uint innerClip, newFace;
-
-			ClipCorner(edgeId, innerClip, edgeId, newFace);
-			edgeId = edges[edges[edgeId].next].next;
-			ClipCorner(edgeId, innerClip, edgeId, newFace);
-			edgeId = edges[edges[edgeId].next].next;
-			ClipCorner(edgeId, innerClip, edgeId, newFace);
-		}
-		else {
-			// Quad
-			HalfEdge* faceEdge = &edges[faceEdgeId];
-			uint next = faceEdge->next;
-			// Iterate over each corner. Each one besides the first will be associated with a new face.
-			while (next != faceEdge->prev) {
-				HalfEdge& cornerEdge1 = edges[next];
-				HalfEdge& cornerEdge2 = edges[cornerEdge1.next];
-
-				uint faceId = NewFace(next);
-				cornerEdge1.face = faceId;
-				cornerEdge2.face = faceId;
-
-				next = cornerEdge2.next;
-			}
-
-			Vec3f positionSum = vertPos[faceEdge->orig];
-			next = faceEdge->next;
-			for (uint i = 0; i < 3; ++i) {
-				positionSum += vertPos[edges[next].dest];
-				next = edges[edges[next].next].next; // Second Next
-			}
-
-			uint firstNewEdge = edges.size();
-			uint lastNewEdge = firstNewEdge + 7;
-
-			Vec3f newVertexPos = positionSum / 4.0f;
-			uint newVertexId = NewVertex(newVertexPos, lastNewEdge);
-
-			next = faceEdgeId;
-			for (uint i = 0; i < 4; ++i) {
-				uint newEdgeId = NewEdge();
-				uint newEdgeTwinId = NewEdge();
-
-				uint edgeId = next;
-				HalfEdge& edge = edges[edgeId];
-
-				uint nextEdgeId = edge.next;
-				HalfEdge& nextEdge = edges[nextEdgeId];
-
-				next = nextEdge.next;
-
-				edge.next = newEdgeId;
-				nextEdge.prev = newEdgeTwinId;
-
-				HalfEdge& newEdge = edges[newEdgeId];
-				HalfEdge& newEdgeTwin = edges[newEdgeTwinId];
-
-				newEdge.twin = newEdgeTwinId;
-				newEdgeTwin.twin = newEdgeId;
-
-				newEdge.dest = newVertexId;
-				newEdge.orig = edge.dest;
-				newEdge.face = edge.face;
-				newEdge.prev = edgeId;
-				newEdge.next = WrapDec(newEdgeId, lastNewEdge, firstNewEdge);
-
-				newEdgeTwin.dest = newEdge.orig;
-				newEdgeTwin.orig = newEdge.dest;
-				newEdgeTwin.face = nextEdge.face;
-				newEdgeTwin.next = nextEdgeId;
-				newEdgeTwin.prev = WrapInc(newEdgeTwinId, lastNewEdge, firstNewEdge);
-			}
-		}
+		splitRefinedFace(faceId);
 	}
 
 	return;
