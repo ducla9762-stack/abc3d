@@ -161,11 +161,11 @@ private:
 
 	// AI-generated: Reads the ID buffer at the Qt cursor position and forwards
 	// the hovered object/component state to both mesh and vertex shaders.
-	void updateHoverVisual(const Vec2f& pos) {
+	bool updateHoverVisual(const Vec2f& pos) {
 		const Vec3u ids = renderer.SelectionIds(
 			static_cast<uint>(devicePixelRatio() * pos.x),
 			static_cast<uint>(devicePixelRatio() * pos.y));
-		renderer.UpdateHover(ids, selectionManager.getActiveElement(), scene);
+		return renderer.UpdateHover(ids, selectionManager.getActiveElement(), scene);
 	}
 
 	void initializeGL() override {
@@ -624,12 +624,14 @@ private:
 		const bool dragging = event->buttons() & Qt::LeftButton;
 		
 		// Update hover visuals.
-		updateHoverVisual(pos);
+		const bool hoverChanged = updateHoverVisual(pos);
 
 		// With mouse tracking enabled, mouseMoveEvent also runs without a button
 		// pressed. Hovering must not be interpreted as a camera drag.
 		if (!dragging) {
-			update();
+			if (hoverChanged) {
+				update();
+			}
 			return;
 		}
 
@@ -695,8 +697,9 @@ private:
 	void leaveEvent(QEvent* event) override {
 		event->accept();
 		makeCurrent();
-		renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
-		update();
+		if (renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene)) {
+			update();
+		}
 	}
 
 	void wheelEvent(QWheelEvent* event) override {

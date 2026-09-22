@@ -139,6 +139,11 @@ class ModelingRenderer : public Renderer {
 	int height = 0;
 
 	std::vector<Vec3u> idSelectBuf;
+	GLuint hoveredItems[2][3] = {
+		{ MAX_UINT, MAX_UINT, MAX_UINT },
+		{ MAX_UINT, MAX_UINT, MAX_UINT }
+	};
+	bool hoverStateInitialized = false;
 
 	ArrowRenderer arrowRenderer;
 
@@ -197,7 +202,7 @@ public:
 
 	// AI-generated code: Renderer interface for active-element hover state.
 	/// Updates the active-element hover state from raw framebuffer IDs.
-	void UpdateHover(const Vec3u& selectionIds, Element activeElement, const Scene& scene);
+	bool UpdateHover(const Vec3u& selectionIds, Element activeElement, const Scene& scene);
 
 private:
 
