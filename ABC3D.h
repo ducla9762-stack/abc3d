@@ -164,7 +164,6 @@ private slots:
 
 signals:
     void deleteKeyPressed();
-};
     void ctrlKeyPressed();
     void ctrlKeyReleased();
 };
