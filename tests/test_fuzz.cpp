@@ -119,10 +119,9 @@ namespace{
 
 
 //After limiting the iterations in TriangulateFace(), we get this issue: 
-//cube                       V=  8 F=  6 E= 24  valid=yes
-//   refineEdge(0)              V=  9 F=  6 E= 26  valid=yes   <- creates
-//   degree-2 midpoint v8
-//   edge 0 before bevel: orig=0 dest=8 next=24 face=0
+//   cube                       V=  8 F=  6 E= 24  valid=yes
+//   refineEdge(0)              V=  9 F=  6 E= 26  valid=yes   <- creates degree-2 midpoint v8 (vN where N denotes the index within the vertex array)
+//   edge 0 (the index) before bevel: orig=0 dest=8 next=24 face=0
 //   beveling edge 24 (orig=8 dest=4)
 //   bevel(midpoint edge)       V= 10 F=  7 E= 30  valid=NO   edge 3: next/prev disagree
 //   edge 0 after  bevel: orig=0 dest=8 next=29 face=6        <- edge 0 stolen into the new bevel face
