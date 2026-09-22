@@ -1013,27 +1013,9 @@
      <string>Help</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuStandard_Mode">
-    <property name="title">
-     <string>Standard Mode</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuSimple_Mode">
-    <property name="title">
-     <string>Simple Mode</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuCamera">
-    <property name="title">
-     <string>Camera</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuHelp"/>
-   <addaction name="menuStandard_Mode"/>
-   <addaction name="menuSimple_Mode"/>
-   <addaction name="menuCamera"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -1362,8 +1344,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>864</x>
-     <y>387</y>
+     <x>932</x>
+     <y>452</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1378,8 +1360,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>864</x>
-     <y>392</y>
+     <x>932</x>
+     <y>523</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1394,8 +1376,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>864</x>
-     <y>397</y>
+     <x>932</x>
+     <y>594</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1858,8 +1840,8 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>864</x>
-     <y>402</y>
+     <x>932</x>
+     <y>665</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -1868,50 +1850,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>classicModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setClassicSelectionMode()</slot>
+   <sender>actionExit</sender>
+   <signal>triggered()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>880</x>
-     <y>451</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
-     <x>773</x>
-     <y>415</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>additiveModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setAdditiveSelectionMode()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>966</x>
-     <y>451</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>773</x>
-     <y>375</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>selectToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>selectionOptions</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>19</x>
-     <y>62</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>839</x>
-     <y>415</y>
+     <x>539</x>
+     <y>359</y>
     </hint>
    </hints>
   </connection>
