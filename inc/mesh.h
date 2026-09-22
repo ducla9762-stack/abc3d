@@ -677,11 +677,16 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 			edge.twin = edgeIndices[twinVertices];
 		}
 		else {
+			// NewEdge can grow `edges` and leave `edge` dangling, so the endpoints are
+			// read out before it is called rather than through the old reference.
+			const uint orig = edge.orig;
+			const uint dest = edge.dest;
+
 			uint twinIndex;
 			HalfEdge& twin = NewEdge(twinIndex);
 
-			twin.orig = edge.dest;
-			twin.dest = edge.orig;
+			twin.orig = dest;
+			twin.dest = orig;
 			twin.twin = i;
 
 			edges[i].twin = twinIndex;
