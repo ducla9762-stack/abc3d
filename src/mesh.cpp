@@ -1180,10 +1180,21 @@ Matrix3f HalfEdgeMesh::getTransform3x3() const {
 }
 
 Vec3f HalfEdgeMesh::WorldDirToLocalDir(const Vec3f& worldDir) {
-	Matrix3f transform = getTransform3x3();
-	transform.Invert();
+	Matrix3f rotation; 
+	rotation.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z)); 
 
-	return transform * worldDir;
+	//Rotation is orthonormal, so R^-1 * v is dotted with each column
+	Vec3f local(
+		rotation.cell[0] * worldDir.x + rotation.cell[1] * worldDir.y + rotation.cell[2] * worldDir.z,
+		rotation.cell[3] * worldDir.x + rotation.cell[4] * worldDir.y + rotation.cell[5] * worldDir.z,
+		rotation.cell[6] * worldDir.x + rotation.cell[7] * worldDir.y + rotation.cell[8] * worldDir.z
+	);
+
+	//A zero scale axis has no inverse, so any local movement along it maps to the same world position
+	for (uint i = 0; i < 3; ++i)
+		local[i] = (scale[i] != 0.0f) ? local[i] / scale[i] : 0.0f; 
+	
+	return local; 
 }
 
 void HalfEdgeMesh::deform() {
