@@ -187,8 +187,6 @@ private:
 			 ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3)
 			? ids.z : MAX_UINT;
 
-		const bool idsChanged = ids.x != hoveredSelectionIds.x ||
-			ids.y != hoveredSelectionIds.y || ids.z != hoveredSelectionIds.z;
 		const bool arrowChanged = newHoveredAxis != hoveredArrowAxis;
 		hoveredSelectionIds = ids;
 		hoveredArrowAxis = newHoveredAxis;
@@ -198,7 +196,10 @@ private:
 		if (arrowChanged) {
 			updateArrows();
 		}
-		return idsChanged || arrowChanged || rendererChanged;
+		// Raw framebuffer IDs can change while the same logical object remains
+		// hovered (for example, crossing faces in OBJECT mode). Only repaint when
+		// the logical mesh hover or gizmo hover actually changes.
+		return arrowChanged || rendererChanged;
 	}
 
 	void initializeGL() override {
@@ -430,8 +431,6 @@ private:
 		draggingArrow = arrowHit;
 		draggedArrowAxis = arrowHit ? ids.z : MAX_UINT;
 
-		// Update Viewport.
-		update();
 	}
 
 	void mouseReleaseEvent(QMouseEvent* event) override {
@@ -451,9 +450,11 @@ private:
 		// Retrieve selection ids from corresponding physical pixel and print them
 		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
+		const bool arrowDragWasCaptured = draggingArrow;
+
 		// An axis click is a gizmo interaction, not a mesh selection. The axis
 		// was captured on press and must remain captured even if the cursor moved.
-		if (!draggingArrow) {
+		if (!arrowDragWasCaptured) {
 			// Only process selection if the mouse was clicked, not dragged.
 			// Also make sure the selection is valid (not background).
 			if (!mouseAction.dragged && ids.x != 0) {
@@ -469,8 +470,11 @@ private:
 		draggingArrow = false;
 		draggedArrowAxis = MAX_UINT;
 
-		// Update Viewport
-		update();
+		// A captured arrow click does not change selection or hover state, so it
+		// does not need another repaint on release.
+		if (!arrowDragWasCaptured) {
+			update();
+		}
 	}
 
 	bool translateFreeDrag() {
