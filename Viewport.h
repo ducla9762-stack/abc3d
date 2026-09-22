@@ -206,6 +206,8 @@ private:
 		update();
 	}
 
+
+
 // ---------------------------------------------------------------------------------------------
 // Hover Interactions --------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
@@ -248,6 +250,23 @@ public slots:
 	void setElementFace() { setActiveElement(FACE); }
 	void setElementEdge() { setActiveElement(EDGE); }
 	void setElementVertex() { setActiveElement(VERTEX); }
+
+	void setAdditiveSelection() {
+		// If the selection manager is single selection, set it to additive.
+		if (!selectionManager.isAdditive()) {
+			selectionManager.setAdditive(true);
+		}
+	}
+
+	void setSingleSelection() {
+		// If the selectionManager is set to be additive, and is not in additive mode set to single selection.
+		if (selectionManager.isAdditive() && !selectionManager.isAdditiveMode()) {
+			selectionManager.setAdditive(false);
+		}
+	}
+
+	void setClassicSelectionMode() { selectionManager.setAdditiveMode(false); }
+	void setAdditiveSelectionMode() { selectionManager.setAdditiveMode(true); }
 
 	void tessellateSelection() {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {

@@ -30,7 +30,10 @@ private:
 	std::unordered_map<uint, uint> meshMap;
 	std::unordered_map<SelectionItem, uint> itemMap;
 	std::vector<SelectionItem> selectedItems;
-	bool additive = true;
+
+	bool additive = false;
+	// Should override additive so that always adding to selection in this mode.
+	bool additiveMode = false;
 
 	// do not call if item is not added
 	void deleteItem(const SelectionItem& item) {
@@ -84,8 +87,14 @@ public:
 		clearSelection();
 	}
 
-	bool isAdditive() { return additive; }
+	// Additive mode must override the temporary Ctrl-key state.
+	bool isAdditive() const { return additive || additiveMode; }
 	void setAdditive(bool additive) { this->additive = additive; }
+
+	// Selection logic setting in UI. If additive mode is enabled, selection is
+	// always additive even when Ctrl is not pressed.
+	bool isAdditiveMode() const { return additiveMode; }
+	void setAdditiveMode(bool additiveMode) { this->additiveMode = additiveMode; }
 
 	/// <summary>
 	/// Clears the list of selected items.
@@ -115,13 +124,15 @@ public:
 	/// <param name="item"> A selection item at a point. </param>
 	/// <param name="additive"> If the selection is additive or single. </param>
 	void processSelection(const SelectionItem& item) {
+		const bool effectiveAdditive = isAdditive();
+
 		// if item contained
-		if (itemMap.count(item) && (additive || selectedItems.size() == 1)) {
+		if (itemMap.count(item) && (effectiveAdditive || selectedItems.size() == 1)) {
 			deleteItem(item);
 			return;
 		}
 		
-		if (!additive) {
+		if (!effectiveAdditive) {
 			clearSelection();
 		}
 		

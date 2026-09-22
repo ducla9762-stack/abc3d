@@ -657,11 +657,68 @@
        </item>
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
          <widget class="QWidget" name="propertiesPanel">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <property name="spacing">
             <number>2</number>
            </property>
+           <item>
+            <widget class="QWidget" name="selectionOptions" native="true">
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <item>
+               <widget class="QLabel" name="label_4">
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Selection Input Type&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="widget" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <item>
+                  <widget class="QPushButton" name="classicModeButton">
+                   <property name="text">
+                    <string>Classic</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoExclusive">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoDefault">
+                    <bool>false</bool>
+                   </property>
+                   <property name="default">
+                    <bool>false</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="additiveModeButton">
+                   <property name="text">
+                    <string>Additive</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoExclusive">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item>
             <widget class="QWidget" name="transformModes" native="true">
              <property name="sizePolicy">
@@ -1087,6 +1144,8 @@
     <slot>setPrimarySelectionRot(Vec3f)</slot>
     <slot>setAlwaysShowVertices(bool)</slot>
     <slot>flipSelection()</slot>
+    <slot>setClassicSelectionMode()</slot>
+    <slot>setAdditiveSelectionMode()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1303,8 +1362,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>452</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1319,8 +1378,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>523</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1335,8 +1394,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>594</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1351,8 +1410,8 @@
    <slot>setActionTranslateFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>937</x>
-     <y>401</y>
+     <x>948</x>
+     <y>455</y>
     </hint>
     <hint type="destinationlabel">
      <x>770</x>
@@ -1367,8 +1426,8 @@
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>988</x>
-     <y>391</y>
+     <x>1070</x>
+     <y>455</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -1383,8 +1442,8 @@
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>879</x>
-     <y>427</y>
+     <x>948</x>
+     <y>485</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -1399,8 +1458,8 @@
    <slot>setActionTranslateEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1045</x>
-     <y>429</y>
+     <x>1070</x>
+     <y>485</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1419,8 +1478,8 @@
      <y>179</y>
     </hint>
     <hint type="destinationlabel">
-     <x>852</x>
-     <y>417</y>
+     <x>1070</x>
+     <y>485</y>
     </hint>
    </hints>
   </connection>
@@ -1563,8 +1622,8 @@
      <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>942</x>
-     <y>464</y>
+     <x>1070</x>
+     <y>530</y>
     </hint>
    </hints>
   </connection>
@@ -1579,8 +1638,8 @@
      <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>893</x>
-     <y>499</y>
+     <x>1070</x>
+     <y>560</y>
     </hint>
    </hints>
   </connection>
@@ -1595,8 +1654,8 @@
      <y>498</y>
     </hint>
     <hint type="destinationlabel">
-     <x>919</x>
-     <y>525</y>
+     <x>1070</x>
+     <y>590</y>
     </hint>
    </hints>
   </connection>
@@ -1611,8 +1670,8 @@
      <y>538</y>
     </hint>
     <hint type="destinationlabel">
-     <x>876</x>
-     <y>469</y>
+     <x>1070</x>
+     <y>530</y>
     </hint>
    </hints>
   </connection>
@@ -1627,8 +1686,8 @@
      <y>459</y>
     </hint>
     <hint type="destinationlabel">
-     <x>857</x>
-     <y>498</y>
+     <x>1070</x>
+     <y>560</y>
     </hint>
    </hints>
   </connection>
@@ -1643,8 +1702,8 @@
      <y>484</y>
     </hint>
     <hint type="destinationlabel">
-     <x>844</x>
-     <y>522</y>
+     <x>1070</x>
+     <y>590</y>
     </hint>
    </hints>
   </connection>
@@ -1659,8 +1718,8 @@
      <y>504</y>
     </hint>
     <hint type="destinationlabel">
-     <x>853</x>
-     <y>493</y>
+     <x>1070</x>
+     <y>560</y>
     </hint>
    </hints>
   </connection>
@@ -1675,8 +1734,8 @@
      <y>502</y>
     </hint>
     <hint type="destinationlabel">
-     <x>965</x>
-     <y>529</y>
+     <x>1070</x>
+     <y>590</y>
     </hint>
    </hints>
   </connection>
@@ -1687,8 +1746,8 @@
    <slot>setPrimarySelectionPos(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>467</y>
+     <x>1070</x>
+     <y>530</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -1703,8 +1762,8 @@
    <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>968</x>
-     <y>495</y>
+     <x>1070</x>
+     <y>560</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -1719,8 +1778,8 @@
    <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>989</x>
-     <y>526</y>
+     <x>1070</x>
+     <y>590</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1799,12 +1858,60 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>857</x>
-     <y>643</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
      <y>577</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>classicModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setClassicSelectionMode()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>907</x>
+     <y>417</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>803</x>
+     <y>377</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>additiveModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setAdditiveSelectionMode()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>970</x>
+     <y>417</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>802</x>
+     <y>337</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>selectionOptions</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>19</x>
+     <y>62</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>839</x>
+     <y>415</y>
     </hint>
    </hints>
   </connection>

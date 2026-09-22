@@ -14,6 +14,14 @@ public:
 private:
     Ui::ABC3DClass ui;
 
+    void keyPressEvent(QKeyEvent* event) override {
+        if (event->key() == Qt::Key_Control) {
+            event->accept();
+            emit ctrlKeyPressed();
+            return;
+        }
+    }
+
     void keyReleaseEvent(QKeyEvent* event) override {
         if (event->key() == Qt::Key_Delete) {
             event->accept();
@@ -24,6 +32,12 @@ private:
         else if (event->key() == Qt::Key_Escape) {
             event->accept();
             this->close();
+        }
+
+        else if (event->key() == Qt::Key_Control) {
+            event->accept();
+            emit ctrlKeyReleased();
+            return;
         }
 
         QMainWindow::keyReleaseEvent(event);
@@ -61,5 +75,7 @@ private slots:
 
 signals:
     void deleteKeyPressed();
+    void ctrlKeyPressed();
+    void ctrlKeyReleased();
 };
 

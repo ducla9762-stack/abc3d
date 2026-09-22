@@ -12,7 +12,9 @@ ABC3D::ABC3D(QWidget *parent)
     //ui.topRightPanels->setCurrentIndex(3);
 
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
-    QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
+    //QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
+    QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
+    QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
         ui.bottomRightPanels->setCurrentIndex(2); 
@@ -28,10 +30,7 @@ ABC3D::ABC3D(QWidget *parent)
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
         ui.freeModeTranslationButton->setChecked(true);
         });
-
-
 }
 
 ABC3D::~ABC3D()
 {}
-
