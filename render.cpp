@@ -408,8 +408,18 @@ void ModelingRenderer::UpdateArrows(const Vec3f& base, uint hoveredAxis) {
 	arrowRenderer.SetArrows(arrowRenderer.CreateArrows(base, hoveredAxis));
 }
 
+void ModelingRenderer::UpdateMaces(const Vec3f& base, uint hoveredAxis)
+{
+	maceRenderer.SetMaces(maceRenderer.CreateMaces(base, hoveredAxis));
+}
+
 void ModelingRenderer::ClearArrows() {
 	arrowRenderer.SetArrows({});
+}
+
+void ModelingRenderer::ClearMaces()
+{
+	maceRenderer.SetMaces({});
 }
 
 // OLD FUNCTION
@@ -670,6 +680,162 @@ const std::vector<Vec3u> ArrowRenderer::TRIANGLES = {
 	Vec3u(5, 13, 6), Vec3u(6, 13, 14),
 	Vec3u(6, 14, 7), Vec3u(7, 14, 15),
 	Vec3u(7, 15, 0), Vec3u(0, 15, 8),
+	// Pyramid Base
+	Vec3u(16, 17, 18), Vec3u(16, 17, 19),
+	// Pyramid Top
+	Vec3u(16, 20, 17), Vec3u(17, 20, 18), Vec3u(18, 20, 19), Vec3u(19, 20, 16)
+};
+
+// Mace renderer
+
+bool MaceRenderer::Initialize() {
+	// Build shader program
+
+	// TODO: CHANGE TO NEW MACE SHADER IF NEEDED.
+	bool success = program.BuildFiles("assets/shaders/Arrow.vert", "assets/shaders/ArrowColor.frag");
+	if (!success) {
+		std::cout << "Failed to compile arrow shader programs!" << std::endl;
+		return false;
+	}
+
+	// Generate vertex array object
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// Generate VBO for generic arrow vertices
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * VERTICES.size() * 3, VERTICES.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+
+	// Generate EBO for generic arrow faces
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRIANGLES.size() * 3, TRIANGLES.data(), GL_STATIC_DRAW);
+
+	// Generate VBO for instanced data (Arrow struct)
+	glGenBuffers(1, &instancedVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, base));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, dir));
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, length));
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, radius));
+	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, tipSize));
+	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, color));
+	glVertexAttribIPointer(7, 2, GL_UNSIGNED_INT, sizeof(Mace), (GLvoid*)offsetof(Mace, ids));
+
+	for (int i = 1; i < 8; ++i) {
+		glEnableVertexAttribArray(i);
+		glVertexAttribDivisor(i, 1);
+	}
+
+	return true;
+}
+
+void MaceRenderer::SetMaces(const std::vector<Mace>& maces, GLenum usage) {
+	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Mace) * maces.size(), maces.data(), usage);
+	instanceCount = maces.size();
+}
+
+// AI-generated code: Builds the translation-axis gizmo and applies hover color.
+// Adapted to work with scale maces.
+std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uint hoveredAxis) {
+	std::vector<MaceRenderer::Mace> maces;
+	// Scale, ID = 1.
+	// X - Green, Sub-ID = 0
+	maces.emplace_back();
+	maces.back().base = base;
+	maces.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
+	maces.back().length = 0.5f;
+	maces.back().radius = 0.025f;
+	maces.back().tipSize = 0.25f;
+	maces.back().color = hoveredAxis == 0 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 1.0f, 0.0f);
+	maces.back().ids = Vec2u(1, 0);
+	// Y (up) - Blue, Sub-ID = 1
+	maces.emplace_back();
+	maces.back().base = base;
+	maces.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
+	maces.back().length = 0.5f;
+	maces.back().radius = 0.025f;
+	maces.back().tipSize = 0.25f;
+	maces.back().color = hoveredAxis == 1 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 0.0f, 1.0f);
+	maces.back().ids = Vec2u(1, 1);
+	// Z - Red, Sub-ID = 2
+	maces.emplace_back();
+	maces.back().base = base;
+	maces.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
+	maces.back().length = 0.5f;
+	maces.back().radius = 0.025f;
+	maces.back().tipSize = 0.25f;
+	maces.back().color = hoveredAxis == 2 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(1.0f, 0.0f, 0.0f);
+	maces.back().ids = Vec2u(1, 2);
+
+	return maces;
+}
+
+void MaceRenderer::Draw() {
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBindVertexArray(vao);
+
+	program.Bind();
+	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
+}
+
+// AI-generated code: Keeps the arrow gizmo at a constant screen size.
+// Adapted to work with scale maces.
+void MaceRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+	program.Bind();
+	program.SetUniformMatrix4("viewProj", data);
+
+	// Convert the desired on-screen height to a world-space scale at the
+	// arrow's depth. The shader divides this by each arrow's local height.
+	const float safeHeight = static_cast<float>(std::max(viewportHeight, 1));
+	const float screenScale =
+		2.0f * std::tan(degreesToRadians(fov) * 0.5f) / safeHeight * 100.0f;
+	program.SetUniform("screenScale", screenScale);
+}
+
+//constexpr float HALF_SQR_2 = 0.7071068f;
+const std::vector<Vec3f> MaceRenderer::VERTICES = {
+	// Cylinder Base
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+	// Cylinder Top
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+
+	// TODO: CHANGE TO CUBE.
+
+	// Pyramid Base
+	Vec3f(2.0, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
+	Vec3f(2.0f, 0.0f, 2.0f),
+	// Pyramid Top
+	Vec3f(0.0f, 0.0f, 0.0f)
+};
+
+const std::vector<Vec3u> MaceRenderer::TRIANGLES = {
+	// Clinder Base
+	Vec3u(0, 1, 2), Vec3u(0, 2, 3), Vec3u(0, 3, 4), Vec3u(0, 4, 5), Vec3u(0, 5, 6), Vec3u(0, 6, 7),
+	// Cyclinder Top
+	Vec3u(8, 10, 9), Vec3u(8, 11, 10), Vec3u(8, 12, 11), Vec3u(8, 13, 12), Vec3u(8, 14, 13), Vec3u(8, 15, 14),
+	// Cylinder Sides
+	Vec3u(0, 8, 1), Vec3u(1, 8, 9),
+	Vec3u(1, 9, 2), Vec3u(2, 9, 10),
+	Vec3u(2, 10, 3), Vec3u(3, 10, 11),
+	Vec3u(3, 11, 4), Vec3u(4, 11, 12),
+	Vec3u(4, 12, 5), Vec3u(5, 12, 13),
+	Vec3u(5, 13, 6), Vec3u(6, 13, 14),
+	Vec3u(6, 14, 7), Vec3u(7, 14, 15),
+	Vec3u(7, 15, 0), Vec3u(0, 15, 8),
+
+	// TODO: CHANGE TO CUBE.
+
 	// Pyramid Base
 	Vec3u(16, 17, 18), Vec3u(16, 17, 19),
 	// Pyramid Top
