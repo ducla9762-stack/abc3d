@@ -206,6 +206,8 @@ private:
 		update();
 	}
 
+
+
 // ---------------------------------------------------------------------------------------------
 // Hover Interactions --------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
@@ -233,21 +235,55 @@ public:
 	~Viewport();
 
 public slots:
-	void setActionExtrude() { setAction(EXTRUDE); }
-	void setActionBevel() { setAction(BEVEL); }
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
 	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
 	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
+
+	void setActionExtrude() { setAction(EXTRUDE); }
+	void setActionBevel() { setAction(BEVEL); }
 	void setActionScale() { setAction(SCALE); }
 	void setActionRotate() { setAction(ROTATE); }
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 
-	void setElementObject() { setActiveElement(OBJECT); }
-	void setElementFace() { setActiveElement(FACE); }
-	void setElementEdge() { setActiveElement(EDGE); }
-	void setElementVertex() { setActiveElement(VERTEX); }
+
+	void setElementVertex() { 
+		setActiveElement(VERTEX); 
+		elementButtons[0]->setChecked(true);
+	}
+
+	void setElementEdge() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+	}
+
+	void setElementFace() {
+		setActiveElement(FACE);
+		elementButtons[2]->setChecked(true);
+	}
+
+	void setElementObject() { 
+		setActiveElement(OBJECT); 
+		elementButtons[3]->setChecked(true);
+	}
+
+	void setAdditiveSelection() {
+		// If the selection manager is single selection, set it to additive.
+		if (!selectionManager.isAdditive()) {
+			selectionManager.setAdditive(true);
+		}
+	}
+
+	void setSingleSelection() {
+		// If the selectionManager is set to be additive, and is not in additive mode set to single selection.
+		if (selectionManager.isAdditive() && !selectionManager.isAdditiveMode()) {
+			selectionManager.setAdditive(false);
+		}
+	}
+
+	void setClassicSelectionMode() { selectionManager.setAdditiveMode(false); }
+	void setAdditiveSelectionMode() { selectionManager.setAdditiveMode(true); }
 
 	void tessellateSelection() {
 		if (selectionManager.getSelectedItems().empty()) { return; }
