@@ -516,6 +516,48 @@ public:
 	///		A half-edge of the edge to be split.
 	/// </param>
 	void refineEdge(uint hEdgeId);
+	void flipEdge(uint edgeId) {
+		HalfEdge& edge = edges[edgeId];
+		HalfEdge& twin = edges[edge.twin];
+
+		if (!(IsTriangle(edge.face) && IsTriangle(twin.face))) { return; }
+
+		HalfEdge* next = &edges[edge.next];
+		next->next = edgeId;
+		next->prev = twin.prev;
+
+		edge.orig = next->dest;
+		twin.dest = next->dest;
+
+		next = &edges[twin.next];
+		next->next = edge.twin;
+		next->prev = edge.prev;
+
+		edge.dest = next->dest;
+		twin.orig = next->dest;
+
+		HalfEdge* prev = &edges[edge.prev];
+		prev->next = twin.next;
+		prev->prev = edge.twin;
+		prev->face = twin.face;
+
+		prev = &edges[twin.prev];
+		prev->next = edge.next;
+		prev->prev = edgeId;
+		prev->face = edge.face;
+
+		edge.prev = edge.next;
+		edge.next = twin.prev;
+
+		twin.prev = twin.next;
+		twin.next = next->prev;
+
+		faceEdges[edge.face] = edgeId;
+		faceEdges[twin.face] = edge.twin;
+		vertEdge[prev->orig] = edge.twin;
+		vertEdge[next->orig] = edgeId;
+	}
+
 	void TwinsShareAdjFace(uint edgeId, bool shareAdjFace[2]) const;
 	/// <summary>
 	/// Essentially pops a face out from its edge loop, creating new topology that connects

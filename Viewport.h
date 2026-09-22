@@ -841,6 +841,20 @@ public slots:
 		update();
 	}
 
+	void flipSelection() {
+		if (selectionManager.getActiveElement() != EDGE || selectionManager.itemCount() == 0) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+
+			scene[item.meshId]->flipEdge(item.componentId);
+		}
+
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+	}
+
 	void setPrimarySelectionPos(const Vec3f& pos) {
 		if (selectionManager.meshCount() != 1) { return; }
 

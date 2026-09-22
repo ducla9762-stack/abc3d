@@ -874,6 +874,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="flipButton">
+             <property name="text">
+              <string>Flip Edge</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="cameraPanel">
@@ -1079,6 +1086,7 @@
     <slot>setPrimarySelectionScale(Vec3f)</slot>
     <slot>setPrimarySelectionRot(Vec3f)</slot>
     <slot>setAlwaysShowVertices(bool)</slot>
+    <slot>flipSelection()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1295,8 +1303,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>932</x>
-     <y>470</y>
+     <x>1070</x>
+     <y>452</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1311,8 +1319,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>932</x>
-     <y>559</y>
+     <x>1070</x>
+     <y>523</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1327,8 +1335,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>932</x>
-     <y>648</y>
+     <x>1070</x>
+     <y>594</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1759,8 +1767,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>855</x>
-     <y>554</y>
+     <x>923</x>
+     <y>408</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1781,6 +1789,22 @@
     <hint type="destinationlabel">
      <x>522</x>
      <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>flipButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>flipSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>857</x>
+     <y>643</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>674</x>
+     <y>577</y>
     </hint>
    </hints>
   </connection>
