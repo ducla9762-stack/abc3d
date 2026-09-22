@@ -32,16 +32,22 @@ void main(){
 
 	// AI-generated: Applies the same hover-state convention to vertex points
 	// while preserving the existing selected-versus-unselected colors.
-	if (hoveredItems[0].x == OBJECT && hoveredItems[0].y == ids.x) {
-		hovered = true;
-	}
-	else if (hoveredItems[0].x == VERTEX && hoveredItems[0].y == ids.x && hoveredItems[0].z == ids.y) {
-		hovered = true;
+	for (uint i = 0u; i < 2u; ++i) {
+		uvec3 hoveredItem = hoveredItems[i];
+		if (hoveredItem.x == NO_HOVER) {
+			continue;
+		}
+
+		if ((hoveredItem.x == OBJECT && hoveredItem.y == ids.x) ||
+			(hoveredItem.x == VERTEX && hoveredItem.y == ids.x && hoveredItem.z == ids.y)) {
+			hovered = true;
+			break;
+		}
 	}
 
 	// Default purple, selected green, hovered orange.
 	color = selected ? vec4(0, 1, 0, 1) :
-		hovered && hoveredItems[0].x != NO_HOVER ? HOVER_COLOR :
+		hovered ? HOVER_COLOR :
 		vec4(1, 0, 1, 1);
 	selectIds = uvec3(4294967295, ids);
 }
