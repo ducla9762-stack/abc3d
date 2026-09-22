@@ -41,8 +41,8 @@ class ArrowRenderer {
 
 	// Data for OpenGL operations
 	GLSLProgram program; // Shader program
-	GLuint vao, vbo, ebo; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
-	GLuint instancedVbo; // VBO for arrow data (Arrow struct)
+	GLuint vao = 0, vbo = 0, ebo = 0; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
+	GLuint instancedVbo = 0; // VBO for arrow data (Arrow struct)
 	GLsizei instanceCount = 0; // Number of arrows
 
 public:

@@ -3,8 +3,11 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <QOpenGLWidget>
+#include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+
+#include <algorithm>
 
 #include "render.h"
 #include "helper.h"
@@ -118,6 +121,14 @@ private:
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
 
+	// AI-generated code: Cursor hover state for arrows and active elements.
+	uint hoveredArrowAxis = MAX_UINT;
+	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	// AI-generated code: The arrow pressed at the start of an axis drag must
+	// remain active even if the cursor moves away from the gizmo.
+	uint draggedArrowAxis = MAX_UINT;
+	bool draggingArrow = false;
+
 	/// <summary>
 	/// Update the selection visuals for the renderer.
 	/// </summary>
@@ -162,10 +173,31 @@ private:
 	// AI-generated: Reads the ID buffer at the Qt cursor position and forwards
 	// the hovered object/component state to both mesh and vertex shaders.
 	bool updateHoverVisual(const Vec2f& pos) {
-		const Vec3u ids = renderer.SelectionIds(
-			static_cast<uint>(devicePixelRatio() * pos.x),
-			static_cast<uint>(devicePixelRatio() * pos.y));
-		return renderer.UpdateHover(ids, selectionManager.getActiveElement(), scene);
+		const float pixelRatio = static_cast<float>(devicePixelRatio());
+		const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
+		const int rawX = static_cast<int>(pos.x * pixelRatio);
+		const int rawY = static_cast<int>(pos.y * pixelRatio);
+		const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
+		const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+		const Vec3u ids = renderer.SelectionIds(x, y);
+		const uint newHoveredAxis =
+			(actionParams.action == TRANSLATE_AXIS &&
+			 ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3)
+			? ids.z : MAX_UINT;
+
+		const bool idsChanged = ids.x != hoveredSelectionIds.x ||
+			ids.y != hoveredSelectionIds.y || ids.z != hoveredSelectionIds.z;
+		const bool arrowChanged = newHoveredAxis != hoveredArrowAxis;
+		hoveredSelectionIds = ids;
+		hoveredArrowAxis = newHoveredAxis;
+
+		const bool rendererChanged = renderer.UpdateHover(
+			ids, selectionManager.getActiveElement(), scene);
+		if (arrowChanged) {
+			updateArrows();
+		}
+		return idsChanged || arrowChanged || rendererChanged;
 	}
 
 	void initializeGL() override {
@@ -193,6 +225,57 @@ private:
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
 		renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
+		updateArrows();
+	}
+
+	// AI-generated code: Positions the translation gizmo at the selection average.
+	void updateArrows() {
+		const bool translationAction =
+			actionParams.action == TRANSLATE_AXIS;
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		if (!translationAction || selectedItems.empty()) {
+			renderer.ClearArrows();
+			return;
+		}
+
+		Vec3f positionSum(0.0f);
+		uint positionCount = 0;
+
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			Vec3f worldPosition = mesh->Pos();
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				// An object is positioned at its local origin.
+				break;
+			case VERTEX:
+				worldPosition += mesh->getTransform3x3() * mesh->GetVertexPosition(item.componentId);
+				break;
+			case EDGE:
+				worldPosition += mesh->getTransform3x3() * mesh->GetEdgeCenter(item.componentId);
+				break;
+			case FACE:
+				worldPosition += mesh->getTransform3x3() * mesh->faceCentroid(item.componentId);
+				break;
+			}
+
+			positionSum += worldPosition;
+			++positionCount;
+		}
+
+		if (positionCount == 0) {
+			renderer.ClearArrows();
+			return;
+		}
+
+		const uint highlightedAxis = draggingArrow ? draggedArrowAxis : hoveredArrowAxis;
+		renderer.UpdateArrows(positionSum / float(positionCount), highlightedAxis);
 	}
 
 	void paintGL() override {
@@ -267,6 +350,11 @@ private:
 		makeCurrent();
 		updateSelectionVisuals();
 		renderer.UpdateHover(Vec3u(0u), element, scene);
+		hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		hoveredArrowAxis = MAX_UINT;
+		draggingArrow = false;
+		draggedArrowAxis = MAX_UINT;
+		updateArrows();
 		update();
 
 		emit primarySelectionChanged(false);
@@ -277,7 +365,17 @@ private:
 		// Create a selection item to send to the selection manager.
 		SelectionItem item = createSelectionItem(selectionIds);
 		
-		if (item.meshId == MAX_UINT) { return; }
+		if (item.meshId == MAX_UINT) {
+			// Clicking the background is a deselection. Keep the renderer and
+			// gizmo in sync when the last selected item is removed.
+			if (!selectionManager.getSelectedItems().empty()) {
+				selectionManager.clearSelection();
+				updateSelectionVisuals();
+				updateArrows();
+				emitSelectionChanged();
+			}
+			return;
+		}
 
 		// Store one half-edge for each logical edge.
 		// Render both half-edges as selected.
@@ -292,6 +390,7 @@ private:
 
 		// Tell the renderer to update the selection visuals.
 		updateSelectionVisuals();
+		updateArrows();
 
 		emitSelectionChanged();
 	}
@@ -312,6 +411,22 @@ private:
 
 		// Update MouseAction struct
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+
+		// Capture an axis on press. The gizmo moves while it is being dragged,
+		// so looking up the ID on release would lose the original constraint.
+		const float pixelRatio = static_cast<float>(devicePixelRatio());
+		const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
+		const int rawX = static_cast<int>(pos.x * pixelRatio);
+		const int rawY = static_cast<int>(pos.y * pixelRatio);
+		const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
+		const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+		const Vec3u ids = renderer.SelectionIds(x, y);
+		const bool arrowHit =
+			actionParams.action == TRANSLATE_AXIS &&
+			ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3;
+		draggingArrow = arrowHit;
+		draggedArrowAxis = arrowHit ? ids.z : MAX_UINT;
 
 		// Update Viewport.
 		update();
@@ -334,15 +449,23 @@ private:
 		// Retrieve selection ids from corresponding physical pixel and print them
 		Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
-		std::cout << "Object Id: " << ids.x << std::endl;
-		std::cout << "Component Id: " << ids.y << std::endl;
-		std::cout << "Sub-Component Id: " << ids.z << std::endl;
+		// An axis click is a gizmo interaction, not a mesh selection. The axis
+		// was captured on press and must remain captured even if the cursor moved.
+		if (!draggingArrow) {
+			// Only process selection if the mouse was clicked, not dragged.
+			// Also make sure the selection is valid (not background).
+			if (!mouseAction.dragged && ids.x != 0) {
+				handleSelection(ids);
+			}
 
-		// Only process selection if the mouse was clicked, not dragged.
-		// Also make sure the selection is valid (not background).
-		if (!mouseAction.dragged && ids.x != 0) {
-			handleSelection(ids);
+			// Print selection ids.
+			std::cout << "Object Id: " << ids.x << std::endl;
+			std::cout << "Component Id: " << ids.y << std::endl;
+			std::cout << "Sub-Component Id: " << ids.z << std::endl;
 		}
+
+		draggingArrow = false;
+		draggedArrowAxis = MAX_UINT;
 
 		// Update Viewport
 		update();
@@ -613,6 +736,80 @@ private:
 		return true;
 	}
 
+	// Constrain the drag to the world-space axis captured on mouse press.
+	bool arrowDrag() {
+		if (!draggingArrow || draggedArrowAxis >= 3 ||
+			selectionManager.getSelectedItems().empty()) {
+			return false;
+		}
+
+		Vec3f forward, up, right;
+		renderer.GetCameraDirs(forward, up, right);
+
+		Vec3f axis;
+		switch (draggedArrowAxis) {
+		case 0: axis = Vec3f(1.0f, 0.0f, 0.0f); break;
+		case 1: axis = Vec3f(0.0f, 1.0f, 0.0f); break;
+		case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
+		default: return false;
+		}
+
+		// Project the selected world axis onto the screen to determine how much
+		// the mouse moved along it. An axis aimed directly at the camera has no
+		// stable screen direction.
+		Vec2f axisScreen(axis.Dot(right), axis.Dot(up));
+		const float axisScreenLength = axisScreen.Length();
+		if (axisScreenLength < 1e-6f) {
+			return false;
+		}
+		axisScreen /= axisScreenLength;
+
+		Vec2f change;
+		change.x = -mouseAction.mouseDragChange.x;
+		// Qt coordinates were converted to bottom-left origin in the mouse
+		// handlers, so invert the vertical delta to match the FLTK drag math.
+		change.y = -mouseAction.mouseDragChange.y;
+		const Vec3f worldTranslation = axis * (0.01f * change.Dot(axisScreen));
+
+		bool transformed = false;
+		std::unordered_set<uint> transformedObjects;
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				if (transformedObjects.insert(item.meshId).second) {
+					mesh->TranslatePos(worldTranslation);
+					transformed = true;
+				}
+				break;
+			case VERTEX:
+				mesh->TranslateVertex(item.componentId,
+					mesh->WorldDirToLocalDir(worldTranslation));
+				transformed = true;
+				break;
+			case EDGE:
+				mesh->TranslateEdge(item.componentId,
+					mesh->WorldDirToLocalDir(worldTranslation));
+				transformed = true;
+				break;
+			case FACE:
+				mesh->TranslateFace(item.componentId,
+					mesh->WorldDirToLocalDir(worldTranslation));
+				transformed = true;
+				break;
+			}
+		}
+
+		if (transformed) {
+			emitPrimarySelectionPosChanged();
+		}
+		return transformed;
+	}
+
 	void mouseMoveEvent(QMouseEvent* event) override {
 		// Accept the event and make the OpenGL context current for renderer.
 		event->accept();
@@ -658,6 +855,9 @@ private:
 			actionPerformed = translateEdgeDrag();
 			if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 			break;
+		case TRANSLATE_AXIS:
+			actionPerformed = arrowDrag();
+			break;
 		case SCALE:
 			actionPerformed = scaleDrag();
 			if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
@@ -688,6 +888,8 @@ private:
 			renderer.UpdateRenderBuffers(scene);
 		}
 
+		updateArrows();
+
 		// Update MouseAction struct
 		mouseAction.EndMouseDragStep();
 
@@ -697,7 +899,15 @@ private:
 	void leaveEvent(QEvent* event) override {
 		event->accept();
 		makeCurrent();
-		if (renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene)) {
+		const bool hoverChanged = renderer.UpdateHover(
+			Vec3u(0u), selectionManager.getActiveElement(), scene);
+		const bool arrowChanged = hoveredArrowAxis != MAX_UINT;
+		hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		hoveredArrowAxis = MAX_UINT;
+		if (arrowChanged) {
+			updateArrows();
+		}
+		if (hoverChanged || arrowChanged) {
 			update();
 		}
 	}
@@ -742,6 +952,7 @@ private:
 		selectionManager.clearSelection();
 		makeCurrent();
 		updateSelectionVisuals();
+		updateArrows();
 		update();
 
 		emit primarySelectionChanged(false);
@@ -755,21 +966,33 @@ private:
 		update();
 	}
 
+	void setAction(Action action) {
+		actionParams.action = action;
+		hoveredArrowAxis = MAX_UINT;
+		draggingArrow = false;
+		draggedArrowAxis = MAX_UINT;
+		if (context() != nullptr && context()->isValid()) {
+			makeCurrent();
+			updateArrows();
+		}
+		update();
+	}
+
 public:
 	Viewport(QWidget* parent);
 	~Viewport();
 
 public slots:
-	void setActionExtrude() { actionParams.action = EXTRUDE; }
-	void setActionBevel() { actionParams.action = BEVEL; }
-	void setActionTranslateFree() { actionParams.action = TRANSLATE_FREE; }
-	void setActionTranslateOut() { actionParams.action = TRANSLATE_OUT; }
-	void setActionTranslateEdge() { actionParams.action = TRANSLATE_EDGE; }
-	void setActionTranslateAxis() { actionParams.action = TRANSLATE_AXIS; }
-	void setActionScale() { actionParams.action = SCALE; }
-	void setActionRotate() { actionParams.action = ROTATE; }
-	void setActionSelect() { actionParams.action = SELECT; }
-	void setActionCamera() { actionParams.action = CAMERA; }
+	void setActionExtrude() { setAction(EXTRUDE); }
+	void setActionBevel() { setAction(BEVEL); }
+	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
+	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
+	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
+	void setActionScale() { setAction(SCALE); }
+	void setActionRotate() { setAction(ROTATE); }
+	void setActionSelect() { setAction(SELECT); }
+	void setActionCamera() { setAction(CAMERA); }
 
 	void setElementObject() { setActiveElement(OBJECT); }
 	void setElementFace() { setActiveElement(FACE); }
@@ -996,6 +1219,7 @@ public slots:
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
+		updateArrows();
 		update();
 
 		return true;
@@ -1043,7 +1267,8 @@ public slots:
 		makeCurrent();
 		selectionManager.clearSelection();
 		renderer.UpdateRenderBuffers(scene);
-		//renderer.UpdateSelection(selectionManager.getSelectedItems());
+		updateSelectionVisuals();
+		updateArrows();
 		update();
 	}
 };
