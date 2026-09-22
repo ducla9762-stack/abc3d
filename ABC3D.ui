@@ -713,6 +713,19 @@
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QPushButton" name="areaModeButton">
+                   <property name="text">
+                    <string>Area</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoExclusive">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
                 </layout>
                </widget>
               </item>
@@ -1282,7 +1295,7 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
+     <x>864</x>
      <y>387</y>
     </hint>
     <hint type="destinationlabel">
@@ -1298,7 +1311,7 @@
    <slot>loadCylinder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
+     <x>820</x>
      <y>393</y>
     </hint>
     <hint type="destinationlabel">
@@ -1314,7 +1327,7 @@
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
+     <x>864</x>
      <y>393</y>
     </hint>
     <hint type="destinationlabel">
@@ -1330,7 +1343,7 @@
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
+     <x>820</x>
      <y>399</y>
     </hint>
     <hint type="destinationlabel">
@@ -1346,7 +1359,7 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
+     <x>864</x>
      <y>399</y>
     </hint>
     <hint type="destinationlabel">
@@ -1362,8 +1375,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>864</x>
+     <y>387</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1378,8 +1391,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>864</x>
+     <y>392</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1394,8 +1407,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>864</x>
+     <y>397</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1410,8 +1423,8 @@
    <slot>setActionTranslateFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>948</x>
-     <y>455</y>
+     <x>923</x>
+     <y>495</y>
     </hint>
     <hint type="destinationlabel">
      <x>770</x>
@@ -1427,7 +1440,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1070</x>
-     <y>455</y>
+     <y>495</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -1442,8 +1455,8 @@
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>948</x>
-     <y>485</y>
+     <x>923</x>
+     <y>525</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -1459,7 +1472,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1070</x>
-     <y>485</y>
+     <y>525</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1490,7 +1503,7 @@
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
+     <x>820</x>
      <y>387</y>
     </hint>
     <hint type="destinationlabel">
@@ -1623,7 +1636,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>530</y>
+     <y>555</y>
     </hint>
    </hints>
   </connection>
@@ -1634,12 +1647,12 @@
    <slot>setValue(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>786</x>
-     <y>425</y>
+     <x>773</x>
+     <y>463</y>
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>560</y>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1655,7 +1668,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>590</y>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1671,7 +1684,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>530</y>
+     <y>555</y>
     </hint>
    </hints>
   </connection>
@@ -1687,7 +1700,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>560</y>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1703,7 +1716,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>590</y>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1719,7 +1732,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>560</y>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1735,7 +1748,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>590</y>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1747,7 +1760,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1070</x>
-     <y>530</y>
+     <y>555</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -1763,7 +1776,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1070</x>
-     <y>560</y>
+     <y>585</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -1779,7 +1792,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1070</x>
-     <y>590</y>
+     <y>615</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1826,8 +1839,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>864</x>
+     <y>399</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1858,8 +1871,8 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>864</x>
+     <y>402</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -1874,12 +1887,12 @@
    <slot>setClassicSelectionMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>907</x>
-     <y>417</y>
+     <x>880</x>
+     <y>451</y>
     </hint>
     <hint type="destinationlabel">
-     <x>803</x>
-     <y>377</y>
+     <x>773</x>
+     <y>415</y>
     </hint>
    </hints>
   </connection>
@@ -1890,12 +1903,12 @@
    <slot>setAdditiveSelectionMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>970</x>
-     <y>417</y>
+     <x>966</x>
+     <y>451</y>
     </hint>
     <hint type="destinationlabel">
-     <x>802</x>
-     <y>337</y>
+     <x>773</x>
+     <y>375</y>
     </hint>
    </hints>
   </connection>
