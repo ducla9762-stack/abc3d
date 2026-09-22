@@ -1,3 +1,5 @@
+//AI Documentation: AI wrote this entire file
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -34,7 +36,7 @@ namespace {
 	}
 
 	// Test output goes to a temp dir, never into assets/models: that directory is the
-	// fixture corpus and must not accumulate artifacts.
+	// fixture meshes and must not accumulate artifacts.
 	std::string TempPath(const std::string& name) {
 		std::filesystem::path dir = std::filesystem::temp_directory_path() / "abc3d_io_tests";
 		std::filesystem::create_directories(dir);

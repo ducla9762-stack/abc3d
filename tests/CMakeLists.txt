@@ -2,6 +2,7 @@ add_executable(abc3d_tests
     test_mesh.cpp
     test_fuzz.cpp
     test_io.cpp
+    test_math.cpp
 )
 
 target_link_libraries(abc3d_tests PRIVATE

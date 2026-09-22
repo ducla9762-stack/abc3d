@@ -121,6 +121,8 @@ TEST(MeshInvariants, TriangulateKeepsPyramidValid) {
 	ExpectMesh(mesh, 5u, 6u, 18u);
 }
 
+//AI Documentation: AI wrote all the tests below after I wrote the initial tests and scaffolding
+
 // --- refineEdge ------------------------------------------------------------
 
 TEST(MeshInvariants, RefineEdgeKeepsCubeValid) {
@@ -186,7 +188,7 @@ TEST(MeshInvariants, SubdivideTwiceKeepsCubeValid) {
 	ExpectMesh(mesh, 98u, 96u, 384u);
 }
 
-//My original test was wrong as tesselate() is hybrid
+//AI's original test was wrong as tesselate() is hybrid (I had to fix this myself)
 //Catmull-Clark for quads (1 -> 4)
 //Loop (1 -> 4 triangles)
 //So the pyramid should actually have 20 faces instead of 16
@@ -196,7 +198,7 @@ TEST(MeshInvariants, TesselateKeepsPyramidValid) {
 	ExpectMesh(mesh, 14u, 20u, 64u); 
 }
 
-//This test was also wrong based on the above example
+//This test was also wrong based on the above example (also had to fix)
 TEST(MeshInvariants, SubdivideKeepsPyramidValid) {
 	HalfEdgeMesh mesh = Pyramid();
 	mesh.subdivide();
