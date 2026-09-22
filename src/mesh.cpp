@@ -999,9 +999,12 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 	};
 
 	int numVertices = FaceEdgeCount(faceId);
+	Vec3f normal = NewellNormal(faceId);
+	if (!(normal.LengthSquared() > 1e-20f))
+		return; //zero-area or NaN, nothing to triangulate
+	
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -1013,10 +1016,14 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 	}
 
 	PolygonCorner* corner = polyCorners;
-
+	int sinceLastClip = 0; 
 	while (numVertices > 3) {
+		if (sinceLastClip > numVertices)
+			break; 
+
 		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
 			corner = corner->next;
+			++sinceLastClip;
 			continue;
 		}
 
@@ -1038,6 +1045,10 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 			corner->next->prev = corner->prev;
 
 			--numVertices;
+			sinceLastClip = 0; 
+		}
+		else{
+			++sinceLastClip; 
 		}
 
 		corner = corner->next;
@@ -1101,7 +1112,12 @@ Vec3f HalfEdgeMesh::NewellNormal(uint faceId) const {
 		normal.z += (orig.x - dest.x) * (orig.y + dest.y);
 	EndEdgeIteration
 
-	normal.Normalize();
+	// normal.Normalize();
+	double lenSqrd = normal.LengthSquared(); 
+	if (lenSqrd < 1e-20)
+		return Vec3f(0.0f); //Degenerate with no normal
+	normal /= std::sqrt(lenSqrd); 
+
 	return Vec3f(normal);
 }
 

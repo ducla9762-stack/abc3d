@@ -186,25 +186,21 @@ TEST(MeshInvariants, SubdivideTwiceKeepsCubeValid) {
 	ExpectMesh(mesh, 98u, 96u, 384u);
 }
 
-// KNOWN FAILURE. tesselate() corrupts faceEdges on any mesh containing a
-// triangle: faceEdges[f] ends up pointing at a half-edge whose .face is not f.
-// An all-quad mesh is unaffected, which is why the cube cases above pass.
-// The expected counts are a per-face split of the pyramid's 1 quad + 4 tris;
-// the operation currently produces 12 faces / 48 edges instead.
+//My original test was wrong as tesselate() is hybrid
+//Catmull-Clark for quads (1 -> 4)
+//Loop (1 -> 4 triangles)
+//So the pyramid should actually have 20 faces instead of 16
 TEST(MeshInvariants, TesselateKeepsPyramidValid) {
 	HalfEdgeMesh mesh = Pyramid();
 	mesh.tesselate();
-	EXPECT_TRUE(IsValid(mesh));
-	EXPECT_EQ(mesh.FaceCount(), 16u);
+	ExpectMesh(mesh, 14u, 20u, 64u); 
 }
 
-// KNOWN FAILURE. Same root cause as TesselateKeepsPyramidValid: subdivide()
-// calls tesselate() first, so it inherits the corruption.
+//This test was also wrong based on the above example
 TEST(MeshInvariants, SubdivideKeepsPyramidValid) {
 	HalfEdgeMesh mesh = Pyramid();
 	mesh.subdivide();
-	EXPECT_TRUE(IsValid(mesh));
-	EXPECT_EQ(mesh.FaceCount(), 16u);
+	ExpectMesh(mesh, 14u, 20u, 64u); 
 }
 
 // --- Beveling --------------------------------------------------------------
