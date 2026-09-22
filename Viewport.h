@@ -120,6 +120,7 @@ private:
 	MouseAction mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
+	bool rendererInitialized = false;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredArrowAxis = MAX_UINT;
@@ -219,6 +220,7 @@ private:
 			std::cout << "Failed to initialize renderer" << std::endl;
 			return;
 		}
+		rendererInitialized = true;
 
 		renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 		renderer.SetCamera(sphericalToCartesian(camPos));
@@ -971,7 +973,7 @@ private:
 		hoveredArrowAxis = MAX_UINT;
 		draggingArrow = false;
 		draggedArrowAxis = MAX_UINT;
-		if (context() != nullptr && context()->isValid()) {
+		if (rendererInitialized) {
 			makeCurrent();
 			updateArrows();
 		}

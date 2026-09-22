@@ -22,6 +22,13 @@ ABC3D::ABC3D(QWidget *parent)
         ui.bottomRightPanels->setCurrentIndex(1);
         });
 
+    // The main Move tool defaults to Free translation. Its toolbar button and
+    // the translation-mode buttons live in separate exclusive groups, so keep
+    // the visible mode selection synchronized when returning to Move.
+    QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
+        ui.freeModeTranslationButton->setChecked(true);
+        });
+
 
 }
 
