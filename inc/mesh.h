@@ -804,6 +804,13 @@ class HalfEdgeMeshBeveler {
 			vMesh.incidentEdges[vMesh.degree - 1][1] = vMesh.patchEdgeCount;
 			++vMesh.patchEdgeCount;
 		}
+
+		// Degree 2 (e.g. a midpoint left by refineEdge) with one beveled edge: the other edge is
+		// both the previous and next neighbor, so the rules above give both edges vertex 0 and
+		// leave nothing to split. Reserve one new vertex for the far side of the bevel strip.
+		if (vMesh.degree == 2 && vMesh.edgeIsBevel[0] != vMesh.edgeIsBevel[1]) {
+			vMesh.patchEdgeCount = 2;
+		}
 	}
 
 	/// <summary>
@@ -817,11 +824,30 @@ class HalfEdgeMeshBeveler {
 	///		1. is a twin to an edge in the vertex mesh
 	///		2. will be the corresponding side of the beveled edge's bevel strip (edge.twin.next in final mesh)
 	/// </param>
-	void IncorporateVEdge(const VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
-		if (vMesh.degree != 3 && vMesh.degree != 4) { return; }
+	/// <param name="firstNewVert">Id of the first vertex added for this vertex mesh</param>
+	void IncorporateVEdge(const VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap, uint firstNewVert) {
+		if (vMesh.degree < 2 || vMesh.degree > 4) { return; }
 
 		uint edgeId = mesh.NewEdge();
 		uint twinId = mesh.NewEdge();
+
+		// Degree 2 with one beveled edge: both edges keep the original vertex, the beveled
+		// edge's twin ends at the new vertex, and the new edge's twin fills the gap before
+		// the other edge in their shared face.
+		if (vMesh.degree == 2 && vMesh.edgeIsBevel[0] != vMesh.edgeIsBevel[1]) {
+			uint bevel = vMesh.edgeIsBevel[0] ? 0 : 1;
+			uint bevelEdgeId = vMesh.incidentEdges[bevel][0];
+			uint otherEdgeId = vMesh.incidentEdges[1 - bevel][0];
+
+			mesh.edges[mesh.edges[bevelEdgeId].twin].dest = firstNewVert;
+			mesh.SetTwins(edgeId, twinId, vMesh.vertexId, firstNewVert);
+			mesh.vertEdge[firstNewVert] = twinId;
+
+			bevelMap[bevelEdgeId] = edgeId;
+			mesh.InsertPrev(otherEdgeId, twinId);
+
+			return;
+		}
 
 		// Degree 4 is specific edge case
 		if (vMesh.degree == 4) {
@@ -837,10 +863,11 @@ class HalfEdgeMeshBeveler {
 			return;
 		}
 
-		// Degree 3
+		// Degree 3, or degree 2 with both edges beveled
+		uint lastIndex = vMesh.degree - 1;
 		uint bevelDegree = 0;
 		uint bevelEdges[2] = { MAX_UINT, MAX_UINT };
-		for (uint i = 0; i < 3; ++i) {
+		for (uint i = 0; i < vMesh.degree; ++i) {
 			if (vMesh.edgeIsBevel[i]) {
 				bevelEdges[bevelDegree] = i;
 				++bevelDegree;
@@ -848,13 +875,13 @@ class HalfEdgeMeshBeveler {
 		}
 
 		uint orig = vMesh.incidentEdges[bevelEdges[0]][1];
-		uint dest = vMesh.incidentEdges[WrapInc(bevelEdges[0], 2)][1];
+		uint dest = vMesh.incidentEdges[WrapInc(bevelEdges[0], lastIndex)][1];
 		mesh.SetTwins(edgeId, twinId, orig, dest);
 
 		bevelMap[vMesh.incidentEdges[bevelEdges[0]][0]] = edgeId;
 
 		if (bevelDegree == 1) {
-			mesh.InsertPrev(vMesh.incidentEdges[WrapDec(bevelEdges[0], 2)][0], twinId);
+			mesh.InsertPrev(vMesh.incidentEdges[WrapDec(bevelEdges[0], lastIndex)][0], twinId);
 		}
 		else {
 			bevelMap[vMesh.incidentEdges[bevelEdges[1]][0]] = twinId;
@@ -924,6 +951,7 @@ class HalfEdgeMeshBeveler {
 	///		2. will be the corresponding side of the beveled edge's bevel strip (edge.twin.next in final mesh)
 	/// </param>
 	void IncorporateVMesh(VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
+		uint firstNewVert = static_cast<uint>(mesh.vertPos.size());
 		mesh.vertPos.insert(mesh.vertPos.end(), vMesh.patchEdgeCount - 1, mesh.vertPos[vMesh.vertexId]);
 		mesh.vertEdge.insert(mesh.vertEdge.end(), vMesh.patchEdgeCount - 1, 0);
 
@@ -948,7 +976,7 @@ class HalfEdgeMeshBeveler {
 
 		// If junction is a single edge
 		if (vMesh.patchEdgeCount <= 2) {
-			IncorporateVEdge(vMesh, bevelMap);
+			IncorporateVEdge(vMesh, bevelMap, firstNewVert);
 			return;
 		}
 

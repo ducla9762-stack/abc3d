@@ -83,8 +83,8 @@ inline void generateUnitTorus(std::vector<Vec3f>& vertices, std::vector<Vec4u>& 
 			uint c = nextI * resolutionV + nextJ; 
 			uint d = i * resolutionV + nextJ; 
 
-			faces[f++] = Vec4u(a, b, d, MAX_UINT); 
-			faces[f++] = Vec4u(b, c, d, MAX_UINT);
+			faces[f++] = Vec4u(a, d, b, MAX_UINT); 
+			faces[f++] = Vec4u(b, d, c, MAX_UINT);
 		}
 	}
 }

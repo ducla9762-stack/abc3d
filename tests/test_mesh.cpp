@@ -238,3 +238,33 @@ TEST(MeshInvariants, BevelTwoEdgesKeepsCubeValid) {
 
 	ExpectMesh(mesh, 12u, 8u, 36u);
 }
+
+// refineEdge leaves a degree-2 midpoint. Beveling an edge that ends there used to
+// leave that edge's side of the strip unset, and the strip took edge 0 instead.
+TEST(MeshInvariants, BevelAtDegreeTwoVertexKeepsCubeValid) {
+	HalfEdgeMesh mesh = Cube();
+	mesh.refineEdge(0);
+	ASSERT_EQ(mesh.GetEdge(24).orig, 8u) << "edge 24 should be the new half out of midpoint 8";
+
+	HalfEdgeMeshBeveler beveler(mesh);
+	beveler.StartEdgeBevel(std::vector<uint>{ 24 });
+	beveler.AdjustBevel(0.5f);
+	beveler.EndBevel();
+
+	ExpectMesh(mesh, 11u, 7u, 32u);
+}
+
+// Both halves of a refined edge: the midpoint has two beveled edges and nothing else.
+TEST(MeshInvariants, BevelBothEdgesAtDegreeTwoVertexKeepsCubeValid) {
+	HalfEdgeMesh mesh = Cube();
+	mesh.refineEdge(0);
+	ASSERT_EQ(mesh.GetEdge(0).dest, 8u);
+	ASSERT_EQ(mesh.GetEdge(24).orig, 8u);
+
+	HalfEdgeMeshBeveler beveler(mesh);
+	beveler.StartEdgeBevel(std::vector<uint>{ 0, 24 });
+	beveler.AdjustBevel(0.5f);
+	beveler.EndBevel();
+
+	ExpectMesh(mesh, 12u, 8u, 36u);
+}

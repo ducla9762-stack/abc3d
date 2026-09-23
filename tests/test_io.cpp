@@ -324,7 +324,23 @@ namespace {
 		return ::testing::AssertionSuccess();
 	}
 
+	// Every format runs RoundTripTest. The subclasses only run the formats whose flags
+	// make their check meaningful, so no test has to skip a format at runtime.
 	class RoundTripTest : public ::testing::TestWithParam<Format> {};
+	class LosslessRoundTripTest : public RoundTripTest {};
+	class LossyRoundTripTest : public RoundTripTest {};
+	class BakedTransformRoundTripTest : public RoundTripTest {};
+
+	std::vector<Format> FormatsWhere(bool (*keep)(const Format&)) {
+		std::vector<Format> out;
+		for (const Format& fmt : kFormats)
+			if (keep(fmt)) out.push_back(fmt);
+		return out;
+	}
+
+	bool IsLossless(const Format& fmt) { return !fmt.triangulates && !fmt.welds; }
+	bool IsLossy(const Format& fmt) { return fmt.triangulates; }
+	bool BakesTransform(const Format& fmt) { return fmt.bakesTransform; }
 
 	std::string FormatName(const ::testing::TestParamInfo<Format>& info) {
 		std::string n = info.param.name;
@@ -423,7 +439,7 @@ TEST(SceneFile, SecondRoundTripIsAFixedPoint){
 
 	SceneFile once;
 	ASSERT_TRUE(ReadSceneFile(path1, once));
-	ASSERT_TRUE(ReadSceneFile(path2, once));
+	ASSERT_TRUE(WriteSceneFile(path2, once));
 	
 	std::ifstream f1(path1, std::ios::binary);
 	std::ifstream f2(path2, std::ios::binary);
@@ -755,9 +771,8 @@ TEST_P(RoundTripTest, ReimportsIntoAValidMesh) {
 // A format that loses nothing must come back face for face: same counts, same face
 // order, same winding, each face spanning the same points. Compared by position
 // rather than by index, because SplitObjects renumbers the vertices on import.
-TEST_P(RoundTripTest, LosslessFormatsPreserveTopologyExactly) {
+TEST_P(LosslessRoundTripTest, LosslessFormatsPreserveTopologyExactly) {
 	const Format& fmt = GetParam();
-	if (fmt.triangulates || fmt.welds) GTEST_SKIP() << fmt.name << " is a lossy format";
 
 	for (NamedMesh& nm : Corpus()) {
 		SCOPED_TRACE(nm.name);
@@ -800,9 +815,8 @@ TEST(ImportContract, UnreferencedVertexIsDropped) {
 
 // A lossy format is a projection, so what it promises is the shape of the result:
 // one face per emitted triangle, and vertices welded back down by position.
-TEST_P(RoundTripTest, LossyFormatsProjectToTheExpectedShape) {
+TEST_P(LossyRoundTripTest, LossyFormatsProjectToTheExpectedShape) {
 	const Format& fmt = GetParam();
-	if (!fmt.triangulates) GTEST_SKIP() << fmt.name << " is lossless";
 
 	for (NamedMesh& nm : Corpus()) {
 		SCOPED_TRACE(nm.name);
@@ -853,9 +867,8 @@ TEST_P(RoundTripTest, SecondRoundTripIsAFixedPoint) {
 // ends by re-centering the vertices on the mesh's area-weighted centroid and moving
 // that offset into pos, so the transform is reset to "translated to where the
 // geometry already is" rather than to the identity.
-TEST_P(RoundTripTest, TransformIsBakedIntoTheVertices) {
+TEST_P(BakedTransformRoundTripTest, TransformIsBakedIntoTheVertices) {
 	const Format& fmt = GetParam();
-	if (!fmt.bakesTransform) GTEST_SKIP() << fmt.name << " preserves transforms";
 
 	HalfEdgeMesh mesh = Cube();
 	mesh.Pos(Vec3f(3.0f, -1.5f, 0.25f));
@@ -883,6 +896,9 @@ TEST_P(RoundTripTest, TransformIsBakedIntoTheVertices) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Formats, RoundTripTest, ::testing::ValuesIn(kFormats), FormatName);
+INSTANTIATE_TEST_SUITE_P(Formats, LosslessRoundTripTest, ::testing::ValuesIn(FormatsWhere(IsLossless)), FormatName);
+INSTANTIATE_TEST_SUITE_P(Formats, LossyRoundTripTest, ::testing::ValuesIn(FormatsWhere(IsLossy)), FormatName);
+INSTANTIATE_TEST_SUITE_P(Formats, BakedTransformRoundTripTest, ::testing::ValuesIn(FormatsWhere(BakesTransform)), FormatName);
 
 // ensureExtension appends rather than replaces, so exporting to a path that already
 // ends in the other format's extension produces "name.stl.obj". Pinned because the
