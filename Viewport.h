@@ -121,6 +121,7 @@ private:
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
+	bool gridAlwaysVisible = false;
 	bool rendererInitialized = false;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
@@ -284,6 +285,9 @@ public slots:
 		setActiveElement(OBJECT); 
 		elementButtons[3]->setChecked(true);
 	}
+
+	//void deleteSlot() { deleteSelection(); }
+	//void duplicateSlot() { duplicateSelection(); }
 
 	void setAdditiveSelection() {
 		// If the selection manager is single selection, set it to additive.
@@ -578,6 +582,12 @@ public slots:
 			renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 			update();
 		}
+	}
+
+	void setAlwaysShowGrid(bool show) {
+		gridAlwaysVisible = show;
+		renderer.SetGridVisible(gridAlwaysVisible);
+		update();
 	}
 
 	// directly ported from FLTK Version's Viewport::deleteElement
