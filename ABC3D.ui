@@ -156,7 +156,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">Select Tool</string>
+           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -209,7 +209,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">Camera Tool</string>
+           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Change modes, toggle grid &amp;amp; vertices, and orbit origin&lt;/p&gt;&lt;p&gt;'C' Key Shortcut&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -258,7 +258,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Move Tool">Move Tool</string>
+           <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -302,7 +302,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Scale Tool">Scale Tool</string>
+           <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected shape&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -346,7 +346,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Rotate Tool">Rotate Tool</string>
+           <string extracomment="Rotate Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Rotate Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Turns an object&lt;/p&gt;&lt;p&gt;'R' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -390,7 +390,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Shape Tool">Shape Tool</string>
+           <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -434,7 +434,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Extrude Tool">Extrude Tool</string>
+           <string extracomment="Extrude Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Extrude Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Extends a shape, edge, or face&lt;/p&gt;&lt;p&gt;'X' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -484,7 +484,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Subdivision Tool</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -528,7 +528,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Bevel Tool">Bevel Tool</string>
+           <string extracomment="Bevel Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Bevel Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Make an angled cut on an edge or corner&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string/>
@@ -632,7 +632,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="tutorialPanel">
           <attribute name="title">
@@ -937,7 +937,20 @@
             <widget class="VectorInput" name="originInput" native="true"/>
            </item>
            <item>
+            <widget class="QCheckBox" name="gridVisibilityBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggles Grid Visibility&lt;/p&gt;&lt;p&gt;'G' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="text">
+              <string>Always Show Grid</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QCheckBox" name="vertexVisibilityBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggles Vertex Visibility&lt;/p&gt;&lt;p&gt;'P' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Always Show Vertices</string>
              </property>
@@ -1148,6 +1161,9 @@
     <slot>setOrbitOrigin(Vec3f)</slot>
     <slot>setSingleSelection()</slot>
     <slot>setAdditiveSelection()</slot>
+    <slot>setAlwaysShowGrid(bool)</slot>
+    <slot>deleteSlot()</slot>
+    <slot>duplicateSlot()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1284,8 +1300,8 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>387</y>
+     <x>1070</x>
+     <y>470</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -1300,8 +1316,8 @@
    <slot>loadCylinder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
-     <y>393</y>
+     <x>948</x>
+     <y>559</y>
     </hint>
     <hint type="destinationlabel">
      <x>745</x>
@@ -1316,8 +1332,8 @@
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>393</y>
+     <x>1070</x>
+     <y>559</y>
     </hint>
     <hint type="destinationlabel">
      <x>684</x>
@@ -1332,8 +1348,8 @@
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
-     <y>399</y>
+     <x>948</x>
+     <y>648</y>
     </hint>
     <hint type="destinationlabel">
      <x>743</x>
@@ -1348,8 +1364,8 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>399</y>
+     <x>1070</x>
+     <y>648</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -1364,8 +1380,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>387</y>
+     <x>1070</x>
+     <y>452</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1380,8 +1396,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>392</y>
+     <x>1070</x>
+     <y>523</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1396,8 +1412,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>397</y>
+     <x>1070</x>
+     <y>594</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1492,8 +1508,8 @@
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>870</x>
-     <y>387</y>
+     <x>948</x>
+     <y>470</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -1828,8 +1844,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>399</y>
+     <x>1070</x>
+     <y>710</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1860,8 +1876,8 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>914</x>
-     <y>402</y>
+     <x>1070</x>
+     <y>665</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -2026,6 +2042,54 @@
     <hint type="destinationlabel">
      <x>836</x>
      <y>429</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridVisibilityBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setAlwaysShowGrid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>951</x>
+     <y>673</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>444</x>
+     <y>378</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDelete</sender>
+   <signal>triggered()</signal>
+   <receiver>viewport</receiver>
+   <slot>deleteSlot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>444</x>
+     <y>378</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDuplicate</sender>
+   <signal>triggered()</signal>
+   <receiver>viewport</receiver>
+   <slot>duplicateSlot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>444</x>
+     <y>378</y>
     </hint>
    </hints>
   </connection>

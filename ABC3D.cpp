@@ -74,7 +74,7 @@ void ABC3D::keyReleaseEvent(QKeyEvent* event) {
     // Toggle Grid
     case Qt::Key_G:
         event->accept();
-        //ui.gridVisibilityBox->toggle();
+        ui.gridVisibilityBox->toggle();
         return;
 
     // Toggle Vertices 
