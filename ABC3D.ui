@@ -886,6 +886,9 @@
          <widget class="QWidget" name="cameraPanel">
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
+            <widget class="VectorInput" name="originInput" native="true"/>
+           </item>
+           <item>
             <widget class="QCheckBox" name="vertexVisibilityBox">
              <property name="text">
               <string>Always Show Vertices</string>
@@ -1070,6 +1073,7 @@
     <signal>primarySelectionRotChanged(Vec3f)</signal>
     <signal>primarySelectionChanged(bool)</signal>
     <signal>enableNonVertexSpinners(bool)</signal>
+    <signal>orbitOriginChanged(Vec3f)</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -1093,6 +1097,7 @@
     <slot>setPrimarySelectionRot(Vec3f)</slot>
     <slot>setAlwaysShowVertices(bool)</slot>
     <slot>flipSelection()</slot>
+    <slot>setOrbitOrigin(Vec3f)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1773,8 +1778,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>932</x>
+     <y>710</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1891,6 +1896,38 @@
     <hint type="destinationlabel">
      <x>539</x>
      <y>359</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>originInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setOrbitOrigin(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>860</x>
+     <y>469</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>730</x>
+     <y>462</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>orbitOriginChanged(Vec3f)</signal>
+   <receiver>originInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>649</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>876</x>
+     <y>491</y>
     </hint>
    </hints>
   </connection>

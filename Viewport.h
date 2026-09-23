@@ -95,6 +95,7 @@ signals:
 	void primarySelectionRotChanged(const Vec3f& rot);
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
+	void orbitOriginChanged(const Vec3f& origin);
 
 public:
 
@@ -688,14 +689,23 @@ public slots:
 		}
 	}
 
-	void orbitSelection() {
-		if (selectionManager.itemCount() == 0) { return; }
+	void setOrbitOrigin(const Vec3f& origin) {
 		OrbitCamera* camera = renderer.GetOrbitCamera();
-		camera->setOrigin(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
+		camera->setOrigin(origin);
 
 		makeCurrent();
 		renderer.UpdateCamera();
 		update();
 	}
+
+	void orbitSelection() {
+		if (selectionManager.itemCount() == 0) { return; }
+		Vec3f origin = scene[selectionManager.getSelectedItems()[0].meshId]->Pos();
+		setOrbitOrigin(origin);
+
+		emit orbitOriginChanged(origin);
+	}
+
+
 };
 
