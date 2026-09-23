@@ -20,6 +20,19 @@ find_package(GTest CONFIG REQUIRED)
 # No C++20 modules
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF) 
 
+# AddressSanitizer build, configure with -DABC3D_ASAN=ON into its own build folder
+  option(ABC3D_ASAN "Build with AddressSanitizer" OFF)
+
+  if(ABC3D_ASAN AND MSVC)
+      # MSVC ASan refuses /RTC1 and incremental linking, both in CMake's default Debug flags
+      string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_CXX_FLAGS_DEBUG
+  "${CMAKE_CXX_FLAGS_DEBUG}")
+      string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_C_FLAGS_DEBUG
+  "${CMAKE_C_FLAGS_DEBUG}")
+      string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO"
+  CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+  endif()
+
 # Set configuration properties
 add_library(abc3d_flags INTERFACE)
 
@@ -36,6 +49,10 @@ else()
         -Wextra
         -Wpedantic
     )
+    if(ABC3D_ASAN)
+        target_compile_options(abc3d_flags INTERFACE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(abc3d_flags INTERFACE -fsanitize=address)
+    endif()
 endif()
 
 #abc3d_core: geometry and IO. No FLTK, no OpenGL, no main()
