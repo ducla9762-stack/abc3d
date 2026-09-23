@@ -85,6 +85,64 @@ public:
 	std::vector<Arrow> CreateArrows(const Vec3f& base, uint hoveredAxis);
 };
 
+/// <summary>
+/// Renders world-space "mace" to the framebuffer with a given View-Projection matrix.
+/// </summary>
+class MaceRenderer {
+	// Generic mace geometry data
+	static const std::vector<Vec3f> VERTICES;
+	static const std::vector<Vec3u> TRIANGLES;
+
+	// Data for OpenGL operations
+	GLSLProgram program; // Shader program
+	GLuint vao = 0, vbo = 0, ebo = 0; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
+	GLuint instancedVbo = 0; // VBO for arrow data (mace struct)
+	GLsizei instanceCount = 0; // Number of maces
+
+public:
+
+	struct Mace {
+		Vec3f base;
+		Vec3f dir;
+		float length;
+		float radius;
+		float tipSize;
+		Vec3f color;
+		Vec2u ids;
+	};
+
+	/// <summary>
+	/// Initializes OpenGL state (program, buffers, and vao).
+	/// Must be called before anything else.
+	/// </summary>
+	/// <returns>True if the shader program compiled. Otherwise, false.</returns>
+	bool Initialize();
+
+	/// <summary>
+	/// Draws maces to framebuffer.
+	/// </summary>
+	void Draw();
+
+	/// <summary>
+	/// Sets the View-Projection transformation.
+	/// </summary>
+	/// <param name="data">View-Projection Matrix</param>
+	void SetViewProjectionUniform(float data[16], float fov, int viewportHeight);
+
+	/// <summary>
+	/// Sets the maces to draw.
+	/// </summary>
+	/// <param name="maces">List of maces</param>
+	/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
+	void SetMaces(const std::vector<Mace>& arrows, GLenum usage = GL_STATIC_DRAW);
+
+	/// <summary>
+	/// Creates a vector of maces to be drawn.
+	/// </summary>
+	/// <returns> Maces to draw. </returns>
+	std::vector<Mace> CreateMaces(const Vec3f& base, uint hoveredAxis);
+};
+
 class ModelingRenderer : public Renderer {
 	// Shader Program
 	GLSLProgram meshProgram;
@@ -143,6 +201,7 @@ class ModelingRenderer : public Renderer {
 	bool hoverStateInitialized = false;
 
 	ArrowRenderer arrowRenderer;
+	MaceRenderer maceRenderer;
 
 public:
 
@@ -217,9 +276,21 @@ public:
 	void UpdateArrows(const Vec3f& base, uint hoveredAxis);
 
 	/// <summary>
+	/// Shows the scale maces at the supplied world-space position.
+	/// </summary>
+	/// <param name="base"> Where the base of the maces will be drawn. </param>
+	/// <param name="hoveredAxis"> The currently hovered over axis. </param>
+	void UpdateMaces(const Vec3f& base, uint hoveredAxis);
+
+	/// <summary>
 	/// Hides all arrows.
 	/// </summary>
 	void ClearArrows();
+
+	/// <summary>
+	/// Hides all maces.
+	/// </summary>
+	void ClearMaces();
 
 	void UpdateSelectionTexture(std::vector<bool> selections);
 
