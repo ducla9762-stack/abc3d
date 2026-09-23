@@ -189,9 +189,9 @@ inline std::ostream& operator<<(std::ostream& out, const Vec2i& vec) {
 	return out;
 }
 
-/// <summary> Converts a matrix to a Euler angle </summary>
-/// <param name="mat"> Matrix to be converted </param>
-/// <returns> Vector of floats created from the matrix </returns>
+/// <summary> Converts a ZYX rotation matrix to an Euler angle </summary>
+/// <param name="mat"> ZYX rotation Matrix to be converted </param>
+/// <returns> Euler angles produced from the rotation matrix </returns>
 inline Vec3f matrixToEulerAngle(const Matrix3f& mat) {
 	// Refer to https://www.geometrictools.com/Documentation/EulerAngles.pdf
 	
@@ -199,15 +199,17 @@ inline Vec3f matrixToEulerAngle(const Matrix3f& mat) {
 	eulerRot.y = std::asin(mat.cell[6]);
 
 	constexpr float HALF_PI = Pi<float>() / 2.0f;
-	if (eulerRot.y < HALF_PI && eulerRot.y > -HALF_PI) {
+	constexpr float EPSILON = 0.0001f;
+
+	if (eulerRot.y < HALF_PI - EPSILON && eulerRot.y > -HALF_PI + EPSILON) {
 		eulerRot.x = std::atan2(-mat.cell[7], mat.cell[8]);
 		eulerRot.z = std::atan2(-mat.cell[3], mat.cell[0]);
 	}
-	else if (eulerRot.y > HALF_PI && eulerRot.y < HALF_PI + 0.0001f) {
+	else if (eulerRot.y >= HALF_PI - EPSILON && eulerRot.y <= HALF_PI + EPSILON) {
 		eulerRot.x = std::atan2(mat.cell[1], mat.cell[4]);
 		eulerRot.z = 0.0f;
 	}
-	else if (eulerRot.y < -HALF_PI && eulerRot.y > -HALF_PI - 0.0001f) {
+	else if (eulerRot.y <= -HALF_PI + EPSILON && eulerRot.y >= -HALF_PI - EPSILON) {
 		eulerRot.z = std::atan2(mat.cell[1], mat.cell[4]);
 		eulerRot.x = 0.0f;
 	}
