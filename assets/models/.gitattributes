@@ -1,0 +1,11 @@
+# These files are test fixtures, and several of them test the container rather than
+# the geometry: truncated.stl is a body cut short, trailing.stl is a valid body plus
+# exactly one byte, and the binary STL reader decides a file is binary by comparing
+# its size to 84 + 50 * triangleCount. Line-ending conversion would change those
+# sizes and quietly turn the fixtures into something else, so it is switched off for
+# the whole directory.
+
+*.stl binary
+*.obj -text
+*.py  -text
+*.abc3d binary

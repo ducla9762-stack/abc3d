@@ -121,6 +121,8 @@ TEST(MeshInvariants, TriangulateKeepsPyramidValid) {
 	ExpectMesh(mesh, 5u, 6u, 18u);
 }
 
+//AI Documentation: AI wrote all the tests below after I wrote the initial tests and scaffolding
+
 // --- refineEdge ------------------------------------------------------------
 
 TEST(MeshInvariants, RefineEdgeKeepsCubeValid) {
@@ -186,7 +188,7 @@ TEST(MeshInvariants, SubdivideTwiceKeepsCubeValid) {
 	ExpectMesh(mesh, 98u, 96u, 384u);
 }
 
-//My original test was wrong as tesselate() is hybrid
+//AI's original test was wrong as tesselate() is hybrid (I had to fix this myself)
 //Catmull-Clark for quads (1 -> 4)
 //Loop (1 -> 4 triangles)
 //So the pyramid should actually have 20 faces instead of 16
@@ -196,7 +198,7 @@ TEST(MeshInvariants, TesselateKeepsPyramidValid) {
 	ExpectMesh(mesh, 14u, 20u, 64u); 
 }
 
-//This test was also wrong based on the above example
+//This test was also wrong based on the above example (also had to fix)
 TEST(MeshInvariants, SubdivideKeepsPyramidValid) {
 	HalfEdgeMesh mesh = Pyramid();
 	mesh.subdivide();
@@ -231,6 +233,36 @@ TEST(MeshInvariants, BevelTwoEdgesKeepsCubeValid) {
 	HalfEdgeMeshBeveler beveler(mesh);
 
 	beveler.StartEdgeBevel(std::vector<uint>{ 0, 2 });
+	beveler.AdjustBevel(0.5f);
+	beveler.EndBevel();
+
+	ExpectMesh(mesh, 12u, 8u, 36u);
+}
+
+// refineEdge leaves a degree-2 midpoint. Beveling an edge that ends there used to
+// leave that edge's side of the strip unset, and the strip took edge 0 instead.
+TEST(MeshInvariants, BevelAtDegreeTwoVertexKeepsCubeValid) {
+	HalfEdgeMesh mesh = Cube();
+	mesh.refineEdge(0);
+	ASSERT_EQ(mesh.GetEdge(24).orig, 8u) << "edge 24 should be the new half out of midpoint 8";
+
+	HalfEdgeMeshBeveler beveler(mesh);
+	beveler.StartEdgeBevel(std::vector<uint>{ 24 });
+	beveler.AdjustBevel(0.5f);
+	beveler.EndBevel();
+
+	ExpectMesh(mesh, 11u, 7u, 32u);
+}
+
+// Both halves of a refined edge: the midpoint has two beveled edges and nothing else.
+TEST(MeshInvariants, BevelBothEdgesAtDegreeTwoVertexKeepsCubeValid) {
+	HalfEdgeMesh mesh = Cube();
+	mesh.refineEdge(0);
+	ASSERT_EQ(mesh.GetEdge(0).dest, 8u);
+	ASSERT_EQ(mesh.GetEdge(24).orig, 8u);
+
+	HalfEdgeMeshBeveler beveler(mesh);
+	beveler.StartEdgeBevel(std::vector<uint>{ 0, 24 });
 	beveler.AdjustBevel(0.5f);
 	beveler.EndBevel();
 

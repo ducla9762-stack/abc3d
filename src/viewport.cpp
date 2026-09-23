@@ -1389,7 +1389,9 @@ bool Viewport::saveScene(const char* filepath) {
 		obj.scale = mesh->Scale(); 
 
 		//Local space so we don't apply the transform above twice
-		std::ostringstream geometry; 
+		std::ostringstream geometry;
+		geometry << std::setprecision(std::numeric_limits<float>::max_digits10); 
+
 		uint vertOffset = 0; 
 		mesh->appendObj(geometry, vertOffset, false); 
 		obj.objText = geometry.str(); 

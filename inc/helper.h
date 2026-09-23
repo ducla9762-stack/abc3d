@@ -189,20 +189,21 @@ inline Vec3f matrixToEulerAngle(const Matrix3f& mat) {
 	// Refer to https://www.geometrictools.com/Documentation/EulerAngles.pdf
 	
 	Vec3f eulerRot;
-	eulerRot.y = std::asin(mat.cell[6]);
 
-	constexpr float HALF_PI = Pi<float>() / 2.0f;
-	if (eulerRot.y < HALF_PI && eulerRot.y > -HALF_PI) {
+	// cos(y) from the first row instead of asin(cell[6]): asin loses precision near
+	// +-90 and returns NaN if rounding pushes cell[6] past 1
+	float cosY = std::sqrt(mat.cell[0] * mat.cell[0] + mat.cell[3] * mat.cell[3]);
+	eulerRot.y = std::atan2(mat.cell[6], cosY);
+
+	if (cosY > 1e-6f) {
 		eulerRot.x = std::atan2(-mat.cell[7], mat.cell[8]);
 		eulerRot.z = std::atan2(-mat.cell[3], mat.cell[0]);
 	}
-	else if (eulerRot.y > HALF_PI && eulerRot.y < HALF_PI + 0.0001f) {
-		eulerRot.x = std::atan2(mat.cell[1], mat.cell[4]);
+	else {
+		// Gimbal lock: only x + z (or x - z at -90) is defined, so put it all in x
+		float angle = std::atan2(mat.cell[1], mat.cell[4]);
+		eulerRot.x = (mat.cell[6] > 0.0f) ? angle : -angle;
 		eulerRot.z = 0.0f;
-	}
-	else if (eulerRot.y < -HALF_PI && eulerRot.y > -HALF_PI - 0.0001f) {
-		eulerRot.z = std::atan2(mat.cell[1], mat.cell[4]);
-		eulerRot.x = 0.0f;
 	}
 
 	eulerRot.x = radiansToDegrees(eulerRot.x);
@@ -224,7 +225,7 @@ inline Vec3f axisAngleToEulerAngle(const Vec3f& axis, float angle) {
 }
 
 inline Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
-	return (v.Dot(u) / u.LengthSquared()) * u;
+	return (u != Vec3f(0.0f)) ? (v.Dot(u) / u.LengthSquared()) * u : u;
 }
 
 

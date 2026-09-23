@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iomanip>
+#include <limits>
 
 #include "sceneFile.h"
 #include "mesh.h" //ensureExtension
@@ -13,6 +15,7 @@ static void WriteVec(std::ostream& out, const char* key, const Vec3f& v){
 bool WriteSceneFile(const std::string& filePath, const SceneFile& doc) {
 	std::ofstream file(ensureExtension(filePath, ".abc3d"));
 	if (!file.is_open()) return false;
+	file << std::setprecision(std::numeric_limits<float>::max_digits10); 
 
 	file << "ABC3D " << SCENE_FILE_VERSION << "\n";
 

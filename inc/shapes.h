@@ -83,8 +83,8 @@ inline void generateUnitTorus(std::vector<Vec3f>& vertices, std::vector<Vec4u>& 
 			uint c = nextI * resolutionV + nextJ; 
 			uint d = i * resolutionV + nextJ; 
 
-			faces[f++] = Vec4u(a, b, d, MAX_UINT); 
-			faces[f++] = Vec4u(b, c, d, MAX_UINT);
+			faces[f++] = Vec4u(a, d, b, MAX_UINT); 
+			faces[f++] = Vec4u(b, d, c, MAX_UINT);
 		}
 	}
 }
@@ -238,10 +238,11 @@ inline void generateUnitCylinder(std::vector<Vec3f>& vertices, std::vector<Vec4u
 /// otherwise collapse onto the same point and leave every face touching it with zero area, and no column is
 /// duplicated to close the seam, so each position appears exactly once.
 /// </summary>
-/// <param name="vertices">The vector for vertices</param>
+/// <param name="vertices">The vector for vertices. Must be empty ALWAYS: the vertices are appended, so anything already in it would sit in front of the sphere and shift every index the faces refer to.</param>
 /// <param name="latSegments"> latSegments >= 2 ALWAYS. The number of bands to split the sphere into from pole to pole. </param>
 /// <param name="lonSegments"> lonSegments >= 3 ALWAYS. The number of vertices to split each ring into. </param>
 inline void generateUVSphereVertices(std::vector<Vec3f>& vertices, uint latSegments, uint lonSegments) {
+	assert(vertices.empty());
 	assert(latSegments >= 2);
 	assert(lonSegments >= 3);
 
@@ -270,10 +271,11 @@ inline void generateUVSphereVertices(std::vector<Vec3f>& vertices, uint latSegme
 /// faces passed in by reference. A triangle fan closes each pole and two triangles cover each cell of the grid
 /// in between. Columns wrap with a modulo rather than through a duplicated seam, so the sphere closes on itself.
 /// </summary>
-/// <param name="faces">The vector for faces</param>
+/// <param name="faces">The vector for faces. Must be empty ALWAYS, for the same reason as the vertices.</param>
 /// <param name="latSegments"> latSegments >= 2 ALWAYS. Must match the value passed to generateUVSphereVertices. </param>
 /// <param name="lonSegments"> lonSegments >= 3 ALWAYS. Must match the value passed to generateUVSphereVertices. </param>
 inline void generateUVSphereFaces(std::vector<Vec4u>& faces, uint latSegments, uint lonSegments) {
+	assert(faces.empty());
 	assert(latSegments >= 2);
 	assert(lonSegments >= 3);
 
