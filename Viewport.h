@@ -690,8 +690,7 @@ public slots:
 	}
 
 	void setOrbitOrigin(const Vec3f& origin) {
-		OrbitCamera* camera = renderer.GetOrbitCamera();
-		camera->setOrigin(origin);
+		renderer.setOrbitOrigin(origin);
 
 		makeCurrent();
 		renderer.UpdateCamera();
@@ -706,6 +705,9 @@ public slots:
 		emit orbitOriginChanged(origin);
 	}
 
+	void setCameraModeOrbit() { renderer.setCameraMode(ORBIT); update(); }
+
+	void setCameraModeFree() { renderer.setCameraMode(FREE); update(); }
 
 };
 

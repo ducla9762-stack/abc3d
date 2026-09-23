@@ -240,7 +240,7 @@ void ModelingRenderer::UpdateProjectionUniforms() {
 }
 
 void ModelingRenderer::updateUniforms() {
-	viewTransform = orbitCamera.transform();
+	viewTransform = camType == ORBIT ? orbitCamera.transform() : freeCamera.transform();
 
 	float data[16];
 	viewTransform.Get(data);

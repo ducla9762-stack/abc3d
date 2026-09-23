@@ -56,21 +56,26 @@ inline bool compareFloat(float x, float y, float epsilon) {
 	return dist < epsilon;
 }
 
+inline Vec3f sphericalToCartesian(const Vec2f& coords) {
+	float azimuthalAngle = degreesToRadians(coords.x);
+	float polarAngle = degreesToRadians(coords.y);
+	float sinPolar = std::sin(polarAngle);
+
+	Vec3f cartesian;
+	cartesian.x = std::cos(azimuthalAngle) * sinPolar;
+	cartesian.y = std::cos(polarAngle);
+	cartesian.z = -std::sin(azimuthalAngle) * sinPolar;
+
+	return cartesian;
+}
+
 /// <summary> Converts spherical coordinates to Cartesian </summary>
 /// <param name="coords"> Vector of coordinates to convert </param>
 /// <returns> Vector of Cartesian coordinates that have been converted </returns>
 inline Vec3f sphericalToCartesian(const Vec3f& coords) {
-	float azimuthalAngle = degreesToRadians(coords.x);
-	float polarAngle = degreesToRadians(coords.y);
-	float polarRadius = std::sin(polarAngle) * coords.z;
-
-	Vec3f cartesian;
-	cartesian.x = std::cos(azimuthalAngle) * polarRadius;
-	cartesian.y = std::cos(polarAngle) * coords.z;
-	cartesian.z = -std::sin(azimuthalAngle) * polarRadius;
-
-	return cartesian;
+	return sphericalToCartesian(Vec2f(coords)) * coords.z;
 }
+
 
 inline void clamp(float& x, float left, float right) {
 	if (x < left) { x = left; }

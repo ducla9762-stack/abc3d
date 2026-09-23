@@ -81,7 +81,6 @@ void Viewport::initializeGL() {
 
 	makeCurrent();
 
-	renderer.GetOrbitCamera()->setSphericalPosition(Vec3f(0.0f, 90.0f, 5.0f));
 	bool success = renderer.Initialize(defaultFramebufferObject());
 
 	if (!success) {
@@ -91,6 +90,7 @@ void Viewport::initializeGL() {
 
 	rendererInitialized = true;
 
+	renderer.setCameraPosition(Vec3f(1.0f, 0.0f, 0.0f));
 	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 	renderer.UpdateRenderBuffers(scene);
 	updateSelectionVisuals();
@@ -316,9 +316,7 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 
 	// If no action performed, move the camera
 	if (!actionPerformed) {
-		Camera* camera = renderer.GetCamera();
-		camera->mouseDrag(mouseAction.mouseDragChange);
-		renderer.UpdateCamera();
+		renderer.mouseDrag(mouseAction.mouseDragChange);
 	}
 	else if (updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
@@ -344,9 +342,7 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 
 	// Update renderer and viewport
 	makeCurrent();
-	Camera* camera = renderer.GetCamera();
-	camera->mouseWheel(camChange.x, camChange.y);
-	renderer.UpdateCamera();
+	renderer.mouseWheel(camChange.x, camChange.y);
 
 	update();
 }

@@ -116,6 +116,7 @@ class ModelingRenderer : public Renderer {
 	// Camera Parameters
 	CameraType camType = ORBIT;
 	OrbitCamera orbitCamera;
+	FreeCamera freeCamera;
 	float fov = 90.0f;
 
 	std::vector<Vec3f> sceneVertices;
@@ -155,12 +156,50 @@ public:
 	void SetGridVisible(bool visible); 
 	void SetVertexPointsVisible(bool visible); 
 
-	CameraType GetActiveCamType() const { return camType; }
-	OrbitCamera* GetOrbitCamera() { return &orbitCamera; }
-	Camera* GetCamera() { return &orbitCamera; }
-	const Camera* GetCamera() const { return &orbitCamera; }
-
 	void UpdateCamera();
+
+	void mouseDrag(const Vec2f& drag) {
+		if (camType == ORBIT)	{ orbitCamera.mouseDrag(drag); }
+		else					{ freeCamera.mouseDrag(drag); }
+		UpdateCamera();
+	}
+
+	void mouseWheel(float dx, float dy) {
+		if (camType == ORBIT)	{ orbitCamera.mouseWheel(dx, dy); }
+		else					{ freeCamera.mouseWheel(dx, dy); }
+		UpdateCamera();
+	}
+
+	CameraType GetActiveCamType() const { return camType; }
+
+	void setCameraPosition(const Vec3f& pos) {
+		if (camType == ORBIT)	{ orbitCamera.setPosition(pos); }
+		else					{ freeCamera.setPosition(pos); }
+		UpdateCamera();
+	}
+
+	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); UpdateCamera(); }
+	const Camera* GetCamera() const { return camType == ORBIT ? (Camera*) &orbitCamera : (Camera*) &freeCamera; }
+
+	void toggleCamType() {
+		if (camType == ORBIT) {
+			camType = FREE;
+			freeCamera.setPosition(orbitCamera.position());
+			freeCamera.setForward(orbitCamera.forward());
+		}
+		else {
+			camType = ORBIT;
+			orbitCamera.setOrigin(Vec3f(0.0f));
+			orbitCamera.setPosition(freeCamera.position());
+		}
+
+		UpdateCamera();
+	}
+
+	void setCameraMode(CameraType mode) {
+		if (mode == camType) { return; }
+		toggleCamType();
+	}
 
 	Vec3u SelectionIds(uint x, uint y);
 
