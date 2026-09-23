@@ -189,7 +189,7 @@ inline std::ostream& operator<<(std::ostream& out, const Vec2i& vec) {
 	return out;
 }
 
-/// <summary> Converts a ZYX rotation matrix to an Euler angle </summary>
+/// <summary> Converts a ZYX rotation matrix to Euler angles </summary>
 /// <param name="mat"> ZYX rotation Matrix to be converted </param>
 /// <returns> Euler angles produced from the rotation matrix </returns>
 inline Vec3f matrixToEulerAngle(const Matrix3f& mat) {
