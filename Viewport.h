@@ -111,6 +111,7 @@ private:
 		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
 	};
 
+	QAction* menuActions[3];
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ModelingRenderer renderer;
@@ -162,6 +163,7 @@ private:
 	void leaveEvent(QEvent* event) override;
 	void wheelEvent(QWheelEvent* event) override;
 	void resizeEvent(QResizeEvent* event) override;
+	void contextMenuEvent(QContextMenuEvent* event) override;
 
 // ---------------------------------------------------------------------------------------------
 // Drag Actions & Helpers ----------------------------------------------------------------------

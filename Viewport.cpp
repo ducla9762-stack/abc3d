@@ -1,6 +1,7 @@
 #include "Viewport.h"
 #include "shapes.h"
 #include <qpushbutton.h>
+#include <QMenu>
 
 Viewport::Viewport(QWidget *parent)
 	: QOpenGLWidget(parent)
@@ -18,7 +19,8 @@ Viewport::Viewport(QWidget *parent)
 	format.setStencilBufferSize(0);
 	format.setSamples(0);
 	setFormat(format);
-	setMouseTracking(true);
+
+	// Element Buttons
 
 	elementButtons[0] = new QPushButton("Vertex", this);
 	elementButtons[1] = new QPushButton("Edge", this);
@@ -39,9 +41,18 @@ Viewport::Viewport(QWidget *parent)
 
 	elementButtons[3]->setChecked(true);
 
+	// Right Click Panel Actions
+
+	menuActions[0] = new QAction("Delete", this);
+	menuActions[1] = new QAction("Duplicate", this);
+	menuActions[2] = new QAction("Orbit Camera", this);
+
+	// Set Default Settings & Load Default Cube
+
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 
 	selectionManager.setActiveElement(OBJECT);
+	setMouseTracking(true);
 }
 
 Viewport::~Viewport()
@@ -139,9 +150,10 @@ void Viewport::emitSelectionChanged() {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::mousePressEvent(QMouseEvent* event) {
+	QOpenGLWidget::mousePressEvent(event);
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
-		event->ignore();
 		return;
 	}
 
@@ -183,9 +195,10 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	QOpenGLWidget::mouseReleaseEvent(event);
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
-		event->ignore();
 		return;
 	}
 
@@ -363,6 +376,22 @@ void Viewport::leaveEvent(QEvent* event) {
 	if (hoverChanged || arrowChanged) {
 		update();
 	}
+}
+
+void Viewport::contextMenuEvent(QContextMenuEvent* event) {
+	if (!(event->reason() == QContextMenuEvent::Mouse)) { 
+		event->ignore();
+		return; 
+	}
+
+	event->accept();
+
+	QMenu menu(this);
+	for (int i = 0; i < 3; ++i) {
+		menu.addAction(menuActions[i]);
+	}
+
+	menu.exec(event->globalPos());
 }
 
 // ---------------------------------------------------------------------------------------------
