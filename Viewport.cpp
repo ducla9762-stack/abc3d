@@ -49,6 +49,7 @@ Viewport::Viewport(QWidget *parent)
 
 	QObject::connect(menuActions[0], &QAction::triggered, this, &Viewport::deleteSelection);
 	QObject::connect(menuActions[1], &QAction::triggered, this, &Viewport::duplicateSelection);
+	QObject::connect(menuActions[2], &QAction::triggered, this, &Viewport::orbitSelection);
 
 	// Set Default Settings & Load Default Cube
 
@@ -79,15 +80,18 @@ void Viewport::initializeGL() {
 	std::cout << "OpenGL Version: " << version << std::endl;
 
 	makeCurrent();
+
+	renderer.GetOrbitCamera()->setSphericalPosition(Vec3f(0.0f, 90.0f, 5.0f));
 	bool success = renderer.Initialize(defaultFramebufferObject());
+
 	if (!success) {
 		std::cout << "Failed to initialize renderer" << std::endl;
 		return;
 	}
+
 	rendererInitialized = true;
 
 	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
-	renderer.SetCamera(sphericalToCartesian(camPos));
 	renderer.UpdateRenderBuffers(scene);
 	updateSelectionVisuals();
 	renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
@@ -312,10 +316,9 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 
 	// If no action performed, move the camera
 	if (!actionPerformed) {
-		camPos.x -= mouseAction.mouseDragChange.x;
-		camPos.y += mouseAction.mouseDragChange.y;
-		clamp(camPos.y, 1.0f, 179.0f);
-		renderer.SetCamera(sphericalToCartesian(camPos));
+		Camera* camera = renderer.GetCamera();
+		camera->mouseDrag(mouseAction.mouseDragChange);
+		renderer.UpdateCamera();
 	}
 	else if (updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
@@ -339,15 +342,11 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	const float SCALE = 0.025f;
 	camChange *= SCALE;
 
-	// Update camera
-	camPos.z -= float(camChange.y);
-	if (camPos.z < 0.0f) { camPos.z = 0.0f; }
-
-	camPos.x += camChange.x;
-
 	// Update renderer and viewport
 	makeCurrent();
-	renderer.SetCamera(sphericalToCartesian(camPos));
+	Camera* camera = renderer.GetCamera();
+	camera->mouseWheel(camChange.x, camChange.y);
+	renderer.UpdateCamera();
 
 	update();
 }
@@ -574,7 +573,7 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCameraDirs(f, u, r);
+	renderer.GetCamera()->directions(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -807,7 +806,7 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCameraDirs(f, u, r);
+	renderer.GetCamera()->directions(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -847,7 +846,7 @@ bool Viewport::arrowDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCameraDirs(forward, up, right);
+	renderer.GetCamera()->directions(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedArrowAxis) {

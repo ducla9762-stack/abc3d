@@ -117,7 +117,6 @@ private:
 	ModelingRenderer renderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
-	Vec3f camPos = Vec3f(0.0f, 90.0f, 5.0f); // Spherical Coordinates
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
@@ -542,8 +541,8 @@ public slots:
 			*scene.NewMesh() = std::move(candidate);
 		}
 
-		camPos = doc.camera;
-		renderer.SetCamera(sphericalToCartesian(camPos));
+		//camPos = doc.camera;
+		//renderer.SetCamera(sphericalToCartesian(camPos));
 		renderer.SetGridVisible(doc.grid);
 		//renderer.SetVertexPointsVisible(doc.points);
 
@@ -646,7 +645,7 @@ public slots:
 	bool saveScene(const char* filepath) {
 		SceneFile doc;
 
-		doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
+		//doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
 		doc.grid = renderer.GridVisible();
 		doc.points = renderer.VertexPointsVisible();
 
@@ -687,6 +686,16 @@ public slots:
 			if (item.meshId >= scene.MeshCount()) { continue; }
 			scene.DuplicateMesh(item.meshId);
 		}
+	}
+
+	void orbitSelection() {
+		if (selectionManager.itemCount() == 0) { return; }
+		OrbitCamera* camera = renderer.GetOrbitCamera();
+		camera->setOrigin(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
+
+		makeCurrent();
+		renderer.UpdateCamera();
+		update();
 	}
 };
 
