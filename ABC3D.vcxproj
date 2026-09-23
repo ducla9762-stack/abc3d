@@ -132,6 +132,7 @@
     <QtMoc Include="ABC3D.h" />
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClInclude Include="camera.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="render.h" />

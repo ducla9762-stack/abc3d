@@ -13,6 +13,7 @@ public:
     ~ABC3D();
 private:
     Ui::ABC3DClass ui;
+    QByteArray projectFile;
     // Hotkeys
 
     void keyPressEvent(QKeyEvent* event) override {
@@ -158,8 +159,55 @@ private slots:
                         );
 
         if (!file.isNull()) {
-            ui.viewport->openScene(file.toUtf8().constData());
+            projectFile = file.toUtf8();
+            ui.viewport->openScene(projectFile.constData());
         }
+    }
+
+    void exportObj() {
+        QString file = QFileDialog::getSaveFileName(
+            this,
+            "Export Obj",
+            "assets/"
+        );
+
+        if (!file.isNull() && !file.isEmpty()) {
+            ui.viewport->exportObj(file.toUtf8().constData());
+        }
+    }
+
+    void exportStl() {
+        QString file = QFileDialog::getSaveFileName(
+            this,
+            "Export Stl",
+            "assets/"
+        );
+
+        if (!file.isNull() && !file.isEmpty()) {
+            ui.viewport->exportStl(file.toUtf8().constData());
+        }
+    }
+
+    void saveAsProject() {
+        QString file = QFileDialog::getSaveFileName(
+            this,
+            "Save Project",
+            "assets/"
+        );
+
+        if (!file.isNull() && !file.isEmpty()) {
+            projectFile = file.toUtf8();
+            ui.viewport->saveScene(projectFile.constData());
+        }
+    }
+
+    void saveProject() {
+        if (projectFile.isEmpty()) {
+            saveAsProject();
+            return;
+        }
+
+        ui.viewport->saveScene(projectFile.constData());
     }
 
 signals:

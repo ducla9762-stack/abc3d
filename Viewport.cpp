@@ -1,6 +1,7 @@
 #include "Viewport.h"
 #include "shapes.h"
 #include <qpushbutton.h>
+#include <QMenu>
 
 Viewport::Viewport(QWidget *parent)
 	: QOpenGLWidget(parent)
@@ -18,7 +19,8 @@ Viewport::Viewport(QWidget *parent)
 	format.setStencilBufferSize(0);
 	format.setSamples(0);
 	setFormat(format);
-	setMouseTracking(true);
+
+	// Element Buttons
 
 	elementButtons[0] = new QPushButton("Vertex", this);
 	elementButtons[1] = new QPushButton("Edge", this);
@@ -39,9 +41,22 @@ Viewport::Viewport(QWidget *parent)
 
 	elementButtons[3]->setChecked(true);
 
+	// Right Click Panel Actions
+
+	menuActions[0] = new QAction("Delete", this);
+	menuActions[1] = new QAction("Duplicate", this);
+	menuActions[2] = new QAction("Orbit Camera", this);
+
+	QObject::connect(menuActions[0], &QAction::triggered, this, &Viewport::deleteSelection);
+	QObject::connect(menuActions[1], &QAction::triggered, this, &Viewport::duplicateSelection);
+	QObject::connect(menuActions[2], &QAction::triggered, this, &Viewport::orbitSelection);
+
+	// Set Default Settings & Load Default Cube
+
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
 
 	selectionManager.setActiveElement(OBJECT);
+	setMouseTracking(true);
 }
 
 Viewport::~Viewport()
@@ -65,15 +80,18 @@ void Viewport::initializeGL() {
 	std::cout << "OpenGL Version: " << version << std::endl;
 
 	makeCurrent();
+
+	renderer.GetOrbitCamera()->setSphericalPosition(Vec3f(0.0f, 90.0f, 5.0f));
 	bool success = renderer.Initialize(defaultFramebufferObject());
+
 	if (!success) {
 		std::cout << "Failed to initialize renderer" << std::endl;
 		return;
 	}
+
 	rendererInitialized = true;
 
 	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
-	renderer.SetCamera(sphericalToCartesian(camPos));
 	renderer.UpdateRenderBuffers(scene);
 	updateSelectionVisuals();
 	renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
@@ -139,9 +157,10 @@ void Viewport::emitSelectionChanged() {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::mousePressEvent(QMouseEvent* event) {
+	QOpenGLWidget::mousePressEvent(event);
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
-		event->ignore();
 		return;
 	}
 
@@ -183,9 +202,10 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	QOpenGLWidget::mouseReleaseEvent(event);
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
-		event->ignore();
 		return;
 	}
 
@@ -296,10 +316,9 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 
 	// If no action performed, move the camera
 	if (!actionPerformed) {
-		camPos.x -= mouseAction.mouseDragChange.x;
-		camPos.y += mouseAction.mouseDragChange.y;
-		clamp(camPos.y, 1.0f, 179.0f);
-		renderer.SetCamera(sphericalToCartesian(camPos));
+		Camera* camera = renderer.GetCamera();
+		camera->mouseDrag(mouseAction.mouseDragChange);
+		renderer.UpdateCamera();
 	}
 	else if (updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
@@ -323,15 +342,11 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	const float SCALE = 0.025f;
 	camChange *= SCALE;
 
-	// Update camera
-	camPos.z -= float(camChange.y);
-	if (camPos.z < 0.0f) { camPos.z = 0.0f; }
-
-	camPos.x += camChange.x;
-
 	// Update renderer and viewport
 	makeCurrent();
-	renderer.SetCamera(sphericalToCartesian(camPos));
+	Camera* camera = renderer.GetCamera();
+	camera->mouseWheel(camChange.x, camChange.y);
+	renderer.UpdateCamera();
 
 	update();
 }
@@ -363,6 +378,22 @@ void Viewport::leaveEvent(QEvent* event) {
 	if (hoverChanged || arrowChanged) {
 		update();
 	}
+}
+
+void Viewport::contextMenuEvent(QContextMenuEvent* event) {
+	if (!(event->reason() == QContextMenuEvent::Mouse)) { 
+		event->ignore();
+		return; 
+	}
+
+	event->accept();
+
+	QMenu menu(this);
+	for (int i = 0; i < 3; ++i) {
+		menu.addAction(menuActions[i]);
+	}
+
+	menu.exec(event->globalPos());
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -542,7 +573,7 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCameraDirs(f, u, r);
+	renderer.GetCamera()->directions(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -775,7 +806,7 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCameraDirs(f, u, r);
+	renderer.GetCamera()->directions(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -815,7 +846,7 @@ bool Viewport::arrowDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCameraDirs(forward, up, right);
+	renderer.GetCamera()->directions(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedArrowAxis) {
