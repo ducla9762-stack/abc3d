@@ -663,6 +663,54 @@
             <number>2</number>
            </property>
            <item>
+            <widget class="QWidget" name="selectionInputModes" native="true">
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <item>
+               <widget class="QLabel" name="selectionModeLabel">
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Selection Mode&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="widget" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <item>
+                  <widget class="QPushButton" name="classicModeButton">
+                   <property name="text">
+                    <string>Classic</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoExclusive">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="additiveModeButton">
+                   <property name="text">
+                    <string>Additive</string>
+                   </property>
+                   <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="autoExclusive">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QWidget" name="transformModes" native="true">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1098,6 +1146,8 @@
     <slot>setAlwaysShowVertices(bool)</slot>
     <slot>flipSelection()</slot>
     <slot>setOrbitOrigin(Vec3f)</slot>
+    <slot>setSingleSelection()</slot>
+    <slot>setAdditiveSelection()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -1314,8 +1364,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>914</x>
+     <y>387</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1330,8 +1380,8 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>914</x>
+     <y>392</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1346,8 +1396,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>914</x>
+     <y>397</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1362,8 +1412,8 @@
    <slot>setActionTranslateFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>937</x>
-     <y>401</y>
+     <x>948</x>
+     <y>495</y>
     </hint>
     <hint type="destinationlabel">
      <x>770</x>
@@ -1378,8 +1428,8 @@
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>988</x>
-     <y>391</y>
+     <x>1070</x>
+     <y>495</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -1394,8 +1444,8 @@
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>879</x>
-     <y>427</y>
+     <x>948</x>
+     <y>525</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -1410,8 +1460,8 @@
    <slot>setActionTranslateEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1045</x>
-     <y>429</y>
+     <x>1070</x>
+     <y>525</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1430,8 +1480,8 @@
      <y>179</y>
     </hint>
     <hint type="destinationlabel">
-     <x>852</x>
-     <y>417</y>
+     <x>1070</x>
+     <y>525</y>
     </hint>
    </hints>
   </connection>
@@ -1574,8 +1624,8 @@
      <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>942</x>
-     <y>464</y>
+     <x>1070</x>
+     <y>555</y>
     </hint>
    </hints>
   </connection>
@@ -1590,8 +1640,8 @@
      <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>893</x>
-     <y>499</y>
+     <x>1070</x>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1606,8 +1656,8 @@
      <y>498</y>
     </hint>
     <hint type="destinationlabel">
-     <x>919</x>
-     <y>525</y>
+     <x>1070</x>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1622,8 +1672,8 @@
      <y>538</y>
     </hint>
     <hint type="destinationlabel">
-     <x>876</x>
-     <y>469</y>
+     <x>1070</x>
+     <y>555</y>
     </hint>
    </hints>
   </connection>
@@ -1638,8 +1688,8 @@
      <y>459</y>
     </hint>
     <hint type="destinationlabel">
-     <x>857</x>
-     <y>498</y>
+     <x>1070</x>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1654,8 +1704,8 @@
      <y>484</y>
     </hint>
     <hint type="destinationlabel">
-     <x>844</x>
-     <y>522</y>
+     <x>1070</x>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1670,8 +1720,8 @@
      <y>504</y>
     </hint>
     <hint type="destinationlabel">
-     <x>853</x>
-     <y>493</y>
+     <x>1070</x>
+     <y>585</y>
     </hint>
    </hints>
   </connection>
@@ -1686,8 +1736,8 @@
      <y>502</y>
     </hint>
     <hint type="destinationlabel">
-     <x>965</x>
-     <y>529</y>
+     <x>1070</x>
+     <y>615</y>
     </hint>
    </hints>
   </connection>
@@ -1698,8 +1748,8 @@
    <slot>setPrimarySelectionPos(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>467</y>
+     <x>1070</x>
+     <y>555</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -1714,8 +1764,8 @@
    <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>968</x>
-     <y>495</y>
+     <x>1070</x>
+     <y>585</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -1730,8 +1780,8 @@
    <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>989</x>
-     <y>526</y>
+     <x>1070</x>
+     <y>615</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1778,8 +1828,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>932</x>
-     <y>710</y>
+     <x>914</x>
+     <y>399</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1810,8 +1860,8 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>923</x>
-     <y>408</y>
+     <x>914</x>
+     <y>402</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -1826,8 +1876,8 @@
    <slot>saveAsProject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>873</x>
-     <y>393</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>539</x>
@@ -1842,8 +1892,8 @@
    <slot>saveProject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>873</x>
-     <y>393</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>539</x>
@@ -1890,8 +1940,8 @@
    <slot>saveAsProject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>454</y>
+     <x>-1</x>
+     <y>-1</y>
     </hint>
     <hint type="destinationlabel">
      <x>539</x>
@@ -1906,8 +1956,8 @@
    <slot>setOrbitOrigin(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>860</x>
-     <y>469</y>
+     <x>914</x>
+     <y>390</y>
     </hint>
     <hint type="destinationlabel">
      <x>730</x>
@@ -1926,8 +1976,56 @@
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>876</x>
-     <y>491</y>
+     <x>914</x>
+     <y>390</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>classicModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setSingleSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>893</x>
+     <y>433</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>339</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>additiveModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setAdditiveSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>962</x>
+     <y>438</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>812</x>
+     <y>369</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>selectionInputModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>50</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>836</x>
+     <y>429</y>
     </hint>
    </hints>
   </connection>
