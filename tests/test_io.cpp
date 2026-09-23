@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <sstream>
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
@@ -12,15 +13,12 @@
 
 #include "mesh.h"
 #include "shapes.h"
+#include "sceneFile.h"
 
 // Import/export tests. Two groups:
-//
+//	 SceneFile      - The scene tests
 //   ImportContract - the fixtures in assets/models, including the deliberately broken
-//                    ones. Each one's exact ImportReport is pinned in kFixtures below.
 //   RoundTrip      - export a mesh, read it back, and check whatever the format
-//                    actually promises to preserve. That promise differs per format,
-//                    so it is driven by the flags on a Format descriptor rather than
-//                    by the format's name.
 namespace {
 
 	// --- shared helpers ----------------------------------------------------
@@ -335,6 +333,73 @@ namespace {
 		std::replace(n.begin(), n.end(), '-', '_');
 		return n;
 	}
+
+	SceneFile BuildTestScene(){
+		SceneFile doc; 
+		doc.camera = Vec3f(0.1f, 1.2345f, -0.0f);
+		doc.grid = false; 
+		doc.points = false; 
+		doc.selection = {0, 2};
+		
+		for (uint i = 0; i < 2; ++i){
+			SceneFileObject a; 
+			a.id = i; 
+			a.name = "Base Plate"; 
+			a.pos = Vec3f(1.2345f + i, -0.0f + i, 1e-7f + i);
+			a.rot = Vec3f(0.1f + i, 0.0f + i, -0.0f + i); 
+			a.scale = Vec3f(1.0f + i, 1e-7f + i, 0.1f + i);
+			std::ostringstream ss; 
+			uint offset = 0; 
+			
+			Cube().appendObj(ss, offset, false); 
+			a.objText = ss.str(); 
+			doc.objects.push_back(std::move(a));
+		}
+		
+		doc.specs = {"generator abc3d_test"}; 
+		return doc; 
+	}
+
+	void ExpectVec3fEq(const Vec3f& a, const Vec3f& b){
+		EXPECT_EQ(a.x, b.x);
+		EXPECT_EQ(a.y, b.y);
+		EXPECT_EQ(a.z, b.z);
+	}
+
+	template <typename T>
+	void ExpectVectorEq(const std::vector<T>& a, const std::vector<T>& b){
+		ASSERT_EQ(a.size(), b.size()); 
+		for (size_t i = 0; i < a.size(); ++i){
+			SCOPED_TRACE(i); //Which indices fail instead of just vectors differ
+			EXPECT_EQ(a[i], b[i]); 
+		}
+	}
+
+	void ExpectSameObject(const SceneFileObject& a, const SceneFileObject& b){
+		EXPECT_EQ(a.id, b.id); 
+		EXPECT_EQ(a.name, b.name); 
+
+		ExpectVec3fEq(a.pos, b.pos); 
+		ExpectVec3fEq(a.rot, b.rot); 
+		ExpectVec3fEq(a.scale, b.scale); 
+		
+		EXPECT_EQ(a.objText, b.objText); 
+	}
+
+	void ExpectSameScene(const SceneFile& a, const SceneFile& b){
+		ExpectVec3fEq(a.camera, b.camera); 
+		EXPECT_EQ(a.grid, b.grid); 
+		EXPECT_EQ(a.points, b.points);
+		
+		ExpectVectorEq(a.selection, b.selection); 
+		ExpectVectorEq(a.specs, b.specs); 
+
+		ASSERT_EQ(a.objects.size(), b.objects.size()); 
+		for (size_t i = 0; i < a.objects.size(); ++i){
+			SCOPED_TRACE(i); 
+			ExpectSameObject(a.objects[i], b.objects[i]); 
+		}
+	}
 }
 
 // --- 1. Import contract ----------------------------------------------------
@@ -527,9 +592,7 @@ TEST_P(RoundTripTest, SecondRoundTripIsAFixedPoint) {
 
 		for (uint v = 0; v < a.verts; ++v) {
 			SCOPED_TRACE(v);
-			EXPECT_EQ(a.world[v].x, b.world[v].x);
-			EXPECT_EQ(a.world[v].y, b.world[v].y);
-			EXPECT_EQ(a.world[v].z, b.world[v].z);
+			ExpectVec3fEq(a.world[v], b.world[v]); 
 		}
 	}
 }
@@ -552,8 +615,9 @@ TEST_P(RoundTripTest, TransformIsBakedIntoTheVertices) {
 	ASSERT_TRUE(RoundTrip(fmt, mesh, "transformed_cube", back));
 	ASSERT_TRUE(IsValid(back));
 
-	EXPECT_EQ(back.Rot(), Vec3f(0.0f));
-	EXPECT_EQ(back.Scale(), Vec3f(1.0f));
+	ExpectVec3fEq(back.Rot(), Vec3f(0.0f)); 
+	ExpectVec3fEq(back.Scale(), Vec3f(1.0f)); 
+	
 
 	// The world shape is unchanged by any of that.
 	Vec3f lo0, hi0, lo1, hi1;

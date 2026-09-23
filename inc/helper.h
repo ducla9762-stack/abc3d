@@ -225,7 +225,7 @@ inline Vec3f axisAngleToEulerAngle(const Vec3f& axis, float angle) {
 }
 
 inline Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
-	return (v.Dot(u) / u.LengthSquared()) * u;
+	return (u != Vec3f(0.0f)) ? (v.Dot(u) / u.LengthSquared()) * u : u;
 }
 
 
