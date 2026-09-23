@@ -208,6 +208,21 @@ private:
 		update();
 	}
 
+	std::vector<uint> exportMeshIds() {
+		std::vector<uint> selected;
+		std::vector<uint> all;
+
+		for (uint i = 0; i < scene.MeshCount(); ++i) {
+			if (scene[i]->VertexCount() == 0) continue;
+
+			all.push_back(i);
+			if (selectionManager.hasSelectedMesh(i)) {
+				selected.push_back(i);
+			}
+		}
+
+		return selected.empty() ? all : selected;
+	}
 
 
 // ---------------------------------------------------------------------------------------------
@@ -598,6 +613,80 @@ public slots:
 		updateSelectionVisuals();
 		updateArrows();
 		update();
+	}
+
+	bool exportObj(const char* filepath) {
+		std::vector<uint> ids = exportMeshIds();
+		if (ids.empty()) return true;
+
+		std::ofstream file(ensureExtension(filepath, ".obj"));
+		if (!file.is_open()) return false;
+
+		uint vertOffset = 0;
+
+		for (uint id : ids) {
+			file << "o mesh" << id << "\n";
+			scene[id]->appendObj(file, vertOffset);
+		}
+
+		return !file.fail();
+	}
+
+	bool exportStl(const char* filepath) {
+		std::vector<uint> ids = exportMeshIds();
+		if (ids.empty()) return true;
+
+		std::vector<Triangle> tris;
+		for (uint id : ids)
+			scene[id]->appendStlTriangles(tris);
+
+		return writeStl(ensureExtension(filepath, ".stl"), tris, true);
+	}
+
+	bool saveScene(const char* filepath) {
+		SceneFile doc;
+
+		doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
+		doc.grid = renderer.GridVisible();
+		doc.points = renderer.VertexPointsVisible();
+
+		//Object selection id just mesh id
+		//sub-object selection is not saved
+		if (selectionManager.getActiveElement() == OBJECT) {
+			for (const SelectionItem& item : selectionManager.getSelectedItems())
+				doc.selection.push_back(item.meshId);
+		}
+
+		for (uint id = 0; id < scene.MeshCount(); ++id) {
+			const HalfEdgeMesh* mesh = scene[id];
+			if (mesh->VertexCount() == 0)
+				continue;
+
+			SceneFileObject obj;
+			obj.id = id;
+			obj.name = "mesh" + std::to_string(id);
+			obj.pos = mesh->Pos();
+			obj.rot = mesh->Rot();
+			obj.scale = mesh->Scale();
+
+			//Local space so we don't apply the transform above twice
+			std::ostringstream geometry;
+			uint vertOffset = 0;
+			mesh->appendObj(geometry, vertOffset, false);
+			obj.objText = geometry.str();
+
+			doc.objects.push_back(std::move(obj));
+		}
+
+		return WriteSceneFile(filepath, doc);
+	}
+
+	void duplicateSelection() {
+		if (selectionManager.getActiveElement() != OBJECT) { return; }
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			scene.DuplicateMesh(item.meshId);
+		}
 	}
 };
 
