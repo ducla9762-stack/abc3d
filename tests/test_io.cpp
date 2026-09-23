@@ -1,5 +1,3 @@
-//AI Documentation: AI wrote this entire file
-
 #include <gtest/gtest.h>
 
 #include <sstream>
@@ -345,8 +343,8 @@ namespace {
 			SceneFileObject a; 
 			a.id = i; 
 			a.name = "Base Plate"; 
-			a.pos = Vec3f(1.2345f + i, -0.0f + i, 1e-7f + i);
-			a.rot = Vec3f(0.1f + i, 0.0f + i, -0.0f + i); 
+			a.pos = Vec3f(1.2345f + i, -0.0f, 1e-7f + i);
+			a.rot = Vec3f(0.1f + i, 0.0f + i, -0.0f); 
 			a.scale = Vec3f(1.0f + i, 1e-7f + i, 0.1f + i);
 			std::ostringstream ss; 
 			uint offset = 0; 
@@ -400,6 +398,259 @@ namespace {
 			ExpectSameObject(a.objects[i], b.objects[i]); 
 		}
 	}
+}
+
+//Write -> Read -> Expect same for scene
+TEST(SceneFile, WriteThenReadIsIdentical){
+	const std::string path = TempPath("x.abc3d");
+	const SceneFile original = BuildTestScene(); 
+
+	ASSERT_TRUE(WriteSceneFile(path, original)); 
+	
+	SceneFile reloaded;
+	ASSERT_TRUE(ReadSceneFile(path, reloaded));
+	
+	ExpectSameScene(original, reloaded); 
+}
+
+//Write -> Read -> Write
+TEST(SceneFile, SecondRoundTripIsAFixedPoint){
+	const std::string path1 = TempPath("x1.abc3d");
+	const std::string path2 = TempPath("x2.abc3d");
+	const SceneFile original = BuildTestScene(); 
+	
+	ASSERT_TRUE(WriteSceneFile(path1, original)); 
+
+	SceneFile once;
+	ASSERT_TRUE(ReadSceneFile(path1, once));
+	ASSERT_TRUE(ReadSceneFile(path2, once));
+	
+	std::ifstream f1(path1, std::ios::binary);
+	std::ifstream f2(path2, std::ios::binary);
+
+	ASSERT_TRUE(f1.is_open()); 
+	ASSERT_TRUE(f2.is_open()); 
+
+	std::ostringstream buf1, buf2; 
+	buf1 << f1.rdbuf(); 
+	buf2 << f2.rdbuf(); 
+
+	EXPECT_EQ(buf1.str(), buf2.str());
+}
+
+//Evertyhing below is AI Generated Tests
+TEST(SceneFile, GeometryReloadsIntoValidMesh) {
+	const std::string path = TempPath("geom_reload.abc3d");
+
+	std::vector<HalfEdgeMesh> sourceMeshes;
+	sourceMeshes.push_back(Cube());
+	sourceMeshes.push_back(Pyramid());
+
+	const std::vector<Vec3f> pos = { Vec3f(1.0f, 2.0f, 3.0f), Vec3f(-1.0f, 0.5f, 2.0f) };
+	const std::vector<Vec3f> rot = { Vec3f(10.0f, 20.0f, 30.0f), Vec3f(0.0f, 45.0f, 0.0f) };
+	const std::vector<Vec3f> scale = { Vec3f(1.0f, 1.0f, 1.0f), Vec3f(2.0f, 0.5f, 1.0f) };
+
+	SceneFile doc;
+	for (size_t i = 0; i < sourceMeshes.size(); ++i) {
+		SceneFileObject obj;
+		obj.id = static_cast<uint>(i);
+		obj.name = "obj" + std::to_string(i);
+		obj.pos = pos[i];
+		obj.rot = rot[i];
+		obj.scale = scale[i];
+
+		std::ostringstream geometry;
+		uint vertOffset = 0;
+		sourceMeshes[i].appendObj(geometry, vertOffset, false); // local space, like viewport.cpp
+		obj.objText = geometry.str();
+
+		doc.objects.push_back(std::move(obj));
+	}
+
+	ASSERT_TRUE(WriteSceneFile(path, doc));
+
+	SceneFile reloaded;
+	ASSERT_TRUE(ReadSceneFile(path, reloaded));
+	ASSERT_EQ(reloaded.objects.size(), sourceMeshes.size());
+
+	for (size_t i = 0; i < reloaded.objects.size(); ++i) {
+		SCOPED_TRACE(i);
+		const SceneFileObject& obj = reloaded.objects[i];
+
+		std::istringstream geometry(obj.objText);
+		FaceList faceList;
+		ASSERT_TRUE(faceList.LoadObjStream(geometry));
+
+		HalfEdgeMesh mesh;
+		ASSERT_TRUE(mesh.load(faceList));
+		mesh.Pos(obj.pos);
+		mesh.Rot(obj.rot);
+		mesh.Scale(obj.scale);
+
+		EXPECT_TRUE(IsValid(mesh));
+		EXPECT_EQ(mesh.VertexCount(), sourceMeshes[i].VertexCount());
+		EXPECT_EQ(mesh.FaceCount(), sourceMeshes[i].FaceCount());
+		EXPECT_EQ(mesh.EdgeCount(), sourceMeshes[i].EdgeCount());
+
+		ExpectVec3fEq(mesh.Pos(), pos[i]);
+		ExpectVec3fEq(mesh.Rot(), rot[i]);
+		ExpectVec3fEq(mesh.Scale(), scale[i]);
+	}
+}
+
+// A scene with no objects, no selection and no specs still round-trips.
+TEST(SceneFile, EmptySceneRoundTrips) {
+	const std::string path = TempPath("empty_scene.abc3d");
+	const SceneFile original; // defaults: camera default, grid/points true, nothing else
+
+	ASSERT_TRUE(WriteSceneFile(path, original));
+
+	SceneFile reloaded;
+	ASSERT_TRUE(ReadSceneFile(path, reloaded));
+
+	ExpectSameScene(original, reloaded);
+	EXPECT_TRUE(reloaded.objects.empty());
+	EXPECT_TRUE(reloaded.selection.empty());
+	EXPECT_TRUE(reloaded.specs.empty());
+}
+
+// ensureExtension (sceneFile.cpp:14, mesh.cpp:1962) appends rather than replaces,
+// so a path without .abc3d ends up written at path + ".abc3d". Mirrors
+// Export.ExtensionIsAppendedNotReplaced for the scene file format.
+TEST(SceneFile, ExtensionIsAppended) {
+	const std::string path = TempPath("ext_check_scene");
+	const SceneFile original = BuildTestScene();
+
+	ASSERT_TRUE(WriteSceneFile(path, original));
+
+	EXPECT_TRUE(std::filesystem::exists(path + ".abc3d"));
+	EXPECT_FALSE(std::filesystem::exists(path));
+
+	// Deep round-trip equality is WriteThenReadIsIdentical's job; this only needs to
+	// confirm the file that got written is the one ReadSceneFile can open back up.
+	SceneFile reloaded;
+	ASSERT_TRUE(ReadSceneFile(path + ".abc3d", reloaded));
+	ASSERT_EQ(reloaded.objects.size(), original.objects.size());
+	for (size_t i = 0; i < original.objects.size(); ++i) {
+		EXPECT_EQ(reloaded.objects[i].id, original.objects[i].id);
+		EXPECT_EQ(reloaded.objects[i].name, original.objects[i].name);
+	}
+}
+
+// sceneFile.cpp:66 - an unopenable path fails cleanly rather than crashing.
+TEST(SceneFile, MissingFileFails) {
+	SceneFile doc;
+	EXPECT_FALSE(ReadSceneFile(TempPath("does_not_exist.abc3d"), doc));
+}
+
+// sceneFile.cpp:79 - the header's first token must be exactly "ABC3D".
+TEST(SceneFile, BadMagicFails) {
+	const std::string path = TempPath("bad_magic.abc3d");
+	{
+		std::ofstream out(path);
+		out << "FOO 1\n";
+	}
+
+	SceneFile doc;
+	EXPECT_FALSE(ReadSceneFile(path, doc));
+}
+
+// sceneFile.cpp:83 - a file written by a newer ABC3D is rejected rather than misread.
+TEST(SceneFile, NewerVersionFails) {
+	const std::string path = TempPath("newer_version.abc3d");
+	{
+		std::ofstream out(path);
+		out << "ABC3D " << (SCENE_FILE_VERSION + 1) << "\n";
+	}
+
+	SceneFile doc;
+	EXPECT_FALSE(ReadSceneFile(path, doc));
+}
+
+// sceneFile.cpp:182 only assigns `doc` on success, so a failed read must leave
+// whatever was already in `doc` completely untouched. Mirrors
+// ImportContract.FailedImportLeavesOutputUntouched.
+TEST(SceneFile, FailedReadLeavesDocUntouched) {
+	const std::string path = TempPath("bad_magic_untouched.abc3d");
+	{
+		std::ofstream out(path);
+		out << "FOO 1\n";
+	}
+
+	SceneFile doc = BuildTestScene(); // sentinel the failed read must not disturb
+	const SceneFile sentinel = doc;
+
+	ASSERT_FALSE(ReadSceneFile(path, doc));
+
+	ExpectSameScene(sentinel, doc);
+}
+
+// Pins the forward-compatibility promise documented at sceneFile.cpp:150-155: an
+// unrecognised key in [scene] is skipped rather than treated as an error, so an
+// older build can still open a file written by a newer one.
+TEST(SceneFile, UnknownSceneKeyIsIgnored) {
+	const std::string path = TempPath("unknown_key.abc3d");
+	{
+		std::ofstream out(path);
+		out << "ABC3D " << SCENE_FILE_VERSION << "\n";
+		out << "[scene]\n";
+		out << "camera 1 2 3\n";
+		out << "grid 1\n";
+		out << "points 1\n";
+		out << "foo 1 2 3\n"; // unknown key: forward-compat, must be ignored
+		out << "selection\n";
+		out << "[end]\n";
+		out << "[specs]\n[end]\n";
+	}
+
+	SceneFile doc;
+	ASSERT_TRUE(ReadSceneFile(path, doc));
+
+	ExpectVec3fEq(doc.camera, Vec3f(1.0f, 2.0f, 3.0f));
+	EXPECT_TRUE(doc.grid);
+	EXPECT_TRUE(doc.points);
+	EXPECT_TRUE(doc.objects.empty());
+}
+
+// sceneFile.cpp:93 - a \r before the newline is stripped, so a file saved on one
+// platform, opened and re-saved on another (crlf line endings), reads identically.
+TEST(SceneFile, CrlfFileReadsTheSame) {
+	const std::string lfPath = TempPath("crlf_source.abc3d");
+	const std::string crlfPath = TempPath("crlf_rewritten.abc3d");
+	const SceneFile original = BuildTestScene();
+
+	ASSERT_TRUE(WriteSceneFile(lfPath, original));
+
+	std::ifstream in(lfPath, std::ios::binary);
+	ASSERT_TRUE(in.is_open());
+	std::ostringstream buf;
+	buf << in.rdbuf();
+	in.close();
+
+	// Normalize to \n first (in case the source is already \r\n on this platform),
+	// then rewrite every line ending as \r\n.
+	std::string normalized;
+	normalized.reserve(buf.str().size());
+	for (char c : buf.str())
+		if (c != '\r') normalized += c;
+
+	std::string crlfContent;
+	crlfContent.reserve(normalized.size() * 2);
+	for (char c : normalized) {
+		if (c == '\n') crlfContent += "\r\n";
+		else crlfContent += c;
+	}
+
+	{
+		std::ofstream out(crlfPath, std::ios::binary);
+		out << crlfContent;
+	}
+
+	SceneFile fromLf, fromCrlf;
+	ASSERT_TRUE(ReadSceneFile(lfPath, fromLf));
+	ASSERT_TRUE(ReadSceneFile(crlfPath, fromCrlf));
+
+	ExpectSameScene(fromLf, fromCrlf);
 }
 
 // --- 1. Import contract ----------------------------------------------------
