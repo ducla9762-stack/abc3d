@@ -21,17 +21,14 @@ find_package(GTest CONFIG REQUIRED)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF) 
 
 # AddressSanitizer build, configure with -DABC3D_ASAN=ON into its own build folder
-  option(ABC3D_ASAN "Build with AddressSanitizer" OFF)
+option(ABC3D_ASAN "Build with AddressSanitizer" OFF)
 
-  if(ABC3D_ASAN AND MSVC)
-      # MSVC ASan refuses /RTC1 and incremental linking, both in CMake's default Debug flags
-      string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_CXX_FLAGS_DEBUG
-  "${CMAKE_CXX_FLAGS_DEBUG}")
-      string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_C_FLAGS_DEBUG
-  "${CMAKE_C_FLAGS_DEBUG}")
-      string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO"
-  CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
-  endif()
+if(ABC3D_ASAN AND MSVC)
+    # MSVC ASan refuses /RTC1 and incremental linking, both in CMake's default Debug flags
+    string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+endif()
 
 # Set configuration properties
 add_library(abc3d_flags INTERFACE)
@@ -41,7 +38,8 @@ if(MSVC)
         /W3
         /MP # multithreaded build
         /WX- # warnings NOT as errors
-        $<$<CONFIG:Debug>:/ZI> # program database for edit and continue, debug only
+        $<$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${ABC3D_ASAN}>>>:/ZI> # program database for edit and continue, debug only (not with ASan)
+        $<$<BOOL:${ABC3D_ASAN}>:/fsanitize=address>
     )
 else()
     target_compile_options(abc3d_flags INTERFACE

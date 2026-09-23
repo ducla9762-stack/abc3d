@@ -5,6 +5,7 @@
 # =========================
 
 build/
+build-asan/
 out/
 bin/
 lib/

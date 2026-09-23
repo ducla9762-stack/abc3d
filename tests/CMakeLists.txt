@@ -34,6 +34,5 @@ if(ABC3D_ASAN AND MSVC)
     # before main(). Updating Visual Studio should remove the need for this.
     set(ASAN_ENV "ASAN_WIN_CONTINUE_ON_INTERCEPTION_FAILURE=1")
     set_tests_properties(unit PROPERTIES ENVIRONMENT "${ASAN_ENV}")
-    set_property(TARGET abc3d_tests PROPERTY VS_DEBUGGER_ENVIRONMENT
-"${ASAN_ENV}")
+    set_property(TARGET abc3d_tests PROPERTY VS_DEBUGGER_ENVIRONMENT "${ASAN_ENV}")
 endif()
