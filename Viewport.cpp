@@ -47,6 +47,9 @@ Viewport::Viewport(QWidget *parent)
 	menuActions[1] = new QAction("Duplicate", this);
 	menuActions[2] = new QAction("Orbit Camera", this);
 
+	QObject::connect(menuActions[0], &QAction::triggered, this, &Viewport::deleteSelection);
+	QObject::connect(menuActions[1], &QAction::triggered, this, &Viewport::duplicateSelection);
+
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
