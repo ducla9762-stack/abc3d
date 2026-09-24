@@ -286,9 +286,6 @@ public slots:
 		elementButtons[3]->setChecked(true);
 	}
 
-	void deleteSlot() { deleteSelection(); }
-	void duplicateSlot() { duplicateSelection(); }
-
 	void setAdditiveSelection() {
 		// If the selection manager is single selection, set it to additive.
 		if (!selectionManager.isAdditive()) {

@@ -1275,8 +1275,8 @@
     <slot>setSingleSelection()</slot>
     <slot>setAdditiveSelection()</slot>
     <slot>setAlwaysShowGrid(bool)</slot>
-    <slot>deleteSlot()</slot>
-    <slot>duplicateSlot()</slot>
+    <slot>deleteSelection()</slot>
+    <slot>duplicateSelection()</slot>
     <slot>setCameraModeOrbit()</slot>
     <slot>setCameraModeFree()</slot>
    </slots>
