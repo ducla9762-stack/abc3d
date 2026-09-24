@@ -54,11 +54,10 @@ ABC3D::ABC3D(QWidget *parent)
 void ABC3D::keyPressEvent(QKeyEvent* event) {
     bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
     switch (event->key()) {
-        if (event->key() == Qt::Key_Control) {
+    case Qt::Key_Control:
             event->accept();
             emit ctrlKeyPressed();
-            return;
-        }
+            break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
         if (ctrl) { ui.viewport->duplicateSelection(); }
@@ -172,10 +171,10 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.bevelToolButton->setChecked(true);
         break;
     default:
-        QMainWindow::keyReleaseEvent(event);
+        QMainWindow::keyPressEvent(event);
         return;
     }
-    QMainWindow::keyReleaseEvent(event);
+    QMainWindow::keyPressEvent(event);
 }
 
 void ABC3D::keyReleaseEvent(QKeyEvent* event) {
@@ -185,6 +184,7 @@ void ABC3D::keyReleaseEvent(QKeyEvent* event) {
         emit ctrlKeyReleased();
         break;
     }
+    QMainWindow::keyReleaseEvent(event);
 }
 
 ABC3D::~ABC3D()
