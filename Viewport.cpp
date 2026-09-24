@@ -96,6 +96,7 @@ void Viewport::initializeGL() {
 	updateSelectionVisuals();
 	renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
 	updateArrows();
+	updateMaces();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -184,11 +185,12 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
 	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
 	const Vec3u ids = renderer.SelectionIds(x, y);
-	const bool arrowHit =
-		actionParams.action == TRANSLATE_AXIS &&
-		ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3;
-	draggingArrow = arrowHit;
-	draggedArrowAxis = arrowHit ? ids.z : MAX_UINT;
+	const bool gizmoHit =
+		ids.x == ARROW_IDENTIFIER && ids.z < 3 &&
+		((actionParams.action == TRANSLATE_AXIS && ids.y == 0) ||
+		 (actionParams.action == SCALE && ids.y == 1));
+	draggingArrow = gizmoHit;
+	draggedArrowAxis = gizmoHit ? ids.z : MAX_UINT;
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
@@ -196,6 +198,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	makeCurrent();
 	updateSelectionVisuals();
 	updateArrows();
+	updateMaces();
 	update();
 
 	emit primarySelectionChanged(false);
@@ -296,7 +299,8 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		actionPerformed = arrowDrag();
 		break;
 	case SCALE:
-		actionPerformed = scaleDrag();
+		//actionPerformed = scaleDrag();
+		actionPerformed = scaleGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 		break;
 	case ROTATE:
@@ -323,6 +327,7 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 	}
 
 	updateArrows();
+	updateMaces();
 
 	// Update MouseAction struct
 	mouseAction.EndMouseDragStep();
@@ -370,6 +375,7 @@ void Viewport::leaveEvent(QEvent* event) {
 	hoveredArrowAxis = MAX_UINT;
 	if (arrowChanged) {
 		updateArrows();
+		updateMaces();
 	}
 	if (hoverChanged || arrowChanged) {
 		update();
@@ -404,6 +410,7 @@ void Viewport::setAction(Action action) {
 	if (rendererInitialized) {
 		makeCurrent();
 		updateArrows();
+		updateMaces();
 	}
 	update();
 }
@@ -423,6 +430,7 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 			selectionManager.clearSelection();
 			updateSelectionVisuals();
 			updateArrows();
+			updateMaces();
 			emitSelectionChanged();
 		}
 		return;
@@ -442,6 +450,7 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 	// Tell the renderer to update the selection visuals.
 	updateSelectionVisuals();
 	updateArrows();
+	updateMaces();
 
 	emitSelectionChanged();
 }
@@ -463,6 +472,7 @@ void Viewport::setActiveElement(Element element) {
 	draggingArrow = false;
 	draggedArrowAxis = MAX_UINT;
 	updateArrows();
+	updateMaces();
 	update();
 
 	emit primarySelectionChanged(false);
@@ -908,10 +918,61 @@ bool Viewport::arrowDrag() {
 	return transformed;
 }
 
+bool Viewport::scaleGizmoDrag() {
+	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
+	if (!draggingArrow || draggedArrowAxis >= 3 ||
+		selectionManager.getActiveElement() != OBJECT ||
+		selectionManager.getSelectedItems().empty()) {
+		return false;
+	}
+
+	Vec3f forward, up, right;
+	renderer.GetCamera()->directions(forward, up, right);
+
+	Vec3f axis;
+	switch (draggedArrowAxis) {
+	case 0: axis = Vec3f(1.0f, 0.0f, 0.0f); break;
+	case 1: axis = Vec3f(0.0f, 1.0f, 0.0f); break;
+	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
+	default: return false;
+	}
+
+	// Project the selected world axis onto the screen to determine how much
+	// the mouse moved along it. An axis aimed directly at the camera has no
+	// stable screen direction.
+	Vec2f axisScreen(axis.Dot(right), axis.Dot(up));
+	const float axisScreenLength = axisScreen.Length();
+	if (axisScreenLength < 1e-6f) {
+		return false;
+	}
+	axisScreen /= axisScreenLength;
+
+	// Qt coordinates were converted to bottom-left origin in the mouse
+	// handlers, so invert the vertical delta to match the FLTK drag math.
+	Vec2f change(-mouseAction.mouseDragChange.x, -mouseAction.mouseDragChange.y);
+	const float factor = 0.01f * change.Dot(axisScreen);
+
+	bool scaled = false;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId < scene.MeshCount()) {
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			const float newScale = std::max(0.001f, mesh->Scale()[draggedArrowAxis] + factor);
+			mesh->Scale(static_cast<int>(draggedArrowAxis), newScale);
+			scaled = true;
+		}
+	}
+
+	renderer.UpdateRenderBuffers(scene);
+
+	if (scaled) {
+		emitPrimarySelectionScaleChanged();
+	}
+	return scaled;
+}
+
 // AI-generated code
 void Viewport::updateArrows() {
-	const bool translationAction =
-		actionParams.action == TRANSLATE_AXIS;
+	const bool translationAction = actionParams.action == TRANSLATE_AXIS;
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
 	if (!translationAction || selectedItems.empty()) {
@@ -958,6 +1019,42 @@ void Viewport::updateArrows() {
 	renderer.UpdateArrows(positionSum / float(positionCount), highlightedAxis);
 }
 
+// AI-generated code
+// Adapted for scale.
+void Viewport::updateMaces() {
+	const bool scaleAction = actionParams.action == SCALE;
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (!scaleAction || selectionManager.getActiveElement() != OBJECT ||
+		selectedItems.empty()) {
+		renderer.ClearMaces();
+		return;
+	}
+
+	Vec3f positionSum(0.0f);
+	uint positionCount = 0;
+
+	for (const SelectionItem& item : selectedItems) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		Vec3f worldPosition = mesh->Pos();
+
+		positionSum += worldPosition;
+		++positionCount;
+	}
+
+	if (positionCount == 0) {
+		renderer.ClearMaces();
+		return;
+	}
+
+	const uint highlightedAxis = draggingArrow ? draggedArrowAxis : hoveredArrowAxis;
+	renderer.UpdateMaces(positionSum / float(positionCount), highlightedAxis);
+}
+
 // -------------------------------------------------------------------------------------------------
 // Hover Visuals -----------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
@@ -973,8 +1070,9 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
 	const Vec3u ids = renderer.SelectionIds(x, y);
 	const uint newHoveredAxis =
-		(actionParams.action == TRANSLATE_AXIS &&
-			ids.x == ARROW_IDENTIFIER && ids.y == 0 && ids.z < 3)
+		(ids.x == ARROW_IDENTIFIER && ids.z < 3 &&
+			((actionParams.action == TRANSLATE_AXIS && ids.y == 0) ||
+			 (actionParams.action == SCALE && ids.y == 1)))
 		? ids.z : MAX_UINT;
 
 	const bool arrowChanged = newHoveredAxis != hoveredArrowAxis;
@@ -985,6 +1083,7 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 		ids, selectionManager.getActiveElement(), scene);
 	if (arrowChanged) {
 		updateArrows();
+		updateMaces();
 	}
 	// Raw framebuffer IDs can change while the same logical object remains
 	// hovered (for example, crossing faces in OBJECT mode). Only repaint when

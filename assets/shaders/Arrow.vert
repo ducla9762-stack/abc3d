@@ -5,7 +5,7 @@ layout(location = 1) in vec3 base;
 layout(location = 2) in vec3 dir;
 layout(location = 3) in float length;
 layout(location = 4) in float radius;
-layout(location = 5) in float arrowTipHeight;
+layout(location = 5) in float arrowTipHeight; // arrow specific.
 layout(location = 6) in vec3 clr;
 layout(location = 7) in uvec2 ids;
 
@@ -24,12 +24,12 @@ void main(){
 	// Adjust the radius of the arrow
 	pos *= vec3(radius, 1.0f, radius);
 
-	// Adjust the length of the arrow
+	// Adjust the length of the arrow. Vertices 16-19 are the arrowhead base
+	// and vertex 20 is its tip.
 	pos.y += float(gl_VertexID > 7) * length;
 	pos.y += float(gl_VertexID == 20) * arrowTipHeight;
 
-	// Keep the complete gizmo at a constant screen size, matching the FLTK
-	// renderer. The clip-space w value scales the local geometry by depth.
+	// Keep the complete gizmo at a constant screen size. The clip-space w value scales the local geometry by depth.
 	vec4 baseClip = viewProj * vec4(base, 1.0f);
 	float localHeight = max(length + arrowTipHeight, 0.001f);
 	float depthScale = max(baseClip.w, 0.001f) * screenScale / localHeight;

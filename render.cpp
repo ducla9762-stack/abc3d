@@ -113,13 +113,14 @@ bool ModelingRenderer::Initialize(GLuint defaultFrameBuffer) {
 	pointProgram.Bind();
 	pointProgram.SetUniform("offset", pointOffset);
 
-	updateUniforms();
-	// Initialize the selection boolean for the mesh shader program.
-	// By default nothing should be selected.
-
 	// Initialize arrow renderer
 	arrowRenderer.Initialize();
 	arrowRenderer.SetArrows({});
+	maceRenderer.Initialize();
+	maceRenderer.SetMaces({});
+
+	// The gizmo programs must exist before their camera uniforms are uploaded.
+	updateUniforms();
 
 	// Set clear color & blend function
 	glClearColor(0, 0, 0, 1);
@@ -152,6 +153,7 @@ void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	arrowRenderer.Draw();
+	maceRenderer.Draw();
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
@@ -237,6 +239,7 @@ void ModelingRenderer::UpdateProjectionUniforms() {
 	pointProgram.SetUniformMatrix4("mvp", data);
 
 	arrowRenderer.SetViewProjectionUniform(data, fov, height);
+	maceRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateUniforms() {
@@ -261,6 +264,7 @@ void ModelingRenderer::updateUniforms() {
 	pointProgram.SetUniformMatrix4("mvp", data);
 
 	arrowRenderer.SetViewProjectionUniform(data, fov, height);
+	maceRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateTextureUniforms() {
@@ -614,8 +618,8 @@ std::vector<ArrowRenderer::Arrow> ArrowRenderer::CreateArrows(const Vec3f& base,
 }
 
 void ArrowRenderer::Draw() {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBindVertexArray(vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
 	program.Bind();
 	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
@@ -676,10 +680,9 @@ const std::vector<Vec3u> ArrowRenderer::TRIANGLES = {
 bool MaceRenderer::Initialize() {
 	// Build shader program
 
-	// TODO: CHANGE TO NEW MACE SHADER IF NEEDED.
-	bool success = program.BuildFiles("assets/shaders/Arrow.vert", "assets/shaders/ArrowColor.frag");
+	bool success = program.BuildFiles("assets/shaders/Mace.vert", "assets/shaders/ArrowColor.frag");
 	if (!success) {
-		std::cout << "Failed to compile arrow shader programs!" << std::endl;
+		std::cout << "Failed to compile mace shader programs!" << std::endl;
 		return false;
 	}
 
@@ -687,7 +690,7 @@ bool MaceRenderer::Initialize() {
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	// Generate VBO for generic arrow vertices
+	// Generate VBO for generic mace vertices
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * VERTICES.size() * 3, VERTICES.data(), GL_STATIC_DRAW);
@@ -695,12 +698,12 @@ bool MaceRenderer::Initialize() {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 
-	// Generate EBO for generic arrow faces
+	// Generate EBO for generic mace faces
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRIANGLES.size() * 3, TRIANGLES.data(), GL_STATIC_DRAW);
 
-	// Generate VBO for instanced data (Arrow struct)
+	// Generate VBO for instanced data (mace struct)
 	glGenBuffers(1, &instancedVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
 
@@ -726,7 +729,7 @@ void MaceRenderer::SetMaces(const std::vector<Mace>& maces, GLenum usage) {
 	instanceCount = maces.size();
 }
 
-// AI-generated code: Builds the translation-axis gizmo and applies hover color.
+// AI-generated code: Builds the scale-axis gizmo and applies hover color.
 // Adapted to work with scale maces.
 std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uint hoveredAxis) {
 	std::vector<MaceRenderer::Mace> maces;
@@ -737,7 +740,8 @@ std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uin
 	maces.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
 	maces.back().length = 0.5f;
 	maces.back().radius = 0.025f;
-	maces.back().tipSize = 0.25f;
+	// The cap is 4 * radius wide in X/Z, so match that size in Y.
+	maces.back().tipSize = 0.1f;
 	maces.back().color = hoveredAxis == 0 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 1.0f, 0.0f);
 	maces.back().ids = Vec2u(1, 0);
 	// Y (up) - Blue, Sub-ID = 1
@@ -746,7 +750,7 @@ std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uin
 	maces.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
 	maces.back().length = 0.5f;
 	maces.back().radius = 0.025f;
-	maces.back().tipSize = 0.25f;
+	maces.back().tipSize = 0.1f;
 	maces.back().color = hoveredAxis == 1 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 0.0f, 1.0f);
 	maces.back().ids = Vec2u(1, 1);
 	// Z - Red, Sub-ID = 2
@@ -755,7 +759,7 @@ std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uin
 	maces.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
 	maces.back().length = 0.5f;
 	maces.back().radius = 0.025f;
-	maces.back().tipSize = 0.25f;
+	maces.back().tipSize = 0.1f;
 	maces.back().color = hoveredAxis == 2 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(1.0f, 0.0f, 0.0f);
 	maces.back().ids = Vec2u(1, 2);
 
@@ -763,28 +767,28 @@ std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uin
 }
 
 void MaceRenderer::Draw() {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBindVertexArray(vao);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
 	program.Bind();
 	glDrawElementsInstanced(GL_TRIANGLES, TRIANGLES.size() * 3, GL_UNSIGNED_INT, 0, instanceCount);
 }
 
-// AI-generated code: Keeps the arrow gizmo at a constant screen size.
+// AI-generated code: Keeps the mace gizmo at a constant screen size.
 // Adapted to work with scale maces.
 void MaceRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	program.Bind();
 	program.SetUniformMatrix4("viewProj", data);
 
 	// Convert the desired on-screen height to a world-space scale at the
-	// arrow's depth. The shader divides this by each arrow's local height.
+	// mace's depth. The shader divides this by each mace's local height.
 	const float safeHeight = static_cast<float>(std::max(viewportHeight, 1));
 	const float screenScale =
 		2.0f * std::tan(degreesToRadians(fov) * 0.5f) / safeHeight * 100.0f;
 	program.SetUniform("screenScale", screenScale);
 }
 
-//constexpr float HALF_SQR_2 = 0.7071068f;
+	//constexpr float HALF_SQR_2 = 0.7071068f;
 const std::vector<Vec3f> MaceRenderer::VERTICES = {
 	// Cylinder Base
 	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
