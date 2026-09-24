@@ -9,8 +9,10 @@ ABC3D::ABC3D(QWidget *parent)
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
-    //ui.topRightPanels->setCurrentIndex(3);
-
+    ui.topRightPanels->setCurrentIndex(1);
+    ui.tutorialBrowser->setReadOnly(true);
+    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(QString("assets/tutorials/Welcome.html")));
+    ui.tutorialBrowser->reload();
 
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
@@ -38,6 +40,14 @@ ABC3D::ABC3D(QWidget *parent)
     // the visible mode selection synchronized when returning to Move.
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
         ui.freeModeTranslationButton->setChecked(true);
+        });
+
+    // Connects the "Load Tutorial" Button to the QTextBrowser
+    // Opens the file explorer in the "tutorials" folder
+    // Allows users to select text, HTML, or markdown file formats
+    QObject::connect(ui.loadTutorialButton, &QPushButton::released, this, [=]() {
+        QString file = QFileDialog::getOpenFileName(this, tr("Open Tutorial"), "assets/tutorials", tr("Text Files(*.txt * .html * .markdown * .md"));
+        ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
         });
 }
 
