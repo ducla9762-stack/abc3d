@@ -93,7 +93,7 @@ public:
 	void setForward(const Vec3f& f) {
 		assert(f.LengthSquared() > 1.0f - 0.000001f && f.LengthSquared() < 1.0f + 0.000001f);
 
-		dir.x = radiansToDegrees(std::acos(f.x));
+		dir.x = radiansToDegrees(std::atan2(-f.z, f.x));
 		dir.y = radiansToDegrees(std::acos(f.y));
 	}
 
