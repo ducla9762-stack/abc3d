@@ -1129,21 +1129,6 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuStandard_Mode">
-    <property name="title">
-     <string>Standard Mode</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuSimple_Mode">
-    <property name="title">
-     <string>Simple Mode</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuCamera">
     <property name="title">
      <string>Camera</string>
@@ -1151,9 +1136,6 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
-   <addaction name="menuHelp"/>
-   <addaction name="menuStandard_Mode"/>
-   <addaction name="menuSimple_Mode"/>
    <addaction name="menuCamera"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -2180,7 +2162,7 @@
    <sender>actionDelete</sender>
    <signal>triggered()</signal>
    <receiver>viewport</receiver>
-   <slot>deleteSlot()</slot>
+   <slot>deleteSelection()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -2196,7 +2178,7 @@
    <sender>actionDuplicate</sender>
    <signal>triggered()</signal>
    <receiver>viewport</receiver>
-   <slot>duplicateSlot()</slot>
+   <slot>duplicateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
