@@ -12,12 +12,14 @@ ABC3D::ABC3D(QWidget *parent)
     ui.topRightPanels->setCurrentIndex(1);
     ui.tutorialBrowser->setReadOnly(true);
     ui.tutorialBrowser->setSource(QUrl::fromLocalFile(QString("assets/tutorials/Welcome.html")));
-    ui.tutorialBrowser->reload();
+
+    QAction* actionCamera = new QAction("Camera", ui.menuBar);
+    ui.menuBar->addAction(actionCamera);
+    QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
 
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
     //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
-
 
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
     ui.menuBar->addAction(actionSimpleMode);

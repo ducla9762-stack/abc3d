@@ -1140,14 +1140,8 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
-   <widget class="QMenu" name="menuCamera">
-    <property name="title">
-     <string>Camera</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
-   <addaction name="menuCamera"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
