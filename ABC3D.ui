@@ -632,13 +632,24 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
+         <widget class="QWidget" name="sceneHierarchyPanel">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
+          </property>
+          <attribute name="title">
+           <string>Scene Hierarchy</string>
+          </attribute>
+         </widget>
          <widget class="QWidget" name="tutorialPanel">
           <attribute name="title">
            <string>Tutorial</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QTextBrowser" name="tutorialBrowser"/>
+           </item>
            <item>
             <widget class="QPushButton" name="loadTutorialButton">
              <property name="text">
@@ -648,9 +659,9 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="sceneHierarchyPanel">
+         <widget class="QWidget" name="helpPanel">
           <attribute name="title">
-           <string>Scene Hierarchy</string>
+           <string>Help</string>
           </attribute>
          </widget>
         </widget>
@@ -992,7 +1003,7 @@
                <number>0</number>
               </property>
               <item row="1" column="1">
-               <widget class="QPushButton" name="pushButton_2">
+               <widget class="QPushButton" name="freeButton">
                 <property name="text">
                  <string>Free</string>
                 </property>
@@ -1005,7 +1016,7 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QPushButton" name="pushButton">
+               <widget class="QPushButton" name="orbitButton">
                 <property name="text">
                  <string>Orbit</string>
                 </property>
@@ -1021,7 +1032,7 @@
                </widget>
               </item>
               <item row="0" column="0" colspan="2">
-               <widget class="QLabel" name="label_4">
+               <widget class="QLabel" name="cameraModeLabel">
                 <property name="text">
                  <string>Camera Mode</string>
                 </property>
@@ -1129,14 +1140,8 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
-   <widget class="QMenu" name="menuCamera">
-    <property name="title">
-     <string>Camera</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
-   <addaction name="menuCamera"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -2191,7 +2196,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>orbitButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>originInput</receiver>
    <slot>setVisible(bool)</slot>
@@ -2207,7 +2212,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>orbitButton</sender>
    <signal>clicked()</signal>
    <receiver>viewport</receiver>
    <slot>setCameraModeOrbit()</slot>
@@ -2223,7 +2228,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_2</sender>
+   <sender>freeButton</sender>
    <signal>clicked()</signal>
    <receiver>viewport</receiver>
    <slot>setCameraModeFree()</slot>
@@ -2235,6 +2240,22 @@
     <hint type="destinationlabel">
      <x>607</x>
      <y>404</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionExit</sender>
+   <signal>triggered()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>359</y>
     </hint>
    </hints>
   </connection>

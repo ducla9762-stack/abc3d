@@ -9,13 +9,17 @@ ABC3D::ABC3D(QWidget *parent)
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
-    //ui.topRightPanels->setCurrentIndex(3);
+    ui.topRightPanels->setCurrentIndex(1);
+    ui.tutorialBrowser->setReadOnly(true);
+    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(QString("assets/tutorials/Welcome.html")));
 
+    QAction* actionCamera = new QAction("Camera", ui.menuBar);
+    ui.menuBar->addAction(actionCamera);
+    QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
 
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
     //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
-
 
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
     ui.menuBar->addAction(actionSimpleMode);
@@ -39,16 +43,23 @@ ABC3D::ABC3D(QWidget *parent)
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
         ui.freeModeTranslationButton->setChecked(true);
         });
+
+    // Connects the "Load Tutorial" Button to the QTextBrowser
+    // Opens the file explorer in the "tutorials" folder
+    // Allows users to select text, HTML, or markdown file formats
+    QObject::connect(ui.loadTutorialButton, &QPushButton::released, this, [=]() {
+        QString file = QFileDialog::getOpenFileName(this, tr("Open Tutorial"), "assets/tutorials", tr("Text Files(*.txt * .html * .markdown * .md"));
+        ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
+        });
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
     bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
     switch (event->key()) {
-        if (event->key() == Qt::Key_Control) {
+    case Qt::Key_Control:
             event->accept();
             emit ctrlKeyPressed();
-            return;
-        }
+            break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
         if (ctrl) { ui.viewport->duplicateSelection(); }
@@ -162,10 +173,10 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.bevelToolButton->setChecked(true);
         break;
     default:
-        QMainWindow::keyReleaseEvent(event);
+        QMainWindow::keyPressEvent(event);
         return;
     }
-    QMainWindow::keyReleaseEvent(event);
+    QMainWindow::keyPressEvent(event);
 }
 
 void ABC3D::keyReleaseEvent(QKeyEvent* event) {
@@ -175,6 +186,7 @@ void ABC3D::keyReleaseEvent(QKeyEvent* event) {
         emit ctrlKeyReleased();
         break;
     }
+    QMainWindow::keyReleaseEvent(event);
 }
 
 ABC3D::~ABC3D()
