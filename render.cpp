@@ -37,10 +37,6 @@ void ModelingRenderer::SetVertexPointsVisible(bool visible) { displayPoints = vi
 //	return right;
 //}
 
-void ModelingRenderer::UpdateCamera() {
-	updateUniforms();
-}
-
 Vec3u ModelingRenderer::SelectionIds(uint x, uint y) {
 	if (x >= static_cast<uint>(width) || y >= static_cast<uint>(height) || idSelectBuf.empty()) {
 		return Vec3u(0u, 0u, 0u);
@@ -131,8 +127,12 @@ bool ModelingRenderer::Initialize(GLuint defaultFrameBuffer) {
 }
 
 void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
-	glFinish();
-	steady_clock::time_point start = steady_clock::now();
+
+	if (updateRenderBuffers) { UpdateRenderBuffers(); updateRenderBuffers = false; }
+	if (updateCamera) { updateUniforms(); updateCamera = false; }
+
+	//glFinish();
+	//steady_clock::time_point start = steady_clock::now();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -202,10 +202,10 @@ void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
 
 	glReadBuffer(GL_COLOR_ATTACHMENT0);*/
 
-	glFinish();
-	steady_clock::time_point end = steady_clock::now();
-	milliseconds ms = duration_cast<milliseconds>(end - start);
-	std::cout << "Milliseconds: " << ms.count() << std::endl;
+	//glFinish();
+	//steady_clock::time_point end = steady_clock::now();
+	//milliseconds ms = duration_cast<milliseconds>(end - start);
+	//std::cout << "Milliseconds: " << ms.count() << std::endl;
 }
 
 void ModelingRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
@@ -248,8 +248,8 @@ void ModelingRenderer::updateUniforms() {
 	meshProgram.SetUniformMatrix4("modelView", data);
 
 	Matrix3f normalTransform(viewTransform);
-	normalTransform.Invert();
-	normalTransform.Transpose();
+	//normalTransform.Invert();
+	//normalTransform.Transpose();
 	normalTransform.Get(data);
 	meshProgram.SetUniformMatrix3("normalTransform", data);
 
@@ -321,14 +321,14 @@ void ModelingRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 	glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
 }
 
-void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
+void ModelingRenderer::UpdateRenderBuffers() {
 	// Unique vertex data for drawing vertex points
 	sceneVertices.resize(0);
 	vertObjData.resize(0);
 	pointVertDrawCount = 0;
-	for (unsigned int i = 0; i < scene.MeshCount(); i++)
+	for (unsigned int i = 0; i < scene->MeshCount(); i++)
 	{
-		const HalfEdgeMesh* mesh = scene[i];
+		const HalfEdgeMesh* mesh = scene->operator[](i);
 		vertObjData.insert(vertObjData.end(), mesh->VertexCount(), Vec2u(i + 1, pointVertDrawCount));
 		pointVertDrawCount += mesh->VertexCount();
 		mesh->GetWorldVertexPositions(sceneVertices);
@@ -342,9 +342,9 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	// Mesh Data
 	bufBuilder.Clear();
 
-	for (unsigned int i = 0; i < scene.MeshCount(); i++)
+	for (unsigned int i = 0; i < scene->MeshCount(); i++)
 	{
-		const HalfEdgeMesh* mesh = scene[i];
+		const HalfEdgeMesh* mesh = scene->operator[](i);
 		if (mesh) {
 			bufBuilder.AddMesh(*mesh, i + 1);
 		}

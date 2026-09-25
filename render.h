@@ -177,6 +177,12 @@ class ModelingRenderer : public Renderer {
 	FreeCamera freeCamera;
 	float fov = 90.0f;
 
+	// Queued Operations
+	bool updateRenderBuffers = false;
+	bool updateCamera = false;
+
+	const Scene* scene;
+
 	std::vector<Vec3f> sceneVertices;
 	std::vector<Vec2u> vertObjData;
 
@@ -215,18 +221,16 @@ public:
 	void SetGridVisible(bool visible); 
 	void SetVertexPointsVisible(bool visible); 
 
-	void UpdateCamera();
-
 	void mouseDrag(const Vec2f& drag) {
 		if (camType == ORBIT)	{ orbitCamera.mouseDrag(drag); }
 		else					{ freeCamera.mouseDrag(drag); }
-		UpdateCamera();
+		updateCamera = true;
 	}
 
 	void mouseWheel(float dx, float dy) {
 		if (camType == ORBIT)	{ orbitCamera.mouseWheel(dx, dy); }
 		else					{ freeCamera.mouseWheel(dx, dy); }
-		UpdateCamera();
+		updateCamera = true;
 	}
 
 	CameraType GetActiveCamType() const { return camType; }
@@ -234,10 +238,10 @@ public:
 	void setCameraPosition(const Vec3f& pos) {
 		if (camType == ORBIT)	{ orbitCamera.setPosition(pos); }
 		else					{ freeCamera.setPosition(pos); }
-		UpdateCamera();
+		updateCamera = true;
 	}
 
-	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); UpdateCamera(); }
+	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); updateCamera = true; }
 	const Camera* GetCamera() const { return camType == ORBIT ? (Camera*) &orbitCamera : (Camera*) &freeCamera; }
 
 	void toggleCamType() {
@@ -252,7 +256,7 @@ public:
 			orbitCamera.setPosition(freeCamera.position());
 		}
 
-		UpdateCamera();
+		updateCamera = true;
 	}
 
 	void setCameraMode(CameraType mode) {
@@ -268,7 +272,9 @@ public:
 
 	void Resize(int width, int height, GLuint defaultFrameBuffer) override;
 
-	void UpdateRenderBuffers(const Scene& scene);
+	void UpdateRenderBuffers(const Scene& scene) {
+		this->scene = &scene; updateRenderBuffers = true;
+	}
 
 	/// <summary>
 	/// Shows the translation arrows at the supplied world-space position.
@@ -308,6 +314,8 @@ public:
 	bool UpdateHover(const Vec3u& selectionIds, Element activeElement, const Scene& scene);
 
 private:
+
+	void UpdateRenderBuffers();
 
 	void SetPerspectiveAndViewport();
 

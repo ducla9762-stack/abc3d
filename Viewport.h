@@ -174,8 +174,10 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	bool translateFreeDrag();
-	void initActionDirsToSelectedNormals();
-	void translateSelections();
+	void initActionDirsToSelectedNormals(Element element);
+	void initActionDirsToSelectedNormals() { initActionDirsToSelectedNormals(selectionManager.getActiveElement()); }
+	void translateSelections(Element element);
+	void translateSelections() { translateSelections(selectionManager.getActiveElement()); }
 	bool translateOutDrag();
 	bool translateEdgeDrag() { return false; }
 	void setupBevelDrag();
@@ -704,9 +706,6 @@ public slots:
 
 	void setOrbitOrigin(const Vec3f& origin) {
 		renderer.setOrbitOrigin(origin);
-
-		makeCurrent();
-		renderer.UpdateCamera();
 		update();
 	}
 
