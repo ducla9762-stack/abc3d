@@ -125,12 +125,12 @@ private:
 	bool rendererInitialized = false;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
-	uint hoveredArrowAxis = MAX_UINT;
+	uint hoveredGizmoAxis = MAX_UINT;
 	Vec3u hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	// AI-generated code: The arrow pressed at the start of an axis drag must
 	// remain active even if the cursor moves away from the gizmo.
-	uint draggedArrowAxis = MAX_UINT;
-	bool draggingArrow = false;
+	uint draggedGizmoAxis = MAX_UINT;
+	bool draggingGizmo = false;
 
 // ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
@@ -239,12 +239,12 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	// Constrain the drag to the world-space axis captured on mouse press.
-	bool arrowDrag();
+	bool translateGizmoDrag();
 
 	bool scaleGizmoDrag();
 
 	// AI-generated code: Positions the translation gizmo at the selection average.
-	void updateArrows();
+	void updateGizmos();
 
 	void updateMaces();
 
@@ -567,7 +567,7 @@ public slots:
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
-		updateArrows();
+		updateGizmos();
 		update();
 
 		return true;
@@ -622,7 +622,7 @@ public slots:
 		selectionManager.clearSelection();
 		renderer.UpdateRenderBuffers(scene);
 		updateSelectionVisuals();
-		updateArrows();
+		updateGizmos();
 		update();
 	}
 

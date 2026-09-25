@@ -113,11 +113,12 @@ bool ModelingRenderer::Initialize(GLuint defaultFrameBuffer) {
 	pointProgram.Bind();
 	pointProgram.SetUniform("offset", pointOffset);
 
-	// Initialize arrow renderer
-	arrowRenderer.Initialize();
-	arrowRenderer.SetArrows({});
-	maceRenderer.Initialize();
-	maceRenderer.SetMaces({});
+	// Initialize gizmo renderer
+	if (!gizmoRenderer.Initialize()) {
+		return false;
+	}
+	// Clear so we don't draw on startup.
+	gizmoRenderer.Clear();
 
 	// The gizmo programs must exist before their camera uniforms are uploaded.
 	updateUniforms();
@@ -149,11 +150,11 @@ void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
 		glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
 	}
 
-	// Draw the arrows before checking the selection texture.
+	// Draw gizmos before checking the selection texture.
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
-	arrowRenderer.Draw();
-	maceRenderer.Draw();
+	//arrowRenderer.Draw();
+	gizmoRenderer.Draw();
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
@@ -238,8 +239,8 @@ void ModelingRenderer::UpdateProjectionUniforms() {
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
 
-	arrowRenderer.SetViewProjectionUniform(data, fov, height);
-	maceRenderer.SetViewProjectionUniform(data, fov, height);
+	//arrowRenderer.SetViewProjectionUniform(data, fov, height);
+	gizmoRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateUniforms() {
@@ -263,8 +264,8 @@ void ModelingRenderer::updateUniforms() {
 	pointProgram.Bind();
 	pointProgram.SetUniformMatrix4("mvp", data);
 
-	arrowRenderer.SetViewProjectionUniform(data, fov, height);
-	maceRenderer.SetViewProjectionUniform(data, fov, height);
+	//arrowRenderer.SetViewProjectionUniform(data, fov, height);
+	gizmoRenderer.SetViewProjectionUniform(data, fov, height);
 }
 
 void ModelingRenderer::updateTextureUniforms() {
@@ -393,22 +394,14 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 	glVertexAttribIPointer(4, 3, GL_UNSIGNED_INT, 0, (GLvoid*)bufOffset3);
 }
 
-void ModelingRenderer::UpdateArrows(const Vec3f& base, uint hoveredAxis) {
-	arrowRenderer.SetArrows(arrowRenderer.CreateArrows(base, hoveredAxis));
+// Public facing gizmo API.
+void ModelingRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type) {
+	gizmoRenderer.UpdateGizmos(base, hoveredAxis, type);
 }
-
-void ModelingRenderer::UpdateMaces(const Vec3f& base, uint hoveredAxis)
+// Public facing gizmo API.
+void ModelingRenderer::ClearGizmos()
 {
-	maceRenderer.SetMaces(maceRenderer.CreateMaces(base, hoveredAxis));
-}
-
-void ModelingRenderer::ClearArrows() {
-	arrowRenderer.SetArrows({});
-}
-
-void ModelingRenderer::ClearMaces()
-{
-	maceRenderer.SetMaces({});
+	gizmoRenderer.Clear();
 }
 
 // OLD FUNCTION
@@ -458,7 +451,7 @@ bool ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElem
 	};
 
 	// Arrows and the background must not produce a mesh-element hover.
-	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT && selectionIds.x != ARROW_IDENTIFIER) {
+	if (selectionIds.x != 0 && selectionIds.x != MAX_UINT && selectionIds.x != GIZMO_IDENTIFIER) {
 		switch (activeElement) {
 		case OBJECT:
 			nextHoveredItems[0][0] = OBJECT;
@@ -529,8 +522,7 @@ bool ModelingRenderer::UpdateHover(const Vec3u& selectionIds, Element activeElem
 	return true;
 }
 
-// Arrow renderer
-
+#pragma region Old Arrow Renderer
 bool ArrowRenderer::Initialize() {
 	// Build shader program
 	bool success = program.BuildFiles("assets/shaders/Arrow.vert", "assets/shaders/ArrowColor.frag");
@@ -638,7 +630,7 @@ void ArrowRenderer::SetViewProjectionUniform(float data[16], float fov, int view
 	program.SetUniform("screenScale", screenScale);
 }
 
-constexpr float HALF_SQR_2 = 0.7071068f;
+//constexpr float HALF_SQR_2 = 0.7071068f;
 const std::vector<Vec3f> ArrowRenderer::VERTICES = {
 	// Cylinder Base
 	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
@@ -674,23 +666,26 @@ const std::vector<Vec3u> ArrowRenderer::TRIANGLES = {
 	// Pyramid Top
 	Vec3u(16, 20, 17), Vec3u(17, 20, 18), Vec3u(18, 20, 19), Vec3u(19, 20, 16)
 };
+#pragma endregion
 
-// Mace renderer
-
-bool MaceRenderer::Initialize() {
+#pragma region Gizmo Renderer
+bool GizmoRenderer::Gizmo::initialize(const char* vsPath, const char* fsPath, const std::vector<Vec3f>& vertices, const std::vector<Vec3u>& faces) {
 	// Build shader program
 
-	bool success = program.BuildFiles("assets/shaders/Mace.vert", "assets/shaders/ArrowColor.frag");
+	bool success = program.BuildFiles(vsPath, fsPath);
 	if (!success) {
-		std::cout << "Failed to compile mace shader programs!" << std::endl;
+		std::cout << "Failed to compile gizmo shader programs!" << std::endl;
 		return false;
 	}
+
+	VERTICES = vertices;
+	TRIANGLES = faces;
 
 	// Generate vertex array object
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	// Generate VBO for generic mace vertices
+	// Generate VBO for generic vertices
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * VERTICES.size() * 3, VERTICES.data(), GL_STATIC_DRAW);
@@ -698,22 +693,22 @@ bool MaceRenderer::Initialize() {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 
-	// Generate EBO for generic mace faces
+	// Generate EBO for generic faces
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRIANGLES.size() * 3, TRIANGLES.data(), GL_STATIC_DRAW);
 
-	// Generate VBO for instanced data (mace struct)
+	// Generate VBO for instanced data.
 	glGenBuffers(1, &instancedVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, base));
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, dir));
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, length));
-	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, radius));
-	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, tipSize));
-	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Mace), (GLvoid*)offsetof(Mace, color));
-	glVertexAttribIPointer(7, 2, GL_UNSIGNED_INT, sizeof(Mace), (GLvoid*)offsetof(Mace, ids));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, base));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, dir));
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, length));
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, radius));
+	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, tipSize));
+	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, color));
+	glVertexAttribIPointer(7, 2, GL_UNSIGNED_INT, sizeof(GizmoInstanceSettings), (GLvoid*)offsetof(GizmoInstanceSettings, ids));
 
 	for (int i = 1; i < 8; ++i) {
 		glEnableVertexAttribArray(i);
@@ -723,50 +718,11 @@ bool MaceRenderer::Initialize() {
 	return true;
 }
 
-void MaceRenderer::SetMaces(const std::vector<Mace>& maces, GLenum usage) {
-	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Mace) * maces.size(), maces.data(), usage);
-	instanceCount = maces.size();
-}
+void GizmoRenderer::Gizmo::draw() {
+	if (instanceCount == 0) {
+		return;
+	}
 
-// AI-generated code: Builds the scale-axis gizmo and applies hover color.
-// Adapted to work with scale maces.
-std::vector<MaceRenderer::Mace> MaceRenderer::CreateMaces(const Vec3f& base, uint hoveredAxis) {
-	std::vector<MaceRenderer::Mace> maces;
-	// Scale, ID = 1.
-	// X - Green, Sub-ID = 0
-	maces.emplace_back();
-	maces.back().base = base;
-	maces.back().dir = Vec3f(1.0f, 0.0f, 0.0f);
-	maces.back().length = 0.5f;
-	maces.back().radius = 0.025f;
-	// The cap is 4 * radius wide in X/Z, so match that size in Y.
-	maces.back().tipSize = 0.1f;
-	maces.back().color = hoveredAxis == 0 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 1.0f, 0.0f);
-	maces.back().ids = Vec2u(1, 0);
-	// Y (up) - Blue, Sub-ID = 1
-	maces.emplace_back();
-	maces.back().base = base;
-	maces.back().dir = Vec3f(0.0f, 1.0f, 0.0f);
-	maces.back().length = 0.5f;
-	maces.back().radius = 0.025f;
-	maces.back().tipSize = 0.1f;
-	maces.back().color = hoveredAxis == 1 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(0.0f, 0.0f, 1.0f);
-	maces.back().ids = Vec2u(1, 1);
-	// Z - Red, Sub-ID = 2
-	maces.emplace_back();
-	maces.back().base = base;
-	maces.back().dir = Vec3f(0.0f, 0.0f, 1.0f);
-	maces.back().length = 0.5f;
-	maces.back().radius = 0.025f;
-	maces.back().tipSize = 0.1f;
-	maces.back().color = hoveredAxis == 2 ? Vec3f(1.0f, 1.0f, 0.0f) : Vec3f(1.0f, 0.0f, 0.0f);
-	maces.back().ids = Vec2u(1, 2);
-
-	return maces;
-}
-
-void MaceRenderer::Draw() {
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
@@ -776,7 +732,7 @@ void MaceRenderer::Draw() {
 
 // AI-generated code: Keeps the mace gizmo at a constant screen size.
 // Adapted to work with scale maces.
-void MaceRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+void GizmoRenderer::Gizmo::setViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	program.Bind();
 	program.SetUniformMatrix4("viewProj", data);
 
@@ -788,47 +744,87 @@ void MaceRenderer::SetViewProjectionUniform(float data[16], float fov, int viewp
 	program.SetUniform("screenScale", screenScale);
 }
 
-	//constexpr float HALF_SQR_2 = 0.7071068f;
-const std::vector<Vec3f> MaceRenderer::VERTICES = {
-	// Cylinder Base
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
-	// Cylinder Top
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+void GizmoRenderer::Gizmo::setGizmos(const std::vector<GizmoInstanceSettings>& gizmos, GLenum usage) {
+	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GizmoInstanceSettings) * gizmos.size(), gizmos.data(), usage);
+	instanceCount = gizmos.size();
+}
 
-	// Cube bottom
-	Vec3f(2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
-	Vec3f(2.0f, 0.0f, 2.0f),
-	// Cube top. The shader scales this unit height by tipSize.
-	Vec3f(2.0f, 1.0f, -2.0f), Vec3f(-2.0f, 1.0f, -2.0f), Vec3f(-2.0f, 1.0f, 2.0f),
-	Vec3f(2.0f, 1.0f, 2.0f)
-};
+void GizmoRenderer::Gizmo::clear() {
+	instanceCount = 0;
+}
 
-const std::vector<Vec3u> MaceRenderer::TRIANGLES = {
-	// Clinder Base
-	Vec3u(0, 1, 2), Vec3u(0, 2, 3), Vec3u(0, 3, 4), Vec3u(0, 4, 5), Vec3u(0, 5, 6), Vec3u(0, 6, 7),
-	// Cyclinder Top
-	Vec3u(8, 10, 9), Vec3u(8, 11, 10), Vec3u(8, 12, 11), Vec3u(8, 13, 12), Vec3u(8, 14, 13), Vec3u(8, 15, 14),
-	// Cylinder Sides
-	Vec3u(0, 8, 1), Vec3u(1, 8, 9),
-	Vec3u(1, 9, 2), Vec3u(2, 9, 10),
-	Vec3u(2, 10, 3), Vec3u(3, 10, 11),
-	Vec3u(3, 11, 4), Vec3u(4, 11, 12),
-	Vec3u(4, 12, 5), Vec3u(5, 12, 13),
-	Vec3u(5, 13, 6), Vec3u(6, 13, 14),
-	Vec3u(6, 14, 7), Vec3u(7, 14, 15),
-	Vec3u(7, 15, 0), Vec3u(0, 15, 8),
+void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type) {
+	std::vector<GizmoInstanceSettings>* activeSettings = nullptr;
+	const std::vector<GizmoInstanceSettings>* defaultSettings = nullptr;
 
-	// Cube bottom
-	Vec3u(16, 18, 17), Vec3u(16, 19, 18),
-	// Cube top
-	Vec3u(20, 21, 22), Vec3u(20, 22, 23),
-	// Cube sides
-	Vec3u(16, 17, 21), Vec3u(16, 21, 20),
-	Vec3u(19, 23, 22), Vec3u(19, 22, 18),
-	Vec3u(17, 18, 22), Vec3u(17, 22, 21),
-	Vec3u(16, 20, 23), Vec3u(16, 23, 19)
-};
+	if (type == Type::Translation) {
+		maces.clear();
+		activeSettings = &arrows;
+		defaultSettings = &DEFAULT_ARROW_SETTINGS;
+	}
+	else if (type == Type::Scale) {
+		arrows.clear();
+		activeSettings = &maces;
+		defaultSettings = &DEFAULT_MACE_SETTINGS;
+	}
+	else if (type == Type::Rotation) {
+		// todo
+	}
+
+	// If no active setting, go to default settings.
+	if (activeSettings->empty()) {
+		*activeSettings = *defaultSettings;
+	}
+
+	for (size_t i = 0; i < activeSettings->size(); ++i) {
+		GizmoInstanceSettings& setting = (*activeSettings)[i];
+		// Set the new base.
+		setting.base = base;
+		// Get the aixs.
+		const uint axis = setting.ids.y;
+		// Set the color depending on if the axis is hovered or not, and depending on which gizmo it is.
+		setting.color = axis == hoveredAxis ? Vec3f(1.0f, 1.0f, 0.0f) : (axis == 0 ? Vec3f(0.0f, 1.0f, 0.0f) : axis == 1 ? Vec3f(0.0f, 0.0f, 1.0f) : Vec3f(1.0f, 0.0f, 0.0f));
+	}
+}
+
+bool GizmoRenderer::Initialize() {
+	if (!translation.initialize("assets/shaders/Arrow.vert", "assets/shaders/ArrowColor.frag", ARROW_VERTICES, ARROW_TRIANGLES)) {
+		std::cout << "Error initializing translation gizmo shaders!" << std::endl;
+		return false;
+	}
+	if (!scale.initialize("assets/shaders/Mace.vert", "assets/shaders/ArrowColor.frag", MACE_VERTICES, MACE_TRIANGLES)) {
+		std::cout << "Error initializing scale gizmo shaders!" << std::endl;
+		return false;
+	}
+
+	// Set default settings.
+	SetGizmoInstanceSettings(DEFAULT_ARROW_SETTINGS, DEFAULT_MACE_SETTINGS);
+
+	return true;
+}
+
+void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces) {
+	this->arrows = arrows;
+	this->maces = maces;
+}
+
+void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+	translation.setViewProjectionUniform(data, fov, viewportHeight);
+	scale.setViewProjectionUniform(data, fov, viewportHeight);
+}
+
+void GizmoRenderer::Draw() {
+	translation.setGizmos(arrows);
+	translation.draw();
+	scale.setGizmos(maces);
+	scale.draw();
+}
+
+void GizmoRenderer::Clear() {
+	arrows.clear();
+	maces.clear();
+	translation.clear();
+	scale.clear();
+}
+#pragma endregion

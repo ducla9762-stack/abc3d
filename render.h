@@ -11,6 +11,7 @@
 #include "cyMatrix.h"
 
 #include "helper.h"
+#include "Gizmo.h"
 #include "scene.h"
 #include "renderBufferBuilder.h"
 #include "selectionManager.h"
@@ -27,6 +28,7 @@ public:
 	virtual void Resize(int width, int height, GLuint defaultFrameBuffer) = 0;
 };
 
+#pragma region Old Arrow Renderer
 /// <summary>
 /// Renders world-space arrows to the framebuffer with a given View-Projection matrix.
 /// </summary>
@@ -85,62 +87,114 @@ public:
 	std::vector<Arrow> CreateArrows(const Vec3f& base, uint hoveredAxis);
 };
 
-/// <summary>
-/// Renders world-space "mace" to the framebuffer with a given View-Projection matrix.
-/// </summary>
-class MaceRenderer {
-	// Generic mace geometry data
-	static const std::vector<Vec3f> VERTICES;
-	static const std::vector<Vec3u> TRIANGLES;
+#pragma endregion
 
-	// Data for OpenGL operations
-	GLSLProgram program; // Shader program
-	GLuint vao = 0, vbo = 0, ebo = 0; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
-	GLuint instancedVbo = 0; // VBO for arrow data (mace struct)
-	GLsizei instanceCount = 0; // Number of maces
-
+class GizmoRenderer {
 public:
+	enum class Type { Translation, Scale, Rotation };
 
-	struct Mace {
-		Vec3f base;
-		Vec3f dir;
-		float length;
-		float radius;
-		float tipSize;
-		Vec3f color;
-		Vec2u ids;
+private:
+	/// <summary>
+	/// The complete gizmo to draw. Has it's own geometry data, buffers, and shader program.
+	/// </summary>
+	struct Gizmo {
+		// Generic geometry data
+		std::vector<Vec3f> VERTICES;
+		std::vector<Vec3u> TRIANGLES;
+
+		// Data for OpenGL operations
+		GLSLProgram program; // Shader program
+		GLuint vao = 0, vbo = 0, ebo = 0; // Vertex Array Obj, Vertex Buf Obj, Element Buf Obj
+		GLuint instancedVbo = 0; // VBO for gizmo data
+		GLsizei instanceCount = 0; // Number of instances
+
+		// The list of settings for each piece of the gizmo.
+		std::vector<GizmoInstanceSettings> settings;
+
+		/// <summary>
+		/// Initialize the gizmo.
+		/// Builds shader program, initializes buffers, and set geometry and setting data.
+		/// </summary>
+		/// <param name="vsPath"> Path to the vertex shader. </param>
+		/// <param name="fsPath"> Path to the fragment shader. </param>
+		/// <param name="settings"> Reference to the gizmo instance settings. </param>
+		/// <param name="vertices"> Reference to the vertex data. </param>
+		/// <param name="faces"> Reference to the face data. </param>
+		/// <returns></returns>
+		bool initialize(const char* vsPath, const char* fsPath, const std::vector<Vec3f>& vertices, const std::vector<Vec3u>& faces);
+
+		/// <summary>
+		/// Draw the gizmo.
+		/// </summary>
+		void draw();
+
+		/// <summary>
+		/// Sets the View-Projection transformation.
+		/// </summary>
+		/// <param name="data">View-Projection Matrix</param>
+		void setViewProjectionUniform(float data[16], float fov, int viewportHeight);
+
+		/// <summary>
+		/// Sets the gizmos to draw.
+		/// </summary>
+		/// <param name="maces">List of maces</param>
+		/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
+		void setGizmos(const std::vector<GizmoInstanceSettings>& gizmos, GLenum usage = GL_STATIC_DRAW);
+
+		/// <summary>
+		/// Clears the gizmo.
+		/// </summary>
+		void clear();
 	};
 
+	// Settings for gizmo instances.
+	std::vector<GizmoInstanceSettings> arrows; // translation.
+	std::vector<GizmoInstanceSettings> maces; // scale.
+	// todo: rotation;
+
+	// Gizmo programs.
+	Gizmo translation;
+	Gizmo scale;
+	// todo: rotation;
+
+public:
 	/// <summary>
 	/// Initializes OpenGL state (program, buffers, and vao).
 	/// Must be called before anything else.
 	/// </summary>
-	/// <returns>True if the shader program compiled. Otherwise, false.</returns>
+	/// <returns> True if the shader programs were compiled. Otherwise, false. </returns>
 	bool Initialize();
 
 	/// <summary>
-	/// Draws maces to framebuffer.
+	/// Updates the gizmos draw position and color.
 	/// </summary>
-	void Draw();
+	/// <param name="base"> The position to draw the gizmo. </param>
+	/// <param name="hoveredAxis"> The axis being hovered on. </param>
+	/// <param name="type"> The type of gizmo to draw. </param>
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type);
 
 	/// <summary>
-	/// Sets the View-Projection transformation.
+	/// Sets the initial settings for each gizmo.
+	/// </summary>
+	/// <param name="arrows"></param>
+	/// <param name="maces"></param>
+	void SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces);
+
+	/// <summary>
+	/// Sets the View-Projection transformation for all gizmos.
 	/// </summary>
 	/// <param name="data">View-Projection Matrix</param>
 	void SetViewProjectionUniform(float data[16], float fov, int viewportHeight);
 
 	/// <summary>
-	/// Sets the maces to draw.
+	/// Draw the gizmos.
 	/// </summary>
-	/// <param name="maces">List of maces</param>
-	/// <param name="usage">Usage hint (GL_STATIC_DRAW by default)</param>
-	void SetMaces(const std::vector<Mace>& arrows, GLenum usage = GL_STATIC_DRAW);
+	void Draw();
 
 	/// <summary>
-	/// Creates a vector of maces to be drawn.
+	/// Clears all gizmos.
 	/// </summary>
-	/// <returns> Maces to draw. </returns>
-	std::vector<Mace> CreateMaces(const Vec3f& base, uint hoveredAxis);
+	void Clear();
 };
 
 class ModelingRenderer : public Renderer {
@@ -200,8 +254,9 @@ class ModelingRenderer : public Renderer {
 	};
 	bool hoverStateInitialized = false;
 
-	ArrowRenderer arrowRenderer;
-	MaceRenderer maceRenderer;
+	//ArrowRenderer arrowRenderer;
+	//MaceRenderer maceRenderer;
+	GizmoRenderer gizmoRenderer;
 
 public:
 
@@ -270,27 +325,9 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
-	/// <summary>
-	/// Shows the translation arrows at the supplied world-space position.
-	/// </summary>
-	void UpdateArrows(const Vec3f& base, uint hoveredAxis);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type);
 
-	/// <summary>
-	/// Shows the scale maces at the supplied world-space position.
-	/// </summary>
-	/// <param name="base"> Where the base of the maces will be drawn. </param>
-	/// <param name="hoveredAxis"> The currently hovered over axis. </param>
-	void UpdateMaces(const Vec3f& base, uint hoveredAxis);
-
-	/// <summary>
-	/// Hides all arrows.
-	/// </summary>
-	void ClearArrows();
-
-	/// <summary>
-	/// Hides all maces.
-	/// </summary>
-	void ClearMaces();
+	void ClearGizmos();
 
 	void UpdateSelectionTexture(std::vector<bool> selections);
 
