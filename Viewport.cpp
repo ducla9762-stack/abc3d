@@ -159,6 +159,13 @@ void Viewport::emitSelectionChanged() {
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
+	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
+		actionParams.actionStage = 0;
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
 		return;
@@ -205,9 +212,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked
-	if (!(event->button() & Qt::LeftButton)) {
-		return;
-	}
+	if (!(event->button() & Qt::LeftButton)) { return; }
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -215,6 +220,20 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+
+	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
+		std::vector<uint> extrudedEdges;
+		beveler->ExtrudeBeveledEdges(extrudedEdges);
+		uint mesh = selectionManager.getSelectedItems()[0].meshId;
+		selectionManager.clearSelection();
+		for (uint edge : extrudedEdges) {
+			selectionManager.addSelection({mesh, edge});
+		}
+		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
 	Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
@@ -257,18 +276,30 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 	// so enabling Qt mouse tracking does not turn ordinary movement into camera movement.
 	const bool dragging = event->buttons() & Qt::LeftButton;
 
-	// Update hover visuals.
-	const bool hoverChanged = updateHoverVisual(pos);
-
 	// With mouse tracking enabled, mouseMoveEvent also runs without a button
 	// pressed. Hovering must not be interpreted as a camera drag.
-	if (!dragging) {
-		if (hoverChanged) {
-			update();
-		}
+	if (dragging) {
+		mouseDragEvent(pos);
 		return;
 	}
 
+	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
+		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
+		translateSelections();
+		mouseAction.EndMouseDragStep();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
+
+	// Update hover visuals.
+	const bool hoverChanged = updateHoverVisual(pos);
+	if (hoverChanged) { update(); }
+
+	return;
+}
+
+void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// Update MouseAction struct
 	mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 
@@ -709,7 +740,7 @@ void Viewport::setupBevelDrag() {
 	elements.reserve(selectionManager.getSelectedItems().size());
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (meshId >= scene.MeshCount()) { continue; }
+		if (item.meshId != meshId) { continue; }
 		elements.push_back(item.componentId);
 	}
 
@@ -756,8 +787,13 @@ void Viewport::extrudeSelectedElements() {
 bool Viewport::extrudeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
-	// Extruding temporarily applies only to faces
-	if (selectionManager.getActiveElement() != FACE) { return false; }
+	if (selectionManager.getActiveElement() != FACE) { 
+		if (mouseAction.firstMoveEvent) {
+			initActionDirsToSelectedNormals(); // fine as long as edges aren't duplicated
+			actionParams.actionStage = 1;
+		}
+		return bevelDrag(); 
+	}
 
 	// Compute normals if this is the first move event
 	if (mouseAction.firstMoveEvent) {

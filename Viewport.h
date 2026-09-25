@@ -15,6 +15,7 @@
 #include "selectionManager.h"
 #include "shapes.h"
 #include "sceneFile.h"
+#include "MeshBeveler.h"
 
 inline bool initGlew = true;
 
@@ -109,6 +110,7 @@ private:
 	struct ActionParams {
 		Action action = SELECT;
 		std::vector<Vec3f> actionDirs;
+		int actionStage = 0;
 		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
 	};
 
@@ -161,6 +163,7 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
+	void mouseDragEvent(const Vec2f& pos); // Not a real qt event
 	void leaveEvent(QEvent* event) override;
 	void wheelEvent(QWheelEvent* event) override;
 	void resizeEvent(QResizeEvent* event) override;
