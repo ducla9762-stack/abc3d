@@ -14,15 +14,16 @@ class HalfEdgeMeshBeveler {
 	struct VMesh {
 		uint vertexId; // original vertex in larger mesh
 		Vec3f vertPos; // position of original vertex in larger mesh (used for extrusion only)
-		uint id; // Used to associate the V Mesh with an edge/face in the final mesh (used for extrusion)
+		uint id = 0; // Used to associate the V Mesh with an edge/face in the final mesh (used for extrusion)
 
-		uint patchEdgeCount; // number of edges (and vertices) in this vertex mesh
-		uint degree; // number of incident edges of the original vertex
+		uint patchEdgeCount = 0; // number of edges (and vertices) in this vertex mesh
+		uint degree = 0; // number of incident edges of the original vertex
+		uint bevelDegree = 0;
 
-		Vec2u* incidentEdges; // outgoing edge ids and their new origin vertex
-		bool* edgeIsBevel; // used to determine whether an outgoing edge is being beveled
+		Vec2u* incidentEdges = nullptr; // outgoing edge ids and their new origin vertex
+		bool* edgeIsBevel = nullptr; // used to determine whether an outgoing edge is being beveled
 
-		VMesh(uint vertexId, const Vec3f& vertPos) : vertexId(vertexId), vertPos(vertPos) { patchEdgeCount = 0; degree = 0; }
+		VMesh(uint vertexId, const Vec3f& vertPos) : vertexId(vertexId), vertPos(vertPos) { }
 		~VMesh() {
 			if (incidentEdges) { delete[] incidentEdges; }
 			if (edgeIsBevel) { delete[] edgeIsBevel; }
@@ -69,6 +70,7 @@ class HalfEdgeMeshBeveler {
 			HalfEdgeMesh::HalfEdge& edge = mesh.edges[currEdge];
 			vMesh.incidentEdges[i] = Vec2u(currEdge, 0);
 			vMesh.edgeIsBevel[i] = edgeSelected.count(currEdge);
+			vMesh.bevelDegree += uint(vMesh.edgeIsBevel[i]);
 			currEdge = mesh.edges[edge.twin].next;
 		}
 
@@ -106,11 +108,12 @@ class HalfEdgeMeshBeveler {
 	///		1. is a twin to an edge in the vertex mesh
 	///		2. will be the corresponding side of the beveled edge's bevel strip (edge.twin.next in final mesh)
 	/// </param>
-	void IncorporateVEdge(const VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
+	void IncorporateVEdge(VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
 		if (vMesh.degree != 3 && vMesh.degree != 4) { return; }
 
 		uint edgeId = mesh.NewEdge();
 		uint twinId = mesh.NewEdge();
+		vMesh.id = edgeId;
 
 		// Degree 4 is specific edge case
 		if (vMesh.degree == 4) {
@@ -439,8 +442,34 @@ public:
 		mesh.faceEdges[edge.face] = MAX_UINT;
 	}
 
-	void IncorporateExtrudeJunction(const VMesh& vMesh) {
-		if (vMesh.patchEdgeCount < 3) { return; } // handle later 
+	void CreateExtrudeEdgeJunction(const VMesh& vMesh) {
+		if (vMesh.bevelDegree == 2) {
+			mesh.refineEdge(vMesh.id);
+			mesh.vertPos[mesh.edges[vMesh.id].dest] = vMesh.vertPos;
+			return;
+		}
+
+		uint oldTwin = mesh.edges[vMesh.id].twin;
+		uint tri = mesh.NewFace(MAX_UINT); // manually set face edge later
+		uint newTwin = mesh.NewTwin(vMesh.id, tri);
+		uint triBase = mesh.NewTwin(oldTwin, tri);
+		mesh.faceEdges[tri] = newTwin;
+		
+		mesh.edges[newTwin].next = triBase; // will be modified by refineEdge
+		mesh.edges[newTwin].prev = triBase;
+
+		mesh.edges[triBase].next = newTwin;
+		mesh.edges[triBase].prev = newTwin; // will be modified by refineEdge
+
+		mesh.refineEdge(newTwin);
+		mesh.vertPos[mesh.edges[newTwin].dest] = vMesh.vertPos;
+	}
+
+	void CreateExtrudeJunction(const VMesh& vMesh) {
+		if (vMesh.patchEdgeCount < 3) { 
+			CreateExtrudeEdgeJunction(vMesh);
+			return; 
+		}
 
 		FanVertexMesh(vMesh);
 
@@ -474,7 +503,7 @@ public:
 		extrudedEdges.reserve(extrudedEdges.size() + elements.size());
 
 		for (const VMesh& vMesh : vertexMeshes) {
-			IncorporateExtrudeJunction(vMesh);
+			CreateExtrudeJunction(vMesh);
 		}
 
 		for (uint beveledEdge : elements) {
