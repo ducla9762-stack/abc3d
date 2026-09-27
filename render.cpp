@@ -760,16 +760,25 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type)
 
 	if (type == Type::Translation) {
 		maces.clear();
+		if (cube.empty()) {
+			cube = DEFAULT_FREE_CUBE_SETTINGS;
+		}
 		activeSettings = &arrows;
 		defaultSettings = &DEFAULT_ARROW_SETTINGS;
 	}
 	else if (type == Type::Scale) {
 		arrows.clear();
+		if (cube.empty()) {
+			cube = DEFAULT_FREE_CUBE_SETTINGS;
+		}
 		activeSettings = &maces;
 		defaultSettings = &DEFAULT_MACE_SETTINGS;
 	}
 	else if (type == Type::Rotation) {
-		// todo
+		arrows.clear();
+		maces.clear();
+		cube.clear();
+		return;
 	}
 
 	// If no active setting, go to default settings.
@@ -783,8 +792,31 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type)
 		setting.base = base;
 		// Get the aixs.
 		const uint axis = setting.ids.y;
-		// Set the color depending on if the axis is hovered or not, and depending on which gizmo it is.
-		setting.color = axis == hoveredAxis ? Vec3f(1.0f, 1.0f, 0.0f) : (axis == 0 ? Vec3f(0.0f, 1.0f, 0.0f) : axis == 1 ? Vec3f(0.0f, 0.0f, 1.0f) : Vec3f(1.0f, 0.0f, 0.0f));
+		// Set the color depending on if the axis is hovered or not.
+		if (axis == hoveredAxis) {
+			setting.color = Vec3f(1.0f, 1.0f, 0.0f);
+		}
+		else if (axis == 0) {
+			setting.color = Vec3f(0.0f, 1.0f, 0.0f);
+		}
+		else if (axis == 1) {
+			setting.color = Vec3f(0.0f, 0.0f, 1.0f);
+		}
+		else if (axis == 2) {
+			setting.color = Vec3f(1.0f, 0.0f, 0.0f);
+		}
+		else {
+			setting.color = Vec3f(0.8f, 0.8f, 0.8f);
+		}
+	}
+
+	// The center cube uses ID (4, 3): free tool and all axes.
+	for (GizmoInstanceSettings& setting : cube) {
+		setting.base = base;
+		const bool isFreeCube = setting.ids.x == 4 && setting.ids.y == 3;
+		setting.color = isFreeCube && hoveredAxis == 3
+			? Vec3f(1.0f, 1.0f, 0.0f)
+			: Vec3f(0.8f, 0.8f, 0.8f);
 	}
 }
 
@@ -797,21 +829,26 @@ bool GizmoRenderer::Initialize() {
 		std::cout << "Error initializing scale gizmo shaders!" << std::endl;
 		return false;
 	}
+	if (!free.initialize("assets/shaders/Cube.vert", "assets/shaders/ArrowColor.frag", FREE_CUBE_VERTICES, FREE_CUBE_TRIANGLES)) {
+		return false;
+	}
 
 	// Set default settings.
-	SetGizmoInstanceSettings(DEFAULT_ARROW_SETTINGS, DEFAULT_MACE_SETTINGS);
+	SetGizmoInstanceSettings(DEFAULT_ARROW_SETTINGS, DEFAULT_MACE_SETTINGS, DEFAULT_FREE_CUBE_SETTINGS);
 
 	return true;
 }
 
-void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces) {
+void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& cubes) {
 	this->arrows = arrows;
 	this->maces = maces;
+	this->cube = cubes;
 }
 
 void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	translation.setViewProjectionUniform(data, fov, viewportHeight);
 	scale.setViewProjectionUniform(data, fov, viewportHeight);
+	free.setViewProjectionUniform(data, fov, viewportHeight);
 }
 
 void GizmoRenderer::Draw() {
@@ -819,12 +856,16 @@ void GizmoRenderer::Draw() {
 	translation.draw();
 	scale.setGizmos(maces);
 	scale.draw();
+	free.setGizmos(cube);
+	free.draw();
 }
 
 void GizmoRenderer::Clear() {
 	arrows.clear();
 	maces.clear();
+	cube.clear();
 	translation.clear();
 	scale.clear();
+	free.clear();
 }
 #pragma endregion

@@ -79,6 +79,18 @@ static const std::vector<GizmoInstanceSettings> DEFAULT_MACE_SETTINGS = { {
 	},
 } };
 
+static const std::vector<GizmoInstanceSettings> DEFAULT_FREE_CUBE_SETTINGS = { {
+	{
+		Vec3f(0.0f, 0.0f, 0.0f), // base
+		Vec3f(0.0f, 0.0f, 0.0f), // dir
+		0.0f,                    // length
+		0.0f,                    // radius
+		0.1f,                    // tipSize
+		Vec3f(0.8f, 0.8f, 0.8f), // color
+		Vec2u(4, 3),             // ids
+	},
+} };
+
 const std::vector<Vec3f> ARROW_VERTICES = {
 	// Cylinder Base
 	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
@@ -157,6 +169,27 @@ const std::vector<Vec3u> MACE_TRIANGLES = {
 	Vec3u(19, 23, 22), Vec3u(19, 22, 18),
 	Vec3u(17, 18, 22), Vec3u(17, 22, 21),
 	Vec3u(16, 20, 23), Vec3u(16, 23, 19)
+};
+
+const std::vector<Vec3f> FREE_CUBE_VERTICES = {
+	// Cube bottom
+	Vec3f(-1.0f, -1.0f, -1.0f), Vec3f(1.0f, -1.0f, -1.0f), Vec3f(1.0f, -1.0f, 1.0f),
+	Vec3f(-1.0f, -1.0f, 1.0f),
+	// Cube top.
+	Vec3f(-1.0f, 1.0f, -1.0f), Vec3f(1.0f, 1.0f, -1.0f), Vec3f(1.0f, 1.0f, 1.0f),
+	Vec3f(-1.0f, 1.0f, 1.0f)
+};
+
+const std::vector<Vec3u> FREE_CUBE_TRIANGLES = {
+	// Cube bottom
+	Vec3u(0, 2, 1), Vec3u(0, 3, 2),
+	// Cube top
+	Vec3u(4, 5, 6), Vec3u(4, 6, 7),
+	// Cube sides
+	Vec3u(0, 1, 5), Vec3u(0, 5, 4),
+	Vec3u(3, 7, 6), Vec3u(3, 6, 2),
+	Vec3u(1, 2, 6), Vec3u(1, 6, 5),
+	Vec3u(0, 4, 7), Vec3u(0, 7, 3)
 };
 
 #endif

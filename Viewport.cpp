@@ -184,10 +184,12 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
 	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
 	const Vec3u ids = renderer.SelectionIds(x, y);
+	const bool activeGizmo =
+		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
 	const bool gizmoHit =
-		ids.x == GIZMO_IDENTIFIER && ids.z < 3 &&
-		((actionParams.action == TRANSLATE_AXIS && ids.y == 0) ||
-		 (actionParams.action == SCALE && ids.y == 1));
+		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
+		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
 	draggedGizmoAxis = gizmoHit ? ids.z : MAX_UINT;
 }
@@ -838,8 +840,22 @@ bool Viewport::rotateDrag() {
 
 // Constrain the drag to the world-space axis captured on mouse press.
 bool Viewport::translateGizmoDrag() {
-	if (!draggingGizmo || draggedGizmoAxis >= 3 ||
+	if (!draggingGizmo ||
 		selectionManager.getSelectedItems().empty()) {
+		return false;
+	}
+
+	// The center cube is free, it should translate free.
+	if (draggedGizmoAxis == 3) {
+		const bool transformed = translateFreeDrag();
+		if (transformed) {
+			emitPrimarySelectionPosChanged();
+		}
+		return transformed;
+	}
+
+	// Invalid axis don't do anything.
+	if (draggedGizmoAxis >= 3) {
 		return false;
 	}
 
@@ -912,9 +928,22 @@ bool Viewport::translateGizmoDrag() {
 
 bool Viewport::scaleGizmoDrag() {
 	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
-	if (!draggingGizmo || draggedGizmoAxis >= 3 ||
+	if (!draggingGizmo ||
 		selectionManager.getActiveElement() != OBJECT ||
 		selectionManager.getSelectedItems().empty()) {
+		return false;
+	}
+
+	// The center cube should uniform scale.
+	if (draggedGizmoAxis == 3) {
+		const bool scaled = scaleDrag();
+		if (scaled) {
+			emitPrimarySelectionPosChanged();
+		}
+		return scaled;
+	}
+
+	if (draggedGizmoAxis >= 3) {
 		return false;
 	}
 
@@ -969,10 +998,13 @@ void Viewport::updateGizmos() {
 		const bool translationAction = actionParams.action == TRANSLATE_AXIS;
 		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
+		// If nothing selected, clear gizmos.
 		if (!translationAction || selectedItems.empty()) {
 			renderer.ClearGizmos();
 			return;
 		}
+
+		// Get the average position of all selected elements.
 
 		Vec3f positionSum(0.0f);
 		uint positionCount = 0;
@@ -1004,11 +1036,13 @@ void Viewport::updateGizmos() {
 			++positionCount;
 		}
 
+		// If no positions, clear gizmos.
 		if (positionCount == 0) {
 			renderer.ClearGizmos();
 			return;
 		}
 
+		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
 		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation);
 	}
@@ -1017,11 +1051,14 @@ void Viewport::updateGizmos() {
 		const bool scaleAction = actionParams.action == SCALE;
 		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
+		// If nothing selected, or the active element is not objects, clear gizmos.
 		if (!scaleAction || selectionManager.getActiveElement() != OBJECT ||
 			selectedItems.empty()) {
 			renderer.ClearGizmos();
 			return;
 		}
+
+		// Get the average position of all selected elements, only objects as scale is only defined for objects.
 
 		Vec3f positionSum(0.0f);
 		uint positionCount = 0;
@@ -1038,11 +1075,13 @@ void Viewport::updateGizmos() {
 			++positionCount;
 		}
 
+		// If no positions, clear gizmos.
 		if (positionCount == 0) {
 			renderer.ClearGizmos();
 			return;
 		}
 
+		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
 		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale);
 	}
@@ -1051,6 +1090,7 @@ void Viewport::updateGizmos() {
 		// todo.
 		renderer.ClearGizmos();
 	}
+	// Else, undefined gizmo, clear all gizmos.
 	else {
 		renderer.ClearGizmos();
 	}
@@ -1070,11 +1110,14 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
 	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
 	const Vec3u ids = renderer.SelectionIds(x, y);
+	const bool activeGizmo =
+		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
 	const uint newHoveredAxis =
-		(ids.x == GIZMO_IDENTIFIER && ids.z < 3 &&
-			((actionParams.action == TRANSLATE_AXIS && ids.y == 0) ||
-			 (actionParams.action == SCALE && ids.y == 1)))
-		? ids.z : MAX_UINT;
+		(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
+			((ids.y == 4 && ids.z == 3) || ids.z < 3))
+		? ids.z
+		: MAX_UINT;
 
 	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
 	hoveredSelectionIds = ids;
