@@ -1087,8 +1087,42 @@ void Viewport::updateGizmos() {
 	}
 	// Update rotate gizmo.
 	else if (actionParams.action == ROTATE) {
-		// todo.
-		renderer.ClearGizmos();
+		const bool rotateAction = actionParams.action == ROTATE;
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		// If nothing selected, or the active element is not objects, clear gizmos.
+		if (!rotateAction || selectionManager.getActiveElement() != OBJECT ||
+			selectedItems.empty()) {
+			renderer.ClearGizmos();
+			return;
+		}
+
+		// Get the average position of all selected elements, only objects as rotate is only defined for objects.
+
+		Vec3f positionSum(0.0f);
+		uint positionCount = 0;
+
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			Vec3f worldPosition = mesh->Pos();
+
+			positionSum += worldPosition;
+			++positionCount;
+		}
+
+		// If no positions, clear gizmos.
+		if (positionCount == 0) {
+			renderer.ClearGizmos();
+			return;
+		}
+
+		// Give averaged position and the current highlighted axis to the renderer.
+		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation);
 	}
 	// Else, undefined gizmo, clear all gizmos.
 	else {

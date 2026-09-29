@@ -760,6 +760,7 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type)
 
 	if (type == Type::Translation) {
 		maces.clear();
+		hoops.clear();
 		if (cube.empty()) {
 			cube = DEFAULT_FREE_CUBE_SETTINGS;
 		}
@@ -768,6 +769,7 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type)
 	}
 	else if (type == Type::Scale) {
 		arrows.clear();
+		hoops.clear();
 		if (cube.empty()) {
 			cube = DEFAULT_FREE_CUBE_SETTINGS;
 		}
@@ -777,8 +779,11 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type)
 	else if (type == Type::Rotation) {
 		arrows.clear();
 		maces.clear();
-		cube.clear();
-		return;
+		if (cube.empty()) {
+			cube = DEFAULT_FREE_CUBE_SETTINGS;
+		}
+		activeSettings = &hoops;
+		defaultSettings = &DEFAULT_HOOP_SETTINGS;
 	}
 
 	// If no active setting, go to default settings.
@@ -829,25 +834,31 @@ bool GizmoRenderer::Initialize() {
 		std::cout << "Error initializing scale gizmo shaders!" << std::endl;
 		return false;
 	}
+	if (!rotation.initialize("assets/shaders/Hoop.vert", "assets/shaders/ArrowColor.frag", HOOP_VERTICES, HOOP_TRIANGLES)) {
+		std::cout << "Error initializing rotation gizmo shaders!" << std::endl;
+		return false;
+	}
 	if (!free.initialize("assets/shaders/Cube.vert", "assets/shaders/ArrowColor.frag", FREE_CUBE_VERTICES, FREE_CUBE_TRIANGLES)) {
 		return false;
 	}
 
 	// Set default settings.
-	SetGizmoInstanceSettings(DEFAULT_ARROW_SETTINGS, DEFAULT_MACE_SETTINGS, DEFAULT_FREE_CUBE_SETTINGS);
+	SetGizmoInstanceSettings(DEFAULT_ARROW_SETTINGS, DEFAULT_MACE_SETTINGS, DEFAULT_HOOP_SETTINGS, DEFAULT_FREE_CUBE_SETTINGS);
 
 	return true;
 }
 
-void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& cubes) {
+void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& hoops, const std::vector<GizmoInstanceSettings>& cubes) {
 	this->arrows = arrows;
 	this->maces = maces;
+	this->hoops = hoops;
 	this->cube = cubes;
 }
 
 void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	translation.setViewProjectionUniform(data, fov, viewportHeight);
 	scale.setViewProjectionUniform(data, fov, viewportHeight);
+	rotation.setViewProjectionUniform(data, fov, viewportHeight);
 	free.setViewProjectionUniform(data, fov, viewportHeight);
 }
 
@@ -856,6 +867,8 @@ void GizmoRenderer::Draw() {
 	translation.draw();
 	scale.setGizmos(maces);
 	scale.draw();
+	rotation.setGizmos(hoops);
+	rotation.draw();
 	free.setGizmos(cube);
 	free.draw();
 }
@@ -863,9 +876,11 @@ void GizmoRenderer::Draw() {
 void GizmoRenderer::Clear() {
 	arrows.clear();
 	maces.clear();
+	hoops.clear();
 	cube.clear();
 	translation.clear();
 	scale.clear();
+	rotation.clear();
 	free.clear();
 }
 #pragma endregion

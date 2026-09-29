@@ -150,14 +150,14 @@ private:
 	// Settings for gizmo instances.
 	std::vector<GizmoInstanceSettings> arrows; // translation.
 	std::vector<GizmoInstanceSettings> maces; // scale.
-	std::vector<GizmoInstanceSettings> cube; // free/uniform translation/scale.
-	// todo: rotation;
+	std::vector<GizmoInstanceSettings> hoops; // rotation.
+	std::vector<GizmoInstanceSettings> cube; // free/uniform translation, rotation/scale.
 
 	// Gizmo programs.
 	Gizmo translation;
 	Gizmo scale;
+	Gizmo rotation;
 	Gizmo free;
-	// todo: rotation;
 
 public:
 	/// <summary>
@@ -180,7 +180,7 @@ public:
 	/// </summary>
 	/// <param name="arrows"></param>
 	/// <param name="maces"></param>
-	void SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& cubes);
+	void SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& hoops, const std::vector<GizmoInstanceSettings>& cubes);
 
 	/// <summary>
 	/// Sets the View-Projection transformation for all gizmos.
