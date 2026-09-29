@@ -309,6 +309,56 @@ private:
 	/// <returns>True if the face has more than 4 vertices. Otherwise, false.</returns>
 	bool IsNGon(uint faceId) const;
 
+	void FanFaceEdge(uint edge, uint vert, uint face, uint& edge1Id, uint& edge2Id) {
+		edge1Id = NewEdge();
+		edge2Id = NewEdge();
+
+		HalfEdgeMesh::HalfEdge& edge0 = edges[edge];
+		edge0.next = edge1Id;
+		edge0.prev = edge2Id;
+		edge0.face = face;
+
+		HalfEdgeMesh::HalfEdge& edge1 = edges[edge1Id];
+		edge1.next = edge2Id;
+		edge1.prev = edge;
+		edge1.orig = edge0.dest;
+		edge1.dest = vert;
+		edge1.face = face;
+
+		HalfEdgeMesh::HalfEdge& edge2 = edges[edge2Id];
+		edge2.next = edge;
+		edge2.prev = edge1Id;
+		edge2.orig = vert;
+		edge2.dest = edge0.orig;
+		edge2.face = face;
+	}
+
+	uint FanFace(uint faceId, const Vec3f& vertPosition, uint edgeCount) {
+		uint curr = faceEdges[faceId];
+		uint vert = NewVertex(vertPosition, uint(edges.size() + 1));
+
+		uint prevWall, firstWall;
+
+		uint next = edges[curr].next;
+		FanFaceEdge(curr, vert, faceId, prevWall, firstWall);
+		curr = next;
+
+		for (uint i = 1; i < edgeCount; ++i) {
+			next = edges[curr].next;
+			uint leftWall, rightWall;
+			FanFaceEdge(curr, vert, NewFace(curr), leftWall, rightWall);
+			edges[prevWall].twin = rightWall;
+			edges[rightWall].twin = prevWall;
+			prevWall = leftWall;
+			curr = next;
+		}
+
+		edges[firstWall].twin = prevWall;
+		edges[prevWall].twin = firstWall;
+
+		return vert;
+	}
+
 	void BevelHalfEdgeCase2(HalfEdge& e1, HalfEdge& e2);
 	void BevelHalfEdgeCase1(HalfEdge& e1, HalfEdge& e2);
 	/// <summary>Not yet implemented.</summary>

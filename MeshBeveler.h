@@ -30,17 +30,27 @@ class HalfEdgeMeshBeveler {
 		}
 	};
 
+	struct VBevel {
+		uint vertexId; // original vertex in larger mesh
+		Vec3f vertPos; // position of original vertex in larger mesh (used for extrusion only)
+		uint faceId = 0; // Used to associate the V Mesh with an edge/face in the final mesh (used for extrusion)
+		uint degree = 0; // number of incident edges of the original vertex
+
+		VBevel(uint vertexId, const Vec3f& vertPos) : vertexId(vertexId), vertPos(vertPos) {}
+	};
+
 	HalfEdgeMesh& mesh;
 
 	// Vertex Tracks
 	std::vector<uint> vertices; // each vertex's id
 	std::vector<Vec3f> vertTransforms; // each vertex's start position and translation
 
-	// Edge cache for edge/vertex extrusion
+	// Edge cache for edge extrusion
 	std::vector<uint> elements;
 
-	// Cached vertex meshes
-	std::vector<VMesh> vertexMeshes;
+	// Cached vertex meshes / vertex bevels
+	std::vector<VMesh> vertexMeshes; // used for edge extrusion
+	std::vector<VBevel> vertexBevels; // used for vertex extrusion
 
 	/// <summary>
 	/// Builds a vertex mesh, which is a mesh that will replace a vertex when beveling
@@ -425,7 +435,7 @@ public:
 	}
 
 	void DeleteTriEdge(uint edgeId) {
-		// right now edge and twin ids will be emtpy indices in the edge
+		// right now edge and twin ids will be empty indices in the edge
 		// list but we need to handle these deletions properly later
 		HalfEdgeMesh::HalfEdge& edge = mesh.edges[edgeId];
 		HalfEdgeMesh::HalfEdge& twin = mesh.edges[edge.twin];
@@ -471,7 +481,7 @@ public:
 			return; 
 		}
 
-		FanVertexMesh(vMesh);
+		mesh.FanFace(vMesh.id, vMesh.vertPos, vMesh.patchEdgeCount);
 
 		uint curr = mesh.faceEdges[vMesh.id];
 		uint prevVert = vMesh.incidentEdges[0][1];
@@ -571,22 +581,24 @@ public:
 	}
 
 	void StartVertexBevel(const std::vector<uint>& vertexIds) {
-		std::unordered_map<uint, uint> vertMap;
+		std::unordered_set<uint> vertSet;
 
-		vertMap.reserve(vertices.size());
+		vertSet.reserve(vertices.size());
 		vertices.reserve(vertices.size());
 		vertTransforms.reserve(vertices.size() * 2);
+		vertexBevels.reserve(vertices.size());
 
 		uint newVertices = 0;
 		uint newEdges = 0;
 
 		for (uint vertex : vertexIds) {
-			if (vertMap.count(vertex)) { continue; }
+			if (vertSet.count(vertex)) { continue; }
 
-			uint degree = mesh.VertexDegree(vertex);
-			newVertices += degree - 1;
-			newEdges += degree;
-			vertMap[vertex] = degree;
+			VBevel& bevel = vertexBevels.emplace_back(vertex, mesh.vertPos[vertex]);
+
+			bevel.degree = mesh.VertexDegree(vertex);
+			newVertices += bevel.degree - 1;
+			newEdges += bevel.degree;
 		}
 
 		newEdges *= 2;
@@ -595,26 +607,22 @@ public:
 		mesh.vertEdge.reserve(mesh.vertEdge.size() + newVertices);
 		mesh.edges.reserve(mesh.edges.size() + newEdges);
 
-		for (uint vertex : vertexIds) {
-			uint degree = vertMap[vertex];
-			if (degree == MAX_UINT) { continue; }
-
-			uint firstEdge = mesh.vertEdge[vertex];
+		for (VBevel& bevel : vertexBevels) {
+			uint firstEdge = mesh.vertEdge[bevel.vertexId];
 			uint currEdge = mesh.edges[mesh.edges[firstEdge].twin].next;
-			Vec3f vertPos = mesh.vertPos[vertex];
 
 			uint firstNewEdge = mesh.edges.size();
-			mesh.edges.insert(mesh.edges.end(), degree, HalfEdgeMesh::HalfEdge());
+			mesh.edges.insert(mesh.edges.end(), bevel.degree, HalfEdgeMesh::HalfEdge());
 
-			uint vFace = mesh.NewFace(firstNewEdge);
+			bevel.faceId = mesh.NewFace(firstNewEdge);
 
-			uint prevVert = vertex;
-			for (uint i = 1; i < degree; ++i) {
+			uint prevVert = bevel.vertexId;
+			for (uint i = 1; i < bevel.degree; ++i) {
 				uint vFaceTwin = mesh.NewEdge();
 
 				HalfEdgeMesh::HalfEdge& edge = mesh.edges[currEdge];
 
-				edge.orig = mesh.NewVertex(vertPos, currEdge);
+				edge.orig = mesh.NewVertex(bevel.vertPos, currEdge);
 				mesh.edges[edge.twin].dest = edge.orig;
 
 				uint vFaceEdgeId = firstNewEdge + i;
@@ -623,13 +631,13 @@ public:
 				mesh.SetTwins(vFaceEdgeId, vFaceTwin, edge.orig, prevVert);
 				mesh.InsertPrev(currEdge, vFaceTwin);
 
-				vFaceEdge.face = vFace;
-				vFaceEdge.prev = firstNewEdge + WrapInc(i, degree - 1, firstNewEdge);
+				vFaceEdge.face = bevel.faceId;
+				vFaceEdge.prev = firstNewEdge + WrapInc(i, bevel.degree - 1, firstNewEdge);
 				vFaceEdge.next = vFaceEdgeId - 1;
 
 				vertices.push_back(edge.orig);
-				vertTransforms.push_back(vertPos);
-				vertTransforms.push_back(0.5f * (mesh.vertPos[edge.dest] - vertPos));
+				vertTransforms.push_back(bevel.vertPos);
+				vertTransforms.push_back(0.5f * (mesh.vertPos[edge.dest] - bevel.vertPos));
 
 				prevVert = edge.orig;
 				currEdge = mesh.edges[edge.twin].next;
@@ -638,18 +646,25 @@ public:
 			uint vFaceTwin = mesh.NewEdge();
 			HalfEdgeMesh::HalfEdge& vFaceEdge = mesh.edges[firstNewEdge];
 
-			mesh.SetTwins(firstNewEdge, vFaceTwin, vertex, prevVert);
+			mesh.SetTwins(firstNewEdge, vFaceTwin, bevel.vertexId, prevVert);
 			mesh.InsertPrev(firstEdge, vFaceTwin);
 
-			vFaceEdge.face = vFace;
+			vFaceEdge.face = bevel.faceId;
 			vFaceEdge.prev = firstNewEdge + 1;
-			vFaceEdge.next = firstNewEdge + degree - 1;
+			vFaceEdge.next = firstNewEdge + bevel.degree - 1;
 
-			vertices.push_back(vertex);
-			vertTransforms.push_back(vertPos);
-			vertTransforms.push_back(0.5f * (mesh.vertPos[mesh.edges[firstEdge].dest] - vertPos));
+			vertices.push_back(bevel.vertexId);
+			vertTransforms.push_back(bevel.vertPos);
+			vertTransforms.push_back(0.5f * (mesh.vertPos[mesh.edges[firstEdge].dest] - bevel.vertPos));
+		}
+	}
 
-			vertMap[vertex] = MAX_UINT;
+	// Can call only after an edge bevel
+	void ExtrudeBeveledVertices(std::vector<uint>& extrudedVertices) {
+		extrudedVertices.reserve(extrudedVertices.size() + elements.size());
+
+		for (const VBevel& bevel : vertexBevels) {
+			extrudedVertices.push_back(mesh.FanFace(bevel.faceId, bevel.vertPos, bevel.degree));
 		}
 	}
 

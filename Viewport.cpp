@@ -159,8 +159,10 @@ void Viewport::emitSelectionChanged() {
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
-	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
-		actionParams.actionStage = 0;
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
 		renderer.UpdateRenderBuffers(scene);
 		update();
 		return;
@@ -221,16 +223,20 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
-	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
-		std::vector<uint> extrudedEdges;
-		beveler->ExtrudeBeveledEdges(extrudedEdges);
-		std::cout << extrudedEdges.size();
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		actionParams.elements.clear();
+
+		Element elementType = selectionManager.getActiveElement();
+		if (elementType == OBJECT) { elementType = EDGE; }
+
+		if (elementType == EDGE) { beveler->ExtrudeBeveledEdges(actionParams.elements); }
+		else { beveler->ExtrudeBeveledVertices(actionParams.elements); }
+		
 		uint mesh = selectionManager.getSelectedItems()[0].meshId;
 		selectionManager.clearSelection();
-		for (uint edge : extrudedEdges) {
-			selectionManager.addSelection({mesh, edge});
-		}
-		initActionDirsToSelectedNormals(EDGE);
+
+		initActionDirsToElementNormals(elementType, mesh);
+
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 		renderer.UpdateRenderBuffers(scene);
 		update();
@@ -285,9 +291,9 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		return;
 	}
 
-	if (actionParams.action == EXTRUDE && actionParams.actionStage == 1) {
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
-		translateSelections(EDGE);
+		translateActionElements();
 		mouseAction.EndMouseDragStep();
 		renderer.UpdateRenderBuffers(scene);
 		update();
@@ -638,12 +644,12 @@ bool Viewport::translateFreeDrag() {
 	return transformed;
 }
 
-void Viewport::initActionDirsToSelectedNormals(Element element) {
+void Viewport::initActionDirsToSelectedNormals() {
 	// Get all selected items.
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
 	bool noValidItems = true;
-	actionParams.actionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+	actionParams.dirs.assign(selectedItems.size(), Vec3f(0.0f));
 
 	// For each selected item, get normal direction
 	for (size_t i = 0; i < selectedItems.size(); ++i) {
@@ -652,15 +658,15 @@ void Viewport::initActionDirsToSelectedNormals(Element element) {
 			continue;
 		}
 
-		switch (element) {
+		switch (selectionManager.getActiveElement()) {
 		case VERTEX:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
 			break;
 		case EDGE:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
 			break;
 		case FACE:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
 			break;
 		}
 
@@ -670,28 +676,70 @@ void Viewport::initActionDirsToSelectedNormals(Element element) {
 	if (noValidItems) { actionParams.ClearActionDirs(); }
 }
 
-void Viewport::translateSelections(Element element) {
+void Viewport::initActionDirsToElementNormals(Element elementType, uint mesh) {
+	actionParams.dirs.clear();
+	actionParams.dirs.reserve(actionParams.elements.size());
+	actionParams.elementType = elementType;
+	actionParams.mesh = mesh;
+
+	// For each selected item, get normal direction
+	for (uint element : actionParams.elements) {
+		switch (elementType) {
+		case VERTEX:
+			actionParams.dirs.push_back(scene[mesh]->GetVertexNormal(element));
+			break;
+		case EDGE:
+			actionParams.dirs.push_back(scene[mesh]->GetEdgeNormal(element));
+			break;
+		case FACE:
+			actionParams.dirs.push_back(scene[mesh]->GetFaceNormal(element));
+			break;
+		}
+	}
+}
+
+void Viewport::translateSelections() {
 	// Compute translation's scale factor
 	const float SCALE_COEF = 0.01f;
 	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
 
 	// Translate selected elements
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
-	for (size_t i = 0; i < actionParams.actionDirs.size(); ++i) {
+	for (size_t i = 0; i < actionParams.dirs.size(); ++i) {
 		const SelectionItem& item = selectedItems[i];
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
 
-		switch (element) {
+		switch (selectionManager.getActiveElement()) {
 		case VERTEX:
-			scene[item.meshId]->TranslateVertex(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateVertex(item.componentId, actionParams.dirs[i] * scale);
 			break;
 		case EDGE:
-			scene[item.meshId]->TranslateEdge(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateEdge(item.componentId, actionParams.dirs[i] * scale);
 			break;
 		case FACE:
-			scene[item.meshId]->TranslateFace(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateFace(item.componentId, actionParams.dirs[i] * scale);
+			break;
+		}
+	}
+}
+
+void Viewport::translateActionElements() {
+	// Compute translation's scale factor
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < actionParams.elements.size(); ++i) {
+		switch (actionParams.elementType) {
+		case VERTEX:
+			scene[actionParams.mesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[i] * scale);
+			break;
+		case EDGE:
+			scene[actionParams.mesh]->TranslateEdge(actionParams.elements[i], actionParams.dirs[i] * scale);
+			break;
+		case FACE:
+			scene[actionParams.mesh]->TranslateFace(actionParams.elements[i], actionParams.dirs[i] * scale);
 			break;
 		}
 	}
@@ -711,7 +759,7 @@ bool Viewport::translateOutDrag() {
 		initActionDirsToSelectedNormals();
 	}
 
-	if (actionParams.actionDirs.empty()) { return false; }
+	if (actionParams.dirs.empty()) { return false; }
 
 	// Get all selected items.
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
@@ -792,7 +840,7 @@ bool Viewport::extrudeDrag() {
 	if (selectionManager.getActiveElement() != FACE) { 
 		if (mouseAction.firstMoveEvent) {
 			//initActionDirsToSelectedNormals(); // fine as long as edges aren't duplicated
-			actionParams.actionStage = 1;
+			actionParams.stage = 1;
 		}
 		return bevelDrag(); 
 	}
@@ -802,7 +850,7 @@ bool Viewport::extrudeDrag() {
 		initActionDirsToSelectedNormals();
 	}
 
-	if (actionParams.actionDirs.empty()) { return false; }
+	if (actionParams.dirs.empty()) { return false; }
 
 	// Extrude selected elements if this is the first move event
 	if (mouseAction.firstMoveEvent) {

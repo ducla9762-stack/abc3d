@@ -109,9 +109,13 @@ private:
 
 	struct ActionParams {
 		Action action = SELECT;
-		std::vector<Vec3f> actionDirs;
-		int actionStage = 0;
-		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
+		int stage = 0;
+		std::vector<uint> elements;
+		std::vector<Vec3f> dirs;
+		uint mesh = 0;
+		Element elementType = OBJECT; // may be different from selection element type
+		void ClearActionDirs() { std::vector<Vec3f>().swap(dirs); }
+		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
 	QAction* menuActions[3];
@@ -174,10 +178,10 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	bool translateFreeDrag();
-	void initActionDirsToSelectedNormals(Element element);
-	void initActionDirsToSelectedNormals() { initActionDirsToSelectedNormals(selectionManager.getActiveElement()); }
-	void translateSelections(Element element);
-	void translateSelections() { translateSelections(selectionManager.getActiveElement()); }
+	void initActionDirsToSelectedNormals();
+	void initActionDirsToElementNormals(Element element, uint mesh);
+	void translateSelections();
+	void translateActionElements();
 	bool translateOutDrag();
 	bool translateEdgeDrag() { return false; }
 	void setupBevelDrag();
