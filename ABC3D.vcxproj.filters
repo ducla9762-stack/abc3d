@@ -116,5 +116,8 @@
     <QtUic Include="VectorInput.ui">
       <Filter>Form Files</Filter>
     </QtUic>
+    <QtUic Include="StartMenu.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
 </Project>

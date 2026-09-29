@@ -142,6 +142,7 @@
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />
     <ClInclude Include="shapes.h" />
+    <QtUic Include="StartMenu.ui" />
     <QtUic Include="VectorInput.ui" />
   </ItemGroup>
   <ItemGroup>

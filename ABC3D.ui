@@ -95,7 +95,7 @@
          <x>0</x>
          <y>0</y>
          <width>64</width>
-         <height>680</height>
+         <height>704</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -530,6 +530,9 @@
           <property name="toolTip">
            <string extracomment="Bevel Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Bevel Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Make an angled cut on an edge or corner&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -548,6 +551,44 @@
           </property>
           <property name="autoExclusive">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="knifeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Knife</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="penToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Pen</string>
           </property>
          </widget>
         </item>
@@ -574,6 +615,8 @@
        <zorder>translateToolButton</zorder>
        <zorder>bevelToolButton</zorder>
        <zorder>cameraToolButton</zorder>
+       <zorder>knifeToolButton</zorder>
+       <zorder>penToolButton</zorder>
       </widget>
      </widget>
     </item>
@@ -781,7 +824,7 @@
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item row="1" column="1">
+              <item row="4" column="0">
                <widget class="QPushButton" name="outModeTranslationButton">
                 <property name="text">
                  <string>Outward</string>
@@ -794,39 +837,10 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="freeModeTranslationButton">
-                <property name="text">
-                 <string>Free</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
+              <item row="4" column="1">
                <widget class="QPushButton" name="edgeModeTranslationButton">
                 <property name="text">
                  <string>Edge</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QPushButton" name="axisModeTranslationButton">
-                <property name="text">
-                 <string>Axis</string>
                 </property>
                 <property name="checkable">
                  <bool>true</bool>
@@ -843,6 +857,22 @@
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignmentFlag::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0" colspan="2">
+               <widget class="QPushButton" name="axisModeTranslationButton">
+                <property name="text">
+                 <string>Free</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -1143,14 +1173,6 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
   <action name="actionSave">
    <property name="text">
     <string>Save</string>
@@ -1235,6 +1257,7 @@
     <signal>primarySelectionChanged(bool)</signal>
     <signal>enableNonVertexSpinners(bool)</signal>
     <signal>orbitOriginChanged(Vec3f)</signal>
+    <signal>viewportClicked()</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -1284,102 +1307,6 @@
  </resources>
  <connections>
   <connection>
-   <sender>selectToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionSelect()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>77</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>100</x>
-     <y>83</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>translateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>204</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>103</x>
-     <y>147</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionScale()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>57</x>
-     <y>294</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>103</x>
-     <y>209</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rotateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionRotate()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>48</x>
-     <y>327</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>102</x>
-     <y>263</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>extrudeToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionExtrude()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>460</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>126</x>
-     <y>396</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>bevelToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionBevel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>13</x>
-     <y>588</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>129</x>
-     <y>524</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>rotateToolButton</sender>
    <signal>released()</signal>
    <receiver>ABC3DClass</receiver>
@@ -1396,198 +1323,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>pyramidButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadPyramid()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>387</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>719</x>
-     <y>471</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cylinderButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCylinder()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>870</x>
-     <y>393</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>745</x>
-     <y>524</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>torusButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadTorus()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>393</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>684</x>
-     <y>531</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>uvSphereButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadUvSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>870</x>
-     <y>399</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>743</x>
-     <y>607</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>icoSphereButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadIcoSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>399</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>676</x>
-     <y>612</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>subdivisionButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>subdivideSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>387</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>724</x>
-     <y>455</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tesselationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>tessellateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>392</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>696</x>
-     <y>533</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>triangulationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>triangulateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>397</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>718</x>
-     <y>626</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>freeModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>948</x>
-     <y>487</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>770</x>
-     <y>437</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>outModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateOut()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>487</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>716</x>
-     <y>490</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>axisModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateAxis()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>948</x>
-     <y>517</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>722</x>
-     <y>550</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>edgeModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateEdge()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>517</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>718</x>
-     <y>613</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>translateToolButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>transformModes</receiver>
@@ -1599,23 +1334,7 @@
     </hint>
     <hint type="destinationlabel">
      <x>1070</x>
-     <y>517</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cubeButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCube()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>870</x>
-     <y>387</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>767</x>
-     <y>437</y>
+     <y>509</y>
     </hint>
    </hints>
   </connection>
@@ -1668,38 +1387,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>shapeToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>44</x>
-     <y>385</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>262</x>
-     <y>332</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>subdivideToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>49</x>
-     <y>514</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>149</x>
-     <y>450</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>extrudeToolButton</sender>
    <signal>released()</signal>
    <receiver>ABC3DClass</receiver>
@@ -1728,182 +1415,6 @@
     <hint type="destinationlabel">
      <x>525</x>
      <y>-2</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionPosChanged(Vec3f)</signal>
-   <receiver>posInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>632</x>
-     <y>253</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>547</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionScaleChanged(Vec3f)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>786</x>
-     <y>425</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>577</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionRotChanged(Vec3f)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>594</x>
-     <y>498</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>607</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>posInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>583</x>
-     <y>538</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>547</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>601</x>
-     <y>459</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>577</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>539</x>
-     <y>484</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>607</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>enableNonVertexSpinners(bool)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>582</x>
-     <y>504</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>577</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>enableNonVertexSpinners(bool)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>560</x>
-     <y>502</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>607</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>posInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionPos(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>547</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>708</x>
-     <y>435</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionScale(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>577</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>727</x>
-     <y>473</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rotInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionRot(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>607</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>694</x>
-     <y>530</y>
     </hint>
    </hints>
   </connection>
@@ -1940,22 +1451,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>vertexVisibilityBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>viewport</receiver>
-   <slot>setAlwaysShowVertices(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>501</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>694</x>
-     <y>512</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>cameraToolButton</sender>
    <signal>released()</signal>
    <receiver>ABC3DClass</receiver>
@@ -1968,22 +1463,6 @@
     <hint type="destinationlabel">
      <x>522</x>
      <y>-11</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>flipButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>flipSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>402</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>674</x>
-     <y>577</y>
     </hint>
    </hints>
   </connection>
@@ -2068,70 +1547,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>originInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setOrbitOrigin(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>458</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>730</x>
-     <y>462</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>orbitOriginChanged(Vec3f)</signal>
-   <receiver>originInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>649</x>
-     <y>460</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>914</x>
-     <y>458</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>classicModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setSingleSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>893</x>
-     <y>433</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>801</x>
-     <y>339</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>additiveModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setAdditiveSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>433</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>812</x>
-     <y>369</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>selectToolButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>selectionInputModes</receiver>
@@ -2148,98 +1563,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>gridVisibilityBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>viewport</receiver>
-   <slot>setAlwaysShowGrid(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>914</x>
-     <y>474</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>444</x>
-     <y>378</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionDelete</sender>
-   <signal>triggered()</signal>
-   <receiver>viewport</receiver>
-   <slot>deleteSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>444</x>
-     <y>378</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>actionDuplicate</sender>
-   <signal>triggered()</signal>
-   <receiver>viewport</receiver>
-   <slot>duplicateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>444</x>
-     <y>378</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>orbitButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>originInput</receiver>
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>863</x>
-     <y>429</y>
+     <x>848</x>
+     <y>386</y>
     </hint>
     <hint type="destinationlabel">
-     <x>950</x>
-     <y>461</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>orbitButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setCameraModeOrbit()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>845</x>
-     <y>434</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>738</x>
-     <y>425</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>freeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setCameraModeFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>969</x>
-     <y>430</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>607</x>
-     <y>404</y>
+     <x>892</x>
+     <y>383</y>
     </hint>
    </hints>
   </connection>
@@ -2256,6 +1591,678 @@
     <hint type="destinationlabel">
      <x>539</x>
      <y>359</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>posInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>538</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>539</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>801</x>
+     <y>523</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>599</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionExtrude()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>692</x>
+     <y>417</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionRotate()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
+     <y>327</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>668</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>vertexVisibilityBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setAlwaysShowVertices(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>391</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>694</x>
+     <y>512</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>freeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setCameraModeFree()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>386</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>607</x>
+     <y>404</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>orbitOriginChanged(Vec3f)</signal>
+   <receiver>originInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>649</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>892</x>
+     <y>383</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionScale()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>57</x>
+     <y>277</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>669</x>
+     <y>230</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>204</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>669</x>
+     <y>168</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivisionButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>subdivideSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>379</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>724</x>
+     <y>455</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>orbitButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setCameraModeOrbit()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>848</x>
+     <y>386</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>738</x>
+     <y>425</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>triangulationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>triangulateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>389</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>626</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cubeButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCube()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>848</x>
+     <y>379</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>767</x>
+     <y>437</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>outModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateOut()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>937</x>
+     <y>509</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>716</x>
+     <y>490</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>icoSphereButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadIcoSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>391</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>676</x>
+     <y>612</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tesselationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>tessellateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>384</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>696</x>
+     <y>533</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivideToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>49</x>
+     <y>514</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>715</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>flipButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>flipSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>394</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>674</x>
+     <y>577</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionScaleChanged(Vec3f)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>786</x>
+     <y>425</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>569</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pyramidButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadPyramid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>379</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>719</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDelete</sender>
+   <signal>triggered()</signal>
+   <receiver>viewport</receiver>
+   <slot>deleteSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>uvSphereButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadUvSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>848</x>
+     <y>391</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>743</x>
+     <y>607</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>additiveModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setAdditiveSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1070</x>
+     <y>425</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>390</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>edgeModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1070</x>
+     <y>509</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>613</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionScale(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1070</x>
+     <y>569</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>727</x>
+     <y>473</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>shapeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>44</x>
+     <y>385</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>353</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionRotChanged(Vec3f)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>594</x>
+     <y>498</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>599</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionPosChanged(Vec3f)</signal>
+   <receiver>posInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>632</x>
+     <y>253</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>539</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDuplicate</sender>
+   <signal>triggered()</signal>
+   <receiver>viewport</receiver>
+   <slot>duplicateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionBevel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>13</x>
+     <y>588</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>695</x>
+     <y>545</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cylinderButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCylinder()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>848</x>
+     <y>385</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>745</x>
+     <y>524</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>axisModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>937</x>
+     <y>479</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>722</x>
+     <y>550</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>classicModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setSingleSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>937</x>
+     <y>425</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>339</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>torusButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadTorus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>385</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>684</x>
+     <y>531</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridVisibilityBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setAlwaysShowGrid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>387</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>601</x>
+     <y>459</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>569</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionRot(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1070</x>
+     <y>599</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>694</x>
+     <y>530</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>582</x>
+     <y>504</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>569</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>801</x>
+     <y>505</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>599</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionSelect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>666</x>
+     <y>104</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>originInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setOrbitOrigin(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>892</x>
+     <y>383</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>730</x>
+     <y>462</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>posInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionPos(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1070</x>
+     <y>539</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>708</x>
+     <y>435</y>
     </hint>
    </hints>
   </connection>

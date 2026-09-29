@@ -41,7 +41,7 @@ ABC3D::ABC3D(QWidget *parent)
     // the translation-mode buttons live in separate exclusive groups, so keep
     // the visible mode selection synchronized when returning to Move.
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
-        ui.freeModeTranslationButton->setChecked(true);
+        ui.axisModeTranslationButton->setChecked(true);
         });
 
     // Connects the "Load Tutorial" Button to the QTextBrowser
@@ -124,7 +124,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     // Translate
     case Qt::Key_T:
         event->accept();
-        ui.freeModeTranslationButton->setChecked(true);
+        ui.axisModeTranslationButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.translateToolButton->setChecked(true);
         break;

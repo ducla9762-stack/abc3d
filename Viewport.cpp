@@ -37,6 +37,7 @@ Viewport::Viewport(QWidget *parent)
 		elementButtons[i]->setFixedHeight(64);
 		elementButtons[i]->setAutoExclusive(true);
 		elementButtons[i]->setCheckable(true);
+		elementButtons[i]->setStyleSheet("QPushButton { background-color: #3c3c3c; } QPushButton:checked { background-color: red; } ");
 	}
 
 	elementButtons[3]->setChecked(true);
@@ -90,7 +91,7 @@ void Viewport::initializeGL() {
 
 	rendererInitialized = true;
 
-	renderer.setCameraPosition(Vec3f(1.0f, 0.0f, 0.0f));
+	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
 	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 	renderer.UpdateRenderBuffers(scene);
 	updateSelectionVisuals();
@@ -287,6 +288,7 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		actionPerformed = translateOutDrag();
 		if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 		break;
+	// Old code - currently doesn't do anything
 	case TRANSLATE_FREE:
 		actionPerformed = translateFreeDrag();
 		if (actionPerformed) { emitPrimarySelectionPosChanged(); }
