@@ -6,6 +6,6 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     ABC3D window;
-    window.show();
+    window.showMaximized();
     return app.exec();
 }
