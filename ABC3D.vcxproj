@@ -153,6 +153,7 @@
     <None Include="assets\shaders\Grid.frag" />
     <None Include="assets\shaders\Grid.vert" />
     <None Include="assets\shaders\Hoop.vert" />
+    <None Include="assets\shaders\Hoop.frag" />
     <None Include="assets\shaders\Mesh.frag" />
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\PointDrawing.vert" />

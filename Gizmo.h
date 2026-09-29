@@ -84,8 +84,8 @@ static const std::vector<GizmoInstanceSettings> DEFAULT_HOOP_SETTINGS = { {
 		Vec3f(0.0f, 0.0f, 0.0f), // base
 		Vec3f(1.0f, 0.0f, 0.0f), // dir
 		0.0f,                    // length
-		1.0f,                    // radius
-		0.0f,                    // tipSize
+		2.0f,                    // radius
+		0.02f,                   // tipSize / rotation ring thickness
 		Vec3f(0.0f, 1.0f, 0.0f), // color
 		Vec2u(2, 0),             // ids
 	},
@@ -93,8 +93,8 @@ static const std::vector<GizmoInstanceSettings> DEFAULT_HOOP_SETTINGS = { {
 		Vec3f(0.0f, 0.0f, 0.0f),
 		Vec3f(0.0f, 1.0f, 0.0f),
 		0.0f,
-		1.0f,
-		0.0f,
+		2.0f,
+		0.02f,
 		Vec3f(0.0f, 0.0f, 1.0f),
 		Vec2u(2, 1),
 	},
@@ -102,8 +102,8 @@ static const std::vector<GizmoInstanceSettings> DEFAULT_HOOP_SETTINGS = { {
 		Vec3f(0.0f, 0.0f, 0.0f),
 		Vec3f(0.0f, 0.0f, 1.0f),
 		0.0f,
-		1.0f,
-		0.0f,
+		2.0f,
+		0.02f,
 		Vec3f(1.0f, 0.0f, 0.0f),
 		Vec2u(2, 2),
 	},
@@ -202,15 +202,15 @@ const std::vector<Vec3u> MACE_TRIANGLES = {
 };
 
 const std::vector<Vec3f> HOOP_VERTICES = {
-	Vec3f(-0.5, -0.5, 0.0),
-	Vec3f(0.5, -0.5, 0.0),
-	Vec3f(0.5,  0.5, 0.0),
-	Vec3f(-0.5,  0.5, 0.0)
+	Vec3f(-0.5f, -0.5f, 0.0f),
+	Vec3f(0.5f, -0.5f, 0.0f),
+	Vec3f(0.5f,  0.5f, 0.0f),
+	Vec3f(-0.5f,  0.5f, 0.0f)
 };
 
 const std::vector<Vec3u> HOOP_TRIANGLES = {
-	Vec3u(0,1,2),
-	Vec3u(0,2,3)
+	Vec3u(0, 1, 2),
+	Vec3u(0, 2, 3)
 };
 
 const std::vector<Vec3f> FREE_CUBE_VERTICES = {

@@ -5,28 +5,41 @@ layout(location = 1) in vec3 base;
 layout(location = 2) in vec3 dir;
 layout(location = 3) in float length;
 layout(location = 4) in float radius;
-layout(location = 5) in float tipSize;
+layout(location = 5) in float thickness;
 layout(location = 6) in vec3 clr;
 layout(location = 7) in uvec2 ids;
 
 out vec3 drawClr;
 out uvec2 drawIds;
+out vec2 planeCoord;
+out float ringThickness;
 
 uniform mat4 viewProj;
 uniform float screenScale;
 
 void main(){
 	vec3 pos = vertexPosition;
+	planeCoord = vertexPosition.xy;
+
+	// Keep the thickness in the plane's local coordinates, so the ring stays the same thickness on screen.
+	ringThickness = clamp(thickness, 0.001f, 0.5f);
+
+	// dir is the axis the ring rotates around.
 	vec3 normal = normalize(dir);
 
-	// The local quad lies in XY. Build a stable orthonormal basis for the
-	// plane perpendicular to the selected rotation axis.
-	vec3 reference = abs(normal.y) < 0.99f
-		? vec3(0.0f, 1.0f, 0.0f)
-		: vec3(1.0f, 0.0f, 0.0f);
+	// Build plane perpendicular to rotation axis.
+	vec3 reference;
+	if (abs(normal.y) < 0.99f) {
+		reference = vec3(0.0f, 1.0f, 0.0f);
+	}
+	else {
+		reference = vec3(1.0f, 0.0f, 0.0f);
+	}
 	vec3 tangent = normalize(cross(reference, normal));
 	vec3 bitangent = cross(normal, tangent);
 	pos = tangent * pos.x + bitangent * pos.y;
+
+	// Scale plane by radius.
 	pos *= radius;
 
 	// Keep the complete gizmo at a constant screen size. The clip-space w value scales the local geometry by depth.
@@ -34,13 +47,12 @@ void main(){
 	float depthScale = max(baseClip.w, 0.001f) * screenScale;
 	pos *= depthScale;
 
-	// Move the plane to its desired location in world space.
+	// Move the plane to the base location in world space.
 	pos += base;
 
 	// Output final position
 	gl_Position = viewProj * vec4(pos, 1.0f);
 
-	// Send data to fragment shader
 	drawClr = clr;
 	drawIds = ids;
 }

@@ -153,8 +153,10 @@ void ModelingRenderer::Draw(GLuint defaultFramebuffer) {
 	// Draw gizmos before checking the selection texture.
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
 	//arrowRenderer.Draw();
 	gizmoRenderer.Draw();
+	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
@@ -834,7 +836,7 @@ bool GizmoRenderer::Initialize() {
 		std::cout << "Error initializing scale gizmo shaders!" << std::endl;
 		return false;
 	}
-	if (!rotation.initialize("assets/shaders/Hoop.vert", "assets/shaders/ArrowColor.frag", HOOP_VERTICES, HOOP_TRIANGLES)) {
+	if (!rotation.initialize("assets/shaders/Hoop.vert", "assets/shaders/Hoop.frag", HOOP_VERTICES, HOOP_TRIANGLES)) {
 		std::cout << "Error initializing rotation gizmo shaders!" << std::endl;
 		return false;
 	}
