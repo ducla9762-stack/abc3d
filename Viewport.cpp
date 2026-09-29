@@ -186,7 +186,8 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	const Vec3u ids = renderer.SelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
 	const bool gizmoHit =
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
@@ -304,7 +305,8 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 		break;
 	case ROTATE:
-		actionPerformed = rotateDrag();
+		//actionPerformed = rotateDrag();
+		actionPerformed = rotateGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionRotChanged(); }
 		break;
 	case EXTRUDE:
@@ -318,11 +320,13 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		break;
 	}
 
-	// If no action performed, move the camera
-	if (!actionPerformed) {
+	// If no action performed and no gizmo was captured, move the camera. A
+	// captured gizmo must keep ownership of the drag even when its projected
+	// axis is degenerate from the current camera angle.
+	if (!actionPerformed && !draggingGizmo) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 	}
-	else if (updateRenderBuffers) {
+	else if (actionPerformed && updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
 	}
 
@@ -834,6 +838,39 @@ bool Viewport::rotateDrag() {
 	return true;
 }
 
+bool Viewport::rotateGizmoDrag() {
+	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
+	if (!draggingGizmo ||
+		selectionManager.getActiveElement() != OBJECT ||
+		selectionManager.getSelectedItems().empty()) {
+		return false;
+	}
+
+	// The center cube performs unconstrained rotation.
+	if (draggedGizmoAxis == 3) {
+		const bool rotated = rotateDrag();
+		if (rotated) {
+			emitPrimarySelectionRotChanged();
+		}
+		return rotated;
+	}
+
+	if (draggedGizmoAxis >= 3) {
+		return false;
+	}
+
+	// Todo: axis rotation.
+	bool rotated = false;
+	std::cout << "Rotation along axis: " << draggedGizmoAxis << " captured, but logic not implemented." << std::endl;
+
+	renderer.UpdateRenderBuffers(scene);
+
+	if (rotated) {
+		emitPrimarySelectionRotChanged();
+	}
+	return rotated;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // Gizmos ---------------------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------------
@@ -1146,7 +1183,8 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	const Vec3u ids = renderer.SelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
 	const uint newHoveredAxis =
 		(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 			((ids.y == 4 && ids.z == 3) || ids.z < 3))

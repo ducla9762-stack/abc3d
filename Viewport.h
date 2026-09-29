@@ -243,6 +243,8 @@ private:
 
 	bool scaleGizmoDrag();
 
+	bool rotateGizmoDrag();
+
 	// AI-generated code: Positions the translation gizmo at the selection average.
 	void updateGizmos();
 
