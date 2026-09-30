@@ -245,6 +245,10 @@ private:
 
 	bool rotateGizmoDrag();
 
+	// Returns the orientation used by the shared gizmo. With multiple selected
+	// meshes, the first valid selected mesh supplies the orientation.
+	Matrix3f getGizmoRotation() const;
+
 	// AI-generated code: Positions the translation gizmo at the selection average.
 	void updateGizmos();
 
@@ -454,6 +458,7 @@ public slots:
 			scene[item.meshId]->Rot(rot);
 			makeCurrent();
 			renderer.UpdateRenderBuffers(scene);
+			updateGizmos();
 			update();
 		}
 	}

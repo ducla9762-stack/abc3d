@@ -14,6 +14,7 @@ out uvec2 drawIds;
 
 uniform mat4 viewProj;
 uniform float screenScale;
+uniform mat3 gizmoRotation;
 
 const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
 const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
@@ -35,14 +36,15 @@ void main(){
 	float depthScale = max(baseClip.w, 0.001f) * screenScale / localHeight;
 	pos *= depthScale;
 
-	// Rotate the arrow
-	bool dirIsZ = abs(dir.z) > 0.99f;
+	// AI-generated: Rotate the arrow with the selected element, then build its local frame.
+	vec3 orientedDir = normalize(gizmoRotation * dir);
+	bool dirIsZ = abs(orientedDir.z) > 0.99f;
 	vec3 reference = float(dirIsZ) * Y + float(!dirIsZ) * Z;
 
 	mat3 rotation;
-	rotation[1] = dir;
-	rotation[0] = normalize(cross(dir, reference));
-	rotation[2] = cross(rotation[0], dir);
+	rotation[1] = orientedDir;
+	rotation[0] = normalize(cross(orientedDir, reference));
+	rotation[2] = cross(rotation[0], orientedDir);
 
 	pos = rotation * pos;
 	

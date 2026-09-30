@@ -135,6 +135,11 @@ private:
 		void setViewProjectionUniform(float data[16], float fov, int viewportHeight);
 
 		/// <summary>
+		/// Sets the local-to-world orientation used by directional gizmos.
+		/// </summary>
+		void setGizmoRotationUniform(const Matrix3f& rotation);
+
+		/// <summary>
 		/// Sets the gizmos to draw.
 		/// </summary>
 		/// <param name="maces">List of maces</param>
@@ -173,7 +178,7 @@ public:
 	/// <param name="base"> The position to draw the gizmo. </param>
 	/// <param name="hoveredAxis"> The axis being hovered on. </param>
 	/// <param name="type"> The type of gizmo to draw. </param>
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& gizmoRotation);
 
 	/// <summary>
 	/// Sets the initial settings for each gizmo.
@@ -327,7 +332,7 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation);
 
 	void ClearGizmos();
 

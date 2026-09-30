@@ -397,8 +397,8 @@ void ModelingRenderer::UpdateRenderBuffers(const Scene& scene) {
 }
 
 // Public facing gizmo API.
-void ModelingRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type) {
-	gizmoRenderer.UpdateGizmos(base, hoveredAxis, type);
+void ModelingRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation) {
+	gizmoRenderer.UpdateGizmos(base, hoveredAxis, type, gizmoRotation);
 }
 // Public facing gizmo API.
 void ModelingRenderer::ClearGizmos()
@@ -746,6 +746,12 @@ void GizmoRenderer::Gizmo::setViewProjectionUniform(float data[16], float fov, i
 	program.SetUniform("screenScale", screenScale);
 }
 
+void GizmoRenderer::Gizmo::setGizmoRotationUniform(const Matrix3f& rotation) {
+	// AI-generated: Uploads the selected element orientation for directional gizmos.
+	program.Bind();
+	program.SetUniformMatrix3("gizmoRotation", rotation.cell);
+}
+
 void GizmoRenderer::Gizmo::setGizmos(const std::vector<GizmoInstanceSettings>& gizmos, GLenum usage) {
 	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GizmoInstanceSettings) * gizmos.size(), gizmos.data(), usage);
@@ -756,7 +762,13 @@ void GizmoRenderer::Gizmo::clear() {
 	instanceCount = 0;
 }
 
-void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type) {
+void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& gizmoRotation) {
+	// AI-generated: Keeps every gizmo shader aligned to the selected element.
+	translation.setGizmoRotationUniform(gizmoRotation);
+	scale.setGizmoRotationUniform(gizmoRotation);
+	rotation.setGizmoRotationUniform(gizmoRotation);
+	free.setGizmoRotationUniform(gizmoRotation);
+
 	std::vector<GizmoInstanceSettings>* activeSettings = nullptr;
 	const std::vector<GizmoInstanceSettings>* defaultSettings = nullptr;
 

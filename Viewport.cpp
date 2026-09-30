@@ -908,6 +908,9 @@ bool Viewport::translateGizmoDrag() {
 	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
 	default: return false;
 	}
+	// AI-generated: Match axis-drag projection to the rotated gizmo display.
+	axis = getGizmoRotation() * axis;
+	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
 	// the mouse moved along it. An axis aimed directly at the camera has no
@@ -996,6 +999,9 @@ bool Viewport::scaleGizmoDrag() {
 	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
 	default: return false;
 	}
+	// AI-generated: Match scale-axis dragging to the rotated gizmo display.
+	axis = getGizmoRotation() * axis;
+	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
 	// the mouse moved along it. An axis aimed directly at the camera has no
@@ -1030,8 +1036,31 @@ bool Viewport::scaleGizmoDrag() {
 	return scaled;
 }
 
+// AI-generated: Builds the gizmo orientation from the first selected mesh.
+Matrix3f Viewport::getGizmoRotation() const {
+	Matrix3f rotation;
+	rotation.SetIdentity();
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		const Vec3f& eulerRotation = scene[item.meshId]->Rot();
+		rotation.SetRotationZYX(
+			degreesToRadians(eulerRotation.x),
+			degreesToRadians(eulerRotation.y),
+			degreesToRadians(eulerRotation.z));
+		break;
+	}
+
+	return rotation;
+}
+
 // AI-generated code
 void Viewport::updateGizmos() {
+	const Matrix3f gizmoRotation = getGizmoRotation();
+
 	// Update translation gizmo.
 	if (actionParams.action == TRANSLATE_AXIS) {
 		const bool translationAction = actionParams.action == TRANSLATE_AXIS;
@@ -1083,7 +1112,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
 	}
 	// Update scale gizmo.
 	else if (actionParams.action == SCALE) {
@@ -1122,7 +1151,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale, gizmoRotation);
 	}
 	// Update rotate gizmo.
 	else if (actionParams.action == ROTATE) {
@@ -1161,7 +1190,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation, gizmoRotation);
 	}
 	// Else, undefined gizmo, clear all gizmos.
 	else {

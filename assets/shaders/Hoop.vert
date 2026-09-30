@@ -16,6 +16,7 @@ out float ringThickness;
 
 uniform mat4 viewProj;
 uniform float screenScale;
+uniform mat3 gizmoRotation;
 
 void main(){
 	vec3 pos = vertexPosition;
@@ -25,7 +26,8 @@ void main(){
 	ringThickness = clamp(thickness, 0.001f, 0.5f);
 
 	// dir is the axis the ring rotates around.
-	vec3 normal = normalize(dir);
+	// AI-generated: Rotate the ring's normal into the selected element's frame.
+	vec3 normal = normalize(gizmoRotation * dir);
 
 	// Build plane perpendicular to rotation axis.
 	vec3 reference;
