@@ -1124,8 +1124,10 @@ Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
 		normal += GetFaceNormal(face1);
 		++count;
 	}
-	std::cout << "Edge Normal Length: " << normal.Length() << std::endl;
-	return normal / count;
+
+	normal = normal / count;
+	normal.Normalize();
+	return normal;
 }
 
 Vec3f HalfEdgeMesh::GetEdgeCenter(uint edgeId) const {

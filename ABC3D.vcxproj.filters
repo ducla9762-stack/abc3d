@@ -102,6 +102,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Gizmo.h">
+    <ClInclude Include="MeshBeveler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

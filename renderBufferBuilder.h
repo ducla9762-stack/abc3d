@@ -74,6 +74,8 @@ public:
 			triVertices.clear(); // Clear should preserve capacity (allocated memory)
 			triEdges.clear();
 
+			if (mesh.faceEdges[i] == MAX_UINT) { continue; }
+
 			//std::cout << "Triangulating Face " << i << std::endl;
 			mesh.GetTriangulation(i ,triVertices, triEdges);
 			//std::cout << "Triangulated Face " << i << std::endl;
