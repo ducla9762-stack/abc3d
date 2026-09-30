@@ -117,8 +117,7 @@
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: #3c3c3c;
-color: rgb(255, 255, 255);</string>
+        <string notr="true">color: rgb(255, 255, 255);</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
@@ -164,6 +163,9 @@ color: rgb(255, 255, 255);</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
            <string/>
@@ -218,6 +220,9 @@ color: rgb(255, 255, 255);</string>
           <property name="toolTipDuration">
            <number>-1</number>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string>Camera</string>
           </property>
@@ -264,6 +269,9 @@ color: rgb(255, 255, 255);</string>
           <property name="toolTip">
            <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -307,6 +315,9 @@ color: rgb(255, 255, 255);</string>
           </property>
           <property name="toolTip">
            <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected shape&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
            <string/>
@@ -352,6 +363,9 @@ color: rgb(255, 255, 255);</string>
           <property name="toolTip">
            <string extracomment="Rotate Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Rotate Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Turns an object&lt;/p&gt;&lt;p&gt;'R' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -396,6 +410,9 @@ color: rgb(255, 255, 255);</string>
           <property name="toolTip">
            <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -439,6 +456,9 @@ color: rgb(255, 255, 255);</string>
           </property>
           <property name="toolTip">
            <string extracomment="Extrude Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Extrude Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Extends a shape, edge, or face&lt;/p&gt;&lt;p&gt;'X' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
            <string/>
@@ -490,6 +510,9 @@ color: rgb(255, 255, 255);</string>
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -538,7 +561,7 @@ color: rgb(255, 255, 255);</string>
            <bool>false</bool>
           </property>
           <property name="styleSheet">
-           <string notr="true"/>
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
            <string/>
@@ -575,6 +598,9 @@ color: rgb(255, 255, 255);</string>
             <height>64</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string>Knife</string>
           </property>
@@ -593,6 +619,9 @@ color: rgb(255, 255, 255);</string>
             <width>64</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
            <string>Pen</string>
@@ -685,7 +714,7 @@ color: rgb(255, 255, 255);</string>
           </size>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="sceneHierarchyPanel">
           <property name="contextMenuPolicy">
@@ -781,7 +810,8 @@ color: rgb(255, 255, 255);</string>
                  <item>
                   <widget class="QPushButton" name="classicModeButton">
                    <property name="styleSheet">
-                    <string notr="true">outline: 1px solid white;</string>
+                    <string notr="true">QPushButton{ outline: 1px solid white; }
+QPushButton:checked { background-color: red; }</string>
                    </property>
                    <property name="text">
                     <string>Classic</string>
@@ -799,6 +829,9 @@ color: rgb(255, 255, 255);</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="additiveModeButton">
+                   <property name="styleSheet">
+                    <string notr="true">QPushButton:checked { background-color: red; }</string>
+                   </property>
                    <property name="text">
                     <string>Additive</string>
                    </property>
@@ -839,6 +872,9 @@ color: rgb(255, 255, 255);</string>
               </property>
               <item row="4" column="0">
                <widget class="QPushButton" name="outModeTranslationButton">
+                <property name="styleSheet">
+                 <string notr="true">QPushButton:checked { background-color: red; }</string>
+                </property>
                 <property name="text">
                  <string>Outward</string>
                 </property>
@@ -852,6 +888,9 @@ color: rgb(255, 255, 255);</string>
               </item>
               <item row="4" column="1">
                <widget class="QPushButton" name="edgeModeTranslationButton">
+                <property name="styleSheet">
+                 <string notr="true">QPushButton:checked { background-color: red; }</string>
+                </property>
                 <property name="text">
                  <string>Edge</string>
                 </property>
@@ -875,6 +914,9 @@ color: rgb(255, 255, 255);</string>
               </item>
               <item row="1" column="0" colspan="2">
                <widget class="QPushButton" name="axisModeTranslationButton">
+                <property name="styleSheet">
+                 <string notr="true">QPushButton:checked { background-color: red; }</string>
+                </property>
                 <property name="text">
                  <string>Free</string>
                 </property>
@@ -970,6 +1012,9 @@ color: rgb(255, 255, 255);</string>
            </item>
            <item row="2" column="0">
             <widget class="QPushButton" name="uvSphereButton_5">
+             <property name="styleSheet">
+              <string notr="true">QPushButton:checked { background-color: red; }</string>
+             </property>
              <property name="text">
               <string>UV Sphere</string>
              </property>
@@ -977,6 +1022,9 @@ color: rgb(255, 255, 255);</string>
            </item>
            <item row="0" column="1">
             <widget class="QPushButton" name="pyramidButton_5">
+             <property name="styleSheet">
+              <string notr="true">QPushButton:checked { background-color: red; }</string>
+             </property>
              <property name="text">
               <string>Pyramid</string>
              </property>
@@ -991,6 +1039,9 @@ color: rgb(255, 255, 255);</string>
            </item>
            <item row="1" column="1">
             <widget class="QPushButton" name="torusButton_5">
+             <property name="styleSheet">
+              <string notr="true">QPushButton:checked { background-color: red; }</string>
+             </property>
              <property name="text">
               <string>Torus</string>
              </property>
@@ -1050,6 +1101,9 @@ color: rgb(255, 255, 255);</string>
               </property>
               <item row="1" column="1">
                <widget class="QPushButton" name="freeButton">
+                <property name="styleSheet">
+                 <string notr="true">QPushButton:checked { background-color: red; }</string>
+                </property>
                 <property name="text">
                  <string>Free</string>
                 </property>
@@ -1063,6 +1117,9 @@ color: rgb(255, 255, 255);</string>
               </item>
               <item row="1" column="0">
                <widget class="QPushButton" name="orbitButton">
+                <property name="styleSheet">
+                 <string notr="true">QPushButton:checked { background-color: red; }</string>
+                </property>
                 <property name="text">
                  <string>Orbit</string>
                 </property>
