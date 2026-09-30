@@ -187,7 +187,8 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	const Vec3u ids = renderer.SelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
 	const bool gizmoHit =
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
@@ -306,7 +307,8 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 		break;
 	case ROTATE:
-		actionPerformed = rotateDrag();
+		//actionPerformed = rotateDrag();
+		actionPerformed = rotateGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionRotChanged(); }
 		break;
 	case EXTRUDE:
@@ -320,11 +322,13 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		break;
 	}
 
-	// If no action performed, move the camera
-	if (!actionPerformed) {
+	// If no action performed and no gizmo was captured, move the camera. A
+	// captured gizmo must keep ownership of the drag even when its projected
+	// axis is degenerate from the current camera angle.
+	if (!actionPerformed && !draggingGizmo) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 	}
-	else if (updateRenderBuffers) {
+	else if (actionPerformed && updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
 	}
 
@@ -836,6 +840,39 @@ bool Viewport::rotateDrag() {
 	return true;
 }
 
+bool Viewport::rotateGizmoDrag() {
+	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
+	if (!draggingGizmo ||
+		selectionManager.getActiveElement() != OBJECT ||
+		selectionManager.getSelectedItems().empty()) {
+		return false;
+	}
+
+	// The center cube performs unconstrained rotation.
+	if (draggedGizmoAxis == 3) {
+		const bool rotated = rotateDrag();
+		if (rotated) {
+			emitPrimarySelectionRotChanged();
+		}
+		return rotated;
+	}
+
+	if (draggedGizmoAxis >= 3) {
+		return false;
+	}
+
+	// Todo: axis rotation.
+	bool rotated = false;
+	std::cout << "Rotation along axis: " << draggedGizmoAxis << " captured, but logic not implemented." << std::endl;
+
+	renderer.UpdateRenderBuffers(scene);
+
+	if (rotated) {
+		emitPrimarySelectionRotChanged();
+	}
+	return rotated;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // Gizmos ---------------------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------------
@@ -871,6 +908,9 @@ bool Viewport::translateGizmoDrag() {
 	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
 	default: return false;
 	}
+	// AI-generated: Match axis-drag projection to the rotated gizmo display.
+	axis = getGizmoRotation() * axis;
+	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
 	// the mouse moved along it. An axis aimed directly at the camera has no
@@ -959,6 +999,9 @@ bool Viewport::scaleGizmoDrag() {
 	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
 	default: return false;
 	}
+	// AI-generated: Match scale-axis dragging to the rotated gizmo display.
+	axis = getGizmoRotation() * axis;
+	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
 	// the mouse moved along it. An axis aimed directly at the camera has no
@@ -993,8 +1036,31 @@ bool Viewport::scaleGizmoDrag() {
 	return scaled;
 }
 
+// AI-generated: Builds the gizmo orientation from the first selected mesh.
+Matrix3f Viewport::getGizmoRotation() const {
+	Matrix3f rotation;
+	rotation.SetIdentity();
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		const Vec3f& eulerRotation = scene[item.meshId]->Rot();
+		rotation.SetRotationZYX(
+			degreesToRadians(eulerRotation.x),
+			degreesToRadians(eulerRotation.y),
+			degreesToRadians(eulerRotation.z));
+		break;
+	}
+
+	return rotation;
+}
+
 // AI-generated code
 void Viewport::updateGizmos() {
+	const Matrix3f gizmoRotation = getGizmoRotation();
+
 	// Update translation gizmo.
 	if (actionParams.action == TRANSLATE_AXIS) {
 		const bool translationAction = actionParams.action == TRANSLATE_AXIS;
@@ -1046,7 +1112,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
 	}
 	// Update scale gizmo.
 	else if (actionParams.action == SCALE) {
@@ -1085,12 +1151,46 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale, gizmoRotation);
 	}
 	// Update rotate gizmo.
 	else if (actionParams.action == ROTATE) {
-		// todo.
-		renderer.ClearGizmos();
+		const bool rotateAction = actionParams.action == ROTATE;
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+		// If nothing selected, or the active element is not objects, clear gizmos.
+		if (!rotateAction || selectionManager.getActiveElement() != OBJECT ||
+			selectedItems.empty()) {
+			renderer.ClearGizmos();
+			return;
+		}
+
+		// Get the average position of all selected elements, only objects as rotate is only defined for objects.
+
+		Vec3f positionSum(0.0f);
+		uint positionCount = 0;
+
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			Vec3f worldPosition = mesh->Pos();
+
+			positionSum += worldPosition;
+			++positionCount;
+		}
+
+		// If no positions, clear gizmos.
+		if (positionCount == 0) {
+			renderer.ClearGizmos();
+			return;
+		}
+
+		// Give averaged position and the current highlighted axis to the renderer.
+		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation, gizmoRotation);
 	}
 	// Else, undefined gizmo, clear all gizmos.
 	else {
@@ -1114,7 +1214,8 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	const Vec3u ids = renderer.SelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4));
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
 	const uint newHoveredAxis =
 		(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 			((ids.y == 4 && ids.z == 3) || ids.z < 3))

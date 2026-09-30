@@ -135,6 +135,11 @@ private:
 		void setViewProjectionUniform(float data[16], float fov, int viewportHeight);
 
 		/// <summary>
+		/// Sets the local-to-world orientation used by directional gizmos.
+		/// </summary>
+		void setGizmoRotationUniform(const Matrix3f& rotation);
+
+		/// <summary>
 		/// Sets the gizmos to draw.
 		/// </summary>
 		/// <param name="maces">List of maces</param>
@@ -150,14 +155,14 @@ private:
 	// Settings for gizmo instances.
 	std::vector<GizmoInstanceSettings> arrows; // translation.
 	std::vector<GizmoInstanceSettings> maces; // scale.
-	std::vector<GizmoInstanceSettings> cube; // free/uniform translation/scale.
-	// todo: rotation;
+	std::vector<GizmoInstanceSettings> hoops; // rotation.
+	std::vector<GizmoInstanceSettings> cube; // free/uniform translation, rotation/scale.
 
 	// Gizmo programs.
 	Gizmo translation;
 	Gizmo scale;
+	Gizmo rotation;
 	Gizmo free;
-	// todo: rotation;
 
 public:
 	/// <summary>
@@ -173,14 +178,14 @@ public:
 	/// <param name="base"> The position to draw the gizmo. </param>
 	/// <param name="hoveredAxis"> The axis being hovered on. </param>
 	/// <param name="type"> The type of gizmo to draw. </param>
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& gizmoRotation);
 
 	/// <summary>
 	/// Sets the initial settings for each gizmo.
 	/// </summary>
 	/// <param name="arrows"></param>
 	/// <param name="maces"></param>
-	void SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& cubes);
+	void SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& hoops, const std::vector<GizmoInstanceSettings>& cubes);
 
 	/// <summary>
 	/// Sets the View-Projection transformation for all gizmos.
@@ -327,7 +332,7 @@ public:
 
 	void UpdateRenderBuffers(const Scene& scene);
 
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation);
 
 	void ClearGizmos();
 
