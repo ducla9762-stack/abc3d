@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1080</width>
-    <height>720</height>
+    <width>1432</width>
+    <height>961</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -95,7 +95,7 @@
          <x>0</x>
          <y>0</y>
          <width>64</width>
-         <height>704</height>
+         <height>938</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -115,6 +115,10 @@
          <width>64</width>
          <height>16777215</height>
         </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: #3c3c3c;
+color: rgb(255, 255, 255);</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
@@ -533,6 +537,9 @@
           <property name="autoFillBackground">
            <bool>false</bool>
           </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -621,6 +628,9 @@
      </widget>
     </item>
     <item>
+     <widget class="StartMenu" name="startMenu" native="true"/>
+    </item>
+    <item>
      <widget class="Viewport" name="viewport">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -675,7 +685,7 @@
           </size>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="sceneHierarchyPanel">
           <property name="contextMenuPolicy">
@@ -770,6 +780,9 @@
                  </property>
                  <item>
                   <widget class="QPushButton" name="classicModeButton">
+                   <property name="styleSheet">
+                    <string notr="true">outline: 1px solid white;</string>
+                   </property>
                    <property name="text">
                     <string>Classic</string>
                    </property>
@@ -944,6 +957,9 @@
           </layout>
          </widget>
          <widget class="QWidget" name="shapePanel_3">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <layout class="QGridLayout" name="gridLayout">
            <item row="0" column="0">
             <widget class="QPushButton" name="cubeButton_5">
@@ -1085,6 +1101,9 @@
              <property name="text">
               <string>Always Show Grid</string>
              </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -1124,7 +1143,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1080</width>
+     <width>1432</width>
      <height>21</height>
     </rect>
    </property>
@@ -1301,123 +1320,17 @@
     <slot>setValue(Vec3f)</slot>
    </slots>
   </customwidget>
+  <customwidget>
+   <class>StartMenu</class>
+   <extends>QWidget</extends>
+   <header>StartMenu.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="ABC3D.qrc"/>
  </resources>
  <connections>
-  <connection>
-   <sender>rotateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>32</x>
-     <y>326</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>539</x>
-     <y>359</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>translateToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>transformModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>35</x>
-     <y>179</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1070</x>
-     <y>509</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>selectToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>40</x>
-     <y>61</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>229</x>
-     <y>-11</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>57</x>
-     <y>247</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>224</x>
-     <y>-15</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>translateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>53</x>
-     <y>186</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>390</x>
-     <y>-8</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>extrudeToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>48</x>
-     <y>435</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>347</x>
-     <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>bevelToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showPropertiesPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>54</x>
-     <y>568</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>525</x>
-     <y>-2</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>actionModel</sender>
    <signal>triggered()</signal>
@@ -1447,22 +1360,6 @@
     <hint type="destinationlabel">
      <x>539</x>
      <y>359</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cameraToolButton</sender>
-   <signal>released()</signal>
-   <receiver>ABC3DClass</receiver>
-   <slot>showCameraPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>22</x>
-     <y>138</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>522</x>
-     <y>-11</y>
     </hint>
    </hints>
   </connection>
@@ -1547,34 +1444,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>selectToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>selectionInputModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>50</x>
-     <y>53</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>836</x>
-     <y>429</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>orbitButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>originInput</receiver>
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>848</x>
-     <y>386</y>
+     <x>1289</x>
+     <y>554</y>
     </hint>
     <hint type="destinationlabel">
-     <x>892</x>
-     <y>383</y>
+     <x>1422</x>
+     <y>579</y>
     </hint>
    </hints>
   </connection>
@@ -1605,8 +1486,8 @@
      <y>538</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>539</y>
+     <x>1422</x>
+     <y>659</y>
     </hint>
    </hints>
   </connection>
@@ -1621,40 +1502,8 @@
      <y>523</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>599</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>extrudeToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionExtrude()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>460</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>692</x>
-     <y>417</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rotateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionRotate()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>48</x>
-     <y>327</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>668</x>
-     <y>284</y>
+     <x>1422</x>
+     <y>719</y>
     </hint>
    </hints>
   </connection>
@@ -1665,8 +1514,8 @@
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>391</y>
+     <x>1422</x>
+     <y>633</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1681,8 +1530,8 @@
    <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>386</y>
+     <x>1422</x>
+     <y>554</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -1701,40 +1550,8 @@
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>892</x>
-     <y>383</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionScale()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>57</x>
-     <y>277</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>669</x>
-     <y>230</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>translateToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateAxis()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>204</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>669</x>
-     <y>168</y>
+     <x>1422</x>
+     <y>579</y>
     </hint>
    </hints>
   </connection>
@@ -1745,8 +1562,8 @@
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>379</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1761,8 +1578,8 @@
    <slot>setCameraModeOrbit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>848</x>
-     <y>386</y>
+     <x>1289</x>
+     <y>554</y>
     </hint>
     <hint type="destinationlabel">
      <x>738</x>
@@ -1777,8 +1594,8 @@
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>389</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1793,8 +1610,8 @@
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>848</x>
-     <y>379</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -1809,8 +1626,8 @@
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>937</x>
-     <y>509</y>
+     <x>1289</x>
+     <y>629</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -1825,8 +1642,8 @@
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>391</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -1841,28 +1658,12 @@
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>384</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
      <y>533</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>subdivideToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateAxis()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>49</x>
-     <y>514</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>715</x>
-     <y>471</y>
     </hint>
    </hints>
   </connection>
@@ -1873,8 +1674,8 @@
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>394</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -1893,8 +1694,8 @@
      <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>569</y>
+     <x>1422</x>
+     <y>689</y>
     </hint>
    </hints>
   </connection>
@@ -1905,8 +1706,8 @@
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>379</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -1937,8 +1738,8 @@
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>848</x>
-     <y>391</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>743</x>
@@ -1953,8 +1754,8 @@
    <slot>setAdditiveSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>425</y>
+     <x>1422</x>
+     <y>545</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -1969,8 +1770,8 @@
    <slot>setActionTranslateEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>509</y>
+     <x>1422</x>
+     <y>629</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1985,28 +1786,12 @@
    <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>569</y>
+     <x>1422</x>
+     <y>689</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
      <y>473</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>shapeToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateAxis()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>44</x>
-     <y>385</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>801</x>
-     <y>353</y>
     </hint>
    </hints>
   </connection>
@@ -2021,8 +1806,8 @@
      <y>498</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>599</y>
+     <x>1422</x>
+     <y>719</y>
     </hint>
    </hints>
   </connection>
@@ -2037,8 +1822,8 @@
      <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>539</y>
+     <x>1422</x>
+     <y>659</y>
     </hint>
    </hints>
   </connection>
@@ -2059,30 +1844,14 @@
    </hints>
   </connection>
   <connection>
-   <sender>bevelToolButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionBevel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>13</x>
-     <y>588</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>695</x>
-     <y>545</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>cylinderButton_5</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
    <slot>loadCylinder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>848</x>
-     <y>385</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>745</x>
@@ -2097,8 +1866,8 @@
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>937</x>
-     <y>479</y>
+     <x>1422</x>
+     <y>599</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -2113,8 +1882,8 @@
    <slot>setSingleSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>937</x>
-     <y>425</y>
+     <x>1289</x>
+     <y>545</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2129,8 +1898,8 @@
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>385</y>
+     <x>1253</x>
+     <y>520</y>
     </hint>
     <hint type="destinationlabel">
      <x>684</x>
@@ -2145,8 +1914,8 @@
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>387</y>
+     <x>1422</x>
+     <y>606</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2165,8 +1934,8 @@
      <y>459</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>569</y>
+     <x>1422</x>
+     <y>689</y>
     </hint>
    </hints>
   </connection>
@@ -2177,8 +1946,8 @@
    <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>599</y>
+     <x>1422</x>
+     <y>719</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -2197,8 +1966,8 @@
      <y>504</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>569</y>
+     <x>1422</x>
+     <y>689</y>
     </hint>
    </hints>
   </connection>
@@ -2213,8 +1982,88 @@
      <y>505</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>599</y>
+     <x>1422</x>
+     <y>719</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>originInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setOrbitOrigin(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1422</x>
+     <y>579</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>730</x>
+     <y>462</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>posInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionPos(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1422</x>
+     <y>659</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>708</x>
+     <y>435</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionRotate()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
+     <y>327</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>668</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>204</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>669</x>
+     <y>168</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionExtrude()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>692</x>
+     <y>417</y>
     </hint>
    </hints>
   </connection>
@@ -2235,34 +2084,210 @@
    </hints>
   </connection>
   <connection>
-   <sender>originInput</sender>
-   <signal>valChanged(Vec3f)</signal>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
    <receiver>viewport</receiver>
-   <slot>setOrbitOrigin(Vec3f)</slot>
+   <slot>setActionBevel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>892</x>
-     <y>383</y>
+     <x>13</x>
+     <y>588</y>
     </hint>
     <hint type="destinationlabel">
-     <x>730</x>
-     <y>462</y>
+     <x>695</x>
+     <y>545</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>posInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionPos(Vec3f)</slot>
+   <sender>selectToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>selectionInputModes</receiver>
+   <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
-     <y>539</y>
+     <x>50</x>
+     <y>53</y>
     </hint>
     <hint type="destinationlabel">
-     <x>708</x>
+     <x>836</x>
+     <y>429</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivideToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>49</x>
+     <y>514</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>715</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionScale()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>57</x>
+     <y>277</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>669</x>
+     <y>230</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>transformModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>35</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1070</x>
+     <y>509</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>shapeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>44</x>
+     <y>385</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>353</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>40</x>
+     <y>61</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>229</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>53</x>
+     <y>186</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>390</x>
+     <y>-8</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cameraToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showCameraPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>22</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>522</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>57</x>
+     <y>247</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>224</x>
+     <y>-15</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>48</x>
      <y>435</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>347</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>326</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>359</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>showPropertiesPanel()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>54</x>
+     <y>568</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>525</x>
+     <y>-2</y>
     </hint>
    </hints>
   </connection>

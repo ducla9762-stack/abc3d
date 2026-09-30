@@ -123,8 +123,10 @@
     <ClCompile Include="render.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
+    <ClCompile Include="StartMenu.cpp" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
+    <QtMoc Include="StartMenu.h" />
     <QtMoc Include="VectorInput.h" />
     <QtMoc Include="Viewport.h" />
     <QtRcc Include="ABC3D.qrc" />
