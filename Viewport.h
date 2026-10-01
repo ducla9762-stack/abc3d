@@ -486,8 +486,8 @@ public slots:
 		generateUnitTorus(vertices, faces, 40, 20);
 		loadMesh(vertices, faces);
 	}
-	void loadUvSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadIcoSphere(){
+	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
+	void loadUvSphere(){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, 10, 10);
