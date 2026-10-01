@@ -32,6 +32,9 @@
      <height>0</height>
     </size>
    </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
      <number>0</number>
@@ -117,7 +120,9 @@
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 255);</string>
+        <string notr="true">color: rgb(255, 255, 255);
+background-color: #1c1c1c;
+</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
@@ -657,9 +662,6 @@
      </widget>
     </item>
     <item>
-     <widget class="StartMenu" name="startMenu" native="true"/>
-    </item>
-    <item>
      <widget class="Viewport" name="viewport">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -676,6 +678,10 @@
         <horstretch>1</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: #1c1c1c;
+color: white;</string>
       </property>
       <layout class="QVBoxLayout" name="rightSidePanels">
        <property name="spacing">
@@ -713,8 +719,11 @@
            <height>682</height>
           </size>
          </property>
+         <property name="styleSheet">
+          <string notr="true">QTabBar:tab:selected{background: red; }</string>
+         </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="sceneHierarchyPanel">
           <property name="contextMenuPolicy">
@@ -742,6 +751,9 @@
           </layout>
          </widget>
          <widget class="QWidget" name="helpPanel">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <attribute name="title">
            <string>Help</string>
           </attribute>
@@ -1204,6 +1216,10 @@ QPushButton:checked { background-color: red; }</string>
      <height>21</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: #1c1c1c;
+color: white;</string>
+   </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
@@ -1376,12 +1392,6 @@ QPushButton:checked { background-color: red; }</string>
     <signal>valChanged(Vec3f)</signal>
     <slot>setValue(Vec3f)</slot>
    </slots>
-  </customwidget>
-  <customwidget>
-   <class>StartMenu</class>
-   <extends>QWidget</extends>
-   <header>StartMenu.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
