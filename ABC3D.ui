@@ -77,6 +77,9 @@
         <height>300</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">QScrollArea {background-color: #1c1c1c; }</string>
+      </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
       </property>
@@ -97,7 +100,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>64</width>
+         <width>66</width>
          <height>938</height>
         </rect>
        </property>
@@ -109,20 +112,19 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>64</width>
+         <width>66</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>64</width>
+         <width>66</width>
          <height>16777215</height>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 255);
-background-color: #1c1c1c;
-</string>
+        <string notr="true">QWidget {background-color: #1c1c1c; }
+QPushButton{background-color: #646464;}</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
@@ -658,6 +660,7 @@ background-color: #1c1c1c;
        <zorder>cameraToolButton</zorder>
        <zorder>knifeToolButton</zorder>
        <zorder>penToolButton</zorder>
+       <zorder>verticalSpacer</zorder>
       </widget>
      </widget>
     </item>
@@ -720,7 +723,9 @@ color: white;</string>
           </size>
          </property>
          <property name="styleSheet">
-          <string notr="true">QTabBar:tab:selected{background: red; }</string>
+          <string notr="true">QTabBar:tab:selected{background: red; }
+QTabBar {border-radius: 2px; 
+				background-color: #646464; }</string>
          </property>
          <property name="currentIndex">
           <number>2</number>
@@ -751,9 +756,6 @@ color: white;</string>
           </layout>
          </widget>
          <widget class="QWidget" name="helpPanel">
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
           <attribute name="title">
            <string>Help</string>
           </attribute>
@@ -762,6 +764,9 @@ color: white;</string>
        </item>
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
+         <property name="styleSheet">
+          <string notr="true">QPushButton{background-color:#646464;}</string>
+         </property>
          <widget class="QWidget" name="propertiesPanel">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <property name="spacing">
