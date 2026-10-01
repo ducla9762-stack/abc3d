@@ -1088,7 +1088,8 @@ bool Viewport::scaleGizmoDrag() {
 	default: return false;
 	}
 	// AI-generated: Match scale-axis dragging to the rotated gizmo display.
-	axis = getGizmoRotation() * axis;
+	// Don't scale by local space axes unless specified.
+	if (localScale) axis = getGizmoRotation() * axis;
 	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
@@ -1241,8 +1242,7 @@ void Viewport::updateGizmos() {
 		}
 
 		// When scaling we want to use the world space rotation, not local.
-		// Todo: make this a setting.
-		gizmoRotation.SetIdentity();
+		if (!localScale) gizmoRotation.SetIdentity();
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
