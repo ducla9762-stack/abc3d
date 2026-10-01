@@ -1517,12 +1517,12 @@ color: white;</string>
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1289</x>
-     <y>554</y>
+     <x>1200</x>
+     <y>506</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>579</y>
+     <x>1244</x>
+     <y>503</y>
     </hint>
    </hints>
   </connection>
@@ -1554,7 +1554,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>659</y>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -1570,7 +1570,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>719</y>
+     <y>803</y>
     </hint>
    </hints>
   </connection>
@@ -1581,8 +1581,8 @@ color: white;</string>
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>633</y>
+     <x>1244</x>
+     <y>511</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -1597,8 +1597,8 @@ color: white;</string>
    <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>554</y>
+     <x>1244</x>
+     <y>506</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -1617,8 +1617,8 @@ color: white;</string>
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>579</y>
+     <x>1244</x>
+     <y>503</y>
     </hint>
    </hints>
   </connection>
@@ -1629,8 +1629,8 @@ color: white;</string>
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>499</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -1645,8 +1645,8 @@ color: white;</string>
    <slot>setCameraModeOrbit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1289</x>
-     <y>554</y>
+     <x>1200</x>
+     <y>506</y>
     </hint>
     <hint type="destinationlabel">
      <x>738</x>
@@ -1661,8 +1661,8 @@ color: white;</string>
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>509</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -1677,8 +1677,8 @@ color: white;</string>
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1200</x>
+     <y>499</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -1709,8 +1709,8 @@ color: white;</string>
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>511</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -1725,8 +1725,8 @@ color: white;</string>
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>504</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -1741,8 +1741,8 @@ color: white;</string>
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>514</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -1762,7 +1762,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>689</y>
+     <y>773</y>
     </hint>
    </hints>
   </connection>
@@ -1773,8 +1773,8 @@ color: white;</string>
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>499</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -1805,8 +1805,8 @@ color: white;</string>
    <slot>loadUvSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1200</x>
+     <y>511</y>
     </hint>
     <hint type="destinationlabel">
      <x>743</x>
@@ -1854,7 +1854,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>1422</x>
-     <y>689</y>
+     <y>773</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -1874,7 +1874,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>719</y>
+     <y>803</y>
     </hint>
    </hints>
   </connection>
@@ -1890,7 +1890,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>659</y>
+     <y>743</y>
     </hint>
    </hints>
   </connection>
@@ -1917,8 +1917,8 @@ color: white;</string>
    <slot>loadCylinder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1200</x>
+     <y>505</y>
     </hint>
     <hint type="destinationlabel">
      <x>745</x>
@@ -1965,8 +1965,8 @@ color: white;</string>
    <slot>loadTorus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1253</x>
-     <y>520</y>
+     <x>1244</x>
+     <y>505</y>
     </hint>
     <hint type="destinationlabel">
      <x>684</x>
@@ -1981,8 +1981,8 @@ color: white;</string>
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>606</y>
+     <x>1244</x>
+     <y>507</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2002,7 +2002,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>689</y>
+     <y>773</y>
     </hint>
    </hints>
   </connection>
@@ -2014,7 +2014,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>1422</x>
-     <y>719</y>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -2034,7 +2034,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>689</y>
+     <y>773</y>
     </hint>
    </hints>
   </connection>
@@ -2050,7 +2050,7 @@ color: white;</string>
     </hint>
     <hint type="destinationlabel">
      <x>1422</x>
-     <y>719</y>
+     <y>803</y>
     </hint>
    </hints>
   </connection>
@@ -2061,8 +2061,8 @@ color: white;</string>
    <slot>setOrbitOrigin(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>579</y>
+     <x>1244</x>
+     <y>503</y>
     </hint>
     <hint type="destinationlabel">
      <x>730</x>
@@ -2078,7 +2078,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>1422</x>
-     <y>659</y>
+     <y>743</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -2177,8 +2177,8 @@ color: white;</string>
      <y>53</y>
     </hint>
     <hint type="destinationlabel">
-     <x>836</x>
-     <y>429</y>
+     <x>1422</x>
+     <y>551</y>
     </hint>
    </hints>
   </connection>
@@ -2225,8 +2225,8 @@ color: white;</string>
      <y>179</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1070</x>
-     <y>509</y>
+     <x>1422</x>
+     <y>629</y>
     </hint>
    </hints>
   </connection>
@@ -2355,6 +2355,22 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>525</x>
      <y>-2</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>scaleModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>23</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1169</x>
+     <y>679</y>
     </hint>
    </hints>
   </connection>
