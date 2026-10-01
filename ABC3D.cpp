@@ -190,5 +190,13 @@ void ABC3D::keyReleaseEvent(QKeyEvent* event) {
     QMainWindow::keyReleaseEvent(event);
 }
 
+void ABC3D::showEvent(QShowEvent* event){
+    QMainWindow::showEvent(event);
+    if (firstShow) {
+        QMetaObject::invokeMethod(this, &ABC3D::showStart, Qt::QueuedConnection);
+        firstShow = false;
+    }
+}
+
 ABC3D::~ABC3D()
 {}

@@ -3,6 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QFileDialog>
 #include "ui_ABC3D.h"
+#include "StartMenu.h"
 
 class ABC3D : public QMainWindow
 {
@@ -11,12 +12,23 @@ class ABC3D : public QMainWindow
 public:
     ABC3D(QWidget *parent = nullptr);
     ~ABC3D();
+
+    bool firstShow = true;
+
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
+
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
+
+    void showEvent(QShowEvent* event) override;
+
+    void showStart() {
+        StartMenu startMenu(this);
+        startMenu.exec();
+    }
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
