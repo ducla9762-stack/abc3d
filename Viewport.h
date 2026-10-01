@@ -319,8 +319,22 @@ public slots:
 		}
 	}
 
-	void setLocalScaleMode() { localScale = true; }
-	void setGlobalScaleMode() { localScale = false; }
+	void setLocalScaleMode() {
+		localScale = true;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
+	}
+	void setGlobalScaleMode() {
+		localScale = false;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
+	}
 
 	void setClassicSelectionMode() { selectionManager.setAdditiveMode(false); }
 	void setAdditiveSelectionMode() { selectionManager.setAdditiveMode(true); }

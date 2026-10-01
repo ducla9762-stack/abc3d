@@ -960,7 +960,7 @@ QPushButton:checked { background-color: red; }</string>
                <widget class="QWidget" name="widget_3" native="true">
                 <layout class="QHBoxLayout" name="horizontalLayout_3">
                  <item>
-                  <widget class="QPushButton" name="localModeButton">
+                  <widget class="QPushButton" name="worldModeButton">
                    <property name="text">
                     <string>World</string>
                    </property>
@@ -968,7 +968,7 @@ QPushButton:checked { background-color: red; }</string>
                     <bool>true</bool>
                    </property>
                    <property name="checked">
-                    <bool>true</bool>
+                    <bool>false</bool>
                    </property>
                    <property name="autoExclusive">
                     <bool>true</bool>
@@ -976,11 +976,14 @@ QPushButton:checked { background-color: red; }</string>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="worldModeButton">
+                  <widget class="QPushButton" name="localModeButton">
                    <property name="text">
                     <string>Local</string>
                    </property>
                    <property name="checkable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="checked">
                     <bool>true</bool>
                    </property>
                    <property name="autoExclusive">
@@ -1429,6 +1432,8 @@ color: white;</string>
     <slot>duplicateSelection()</slot>
     <slot>setCameraModeOrbit()</slot>
     <slot>setCameraModeFree()</slot>
+    <slot>setLocalScaleMode()</slot>
+    <slot>setGlobalScaleMode()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2419,6 +2424,38 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>1169</x>
      <y>679</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>worldModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setGlobalScaleMode()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1275</x>
+     <y>689</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1104</x>
+     <y>666</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>localModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setLocalScaleMode()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1305</x>
+     <y>687</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1103</x>
+     <y>711</y>
     </hint>
    </hints>
   </connection>
