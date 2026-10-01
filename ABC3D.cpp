@@ -6,6 +6,7 @@ ABC3D::ABC3D(QWidget *parent)
 {
     ui.setupUi(this);
     ui.transformModes->setVisible(false);
+    ui.scaleModes->setVisible(false);
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
