@@ -138,6 +138,8 @@ private:
 	uint draggedGizmoAxis = MAX_UINT;
 	bool draggingGizmo = false;
 
+	bool localScale = true;
+
 // ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
@@ -315,6 +317,23 @@ public slots:
 		if (selectionManager.isAdditive() && !selectionManager.isAdditiveMode()) {
 			selectionManager.setAdditive(false);
 		}
+	}
+
+	void setLocalScaleMode() {
+		localScale = true;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
+	}
+	void setGlobalScaleMode() {
+		localScale = false;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
 	}
 
 	void setClassicSelectionMode() { selectionManager.setAdditiveMode(false); }
