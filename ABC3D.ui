@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1432</width>
-    <height>961</height>
+    <width>1777</width>
+    <height>1242</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -101,7 +101,7 @@
          <x>0</x>
          <y>0</y>
          <width>66</width>
-         <height>938</height>
+         <height>1219</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -672,6 +672,9 @@ QPushButton{background-color: #646464;}</string>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
      </widget>
     </item>
     <item>
@@ -722,20 +725,19 @@ color: white;</string>
            <height>682</height>
           </size>
          </property>
+         <property name="layoutDirection">
+          <enum>Qt::LayoutDirection::RightToLeft</enum>
+         </property>
          <property name="styleSheet">
-          <string notr="true">QTabBar:tab:selected{background: red; }
-QTabBar {border-radius: 2px; 
-				background-color: #646464; }</string>
+          <string notr="true">QTabBar {background-color: #646464 }
+QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
           <number>2</number>
          </property>
-         <widget class="QWidget" name="sceneHierarchyPanel">
-          <property name="contextMenuPolicy">
-           <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
-          </property>
+         <widget class="QWidget" name="helpPanel">
           <attribute name="title">
-           <string>Scene Hierarchy</string>
+           <string>Help</string>
           </attribute>
          </widget>
          <widget class="QWidget" name="tutorialPanel">
@@ -744,10 +746,33 @@ QTabBar {border-radius: 2px;
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QTextBrowser" name="tutorialBrowser"/>
+            <widget class="QTextBrowser" name="tutorialBrowser">
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">border: 1px white;</string>
+             </property>
+            </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="loadTutorialButton">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: #646464;
+border-radius: 2px;</string>
+             </property>
              <property name="text">
               <string>Load Tutorial</string>
              </property>
@@ -755,9 +780,12 @@ QTabBar {border-radius: 2px;
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="helpPanel">
+         <widget class="QWidget" name="sceneHierarchyPanel">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
+          </property>
           <attribute name="title">
-           <string>Help</string>
+           <string>Scene Hierarchy</string>
           </attribute>
          </widget>
         </widget>
@@ -765,7 +793,8 @@ QTabBar {border-radius: 2px;
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
          <property name="styleSheet">
-          <string notr="true">QPushButton{background-color:#646464;}</string>
+          <string notr="true">QPushButton{background-color:#646464;}
+QPushButton:checked {background-color: red}</string>
          </property>
          <widget class="QWidget" name="propertiesPanel">
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -1268,7 +1297,7 @@ QPushButton:checked { background-color: red; }</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1432</width>
+     <width>1777</width>
      <height>21</height>
     </rect>
    </property>
