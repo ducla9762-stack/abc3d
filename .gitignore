@@ -150,3 +150,6 @@ tools/PERFORMANCE.md
 
 # The 5M-poly stress models are ~1 GB together, so they stay out of the repo -> Maybe later for performance
 assets/models/stress/
+
+# vcpkg (clone locally, do not commit)
+vcpkg/
