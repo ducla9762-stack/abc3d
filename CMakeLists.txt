@@ -57,6 +57,7 @@ add_library(abc3d_core STATIC
     scene.cpp
     sceneFile.cpp
     mesh.h
+    MeshBeveler.h
     helper.h
     shapes.h
     scene.h

@@ -1,0 +1,7 @@
+# Test B: negative (relative) face index.
+# Old strtoul("-3") wrapped to 4294967293 -> OOB write.
+# Expected: face line rejected by the '-' guard; loads 3 verts / 0 faces.
+v 0.0 0.0 0.0
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+f -3 -2 -1

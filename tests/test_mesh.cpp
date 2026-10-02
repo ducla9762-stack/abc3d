@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "mesh.h"
+#include "MeshBeveler.h"
 #include "shapes.h"
 
 namespace {
