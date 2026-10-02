@@ -1468,6 +1468,15 @@ color: white;</string>
     <slot>setCameraModeFree()</slot>
     <slot>setLocalScaleMode()</slot>
     <slot>setGlobalScaleMode()</slot>
+    <slot>enableElementVertex()</slot>
+    <slot>disableElementVertex()</slot>
+    <slot>enableElementEdge()</slot>
+    <slot>disableElementEdge()</slot>
+    <slot>enableElementFace()</slot>
+    <slot>disableElementFace()</slot>
+    <slot>enableElementObject()</slot>
+    <slot>disableElementObject()</slot>
+    <slot>enableAllElements()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2490,6 +2499,230 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>1103</x>
      <y>711</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cameraToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>117</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>shapeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>373</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementFace()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementObject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementVertex()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementObject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementFace()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementVertex()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>565</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>437</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
     </hint>
    </hints>
   </connection>
