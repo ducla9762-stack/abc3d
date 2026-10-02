@@ -476,6 +476,23 @@ public:
 	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
 
+	/// <returns>Number of faces in mesh</returns>
+	uint FaceCount() const{ return static_cast<uint>(faceEdges.size());}
+
+	/// <returns>Number of half-edges in a mesh</returns>
+	uint EdgeCount() const { return static_cast<uint>(edges.size());  }
+
+	/// <summary>
+	/// Checks: 
+	/// 1) Every twin is symmetric. 
+	/// 2) Every next/prev cycle closes and matches FaceEdgeCount. 
+	/// 3) Every edge e that has a face (edges[e].face != MAX_UINT), we check if our cycle from step 2 CONFIRMS this
+	/// 4) No face references to a deleted edge. 
+	/// </summary>
+	/// <param name="err">Description of first failure or success</param>
+	/// <returns>True if mesh satisfies conditions</returns>
+	bool Validate(std::string& err) const; 
+
 	/// <summary>
 	/// OUTDATED AND NEEDS UPDATE.
 	/// </summary>

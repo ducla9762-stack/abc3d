@@ -1,3 +1,152 @@
-/x64
-/.vs
-/ABC3D
+# =========================
+
+# General build artifacts
+
+# =========================
+
+build/
+build-asan/
+out/
+bin/
+lib/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.abc3d
+
+# =========================
+
+# CMake
+
+# =========================
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+*x64/
+
+# CMake presets (team builds via GENERATE_SLN.bat / Visual Studio)
+
+CMakeUserPresets.json
+CMakePresets.json
+
+# =========================
+
+# Visual Studio
+
+# =========================
+
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# If you ever generate solutions manually
+
+*.sln
+*.vcxproj
+
+# =========================
+
+# vcpkg
+
+# =========================
+
+# If vcpkg is a submodule, DO NOT ignore the whole folder
+
+# Ignore build artifacts instead:
+
+vcpkg/buildtrees/
+vcpkg/packages/
+vcpkg/downloads/
+vcpkg/installed/
+
+
+# =========================
+
+# Logs / temp files
+
+# =========================
+
+*.log
+*.tlog
+*.tmp
+*.cache
+
+# =========================
+
+# OS-specific
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# IDEs / Editors
+
+# =========================
+
+*.swp
+*.swo
+*.idea/
+.vscode/
+
+# =========================
+
+# Debugging / profiling
+
+# =========================
+
+*.pdb
+*.ilk
+*.rsp
+*.stl
+*.mtl
+*.py
+*.pyc
+tools/PERFORMANCE.md
+*.abc3d
+
+# =========================
+
+# I/O Testing Files (Keep)
+
+# =========================
+
+# The meshes suite in assets/models is read by name from tests/test_io.cpp and
+# tests/test_mesh.cpp, so it has to be tracked even though the rules above ignore
+# *.obj (which also catches compiled objects), *.stl and *.py. 
+
+# Deliberately broken inputs, should reject
+!assets/models/bad.obj
+!assets/models/bad.stl
+!assets/models/degen.obj
+!assets/models/negidx.obj
+!assets/models/oob.obj
+!assets/models/trailing.stl
+!assets/models/truncated.stl
+
+# Signed-zero weld regression and generator (py file)
+!assets/models/weld_signed_zero.stl
+!assets/models/weld_signed_zero_control.stl
+!assets/models/make_weld_fixtures.py 
+
+# Known-good inputs (round-trip testing and load regularly)
+!assets/models/Cube.stl
+!assets/models/box.obj
+!assets/models/dodecahedron.obj
+!assets/models/ico_sphere.obj
+
+# The 5M-poly stress models are ~1 GB together, so they stay out of the repo -> Maybe later for performance
+assets/models/stress/
