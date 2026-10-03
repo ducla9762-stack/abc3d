@@ -203,6 +203,21 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
 	draggedGizmoAxis = gizmoHit ? ids.z : MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
+	if (gizmoHit && actionParams.action == ROTATE && ids.z < 3) {
+		Vec3f localAxis(0.0f);
+		switch (ids.z) {
+		case 0: localAxis.x = 1.0f; break;
+		case 1: localAxis.y = 1.0f; break;
+		case 2: localAxis.z = 1.0f; break;
+		default: break;
+		}
+
+		// Capture the same oriented axis used to draw the rotation rings. This
+		// value must not be recomputed after each incremental rotation.
+		draggedRotationAxis = getGizmoRotation() * localAxis;
+		draggedRotationAxis.Normalize();
+	}
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
@@ -270,6 +285,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
 
 	// A captured gizmo click does not change selection or hover state, so it
 	// does not need another repaint on release.
@@ -450,6 +466,7 @@ void Viewport::setAction(Action action) {
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
 	if (rendererInitialized) {
 		makeCurrent();
 		updateGizmos();
@@ -511,6 +528,7 @@ void Viewport::setActiveElement(Element element) {
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
 	updateGizmos();
 	update();
 
@@ -947,11 +965,57 @@ bool Viewport::rotateGizmoDrag() {
 		return false;
 	}
 
-	// Todo: axis rotation.
-	bool rotated = false;
-	std::cout << "Rotation along axis: " << draggedGizmoAxis << " captured, but logic not implemented." << std::endl;
+	if (draggedRotationAxis.LengthSquared() <= 1e-8f) {
+		return false;
+	}
 
-	renderer.UpdateRenderBuffers(scene);
+	Vec3f forward, up, right;
+	renderer.GetCamera()->directions(forward, up, right);
+
+	// A rotation ring moves along the screen-space tangent to its selected
+	// axis. Use the press-time axis so the tangent cannot switch as the mesh
+	// and gizmo rotate during the drag.
+	Vec2f screenTangent(
+		-draggedRotationAxis.Dot(up),
+		draggedRotationAxis.Dot(right));
+	if (screenTangent.LengthSquared() <= 1e-8f) {
+		// When the axis points directly at the camera, its projection has no
+		// stable tangent.
+		screenTangent = Vec2f(1.0f, 0.0f);
+	}
+	screenTangent.Normalize();
+
+	const float angle = 0.01f * mouseAction.mouseDragChange.Dot(screenTangent);
+	if (std::abs(angle) <= 1e-6f) {
+		return false;
+	}
+
+	// Left-multiply the current orientation with one rotation around the
+	// captured world-space axis. This is a pure axis-angle delta; no Euler
+	// component from another axis is used to drive the operation.
+	Matrix3f delta;
+	delta.SetRotation(draggedRotationAxis, angle);
+	bool rotated = false;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		const Vec3f& eulerRotation = scene[item.meshId]->Rot();
+		Matrix3f currentRotation;
+		currentRotation.SetRotationZYX(
+			degreesToRadians(eulerRotation.x),
+			degreesToRadians(eulerRotation.y),
+			degreesToRadians(eulerRotation.z));
+
+		currentRotation = delta * currentRotation;
+		scene[item.meshId]->Rot(matrixToEulerAngle(currentRotation));
+		rotated = true;
+	}
+
+	if (rotated) {
+		renderer.UpdateRenderBuffers(scene);
+	}
 
 	if (rotated) {
 		emitPrimarySelectionRotChanged();
