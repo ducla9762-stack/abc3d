@@ -25,9 +25,9 @@
      <colorrole role="Button">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -52,18 +52,18 @@
      <colorrole role="Base">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
      <colorrole role="Window">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -90,9 +90,9 @@
      <colorrole role="Button">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -117,18 +117,18 @@
      <colorrole role="Base">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
      <colorrole role="Window">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -155,9 +155,9 @@
      <colorrole role="Button">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -182,18 +182,18 @@
      <colorrole role="Base">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
      <colorrole role="Window">
       <brush brushstyle="SolidPattern">
        <color alpha="255">
-        <red>80</red>
-        <green>80</green>
-        <blue>80</blue>
+        <red>28</red>
+        <green>28</green>
+        <blue>28</blue>
        </color>
       </brush>
      </colorrole>
@@ -213,11 +213,11 @@
    <string>Dialog</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: #505050;
+   <string notr="true">background-color: #1c1c1c;
 border: 1px solid white;
 color: white;</string>
   </property>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="loadProjectButton">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -233,7 +233,7 @@ color: white;</string>
     <string>Load Project</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="loadModelButton">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -249,7 +249,7 @@ color: white;</string>
     <string>Load Model</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_3">
+  <widget class="QPushButton" name="websiteButton">
    <property name="geometry">
     <rect>
      <x>340</x>
@@ -329,5 +329,58 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>loadModelButton</sender>
+   <signal>released()</signal>
+   <receiver>StartMenuClass</receiver>
+   <slot>loadModelButtonClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>59</x>
+     <y>301</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>230</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>loadProjectButton</sender>
+   <signal>released()</signal>
+   <receiver>StartMenuClass</receiver>
+   <slot>loadProjectButtonClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>59</x>
+     <y>341</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>230</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>websiteButton</sender>
+   <signal>released()</signal>
+   <receiver>StartMenuClass</receiver>
+   <slot>websiteButtonClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>379</x>
+     <y>301</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>230</x>
+     <y>293</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>loadProjectButtonClicked()</slot>
+  <slot>loadModelButtonClicked()</slot>
+  <slot>websiteButtonClicked()</slot>
+ </slots>
 </ui>

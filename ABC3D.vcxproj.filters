@@ -118,6 +118,8 @@
     <None Include="assets\shaders\Grid.vert" />
     <None Include="assets\shaders\Mesh.frag" />
     <None Include="assets\shaders\Mesh.vert" />
+    <None Include="assets\shaders\RotationRing.vert" />
+    <None Include="assets\shaders\RotationRing.frag" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
   </ItemGroup>
