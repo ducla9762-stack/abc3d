@@ -58,12 +58,18 @@
     <ClCompile Include="sceneFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="StartMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Viewport.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="VectorInput.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="StartMenu.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -96,6 +102,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Gizmo.h">
+    <ClInclude Include="MeshBeveler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

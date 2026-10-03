@@ -139,6 +139,10 @@ public:
 		addItem(item);
 	}
 
+	void addSelection(const SelectionItem& item) {
+		if(!itemMap.count(item)){ addItem(item); }
+	}
+
 	uint itemCount() { return (uint) selectedItems.size(); }
 	uint itemCount(uint meshId) {
 		if (meshMap.count(meshId)) {

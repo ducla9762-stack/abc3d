@@ -37,7 +37,7 @@ Viewport::Viewport(QWidget *parent)
 		elementButtons[i]->setFixedHeight(64);
 		elementButtons[i]->setAutoExclusive(true);
 		elementButtons[i]->setCheckable(true);
-		elementButtons[i]->setStyleSheet("QPushButton { background-color: #3c3c3c; } QPushButton:checked { background-color: red; } ");
+		elementButtons[i]->setStyleSheet("QPushButton { background-color: #1c1c1c; color: white; } QPushButton:checked { background-color: red; border: none; } ");
 	}
 
 	elementButtons[3]->setChecked(true);
@@ -160,6 +160,15 @@ void Viewport::emitSelectionChanged() {
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
+
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) {
 		return;
@@ -210,9 +219,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked
-	if (!(event->button() & Qt::LeftButton)) {
-		return;
-	}
+	if (!(event->button() & Qt::LeftButton)) { return; }
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -220,6 +227,26 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		actionParams.elements.clear();
+
+		Element elementType = selectionManager.getActiveElement();
+		if (elementType == OBJECT) { elementType = EDGE; }
+
+		if (elementType == EDGE) { beveler->ExtrudeBeveledEdges(actionParams.elements); }
+		else { beveler->ExtrudeBeveledVertices(actionParams.elements); }
+		
+		uint mesh = selectionManager.getSelectedItems()[0].meshId;
+		selectionManager.clearSelection();
+
+		initActionDirsToElementNormals(elementType, mesh);
+
+		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
 	Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
@@ -262,18 +289,30 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 	// so enabling Qt mouse tracking does not turn ordinary movement into camera movement.
 	const bool dragging = event->buttons() & Qt::LeftButton;
 
-	// Update hover visuals.
-	const bool hoverChanged = updateHoverVisual(pos);
-
 	// With mouse tracking enabled, mouseMoveEvent also runs without a button
 	// pressed. Hovering must not be interpreted as a camera drag.
-	if (!dragging) {
-		if (hoverChanged) {
-			update();
-		}
+	if (dragging) {
+		mouseDragEvent(pos);
 		return;
 	}
 
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
+		translateActionElements();
+		mouseAction.EndMouseDragStep();
+		renderer.UpdateRenderBuffers(scene);
+		update();
+		return;
+	}
+
+	// Update hover visuals.
+	const bool hoverChanged = updateHoverVisual(pos);
+	if (hoverChanged) { update(); }
+
+	return;
+}
+
+void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// Update MouseAction struct
 	mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 
@@ -620,7 +659,7 @@ void Viewport::initActionDirsToSelectedNormals() {
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
 	bool noValidItems = true;
-	actionParams.actionDirs.assign(selectedItems.size(), Vec3f(0.0f));
+	actionParams.dirs.assign(selectedItems.size(), Vec3f(0.0f));
 
 	// For each selected item, get normal direction
 	for (size_t i = 0; i < selectedItems.size(); ++i) {
@@ -631,13 +670,13 @@ void Viewport::initActionDirsToSelectedNormals() {
 
 		switch (selectionManager.getActiveElement()) {
 		case VERTEX:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetVertexNormal(item.componentId);
 			break;
 		case EDGE:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetEdgeNormal(item.componentId);
 			break;
 		case FACE:
-			actionParams.actionDirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
+			actionParams.dirs[i] = scene[item.meshId]->GetFaceNormal(item.componentId);
 			break;
 		}
 
@@ -647,6 +686,28 @@ void Viewport::initActionDirsToSelectedNormals() {
 	if (noValidItems) { actionParams.ClearActionDirs(); }
 }
 
+void Viewport::initActionDirsToElementNormals(Element elementType, uint mesh) {
+	actionParams.dirs.clear();
+	actionParams.dirs.reserve(actionParams.elements.size());
+	actionParams.elementType = elementType;
+	actionParams.mesh = mesh;
+
+	// For each selected item, get normal direction
+	for (uint element : actionParams.elements) {
+		switch (elementType) {
+		case VERTEX:
+			actionParams.dirs.push_back(scene[mesh]->GetVertexNormal(element));
+			break;
+		case EDGE:
+			actionParams.dirs.push_back(scene[mesh]->GetEdgeNormal(element));
+			break;
+		case FACE:
+			actionParams.dirs.push_back(scene[mesh]->GetFaceNormal(element));
+			break;
+		}
+	}
+}
+
 void Viewport::translateSelections() {
 	// Compute translation's scale factor
 	const float SCALE_COEF = 0.01f;
@@ -654,7 +715,7 @@ void Viewport::translateSelections() {
 
 	// Translate selected elements
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
-	for (size_t i = 0; i < actionParams.actionDirs.size(); ++i) {
+	for (size_t i = 0; i < actionParams.dirs.size(); ++i) {
 		const SelectionItem& item = selectedItems[i];
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
@@ -662,13 +723,33 @@ void Viewport::translateSelections() {
 
 		switch (selectionManager.getActiveElement()) {
 		case VERTEX:
-			scene[item.meshId]->TranslateVertex(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateVertex(item.componentId, actionParams.dirs[i] * scale);
 			break;
 		case EDGE:
-			scene[item.meshId]->TranslateEdge(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateEdge(item.componentId, actionParams.dirs[i] * scale);
 			break;
 		case FACE:
-			scene[item.meshId]->TranslateFace(item.componentId, actionParams.actionDirs[i] * scale);
+			scene[item.meshId]->TranslateFace(item.componentId, actionParams.dirs[i] * scale);
+			break;
+		}
+	}
+}
+
+void Viewport::translateActionElements() {
+	// Compute translation's scale factor
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < actionParams.elements.size(); ++i) {
+		switch (actionParams.elementType) {
+		case VERTEX:
+			scene[actionParams.mesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[i] * scale);
+			break;
+		case EDGE:
+			scene[actionParams.mesh]->TranslateEdge(actionParams.elements[i], actionParams.dirs[i] * scale);
+			break;
+		case FACE:
+			scene[actionParams.mesh]->TranslateFace(actionParams.elements[i], actionParams.dirs[i] * scale);
 			break;
 		}
 	}
@@ -688,7 +769,7 @@ bool Viewport::translateOutDrag() {
 		initActionDirsToSelectedNormals();
 	}
 
-	if (actionParams.actionDirs.empty()) { return false; }
+	if (actionParams.dirs.empty()) { return false; }
 
 	// Get all selected items.
 	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
@@ -719,7 +800,7 @@ void Viewport::setupBevelDrag() {
 	elements.reserve(selectionManager.getSelectedItems().size());
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (meshId >= scene.MeshCount()) { continue; }
+		if (item.meshId != meshId) { continue; }
 		elements.push_back(item.componentId);
 	}
 
@@ -766,15 +847,20 @@ void Viewport::extrudeSelectedElements() {
 bool Viewport::extrudeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
-	// Extruding temporarily applies only to faces
-	if (selectionManager.getActiveElement() != FACE) { return false; }
+	if (selectionManager.getActiveElement() != FACE) { 
+		if (mouseAction.firstMoveEvent) {
+			//initActionDirsToSelectedNormals(); // fine as long as edges aren't duplicated
+			actionParams.stage = 1;
+		}
+		return bevelDrag(); 
+	}
 
 	// Compute normals if this is the first move event
 	if (mouseAction.firstMoveEvent) {
 		initActionDirsToSelectedNormals();
 	}
 
-	if (actionParams.actionDirs.empty()) { return false; }
+	if (actionParams.dirs.empty()) { return false; }
 
 	// Extrude selected elements if this is the first move event
 	if (mouseAction.firstMoveEvent) {
@@ -908,8 +994,10 @@ bool Viewport::translateGizmoDrag() {
 	case 2: axis = Vec3f(0.0f, 0.0f, 1.0f); break;
 	default: return false;
 	}
+
 	// AI-generated: Match axis-drag projection to the rotated gizmo display.
-	axis = getGizmoRotation() * axis;
+	// We actually want to translate using world space not local space.
+	//axis = getGizmoRotation() * axis;
 	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
@@ -1000,7 +1088,8 @@ bool Viewport::scaleGizmoDrag() {
 	default: return false;
 	}
 	// AI-generated: Match scale-axis dragging to the rotated gizmo display.
-	axis = getGizmoRotation() * axis;
+	// Don't scale by local space axes unless specified.
+	if (localScale) axis = getGizmoRotation() * axis;
 	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
@@ -1059,7 +1148,7 @@ Matrix3f Viewport::getGizmoRotation() const {
 
 // AI-generated code
 void Viewport::updateGizmos() {
-	const Matrix3f gizmoRotation = getGizmoRotation();
+	Matrix3f gizmoRotation = getGizmoRotation();
 
 	// Update translation gizmo.
 	if (actionParams.action == TRANSLATE_AXIS) {
@@ -1110,6 +1199,9 @@ void Viewport::updateGizmos() {
 			return;
 		}
 
+		// When translating we want to use the world space rotation, not local.
+		gizmoRotation.SetIdentity();
+
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
 		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
@@ -1148,6 +1240,9 @@ void Viewport::updateGizmos() {
 			renderer.ClearGizmos();
 			return;
 		}
+
+		// When scaling we want to use the world space rotation, not local.
+		if (!localScale) gizmoRotation.SetIdentity();
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;

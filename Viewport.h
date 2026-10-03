@@ -15,6 +15,7 @@
 #include "selectionManager.h"
 #include "shapes.h"
 #include "sceneFile.h"
+#include "MeshBeveler.h"
 
 inline bool initGlew = true;
 
@@ -108,8 +109,13 @@ private:
 
 	struct ActionParams {
 		Action action = SELECT;
-		std::vector<Vec3f> actionDirs;
-		void ClearActionDirs() { std::vector<Vec3f>().swap(actionDirs); }
+		int stage = 0;
+		std::vector<uint> elements;
+		std::vector<Vec3f> dirs;
+		uint mesh = 0;
+		Element elementType = OBJECT; // may be different from selection element type
+		void ClearActionDirs() { std::vector<Vec3f>().swap(dirs); }
+		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
 	QAction* menuActions[3];
@@ -131,6 +137,8 @@ private:
 	// remain active even if the cursor moves away from the gizmo.
 	uint draggedGizmoAxis = MAX_UINT;
 	bool draggingGizmo = false;
+
+	bool localScale = true;
 
 // ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
@@ -161,6 +169,7 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
+	void mouseDragEvent(const Vec2f& pos); // Not a real qt event
 	void leaveEvent(QEvent* event) override;
 	void wheelEvent(QWheelEvent* event) override;
 	void resizeEvent(QResizeEvent* event) override;
@@ -172,7 +181,9 @@ private:
 
 	bool translateFreeDrag();
 	void initActionDirsToSelectedNormals();
+	void initActionDirsToElementNormals(Element element, uint mesh);
 	void translateSelections();
+	void translateActionElements();
 	bool translateOutDrag();
 	bool translateEdgeDrag() { return false; }
 	void setupBevelDrag();
@@ -306,6 +317,23 @@ public slots:
 		if (selectionManager.isAdditive() && !selectionManager.isAdditiveMode()) {
 			selectionManager.setAdditive(false);
 		}
+	}
+
+	void setLocalScaleMode() {
+		localScale = true;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
+	}
+	void setGlobalScaleMode() {
+		localScale = false;
+		if (rendererInitialized) {
+			makeCurrent();
+			updateGizmos();
+		}
+		update();
 	}
 
 	void setClassicSelectionMode() { selectionManager.setAdditiveMode(false); }
@@ -477,8 +505,8 @@ public slots:
 		generateUnitTorus(vertices, faces, 40, 20);
 		loadMesh(vertices, faces);
 	}
-	void loadUvSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadIcoSphere(){
+	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
+	void loadUvSphere(){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, 10, 10);
@@ -707,9 +735,6 @@ public slots:
 
 	void setOrbitOrigin(const Vec3f& origin) {
 		renderer.setOrbitOrigin(origin);
-
-		makeCurrent();
-		renderer.UpdateCamera();
 		update();
 	}
 
