@@ -137,6 +137,9 @@ private:
 	// remain active even if the cursor moves away from the gizmo.
 	uint draggedGizmoAxis = MAX_UINT;
 	bool draggingGizmo = false;
+	// Rotation must keep using the axis that was displayed and clicked at press
+	// time, even though the selected mesh may rotate while the drag is active.
+	Vec3f draggedRotationAxis = Vec3f(0.0f);
 
 	bool localScale = true;
 
