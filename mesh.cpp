@@ -883,25 +883,32 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangles) 
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	triangles.reserve(triangles.size() + numVertices - 2);
 
 	while (numVertices > 2) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			corner->prev->next = corner->next;
 			corner->next->prev = corner->prev;
 			--numVertices;
@@ -949,26 +956,33 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	triangleVertices.reserve(triangleVertices.size() + numVertices - 2);
 	triangleEdges.reserve(triangleVertices.size() + numVertices - 2);
 
 	while (numVertices > 3) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			corner->prev->next = corner->next;
 			corner->next->prev = corner->prev;
 			--numVertices;
@@ -1017,23 +1031,30 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	while (numVertices > 3) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			uint innerClip, outerClip, cornerFace;
 			ClipCorner(corner->halfEdge, innerClip, outerClip, cornerFace);
 
@@ -1171,6 +1192,9 @@ Matrix3f HalfEdgeMesh::getTransform3x3() const {
 
 Vec3f HalfEdgeMesh::WorldDirToLocalDir(const Vec3f& worldDir) {
 	Matrix3f transform = getTransform3x3();
+	// A zero scale axis makes the transform singular; the inverse would be NaN.
+	if (transform.GetDeterminant() == 0.0f)
+		return Vec3f(0.0f);
 	transform.Invert();
 
 	return transform * worldDir;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.27)
 
 # The toolchain file setup should ideally be in a CMakePresets.json file,
 # but we'll keep it here for simplicity

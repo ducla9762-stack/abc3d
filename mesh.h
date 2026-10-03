@@ -798,18 +798,21 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	uint interiorEdgeCount = edges.size();
 
 	for (uint i = 0; i < interiorEdgeCount; ++i) {
-		HalfEdge& edge = edges[i];
-		Vec2<uint> twinVertices(edge.dest, edge.orig);
+		// Copy, not a reference: NewEdge below can reallocate the edge array
+		const uint edgeOrig = edges[i].orig;
+		const uint edgeDest = edges[i].dest;
+		Vec2<uint> twinVertices(edgeDest, edgeOrig);
 
-		if (edgeIndices.count(twinVertices) != 0) {
-			edge.twin = edgeIndices[twinVertices];
+		auto found = edgeIndices.find(twinVertices);
+		if (found != edgeIndices.end()) {
+			edges[i].twin = found->second;
 		}
 		else {
 			uint twinIndex;
 			HalfEdge& twin = NewEdge(twinIndex);
 
-			twin.orig = edge.dest;
-			twin.dest = edge.orig;
+			twin.orig = edgeDest;
+			twin.dest = edgeOrig;
 			twin.twin = i;
 
 			edges[i].twin = twinIndex;
