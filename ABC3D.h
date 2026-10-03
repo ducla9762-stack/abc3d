@@ -25,9 +25,14 @@ private:
 
     void showEvent(QShowEvent* event) override;
 
+    /* Creates a start menu and checks what integer is returned by the exec function
+    */
     void showStart() {
         StartMenu startMenu(this);
-        startMenu.exec();
+        int execResult = startMenu.exec();
+        if (execResult == 4) { modelFileDialog(); }
+        else if (execResult == 5) { sceneFileDialog(); }
+        //else if (execResult = 6) {} -- add once we have a website
     }
 
 private slots:

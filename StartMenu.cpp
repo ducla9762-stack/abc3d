@@ -10,4 +10,3 @@ StartMenu::StartMenu(QWidget* parent)
 
 StartMenu::~StartMenu() {
 }
-
