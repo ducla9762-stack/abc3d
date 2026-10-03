@@ -16,7 +16,7 @@
 #include "camera.h"
 #include "renderBufferBuilder.h"
 
-const std::array<Vec3f, 8> CUBE_VERTEX_POSITIONS = {
+const std::array<Vec3f, 8> TRI_CUBE_VERTICES = {
 	Vec3f(0.5f, 0.5f, -0.5f),
 	Vec3f(0.5f, -0.5f, -0.5f),
 	Vec3f(0.5f, 0.5f, 0.5f),
@@ -27,7 +27,7 @@ const std::array<Vec3f, 8> CUBE_VERTEX_POSITIONS = {
 	Vec3f(-0.5f, -0.5f, 0.5f)
 };
 
-const std::array<Vec3u, 12> CUBE_TRIANGLE_ELEMENTS = {
+const std::array<Vec3u, 12> TRI_CUBE_ELEMENTS = {
 	Vec3u(0, 4, 6),
 	Vec3u(0, 6, 2),
 	Vec3u(3, 2, 6),
@@ -42,10 +42,38 @@ const std::array<Vec3u, 12> CUBE_TRIANGLE_ELEMENTS = {
 	Vec3u(5, 0, 1)
 };
 
+constexpr float HALF_SQR_2 = 0.7071068f;
+const std::vector<Vec3f> TRI_CYLINDER_VERTICES = {
+	// Cylinder Base
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+	// Cylinder Top
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
+};
+
+const std::vector<Vec3u> TRI_CYLINDER_ELEMENTS = {
+	// Clinder Base
+	Vec3u(0, 1, 2), Vec3u(0, 2, 3), Vec3u(0, 3, 4), Vec3u(0, 4, 5), Vec3u(0, 5, 6), Vec3u(0, 6, 7),
+	// Cyclinder Top
+	Vec3u(8, 10, 9), Vec3u(8, 11, 10), Vec3u(8, 12, 11), Vec3u(8, 13, 12), Vec3u(8, 14, 13), Vec3u(8, 15, 14),
+	// Cylinder Sides
+	Vec3u(0, 8, 1), Vec3u(1, 8, 9),
+	Vec3u(1, 9, 2), Vec3u(2, 9, 10),
+	Vec3u(2, 10, 3), Vec3u(3, 10, 11),
+	Vec3u(3, 11, 4), Vec3u(4, 11, 12),
+	Vec3u(4, 12, 5), Vec3u(5, 12, 13),
+	Vec3u(5, 13, 6), Vec3u(6, 13, 14),
+	Vec3u(6, 14, 7), Vec3u(7, 14, 15),
+	Vec3u(7, 15, 0), Vec3u(0, 15, 8)
+};
+
 class VertexRenderer {
 	GLuint vao;
 	
-	enum Uniform : int { SCALE = 1, VIEW_PROJ };
+	enum Uniform : int { SCALE = 1, VIEW_PROJ = 2 };
 	enum Attribute : GLuint { VERT = 0, POS = 1, ID = 2 };
 
 	struct Buffers {
@@ -72,13 +100,13 @@ public:
 
 		// Generate vertex buffer object for unit cube vertices
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * CUBE_VERTEX_POSITIONS.size() * 3, CUBE_VERTEX_POSITIONS.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * TRI_CUBE_VERTICES.size() * 3, TRI_CUBE_VERTICES.data(), GL_STATIC_DRAW);
 		glEnableVertexAttribArray(VERT);
 		glVertexAttribPointer(VERT, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
 
 		// Generate element buffer object for unit cube triangles
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * CUBE_TRIANGLE_ELEMENTS.size() * 3, CUBE_TRIANGLE_ELEMENTS.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRI_CUBE_ELEMENTS.size() * 3, TRI_CUBE_ELEMENTS.data(), GL_STATIC_DRAW);
 
 		// Generate instanced position buffer
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
@@ -117,7 +145,7 @@ public:
 		glBindVertexArray(vao);
 
 		prog.Bind();
-		glDrawElementsInstanced(GL_TRIANGLES, CUBE_TRIANGLE_ELEMENTS.size() * 3, GL_UNSIGNED_INT, 0, count);
+		glDrawElementsInstanced(GL_TRIANGLES, TRI_CUBE_ELEMENTS.size() * 3, GL_UNSIGNED_INT, 0, count);
 
 		glBindVertexArray(0);
 	}
@@ -128,10 +156,8 @@ public:
 		prog.SetUniform1(SCALE, &this->scale);
 	}
 
-	void SetViewProjection(Matrix4f& viewProj) {
+	void SetViewProjection(float data[16]) {
 		prog.Bind();
-		float data[16];
-		viewProj.Get(data);
 		prog.SetUniformMatrix4(VIEW_PROJ, data);
 	}
 
@@ -145,6 +171,112 @@ public:
 
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pos.size() * 3, pos.data(), hint);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+};
+
+class EdgeRenderer {
+	GLuint vao;
+
+	enum Uniform : int { RADIUS = 1, VIEW_PROJ = 2 };
+	enum Attribute : GLuint { POS = 0, DIR = 2, ID = 1 };
+
+	struct Buffers {
+		GLuint vbo;
+		GLuint ebo;
+		GLuint dir;
+		GLuint id;
+	} bufs;
+
+	float radius;
+
+	uint count;
+
+	GLSLProgram prog;
+
+public:
+	bool Initialize() { 
+		// Generate and bind VAO
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		// Generate buffer handles
+		glGenBuffers(4, &bufs.vbo);
+
+		// Generate vertex buffer object for unit cube vertices
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * TRI_CYLINDER_VERTICES.size() * 3, TRI_CYLINDER_VERTICES.data(), GL_STATIC_DRAW);
+		glEnableVertexAttribArray(POS);
+		glVertexAttribPointer(POS, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+
+		// Generate element buffer object for unit cube triangles
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs.ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRI_CYLINDER_ELEMENTS.size() * 3, TRI_CYLINDER_ELEMENTS.data(), GL_STATIC_DRAW);
+
+		// Generate instanced position buffer
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.dir);
+		glEnableVertexAttribArray(DIR);
+		glVertexAttribPointer(DIR, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
+		glVertexAttribDivisor(DIR, 1);
+
+		// Generate instanced id buffer
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.id);
+		glEnableVertexAttribArray(ID);
+		glVertexAttribIPointer(ID, 2, GL_UNSIGNED_INT, 0, (GLvoid*)0);
+		glVertexAttribDivisor(ID, 1);
+
+		// Unbind VAO & Buffers
+		glBindVertexArray(0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag");
+		if (!success) {
+			std::cout << "Failed to compile vertex shader program!" << std::endl;
+			return false;
+		}
+
+		prog.Bind();
+
+		prog.RegisterUniform(RADIUS, "radius");
+		prog.RegisterUniform(VIEW_PROJ, "viewProj");
+
+		return true;
+	}
+
+	void Draw() {
+		if (count == 0) { return; }
+
+		glBindVertexArray(vao);
+
+		prog.Bind();
+		glDrawElementsInstanced(GL_TRIANGLES, TRI_CYLINDER_ELEMENTS.size() * 3, GL_UNSIGNED_INT, 0, count);
+
+		glBindVertexArray(0);
+	}
+
+	void SetRadius(float radius) {
+		this->radius = radius;
+		prog.Bind();
+		prog.SetUniform1(RADIUS, &this->radius);
+	}
+
+	void SetViewProjection(float data[16]) {
+		prog.Bind();
+		prog.SetUniformMatrix4(VIEW_PROJ, data);
+	}
+
+	void SetVertices(const std::vector<Vec2u>& ids, const std::vector<Vec3f>& dir, GLenum hint = GL_STATIC_DRAW) {
+		if (ids.size() != dir.size()) { return; }
+
+		count = uint(ids.size());
+
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.id);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(uint) * ids.size() * 2, ids.data(), hint);
+
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.dir);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * dir.size() * 3, dir.data(), hint);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
@@ -176,19 +308,18 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void SetTransform(Matrix4f& mvp) {
+	void SetTransform(float data [16]) {
 		prog.Bind();
-		float data[16];
-		mvp.Get(data);
 		prog.SetUniformMatrix4(0, data);
 	}
 };
 
-class Renderer {
+class ABC3DRenderer {
 
 	struct Renderers {
 		GridRenderer grid;
 		VertexRenderer vert;
+		EdgeRenderer edge;
 	} rndrs;
 
 	struct Textures {
@@ -223,6 +354,30 @@ class Renderer {
 		GLuint depthBuf;
 	} frame;
 
+	struct CameraSettings {
+		OrbitCamera orbit;
+		FreeCamera free;
+		float fov = 70.0f;
+		CameraType type;
+	} cam;
+
+	struct VisibleSettings {
+		bool vertices = false;
+		bool grid = true;
+		bool edges = true;
+		bool surfaces = true;
+	} show;
+
+	struct UpdateQueue {
+		bool renderBufs = false;
+		bool camera = false;
+	} update;
+
+	struct TransformCache {
+		Matrix4f proj;
+		Matrix4f view;
+	} transform;
+
 	std::vector<uint> faceOffsets;
 	std::vector<uint> edgeOffsets;
 	std::vector<uint> vertOffsets;
@@ -231,12 +386,7 @@ class Renderer {
 
 	const Scene* scene;
 
-	bool updateRenderBuffers = false;
-	bool updateCamera = false;
 	uint meshVertDrawCount;
-
-	bool displayVertices = false;
-	bool displayGrid = true;
 
 	bool Initialize(GLuint defaultFrameBuffer) {
 
@@ -258,6 +408,10 @@ class Renderer {
 			std::cout << "Failed to compile deferred shader program!" << std::endl;
 			return false;
 		}
+
+		rndrs.vert.Initialize();
+		rndrs.edge.Initialize();
+		rndrs.grid.Initialize();
 
 		// Initialize gizmo renderer
 		//if (!gizmoRenderer.Initialize()) {
@@ -281,8 +435,8 @@ class Renderer {
 
 	void Draw(GLuint defaultFramebuffer) {
 
-		if (updateRenderBuffers) { UpdateRenderBuffers(); updateRenderBuffers = false; }
-		//if (updateCamera) { updateUniforms(); updateCamera = false; }
+		if (update.renderBufs) { UpdateRenderBuffers(); update.renderBufs = false; }
+		if (update.camera) { updateUniforms(); update.camera = false; }
 
 		//glFinish();
 		//steady_clock::time_point start = steady_clock::now();
@@ -295,7 +449,7 @@ class Renderer {
 
 		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
-		if (displayVertices) {
+		if (show.vertices) {
 			rndrs.vert.Draw();
 		}
 
@@ -324,7 +478,7 @@ class Renderer {
 		prog.defered.Bind();
 		glDrawArrays(GL_LINE_STRIP, 0, 4);
 
-		if (displayGrid) {
+		if (show.grid) {
 			glEnable(GL_BLEND);
 			glDepthMask(GL_FALSE);
 
@@ -368,12 +522,12 @@ class Renderer {
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame.width, frame.height);
 
 		glBindTexture(GL_TEXTURE_2D, tex.geom);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		glBindTexture(GL_TEXTURE_2D, tex.norm);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -398,8 +552,8 @@ class Renderer {
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, tex.id, 0);
 
 		// Enable all color attachments for drawing
-		GLenum drawBuffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		glDrawBuffers(2, drawBuffers);
+		GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		glDrawBuffers(3, drawBuffers);
 
 		// Make sure framebuffer is valid
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -410,57 +564,46 @@ class Renderer {
 		glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
 	}
 
-	Matrix4f projection;
-	float fov = 90.0f;
-
 	void UpdateProjectionUniforms();
 	void SetPerspectiveAndViewport() {
-		projection.SetPerspective(degreesToRadians(fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
+		transform.proj.SetPerspective(degreesToRadians(cam.fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
 		UpdateProjectionUniforms();
 
 		glViewport(0, 0, frame.width, frame.height);
 	}
 
 	void UpdateProjectionUniforms() {
-		/*Matrix3f viewTransform = camType == ORBIT ? orbitCamera.transform() : freeCamera.transform();
-
 		float data[16];
+		transform.proj.Get(data);
 
-		projection.Get(data);
 		prog.mesh.Bind();
 		prog.mesh.SetUniformMatrix4("projection", data);
 
-		Matrix4f viewProj = projection * viewTransform;
+		Matrix4f viewProj = transform.proj * transform.view;
 		viewProj.Get(data);
-		gridProgram.Bind();
-		gridProgram.SetUniformMatrix4("mvp", data);
-		pointProgram.Bind();
-		pointProgram.SetUniformMatrix4("mvp", data);*/
+
+		rndrs.grid.SetTransform(data);
+		rndrs.edge.SetViewProjection(data);
+		rndrs.vert.SetViewProjection(data);
 
 		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
 		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
 	}
 
 	void updateUniforms() {
-		/*Matrix3f viewTransform = camType == ORBIT ? orbitCamera.transform() : freeCamera.transform();
+		transform.view = cam.type == ORBIT ? cam.orbit.transform() : cam.free.transform();
 
 		float data[16];
-		viewTransform.Get(data);
-		meshProgram.Bind();
-		meshProgram.SetUniformMatrix4("modelView", data);
+		transform.view.Get(data);
+		prog.mesh.Bind();
+		prog.mesh.SetUniformMatrix4("modelView", data);
 
-		Matrix3f normalTransform(viewTransform);
-		//normalTransform.Invert();
-		//normalTransform.Transpose();
-		normalTransform.Get(data);
-		meshProgram.SetUniformMatrix3("normalTransform", data);
-
-		Matrix4f viewProj = projection * viewTransform;
+		Matrix4f viewProj = transform.proj * transform.view;
 		viewProj.Get(data);
-		gridProgram.Bind();
-		gridProgram.SetUniformMatrix4("mvp", data);
-		pointProgram.Bind();
-		pointProgram.SetUniformMatrix4("mvp", data);*/
+
+		rndrs.grid.SetTransform(data);
+		rndrs.edge.SetViewProjection(data);
+		rndrs.vert.SetViewProjection(data);
 
 		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
 		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
@@ -515,6 +658,62 @@ class Renderer {
 		glEnableVertexAttribArray(2);
 		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
 
+	};
+
+	void UpdateRenderBuffers(const Scene& scene) {
+		this->scene = &scene; update.renderBufs = true;
+	}
+
+	void ToggleGrid() { show.grid = !show.grid; }
+	void ToggleVertexPoints() { show.vertices = !show.vertices; }
+
+	bool GridVisible() const { return show.grid; }
+	bool VertexPointsVisible() const { return show.vertices; }
+	void SetGridVisible(bool visible) { show.grid = visible; }
+	void SetVertexPointsVisible(bool visible) { show.vertices = visible; }
+
+	void mouseDrag(const Vec2f& drag) {
+		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }
+		else { cam.free.mouseDrag(drag); }
+		update.camera = true;
+	}
+
+	void mouseWheel(float dx, float dy) {
+		if (cam.type == ORBIT) { cam.orbit.mouseWheel(dx, dy); }
+		else { cam.free.mouseWheel(dx, dy); }
+		update.camera = true;
+	}
+
+	CameraType GetActiveCamType() const { return cam.type; }
+
+	void setCameraPosition(const Vec3f& pos) {
+		if (cam.type == ORBIT) { cam.orbit.setPosition(pos); }
+		else { cam.free.setPosition(pos); }
+		update.camera = true;
+	}
+
+	void setOrbitOrigin(const Vec3f& origin) { cam.orbit.setOrigin(origin); update.camera = true; }
+	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
+
+	void toggleCamType() {
+		if (cam.type == ORBIT) {
+			cam.type = FREE;
+			cam.free.setPosition(cam.orbit.position());
+			cam.free.setForward(cam.orbit.forward());
+		}
+		else {
+			cam.type = ORBIT;
+			cam.orbit.setOrigin(Vec3f(0.0f));
+			cam.orbit.setPosition(cam.free.position());
+		}
+
+		update.camera = true;
+	}
+
+	void setCameraMode(CameraType mode) {
+		if (mode == cam.type) { return; }
+		toggleCamType();
+	}
 };
 
 #endif
