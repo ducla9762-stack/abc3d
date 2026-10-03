@@ -14,6 +14,7 @@
 #include "scene.h"
 #include "mesh.h"
 #include "camera.h"
+#include "renderBufferBuilder.h"
 
 const std::array<Vec3f, 8> CUBE_VERTEX_POSITIONS = {
 	Vec3f(0.5f, 0.5f, -0.5f),
@@ -44,19 +45,17 @@ const std::array<Vec3u, 12> CUBE_TRIANGLE_ELEMENTS = {
 class VertexRenderer {
 	GLuint vao;
 	
-	enum Uniform : int { COLOR = 0, SCALE = 1, SELEC_CLR = 2, HOVER_CLR = 3, HOVER = 4 };
-	enum Attribute : GLuint { VERT = 0, POS = 1, ID = 2, SELEC = 3 };
+	enum Uniform : int { SCALE = 1, VIEW_PROJ };
+	enum Attribute : GLuint { VERT = 0, POS = 1, ID = 2 };
 
 	struct Buffers {
 		GLuint vbo;
 		GLuint ebo;
 		GLuint pos;
 		GLuint id;
-		GLuint selec;
 	} bufs;
 
 	float scale;
-	uint hover;
 
 	uint count;
 
@@ -69,7 +68,7 @@ public:
 		glBindVertexArray(vao);
 
 		// Generate buffer handles
-		glGenBuffers(5, &bufs.vbo);
+		glGenBuffers(4, &bufs.vbo);
 
 		// Generate vertex buffer object for unit cube vertices
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.vbo);
@@ -93,12 +92,6 @@ public:
 		glVertexAttribIPointer(ID, 2, GL_UNSIGNED_INT, 0, (GLvoid*)0);
 		glVertexAttribDivisor(ID, 1);
 
-		// Generate instanced selection buffer
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.selec);
-		glEnableVertexAttribArray(SELEC);
-		glVertexAttribIPointer(SELEC, 1, GL_UNSIGNED_BYTE, 0, (GLvoid*)0);
-		glVertexAttribDivisor(SELEC, 1);
-
 		// Unbind VAO & Buffers
 		glBindVertexArray(0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -112,11 +105,8 @@ public:
 
 		prog.Bind();
 
-		prog.RegisterUniform(COLOR, "clr[0]");
 		prog.RegisterUniform(SCALE, "scale");
-		prog.RegisterUniform(SELEC_CLR, "clr[1]");
-		prog.RegisterUniform(HOVER_CLR, "clr[2]");
-		prog.RegisterUniform(HOVER, "hovId");
+		prog.RegisterUniform(VIEW_PROJ, "viewProj");
 
 		return true;
 	}
@@ -138,27 +128,14 @@ public:
 		prog.SetUniform1(SCALE, &this->scale);
 	}
 
-	void SetColor(const Vec3f& clr) {
+	void SetViewProjection(Matrix4f& viewProj) {
 		prog.Bind();
-		prog.SetUniform3(COLOR, &clr.x);
+		float data[16];
+		viewProj.Get(data);
+		prog.SetUniformMatrix4(VIEW_PROJ, data);
 	}
 
-	void SetSelectColor(const Vec3f& clr) {
-		prog.Bind();
-		prog.SetUniform3(SELEC_CLR, &clr.x);
-	}
-
-	void SetHoverColor(const Vec3f& clr) {
-		prog.Bind();
-		prog.SetUniform3(HOVER_CLR, &clr.x);
-	}
-
-	void SetHover(uint hover) {
-		prog.Bind();
-		prog.SetUniform(HOVER, hover);
-	}
-
-	void SetVertices(const std::vector<Vec2u>& ids, const std::vector<Vec3u>& pos, GLenum hint = GL_STATIC_DRAW) {
+	void SetVertices(const std::vector<Vec2u>& ids, const std::vector<Vec3f>& pos, GLenum hint = GL_STATIC_DRAW) {
 		if (ids.size() != pos.size()) { return; }
 
 		count = uint(ids.size());
@@ -168,15 +145,6 @@ public:
 
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.pos);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * pos.size() * 3, pos.data(), hint);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-	void SetSelection(const std::vector<unsigned char>& selection, GLenum hint = GL_STATIC_DRAW) {
-		if (uint(selection.size()) != count) { return; }
-
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.selec);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned char) * selection.size(), selection.data(), hint);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
@@ -195,6 +163,9 @@ public:
 			return false;
 		}
 
+		prog.Bind();
+		prog.RegisterUniform(0, "viewProj");
+
 		return true;
 	}
 
@@ -203,6 +174,13 @@ public:
 		prog.Bind();
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
+	}
+
+	void SetTransform(Matrix4f& mvp) {
+		prog.Bind();
+		float data[16];
+		mvp.Get(data);
+		prog.SetUniformMatrix4(0, data);
 	}
 };
 
@@ -235,6 +213,7 @@ class Renderer {
 
 	struct Programs {
 		GLSLProgram mesh;
+		GLSLProgram defered;
 	} prog;
 
 	struct FrameBuffer {
@@ -244,16 +223,26 @@ class Renderer {
 		GLuint depthBuf;
 	} frame;
 
+	std::vector<uint> faceOffsets;
+	std::vector<uint> edgeOffsets;
+	std::vector<uint> vertOffsets;
+
+	RenderBufferBuilder bufBuilder;
+
+	const Scene* scene;
+
+	bool updateRenderBuffers = false;
+	bool updateCamera = false;
+	uint meshVertDrawCount;
+
+	bool displayVertices = false;
+	bool displayGrid = true;
+
 	bool Initialize(GLuint defaultFrameBuffer) {
 
-		
 		glGenVertexArrays(2, &vao.mesh);
 		glGenBuffers(1, &bufs.meshVBO);
 		glGenBuffers(2, &pbo.geom);
-
-		//
-		//glBindVertexArray(vao.mesh);
-		//glBindBuffer(GL_ARRAY_BUFFER, bufs.meshVBO);
 
 		// Create textures
 		glGenTextures(3, &tex.geom);
@@ -264,8 +253,11 @@ class Renderer {
 			return false;
 		}
 
-		//meshProgram.Bind();
-		//meshProgram.SetUniform("lightPosition", 0.0f, 0.0f, 0.0f);
+		success = prog.defered.BuildFiles("assets/shaders/Deferred.vert", "assets/shaders/Deferred.frag");
+		if (!success) {
+			std::cout << "Failed to compile deferred shader program!" << std::endl;
+			return false;
+		}
 
 		// Initialize gizmo renderer
 		//if (!gizmoRenderer.Initialize()) {
@@ -285,82 +277,74 @@ class Renderer {
 		return true;
 	}
 
+	void UpdateRenderBuffers();
+
 	void Draw(GLuint defaultFramebuffer) {
 
 		if (updateRenderBuffers) { UpdateRenderBuffers(); updateRenderBuffers = false; }
-		if (updateCamera) { updateUniforms(); updateCamera = false; }
+		//if (updateCamera) { updateUniforms(); updateCamera = false; }
 
 		//glFinish();
 		//steady_clock::time_point start = steady_clock::now();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glBindVertexArray(meshVAO);
-		meshProgram.Bind();
+		glBindVertexArray(vao.mesh);
+		prog.mesh.Bind();
 
 		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
-		if (displayPoints) {
-			glBindVertexArray(pointVAO);
-			pointProgram.Bind();
-			glDrawArrays(GL_POINTS, 0, pointVertDrawCount);
+		if (displayVertices) {
+			rndrs.vert.Draw();
 		}
 
 		// Draw gizmos before checking the selection texture.
-		glDisable(GL_DEPTH_TEST);
+		/*glDisable(GL_DEPTH_TEST);
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		//arrowRenderer.Draw();
 		gizmoRenderer.Draw();
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
-		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST);*/
 
 		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		glReadPixels(0, 0, width, height, GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.id);
+		glReadPixels(0, 0, frame.width, frame.height, GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.geom);
+		glReadPixels(0, 0, frame.width, frame.height, GL_RGB, GL_FLOAT, 0);
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+		glBindVertexArray(vao.frame);
+		prog.defered.Bind();
+		glDrawArrays(GL_LINE_STRIP, 0, 4);
 
 		if (displayGrid) {
 			glEnable(GL_BLEND);
 			glDepthMask(GL_FALSE);
 
-
+			rndrs.grid.Draw();
 
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
 		}
 
-		void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-		if (selectBuf) {
-			uint selectBufSize = width * height;
-			idSelectBuf.resize(0);
-			Vec3u* idSelectBuffer = (Vec3u*)selectBuf;
-			idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
-		}
-		else {
-			std::cout << "ERROR with mapping" << std::endl;
-		}
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-
-		//arrowRenderer.Draw();
-
-		/*int selectBufSize = pixel_w() * pixel_h();
-
-		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		posSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB, GL_FLOAT, posSelectBuf.data());
-
-		glReadBuffer(GL_COLOR_ATTACHMENT2);
-		idSelectBuf.resize(selectBufSize);
-		glReadPixels(0, 0, pixel_w(), pixel_h(), GL_RGB_INTEGER, GL_UNSIGNED_INT, idSelectBuf.data());
-
-		glReadBuffer(GL_COLOR_ATTACHMENT0);*/
+		//void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		//if (selectBuf) {
+		//	uint selectBufSize = width * height;
+		//	idSelectBuf.resize(0);
+		//	Vec3u* idSelectBuffer = (Vec3u*)selectBuf;
+		//	idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
+		//}
+		//else {
+		//	std::cout << "ERROR with mapping" << std::endl;
+		//}
+		//glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 
 		//glFinish();
 		//steady_clock::time_point end = steady_clock::now();
@@ -426,12 +410,110 @@ class Renderer {
 		glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
 	}
 
+	Matrix4f projection;
+	float fov = 90.0f;
+
+	void UpdateProjectionUniforms();
+	void SetPerspectiveAndViewport() {
+		projection.SetPerspective(degreesToRadians(fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
+		UpdateProjectionUniforms();
+
+		glViewport(0, 0, frame.width, frame.height);
+	}
+
+	void UpdateProjectionUniforms() {
+		/*Matrix3f viewTransform = camType == ORBIT ? orbitCamera.transform() : freeCamera.transform();
+
+		float data[16];
+
+		projection.Get(data);
+		prog.mesh.Bind();
+		prog.mesh.SetUniformMatrix4("projection", data);
+
+		Matrix4f viewProj = projection * viewTransform;
+		viewProj.Get(data);
+		gridProgram.Bind();
+		gridProgram.SetUniformMatrix4("mvp", data);
+		pointProgram.Bind();
+		pointProgram.SetUniformMatrix4("mvp", data);*/
+
+		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
+		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
+	}
+
+	void updateUniforms() {
+		/*Matrix3f viewTransform = camType == ORBIT ? orbitCamera.transform() : freeCamera.transform();
+
+		float data[16];
+		viewTransform.Get(data);
+		meshProgram.Bind();
+		meshProgram.SetUniformMatrix4("modelView", data);
+
+		Matrix3f normalTransform(viewTransform);
+		//normalTransform.Invert();
+		//normalTransform.Transpose();
+		normalTransform.Get(data);
+		meshProgram.SetUniformMatrix3("normalTransform", data);
+
+		Matrix4f viewProj = projection * viewTransform;
+		viewProj.Get(data);
+		gridProgram.Bind();
+		gridProgram.SetUniformMatrix4("mvp", data);
+		pointProgram.Bind();
+		pointProgram.SetUniformMatrix4("mvp", data);*/
+
+		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
+		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
+	}
+
 	void Resize(int width, int height, GLuint defaultFrameBuffer) {
 		frame.width = width;
 		frame.height = height;
 		SetPerspectiveAndViewport();
 		InitFramebuffer(defaultFrameBuffer);
 	}
+
+	void UpdateRenderBuffers() {
+		uint offset = 0;
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			const HalfEdgeMesh* mesh = scene->operator[](i);
+			bufBuilder.AddMeshToVertexPosList(*mesh, i + 1, offset);
+			vertOffsets.push_back(mesh->VertexCount());
+			offset += vertOffsets.back();
+		}
+
+		rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
+
+		/*
+		offset = 0;
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			const HalfEdgeMesh* mesh = scene->operator[](i);
+			bufBuilder.AddMeshToEdgeList(*mesh, i + 1, offset);
+			edgeOffsets.push_back(mesh->EdgeCount());
+			offset += edgeOffsets.back();
+		}*/
+
+		offset = 0;
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			const HalfEdgeMesh* mesh = scene->operator[](i);
+			bufBuilder.AddMeshToAttributes(*mesh, i + 1, offset);
+			faceOffsets.push_back(mesh->FaceCount());
+			offset += faceOffsets.back();
+		}
+
+		glBindVertexArray(vao.mesh);
+
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.meshVBO);
+		glBufferData(GL_ARRAY_BUFFER, bufBuilder.Attributes().size() * sizeof(VertexAttributes), bufBuilder.Attributes().data(), GL_DYNAMIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, pos));
+
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, norm));
+
+		glEnableVertexAttribArray(2);
+		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
 
 };
 

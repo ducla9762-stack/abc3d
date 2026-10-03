@@ -566,6 +566,8 @@ public:
 		return degree;
 	}
 
+	uint FaceCount() const { return faceEdges.size(); }
+
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
 	///		half-edge (one with the vertex as it's origin). Additionally, adjacent faces
@@ -646,6 +648,9 @@ public:
 
 	bool exportObj(const char* filePath) const;
 	bool exportStl(const char* filePath, bool isBinary = true) const;
+
+	const std::vector<Vec3f>& Vertices() const { return vertPos; }
+	uint EdgeCount() const { return edges.size(); }
 
 	/// <summary>
 	/// For obj files, we always convert the vertices into world space. 
