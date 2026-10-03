@@ -140,6 +140,11 @@ private:
 		void setGizmoRotationUniform(const Matrix3f& rotation);
 
 		/// <summary>
+		/// Configures the rotation ring's visible or selection-only pass.
+		/// </summary>
+		void setRotationRingMode(float tolerance, bool selectionOnly);
+
+		/// <summary>
 		/// Sets the gizmos to draw.
 		/// </summary>
 		/// <param name="maces">List of maces</param>
@@ -161,6 +166,7 @@ private:
 	// Gizmo programs.
 	Gizmo translation;
 	Gizmo scale;
+	Gizmo rotationSelection;
 	Gizmo rotation;
 	Gizmo free;
 
