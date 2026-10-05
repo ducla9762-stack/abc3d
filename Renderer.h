@@ -606,7 +606,6 @@ class ABC3DRenderer {
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
 			transformBuf.emplace_back();
 			scene->operator[](i)->getTransform(transformBuf.back());
-			//transformBuf.push_back(scene->operator[](i)->getTransform());
 		}
 
 		glBindBuffer(GL_UNIFORM_BUFFER, bufs.matUBO);

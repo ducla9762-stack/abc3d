@@ -10,6 +10,6 @@ flat in uvec2 ids;
 
 void main(){
     pos = shadePos;
-    norm = normalDir;
+    norm = normalize(normalDir);
     outIds = uvec3(ids, 0);
 }
