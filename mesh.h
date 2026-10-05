@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "renderer.h"
 #include "cyVector.h"
 #include "cyMatrix.h"
 
@@ -415,6 +416,18 @@ public:
 
 	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
+	void getTransform(CompactTransform140& trans) {
+		trans.translateX = pos.x;
+		trans.translateY = pos.y;
+		trans.translateZ = pos.z;
+		trans.scale = scale;
+		Matrix3f rot; 
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+		trans.rotCol1 = rot.Column(0);
+		trans.rotCol2 = rot.Column(1);
+		trans.rotCol3 = rot.Column(2);
+	}
+
 	/// <returns>Scale and rotation components of model transform.</returns>
 	Matrix3f getTransform3x3() const;
 	/// <param name="worldDir">Direction in world-space.</param>

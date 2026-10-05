@@ -141,6 +141,7 @@
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />

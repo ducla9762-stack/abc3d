@@ -314,6 +314,18 @@ public:
 	}
 };
 
+// for std140 packing rules
+struct CompactTransform140 {
+	Vec3f rotCol1;
+	float translateX;
+	Vec3f rotCol2;
+	float translateY;
+	Vec3f rotCol3;
+	float translateZ;
+	Vec3f scale;
+	float padding;
+};
+
 class ABC3DRenderer {
 
 	struct Renderers {
@@ -328,11 +340,6 @@ class ABC3DRenderer {
 		GLuint id;
 	} tex;
 
-	struct PixelBufferObjects {
-		GLuint geom;
-		GLuint id;
-	} pbo;
-
 	struct VertexArrayObjects {
 		GLuint mesh;
 		GLuint frame;
@@ -340,6 +347,7 @@ class ABC3DRenderer {
 
 	struct Buffers {
 		GLuint meshVBO;
+		GLuint matUBO;
 	} bufs;
 
 	struct Programs {
@@ -391,12 +399,15 @@ class ABC3DRenderer {
 	bool Initialize(GLuint defaultFrameBuffer) {
 
 		glGenVertexArrays(2, &vao.mesh);
-		glGenBuffers(1, &bufs.meshVBO);
-		glGenBuffers(2, &pbo.geom);
+		glGenBuffers(2, &bufs.meshVBO);
 
 		// Create textures
 		glGenTextures(3, &tex.geom);
 
+		// Bind uniform buffer to shader bind point
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, bufs.matUBO);
+
+		// Compile shaders
 		bool success = prog.mesh.BuildFiles("assets/shaders/Mesh.vert", "assets/shaders/Mesh.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
@@ -463,13 +474,6 @@ class ABC3DRenderer {
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);*/
 
-		glReadBuffer(GL_COLOR_ATTACHMENT1);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.id);
-		glReadPixels(0, 0, frame.width, frame.height, GL_RGB_INTEGER, GL_UNSIGNED_INT, 0);
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.geom);
-		glReadPixels(0, 0, frame.width, frame.height, GL_RGB, GL_FLOAT, 0);
-
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -487,18 +491,6 @@ class ABC3DRenderer {
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
 		}
-
-		//void* selectBuf = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-		//if (selectBuf) {
-		//	uint selectBufSize = width * height;
-		//	idSelectBuf.resize(0);
-		//	Vec3u* idSelectBuffer = (Vec3u*)selectBuf;
-		//	idSelectBuf.insert(idSelectBuf.begin(), idSelectBuffer, idSelectBuffer + selectBufSize);
-		//}
-		//else {
-		//	std::cout << "ERROR with mapping" << std::endl;
-		//}
-		//glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 
 		//glFinish();
 		//steady_clock::time_point end = steady_clock::now();
@@ -535,15 +527,6 @@ class ABC3DRenderer {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, frame.width, frame.height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		// Allocate pixel buffer objects for streaming
-		uint pboSize = frame.width * frame.height * 3 * 4;
-
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.geom);
-		glBufferData(GL_PIXEL_PACK_BUFFER, pboSize, NULL, GL_STREAM_READ);
-
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo.id);
-		glBufferData(GL_PIXEL_PACK_BUFFER, pboSize, NULL, GL_STREAM_READ);
 
 		// Attach textures and depth buffer
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, frame.depthBuf);
@@ -616,6 +599,21 @@ class ABC3DRenderer {
 		InitFramebuffer(defaultFrameBuffer);
 	}
 
+	std::vector<CompactTransform140> transformBuf;
+
+	void UpdateUniformBuffer() {
+		transformBuf.clear();
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			transformBuf.emplace_back();
+			scene->operator[](i)->getTransform(transformBuf.back());
+			//transformBuf.push_back(scene->operator[](i)->getTransform());
+		}
+
+		glBindBuffer(GL_UNIFORM_BUFFER, bufs.matUBO);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4f) * transformBuf.size(), transformBuf.data(), GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
 	void UpdateRenderBuffers() {
 		uint offset = 0;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
@@ -659,6 +657,10 @@ class ABC3DRenderer {
 		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
 
 	};
+
+	void UpdateTransformBuffer(const Scene& scene) {
+		this->scene = &scene; update.renderBufs = true;
+	}
 
 	void UpdateRenderBuffers(const Scene& scene) {
 		this->scene = &scene; update.renderBufs = true;
