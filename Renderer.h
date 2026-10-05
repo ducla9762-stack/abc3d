@@ -352,7 +352,7 @@ class ABC3DRenderer {
 
 	struct Programs {
 		GLSLProgram mesh;
-		GLSLProgram defered;
+		GLSLProgram shade;
 	} prog;
 
 	struct FrameBuffer {
@@ -386,9 +386,14 @@ class ABC3DRenderer {
 		Matrix4f view;
 	} transform;
 
-	std::vector<uint> faceOffsets;
-	std::vector<uint> edgeOffsets;
-	std::vector<uint> vertOffsets;
+	struct Offsets {
+		uint faces;
+		uint edges;
+		uint verts;
+		std::vector<uint> meshFaces;
+		std::vector<uint> meshEdges;
+		std::vector<uint> meshVerts;
+	} offset;
 
 	RenderBufferBuilder bufBuilder;
 
@@ -408,13 +413,13 @@ class ABC3DRenderer {
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, bufs.matUBO);
 
 		// Compile shaders
-		bool success = prog.mesh.BuildFiles("assets/shaders/Mesh.vert", "assets/shaders/Mesh.frag");
+		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag");
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
 			return false;
 		}
-
-		success = prog.defered.BuildFiles("assets/shaders/Deferred.vert", "assets/shaders/Deferred.frag");
+		
+		success = prog.shade.BuildFiles("assets/shaders/BasicLightPass.vert", "assets/shaders/BasicLightPass.frag");
 		if (!success) {
 			std::cout << "Failed to compile deferred shader program!" << std::endl;
 			return false;
@@ -479,7 +484,7 @@ class ABC3DRenderer {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glBindVertexArray(vao.frame);
-		prog.defered.Bind();
+		prog.shade.Bind();
 		glDrawArrays(GL_LINE_STRIP, 0, 4);
 
 		if (show.grid) {
@@ -614,32 +619,34 @@ class ABC3DRenderer {
 	}
 
 	void UpdateRenderBuffers() {
-		uint offset = 0;
+		uint currOffset = 0;
+
+		offset.faces = 0;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
 			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToVertexPosList(*mesh, i + 1, offset);
-			vertOffsets.push_back(mesh->VertexCount());
-			offset += vertOffsets.back();
+			bufBuilder.AddMeshToAttributes(*mesh, i + 1, currOffset);
+			offset.meshFaces.push_back(mesh->FaceCount());
+			currOffset += offset.meshFaces.back();
+		}
+
+		/*
+		offset.edges = 0;
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			const HalfEdgeMesh* mesh = scene->operator[](i);
+			bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
+			offset.meshEdges.push_back(mesh->EdgeCount());
+			currOffset += offset.meshEdges.back();
+		}*/
+
+		offset.verts = currOffset;
+		for (uint i = 0; i < scene->MeshCount(); ++i) {
+			const HalfEdgeMesh* mesh = scene->operator[](i);
+			bufBuilder.AddMeshToVertexPosList(*mesh, i + 1, currOffset);
+			offset.meshVerts.push_back(mesh->VertexCount());
+			currOffset += offset.meshVerts.back();
 		}
 
 		rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
-
-		/*
-		offset = 0;
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToEdgeList(*mesh, i + 1, offset);
-			edgeOffsets.push_back(mesh->EdgeCount());
-			offset += edgeOffsets.back();
-		}*/
-
-		offset = 0;
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToAttributes(*mesh, i + 1, offset);
-			faceOffsets.push_back(mesh->FaceCount());
-			offset += faceOffsets.back();
-		}
 
 		glBindVertexArray(vao.mesh);
 
