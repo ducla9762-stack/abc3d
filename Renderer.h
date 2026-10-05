@@ -16,6 +16,8 @@
 #include "camera.h"
 #include "renderBufferBuilder.h"
 
+#undef max
+
 const std::array<Vec3f, 8> TRI_CUBE_VERTICES = {
 	Vec3f(0.5f, 0.5f, -0.5f),
 	Vec3f(0.5f, -0.5f, -0.5f),
@@ -348,6 +350,12 @@ class ABC3DRenderer {
 	struct Buffers {
 		GLuint meshVBO;
 		GLuint matUBO;
+		GLuint clrSSBO;
+		void Initialize(){ 
+			glGenBuffers(sizeof(Buffers) / sizeof(GLuint), &meshVBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, clrSSBO);
+			glBindBufferBase(GL_UNIFORM_BUFFER, 0, matUBO);
+		}
 	} bufs;
 
 	struct Programs {
@@ -395,6 +403,12 @@ class ABC3DRenderer {
 		std::vector<uint> meshVerts;
 	} offset;
 
+	struct Counts {
+		uint faces;
+		uint edges;
+		uint verts;
+	} count;
+
 	RenderBufferBuilder bufBuilder;
 
 	const Scene* scene;
@@ -404,13 +418,10 @@ class ABC3DRenderer {
 	bool Initialize(GLuint defaultFrameBuffer) {
 
 		glGenVertexArrays(2, &vao.mesh);
-		glGenBuffers(2, &bufs.meshVBO);
+		bufs.Initialize();
 
 		// Create textures
 		glGenTextures(3, &tex.geom);
-
-		// Bind uniform buffer to shader bind point
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, bufs.matUBO);
 
 		// Compile shaders
 		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag");
@@ -663,6 +674,23 @@ class ABC3DRenderer {
 		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
 
 	};
+
+	std::vector<uint8_t> clrs;
+
+	template <bool send>
+	void ResetColorBuffer() {
+		clrs.clear();
+		clrs.push_back(0);
+		clrs.insert(clrs.end(), count.faces, 1);
+		clrs.insert(clrs.end(), count.edges, 2);
+		clrs.insert(clrs.end(), count.verts, 3);
+
+		if constexpr (send) {
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);
+			glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint8_t), clrs.data(), GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		}
+	}
 
 	void UpdateTransformBuffer(const Scene& scene) {
 		this->scene = &scene; update.renderBufs = true;
