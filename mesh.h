@@ -416,7 +416,7 @@ public:
 
 	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
-	void getTransform(CompactTransform140& trans) {
+	void getTransform(CompactTransform140& trans) const {
 		trans.translateX = pos.x;
 		trans.translateY = pos.y;
 		trans.translateZ = pos.z;

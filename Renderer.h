@@ -364,8 +364,8 @@ class ABC3DRenderer {
 	} prog;
 
 	struct FrameBuffer {
-		int width;
-		int height;
+		int width = 0;
+		int height = 0;
 		GLuint fbo;
 		GLuint depthBuf;
 	} frame;
@@ -374,7 +374,7 @@ class ABC3DRenderer {
 		OrbitCamera orbit;
 		FreeCamera free;
 		float fov = 70.0f;
-		CameraType type;
+		CameraType type = ORBIT;
 	} cam;
 
 	struct VisibleSettings {
@@ -395,9 +395,9 @@ class ABC3DRenderer {
 	} transform;
 
 	struct Offsets {
-		uint faces;
-		uint edges;
-		uint verts;
+		uint faces = 0;
+		uint edges = 0;
+		uint verts = 0;
 		std::vector<uint> meshFaces;
 		std::vector<uint> meshEdges;
 		std::vector<uint> meshVerts;
@@ -630,7 +630,7 @@ class ABC3DRenderer {
 	}
 
 	void UpdateRenderBuffers() {
-		uint currOffset = 0;
+		uint currOffset = 1;
 
 		offset.faces = 0;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
@@ -639,6 +639,8 @@ class ABC3DRenderer {
 			offset.meshFaces.push_back(mesh->FaceCount());
 			currOffset += offset.meshFaces.back();
 		}
+		
+		count.faces = currOffset - 1;
 
 		/*
 		offset.edges = 0;
@@ -647,7 +649,9 @@ class ABC3DRenderer {
 			bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
 			offset.meshEdges.push_back(mesh->EdgeCount());
 			currOffset += offset.meshEdges.back();
-		}*/
+		}
+		
+		count.edges = currOffset - offset.faces;*/
 
 		offset.verts = currOffset;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
@@ -656,6 +660,8 @@ class ABC3DRenderer {
 			offset.meshVerts.push_back(mesh->VertexCount());
 			currOffset += offset.meshVerts.back();
 		}
+
+		count.verts = currOffset - offset.edges;
 
 		rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
 
