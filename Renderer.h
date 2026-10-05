@@ -647,21 +647,20 @@ class ABC3DRenderer {
 		
 		count.faces = currOffset - 1;
 
-		/*
 		offset.edges = 0;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
 			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
-			offset.meshEdges.push_back(mesh->EdgeCount());
+			uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
+			offset.meshEdges.push_back(edgeCount);
 			currOffset += offset.meshEdges.back();
 		}
 		
-		count.edges = currOffset - offset.faces;*/
+		count.edges = currOffset - offset.faces;
 
 		offset.verts = currOffset;
 		for (uint i = 0; i < scene->MeshCount(); ++i) {
 			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToVertexPosList(*mesh, i + 1, currOffset);
+			bufBuilder.AddMeshToVertexList(*mesh, i + 1, currOffset);
 			offset.meshVerts.push_back(mesh->VertexCount());
 			currOffset += offset.meshVerts.back();
 		}

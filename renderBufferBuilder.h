@@ -13,6 +13,8 @@
 #include "helper.h"
 #include "mesh.h"
 
+#undef max
+
 using std::string;
 using std::ifstream;
 using std::ostream;
@@ -29,7 +31,7 @@ class RenderBufferBuilder {
 
 	std::vector<Vec3f> vertPos;
 	std::vector<Vec2u> vertIds;
-	std::vector<Vec2u> edgeElms;
+	std::vector<Vec3f> edges;
 	std::vector<Vec2u> edgeIds;
 
 	std::vector<VertexAttributes> attributes;
@@ -78,28 +80,28 @@ public:
 		}
 	}
 
-	void AddMeshToVertexPosList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
+	void AddMeshToVertexList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
 		vertPos.insert(vertPos.end(), mesh.vertPos.begin(), mesh.vertPos.end());
-	}
 
-	void AddMeshToVertexIdList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
 		uint end = mesh.vertPos.size() + offset;
 		for (uint i = offset; i < end + offset; ++i) {
 			vertIds.push_back({ objId, i });
 		}
 	}
 
-	void AddMeshToEdgeList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
-		uint end = mesh.edges.size() + offset;
-		for (uint i = offset; i < end; ++i) {
-			edgeIds.push_back({ objId, i });
-		}
-
-		for (const HalfEdgeMesh::HalfEdge& edge : mesh.edges) {
-			if (edge.dest != MAX_UINT) {
-				edgeElms.push_back({ edge.orig, edge.dest });
+	uint AddMeshToEdgeList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
+		uint id = 0;
+		for (uint i = 0; i < uint(mesh.edges.size()); ++i) {
+			const HalfEdgeMesh::HalfEdge& edge = mesh.edges[i];
+			if (edge.twin > i && mesh.edges[i].dest != MAX_UINT) {
+				edgeIds.push_back({ objId, id + offset });
+				edges.push_back(mesh.vertPos[edge.orig]);
+				edges.push_back(mesh.vertPos[edge.dest]);
+				++id;
 			}
 		}
+		
+		return id;
 	}
 
 	void Clear() {
@@ -115,7 +117,7 @@ public:
 	const std::vector<VertexAttributes>& Attributes() const { return attributes; }
 	const std::vector<Vec3f>& VertexPositions() const { return vertPos; }
 	const std::vector<Vec2u>& VertexIds() const { return vertIds; }
-	const std::vector<Vec2u>& EdgeElements() const { return edgeElms; }
+	const std::vector<Vec3f>& Edges() const { return edges; }
 	const std::vector<Vec2u>& EdgeIds() const { return edgeIds; }
 };
 
