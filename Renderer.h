@@ -233,9 +233,9 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag");
+		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag");
 		if (!success) {
-			std::cout << "Failed to compile vertex shader program!" << std::endl;
+			std::cout << "Failed to compile edge shader program!" << std::endl;
 			return false;
 		}
 

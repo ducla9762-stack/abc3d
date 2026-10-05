@@ -11,5 +11,5 @@ flat in uvec2 ids;
 void main(){
     pos = shadePos;
     norm = normalize(normalDir);
-    outIds = uvec3(ids, 0);
+    outIds = uvec3(ids, 1);
 }
