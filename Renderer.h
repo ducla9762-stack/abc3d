@@ -182,12 +182,12 @@ class EdgeRenderer {
 	GLuint vao;
 
 	enum Uniform : int { RADIUS = 1, VIEW_PROJ = 2 };
-	enum Attribute : GLuint { POS = 0, DIR = 2, ID = 1 };
+	enum Attribute : GLuint { POS = 0, P0 = 1, P1 = 2, ID = 3 };
 
 	struct Buffers {
 		GLuint vbo;
 		GLuint ebo;
-		GLuint dir;
+		GLuint edge;
 		GLuint id;
 	} bufs;
 
@@ -217,10 +217,15 @@ public:
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * TRI_CYLINDER_ELEMENTS.size() * 3, TRI_CYLINDER_ELEMENTS.data(), GL_STATIC_DRAW);
 
 		// Generate instanced position buffer
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.dir);
-		glEnableVertexAttribArray(DIR);
-		glVertexAttribPointer(DIR, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)0);
-		glVertexAttribDivisor(DIR, 1);
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.edge);
+
+		glEnableVertexAttribArray(P0);
+		glVertexAttribPointer(P0, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f), (GLvoid*)0);
+		glVertexAttribDivisor(P0, 1);
+
+		glEnableVertexAttribArray(P1);
+		glVertexAttribPointer(P1, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f), (GLvoid*)sizeof(Vec3f));
+		glVertexAttribDivisor(P1, 1);
 
 		// Generate instanced id buffer
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.id);
@@ -269,16 +274,16 @@ public:
 		prog.SetUniformMatrix4(VIEW_PROJ, data);
 	}
 
-	void SetVertices(const std::vector<Vec2u>& ids, const std::vector<Vec3f>& dir, GLenum hint = GL_STATIC_DRAW) {
-		if (ids.size() != dir.size()) { return; }
+	void SetEdges(const std::vector<Vec2u>& ids, const std::vector<Vec3f>& edges, GLenum hint = GL_STATIC_DRAW) {
+		if (ids.size() != edges.size()) { return; }
 
 		count = uint(ids.size());
 
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.id);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(uint) * ids.size() * 2, ids.data(), hint);
 
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.dir);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * dir.size() * 3, dir.data(), hint);
+		glBindBuffer(GL_ARRAY_BUFFER, bufs.edge);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * edges.size() * 3, edges.data(), hint);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}

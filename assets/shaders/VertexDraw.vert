@@ -1,6 +1,6 @@
 
 layout(location = 0) in vec3 pos;
-layout(location = 7) in uvec2 ids;
+layout(location = 1) in uvec2 ids;
 
 out uvec2 drawIds;
 
