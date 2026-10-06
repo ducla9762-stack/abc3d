@@ -39,6 +39,9 @@ private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
+    void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
+    void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
+
     void modelFileDialog() {
         QStringList files = QFileDialog::getOpenFileNames(
                                 this,
