@@ -578,6 +578,57 @@ public:
 		return degree;
 	}
 
+	uint NearestEdge(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		Vec3f prev = vertPos[edges[first].orig];
+
+		uint nearestEdge = first;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			HalfEdge& edge = edges[curr];
+			Vec3f next = vertPos[edge.dest];
+			Vec3f lineSeg = next - prev;
+			float t = pos.Dot(lineSeg) / lineSeg.LengthSquared();
+			if (t >= 0.0f || t <= 1.0f) {
+				Vec3f rejection = pos - (t * lineSeg);
+				float distSqrd = rejection.LengthSquared();
+				if (distSqrd < nearestDistSqrd) {
+					nearestDistSqrd = distSqrd;
+					nearestEdge = curr;
+				}
+			}
+			prev = next;
+			curr = edge.next;
+		} while (curr != first);
+
+		return nearestEdge;
+	}
+
+	uint NearestVertex(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+
+		uint nearestVert = MAX_UINT;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			HalfEdge& edge = edges[curr];
+
+			Vec3f vert = vertPos[edge.orig];
+			float distSqrd = (pos - vert).LengthSquared();
+			if (distSqrd < nearestDistSqrd) {
+				nearestDistSqrd = distSqrd;
+				nearestVert = edge.orig;
+			}
+
+			curr = edge.next;
+		} while (curr != first);
+
+		return nearestVert;
+	}
+
 	uint FaceCount() const { return faceEdges.size(); }
 
 	/// <summary>

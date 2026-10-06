@@ -11,6 +11,7 @@
 #include <cyMatrix.h>
 
 #include "helper.h"
+#include "selectionManager.h"
 #include "scene.h"
 #include "mesh.h"
 #include "camera.h"
@@ -720,6 +721,49 @@ public:
 	void setCameraMode(CameraType mode) {
 		if (mode == cam.type) { return; }
 		toggleCamType();
+	}
+
+	Vec2u SelectionIds(Element element, uint x, uint y) {
+		if (x >= frame.width || y >= frame.height) {
+			return Vec2u(MAX_UINT);
+		}
+
+		// read back ids
+		Vec3u ids;
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, frame.fbo);
+		glReadBuffer(GL_COLOR_ATTACHMENT2);	
+		glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &ids.x);
+
+		if (ids.z == 0) { return Vec2u(MAX_UINT); }
+
+		switch (element) {
+		case OBJECT:
+			return Vec2u(ids.x, ids.z - 1);
+
+		case FACE:
+			if (ids.z != 1) { return Vec2u(ids.x, MAX_UINT); }
+			return Vec2u(ids.x, ids.y - offset.meshFaces[ids.x]);
+
+		case EDGE:
+			if (ids.z == 3) { return Vec2u(ids.x, MAX_UINT); }
+			if (ids.z == 2) { return Vec2u(ids.x, ids.y - offset.meshEdges[ids.x]); }
+
+			// read back pos tex and find closest edge in face
+			Vec3f pos;
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &pos.x);
+			return Vec2u(ids.x, scene->operator[](ids.x)->NearestEdge(ids.y - offset.meshEdges[ids.x], pos));
+
+		case VERTEX:
+			if (ids.z == 2) { return Vec2u(ids.x, MAX_UINT); }
+			if (ids.z == 3) { return Vec2u(ids.x, ids.y - offset.meshVerts[ids.x]); }
+
+			// read pack pos tex and find closest vertex in face
+			Vec3f pos;
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &pos.x);
+			return Vec2u(ids.x, scene->operator[](ids.x)->NearestVertex(ids.y - offset.meshEdges[ids.x], pos));
+		}
 	}
 };
 
