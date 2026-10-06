@@ -120,7 +120,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="mesh.cpp" />
-    <ClCompile Include="render.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
@@ -139,7 +139,6 @@
     <ClInclude Include="helper.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
-    <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="scene.h" />

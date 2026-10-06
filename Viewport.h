@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "render.h"
+#include "renderer.h"
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
@@ -121,7 +121,7 @@ private:
 	QAction* menuActions[3];
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
-	ModelingRenderer renderer;
+	ABC3DRenderer renderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
@@ -217,6 +217,8 @@ private:
 		scene.NewMesh()->load(vertices, faces);
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
+		renderer.UpdateUniformBuffer();
 		update();
 	}
 
@@ -441,6 +443,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
 		update();
 	}
 
@@ -455,6 +458,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
 		update();
 	}
 
@@ -480,6 +484,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
 		update();
 	}
 
@@ -513,6 +518,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateUniformBuffer();
 		update();
 	}
 
@@ -524,6 +530,7 @@ public slots:
 			scene[item.meshId]->Scale(scale);
 			makeCurrent();
 			renderer.UpdateRenderBuffers(scene);
+			renderer.UpdateUniformBuffer();
 			update();
 		}
 	}
@@ -536,6 +543,7 @@ public slots:
 			scene[item.meshId]->Rot(rot);
 			makeCurrent();
 			renderer.UpdateRenderBuffers(scene);
+			renderer.UpdateUniformBuffer();
 			updateGizmos();
 			update();
 		}
@@ -581,6 +589,8 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateUniformBuffer();
+		renderer.ResetColorBuffer<true>();
 		update();
 		return report;
 	}
@@ -649,6 +659,8 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
+		renderer.UpdateUniformBuffer();
 		updateSelectionVisuals();
 		updateGizmos();
 		update();
@@ -663,14 +675,14 @@ public slots:
 	void setAlwaysShowVertices(bool show) {
 		verticesAlwaysVisible = show;
 		if(selectionManager.getActiveElement() != VERTEX){
-			renderer.SetVertexPointsVisible(verticesAlwaysVisible);
+			//renderer.SetVertexPointsVisible(verticesAlwaysVisible);
 			update();
 		}
 	}
 
 	void setAlwaysShowGrid(bool show) {
 		gridAlwaysVisible = show;
-		renderer.SetGridVisible(gridAlwaysVisible);
+		//renderer.SetGridVisible(gridAlwaysVisible);
 		update();
 	}
 
@@ -704,6 +716,8 @@ public slots:
 		makeCurrent();
 		selectionManager.clearSelection();
 		renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();
+		renderer.UpdateUniformBuffer();
 		updateSelectionVisuals();
 		updateGizmos();
 		update();

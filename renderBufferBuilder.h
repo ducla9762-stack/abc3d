@@ -42,7 +42,7 @@ class RenderBufferBuilder {
 		for (int i = 0; i < triVertices.size(); ++i) {
 			const Vec3u& tri = triVertices[i];
 
-			for (int j = 0; j < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
 				VertexAttributes& attr = attributes.emplace_back();
 				attr.pos = vertices[tri[j]];
 				attr.norm = normal;
@@ -107,6 +107,10 @@ public:
 	void Clear() {
 		// Clear data but keep memory allocated
 		attributes.clear();
+		vertPos.clear();
+		vertIds.clear();
+		edges.clear();
+		edgeIds.clear();
 	}
 
 	void Deallocate() {

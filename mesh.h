@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "renderer.h"
 #include "cyVector.h"
 #include "cyMatrix.h"
 

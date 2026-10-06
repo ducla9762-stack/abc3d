@@ -18,6 +18,8 @@
 
 #undef max
 
+inline const char* HEADER = "#version 450 core\n #define MAX_OBJECT_COUNT 64\n";
+
 const std::array<Vec3f, 8> TRI_CUBE_VERTICES = {
 	Vec3f(0.5f, 0.5f, -0.5f),
 	Vec3f(0.5f, -0.5f, -0.5f),
@@ -127,7 +129,8 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag");
+		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag",
+			nullptr, nullptr, nullptr, HEADER, &std::cout);
 		if (!success) {
 			std::cout << "Failed to compile vertex shader program!" << std::endl;
 			return false;
@@ -238,7 +241,8 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag");
+		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag",
+			nullptr, nullptr, nullptr, HEADER, &std::cout);
 		if (!success) {
 			std::cout << "Failed to compile edge shader program!" << std::endl;
 			return false;
@@ -303,7 +307,7 @@ public:
 		}
 
 		prog.Bind();
-		prog.RegisterUniform(0, "viewProj");
+		prog.RegisterUniform(0, "mvp");
 
 		return true;
 	}
@@ -319,18 +323,6 @@ public:
 		prog.Bind();
 		prog.SetUniformMatrix4(0, data);
 	}
-};
-
-// for std140 packing rules
-struct CompactTransform140 {
-	Vec3f rotCol1;
-	float translateX;
-	Vec3f rotCol2;
-	float translateY;
-	Vec3f rotCol3;
-	float translateZ;
-	Vec3f scale;
-	float padding;
 };
 
 class ABC3DRenderer {
@@ -420,6 +412,8 @@ class ABC3DRenderer {
 
 	uint meshVertDrawCount;
 
+public:
+
 	bool Initialize(GLuint defaultFrameBuffer) {
 
 		glGenVertexArrays(2, &vao.mesh);
@@ -429,7 +423,8 @@ class ABC3DRenderer {
 		glGenTextures(3, &tex.geom);
 
 		// Compile shaders
-		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag");
+		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag",
+			nullptr, nullptr, nullptr, HEADER, &std::cout);
 		if (!success) {
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
 			return false;
@@ -441,9 +436,13 @@ class ABC3DRenderer {
 			return false;
 		}
 
-		rndrs.vert.Initialize();
-		rndrs.edge.Initialize();
-		rndrs.grid.Initialize();
+		prog.shade.SetUniform("posTex", 0);
+		prog.shade.SetUniform("normTex", 1);
+		prog.shade.SetUniform("idTex", 2);
+
+		//rndrs.vert.Initialize();
+		//rndrs.edge.Initialize();
+		//rndrs.grid.Initialize();
 
 		// Initialize gizmo renderer
 		//if (!gizmoRenderer.Initialize()) {
@@ -474,7 +473,13 @@ class ABC3DRenderer {
 		//steady_clock::time_point start = steady_clock::now();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+		float clearClr[3] = { 0.0f, 0.0f, 0.0f };
+		uint clearId[3] = { 0, 0, 0 };
+		glClearBufferfv(GL_COLOR, 0, clearClr);
+		glClearBufferfv(GL_COLOR, 1, clearClr);
+		glClearBufferuiv(GL_COLOR, 2, clearId);
 
 		glBindVertexArray(vao.mesh);
 		prog.mesh.Bind();
@@ -482,7 +487,7 @@ class ABC3DRenderer {
 		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
 		if (show.vertices) {
-			rndrs.vert.Draw();
+			//rndrs.vert.Draw();
 		}
 
 		// Draw gizmos before checking the selection texture.
@@ -501,16 +506,16 @@ class ABC3DRenderer {
 
 		glBindVertexArray(vao.frame);
 		prog.shade.Bind();
-		glDrawArrays(GL_LINE_STRIP, 0, 4);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		if (show.grid) {
-			glEnable(GL_BLEND);
-			glDepthMask(GL_FALSE);
+			//glEnable(GL_BLEND);
+			//glDepthMask(GL_FALSE);
 
-			rndrs.grid.Draw();
+			//rndrs.grid.Draw();
 
-			glDisable(GL_BLEND);
-			glDepthMask(GL_TRUE);
+			//glDisable(GL_BLEND);
+			//glDepthMask(GL_TRUE);
 		}
 
 		//glFinish();
@@ -534,16 +539,19 @@ class ABC3DRenderer {
 		glBindRenderbuffer(GL_RENDERBUFFER, frame.depthBuf);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame.width, frame.height);
 
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex.geom);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, tex.norm);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, tex.id);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, frame.width, frame.height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -576,38 +584,20 @@ class ABC3DRenderer {
 		glViewport(0, 0, frame.width, frame.height);
 	}
 
-	void UpdateProjectionUniforms() {
-		float data[16];
-		transform.proj.Get(data);
-
-		prog.mesh.Bind();
-		prog.mesh.SetUniformMatrix4("projection", data);
-
-		Matrix4f viewProj = transform.proj * transform.view;
-		viewProj.Get(data);
-
-		rndrs.grid.SetTransform(data);
-		rndrs.edge.SetViewProjection(data);
-		rndrs.vert.SetViewProjection(data);
-
-		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
-		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
-	}
-
 	void updateUniforms() {
 		transform.view = cam.type == ORBIT ? cam.orbit.transform() : cam.free.transform();
 
 		float data[16];
 		transform.view.Get(data);
 		prog.mesh.Bind();
-		prog.mesh.SetUniformMatrix4("modelView", data);
+		prog.mesh.SetUniformMatrix4("view", data);
 
-		Matrix4f viewProj = transform.proj * transform.view;
-		viewProj.Get(data);
+		//Matrix4f viewProj = transform.proj * transform.view;
+		//viewProj.Get(data);
 
-		rndrs.grid.SetTransform(data);
-		rndrs.edge.SetViewProjection(data);
-		rndrs.vert.SetViewProjection(data);
+		//rndrs.grid.SetTransform(data);
+		//rndrs.edge.SetViewProjection(data);
+		//rndrs.vert.SetViewProjection(data);
 
 		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
 		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
@@ -630,62 +620,11 @@ class ABC3DRenderer {
 		}
 
 		glBindBuffer(GL_UNIFORM_BUFFER, bufs.matUBO);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4f) * transformBuf.size(), transformBuf.data(), GL_DYNAMIC_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data(), GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
-	void UpdateRenderBuffers() {
-		uint currOffset = 1;
-
-		offset.faces = 0;
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToAttributes(*mesh, i + 1, currOffset);
-			offset.meshFaces.push_back(mesh->FaceCount());
-			currOffset += offset.meshFaces.back();
-		}
-		
-		count.faces = currOffset - 1;
-
-		offset.edges = 0;
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			const HalfEdgeMesh* mesh = scene->operator[](i);
-			uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
-			offset.meshEdges.push_back(edgeCount);
-			currOffset += offset.meshEdges.back();
-		}
-		
-		count.edges = currOffset - offset.faces;
-
-		offset.verts = currOffset;
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			const HalfEdgeMesh* mesh = scene->operator[](i);
-			bufBuilder.AddMeshToVertexList(*mesh, i + 1, currOffset);
-			offset.meshVerts.push_back(mesh->VertexCount());
-			currOffset += offset.meshVerts.back();
-		}
-
-		count.verts = currOffset - offset.edges;
-
-		rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
-
-		glBindVertexArray(vao.mesh);
-
-		glBindBuffer(GL_ARRAY_BUFFER, bufs.meshVBO);
-		glBufferData(GL_ARRAY_BUFFER, bufBuilder.Attributes().size() * sizeof(VertexAttributes), bufBuilder.Attributes().data(), GL_DYNAMIC_DRAW);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, pos));
-
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, norm));
-
-		glEnableVertexAttribArray(2);
-		glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
-
-	};
-
-	std::vector<uint8_t> clrs;
+	std::vector<uint> clrs;
 
 	template <bool send>
 	void ResetColorBuffer() {
@@ -697,7 +636,7 @@ class ABC3DRenderer {
 
 		if constexpr (send) {
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);
-			glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint8_t), clrs.data(), GL_DYNAMIC_DRAW);
+			glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint), clrs.data(), GL_DYNAMIC_DRAW);
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 		}
 	}

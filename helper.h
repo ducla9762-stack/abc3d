@@ -26,6 +26,18 @@ typedef Vec4<uint> Vec4u;
 #define MAX_UINT std::numeric_limits<uint>::max()
 #define GIZMO_IDENTIFIER std::numeric_limits<uint>::max() - 1
 
+// for std140 packing rules
+struct CompactTransform140 {
+	Vec3f rotCol1;
+	float translateX;
+	Vec3f rotCol2;
+	float translateY;
+	Vec3f rotCol3;
+	float translateZ;
+	Vec3f scale;
+	float padding;
+};
+
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
 const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);

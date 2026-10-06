@@ -1,5 +1,3 @@
-#version 450 core
-
 layout(location = 2) out uvec3 outIds;
 
 flat in uvec2 drawIds;

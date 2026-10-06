@@ -9,18 +9,18 @@ out uvec2 drawIds;
 // Represents a mat4 but with access to scale factors and rot matrix.
 // 64 bytes in a std140 buffer (due to the 16 byte alignment).
 struct CompactTransform140 {
-    Vec3f col1;
+    vec3 col1;
     float x;
-    Vec3f col2;
+    vec3 col2;
     float y;
-    Vec3f col3;
+    vec3 col3;
     float z;
-    Vec3f scale;
-}
-
-layout(std140, binding = 0) uniform trans {
-    CompactTransform140 model[MAX_OBJECT_COUNT];
+    vec3 scale;
 };
+
+layout(std140, binding = 0) uniform ModelTransformBuffer {
+    CompactTransform140 model[MAX_OBJECT_COUNT];
+} trans;
 
 uniform mat4 viewProj;
 uniform float radius;
@@ -29,6 +29,8 @@ const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
 const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
 
 void main(){
+    CompactTransform140 model = trans.model[ids.x - 1];
+
     vec3 translate = vec3(model.x, model.y, model.z);
     mat3 rot = mat3(model.col1, model.col2, model.col3);
 
@@ -41,7 +43,7 @@ void main(){
 
     vec3 pos = vertPos;
     pos *= radius;
-    pos.y += float(gl_VertexID > 7) * length;
+    pos.y += float(gl_VertexID > 7) * len;
 
     bool dirIsZ = abs(dir.z) > 0.99f;
 	vec3 reference = float(dirIsZ) * Y + float(!dirIsZ) * Z;
