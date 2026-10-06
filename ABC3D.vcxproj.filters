@@ -102,6 +102,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Gizmo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="MeshBeveler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,6 +122,8 @@
     <None Include="assets\shaders\RotationRing.frag" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+    <None Include="assets\shaders\Hoop.vert" />
+    <None Include="assets\shaders\Hoop.frag" />
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="VectorInput.ui">

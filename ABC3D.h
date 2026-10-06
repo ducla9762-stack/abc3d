@@ -3,6 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QFileDialog>
 #include "ui_ABC3D.h"
+#include "StartMenu.h"
 
 class ABC3D : public QMainWindow
 {
@@ -11,12 +12,28 @@ class ABC3D : public QMainWindow
 public:
     ABC3D(QWidget *parent = nullptr);
     ~ABC3D();
+
+    bool firstShow = true;
+
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
+
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
+
+    void showEvent(QShowEvent* event) override;
+
+    /* Creates a start menu and checks what integer is returned by the exec function
+    */
+    void showStart() {
+        StartMenu startMenu(this);
+        int execResult = startMenu.exec();
+        if (execResult == 4) { modelFileDialog(); }
+        else if (execResult == 5) { sceneFileDialog(); }
+        //else if (execResult = 6) {} -- add once we have a website
+    }
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }

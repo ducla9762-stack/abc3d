@@ -15,6 +15,10 @@ private:
 	Ui::StartMenuClass ui;
 
 private slots:
+	// Slots that change the integer returned from exec
+	void loadModelButtonClicked() { done(4); }
+	void loadProjectButtonClicked() { done(5); }
+	void websiteButtonClicked() { done(6);  }
 
 signals:
 };

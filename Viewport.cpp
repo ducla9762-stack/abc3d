@@ -37,7 +37,7 @@ Viewport::Viewport(QWidget *parent)
 		elementButtons[i]->setFixedHeight(64);
 		elementButtons[i]->setAutoExclusive(true);
 		elementButtons[i]->setCheckable(true);
-		elementButtons[i]->setStyleSheet("QPushButton { background-color: #1c1c1c; color: white; } QPushButton:checked { background-color: red; border: none; } ");
+		elementButtons[i]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked { background-color: red; }");
 	}
 
 	elementButtons[3]->setChecked(true);

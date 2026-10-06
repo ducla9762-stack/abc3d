@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1432</width>
-    <height>961</height>
+    <width>1777</width>
+    <height>1242</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -77,6 +77,9 @@
         <height>300</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">QScrollArea {background-color: #1c1c1c; }</string>
+      </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
       </property>
@@ -97,8 +100,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>64</width>
-         <height>938</height>
+         <width>66</width>
+         <height>1219</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -109,20 +112,19 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>64</width>
+         <width>66</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>64</width>
+         <width>66</width>
          <height>16777215</height>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(255, 255, 255);
-background-color: #1c1c1c;
-</string>
+        <string notr="true">QWidget {background-color: #1c1c1c; }
+QPushButton{background-color: #646464;}</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
@@ -658,6 +660,7 @@ background-color: #1c1c1c;
        <zorder>cameraToolButton</zorder>
        <zorder>knifeToolButton</zorder>
        <zorder>penToolButton</zorder>
+       <zorder>verticalSpacer</zorder>
       </widget>
      </widget>
     </item>
@@ -668,6 +671,9 @@ background-color: #1c1c1c;
         <horstretch>4</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
       </property>
      </widget>
     </item>
@@ -719,18 +725,19 @@ color: white;</string>
            <height>682</height>
           </size>
          </property>
+         <property name="layoutDirection">
+          <enum>Qt::LayoutDirection::RightToLeft</enum>
+         </property>
          <property name="styleSheet">
-          <string notr="true">QTabBar:tab:selected{background: red; }</string>
+          <string notr="true">QTabBar {background-color: #646464 }
+QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
           <number>2</number>
          </property>
-         <widget class="QWidget" name="sceneHierarchyPanel">
-          <property name="contextMenuPolicy">
-           <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
-          </property>
+         <widget class="QWidget" name="helpPanel">
           <attribute name="title">
-           <string>Scene Hierarchy</string>
+           <string>Help</string>
           </attribute>
          </widget>
          <widget class="QWidget" name="tutorialPanel">
@@ -739,10 +746,33 @@ color: white;</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QTextBrowser" name="tutorialBrowser"/>
+            <widget class="QTextBrowser" name="tutorialBrowser">
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">border: 1px white;</string>
+             </property>
+            </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="loadTutorialButton">
+             <property name="minimumSize">
+              <size>
+               <width>120</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: #646464;
+border-radius: 2px;</string>
+             </property>
              <property name="text">
               <string>Load Tutorial</string>
              </property>
@@ -750,18 +780,22 @@ color: white;</string>
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="helpPanel">
-          <property name="styleSheet">
-           <string notr="true"/>
+         <widget class="QWidget" name="sceneHierarchyPanel">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
           </property>
           <attribute name="title">
-           <string>Help</string>
+           <string>Scene Hierarchy</string>
           </attribute>
          </widget>
         </widget>
        </item>
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
+         <property name="styleSheet">
+          <string notr="true">QPushButton{background-color:#646464;}
+QPushButton:checked {background-color: red}</string>
+         </property>
          <widget class="QWidget" name="propertiesPanel">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <property name="spacing">
@@ -1263,7 +1297,7 @@ QPushButton:checked { background-color: red; }</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1432</width>
+     <width>1777</width>
      <height>21</height>
     </rect>
    </property>
@@ -1434,6 +1468,15 @@ color: white;</string>
     <slot>setCameraModeFree()</slot>
     <slot>setLocalScaleMode()</slot>
     <slot>setGlobalScaleMode()</slot>
+    <slot>enableElementVertex()</slot>
+    <slot>disableElementVertex()</slot>
+    <slot>enableElementEdge()</slot>
+    <slot>disableElementEdge()</slot>
+    <slot>enableElementFace()</slot>
+    <slot>disableElementFace()</slot>
+    <slot>enableElementObject()</slot>
+    <slot>disableElementObject()</slot>
+    <slot>enableAllElements()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2456,6 +2499,230 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>1103</x>
      <y>711</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cameraToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>117</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>selectToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>53</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>shapeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>373</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementFace()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementObject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementVertex()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementObject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementFace()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rotateToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementVertex()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>309</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>bevelToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>565</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>extrudeToolButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>enableAllElements()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>32</x>
+     <y>437</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>750</x>
+     <y>631</y>
     </hint>
    </hints>
   </connection>

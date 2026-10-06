@@ -287,25 +287,75 @@ public slots:
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 
+	void enableAllElements() {
+		for (int i = 0; i < 4; ++i) {
+			elementButtons[i]->setEnabled(true);
+			elementButtons[i]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+		}
+	}
 
+	// Vertex Element
 	void setElementVertex() { 
 		setActiveElement(VERTEX); 
 		elementButtons[0]->setChecked(true);
 	}
 
+	void enableElementVertex() {
+		elementButtons[0]->setEnabled(true);
+		elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; ");
+	}
+
+	void disableElementVertex() {
+		elementButtons[0]->setDisabled(true);
+		elementButtons[0]->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+	}
+
+	// Edge Element
 	void setElementEdge() {
 		setActiveElement(EDGE);
 		elementButtons[1]->setChecked(true);
 	}
 
+	void enableElementEdge() {
+		elementButtons[1]->setEnabled(true);
+		elementButtons[1]->setStyleSheet("QPushButton{ background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+	}
+
+	void disableElementEdge() {
+		elementButtons[1]->setDisabled(true);
+		elementButtons[1]->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+	}
+
+	// Face Element
 	void setElementFace() {
 		setActiveElement(FACE);
 		elementButtons[2]->setChecked(true);
 	}
 
+	void enableElementFace() {
+		elementButtons[2]->setEnabled(true);
+		elementButtons[2]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+	}
+
+	void disableElementFace() {
+		elementButtons[2]->setDisabled(true);
+		elementButtons[2]->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+	}
+
+	// Object Element
 	void setElementObject() { 
 		setActiveElement(OBJECT); 
 		elementButtons[3]->setChecked(true);
+	}
+
+	void enableElementObject() {
+		elementButtons[3]->setEnabled(true);
+		elementButtons[3]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+	}
+
+	void disableElementObject() {
+		elementButtons[3]->setDisabled(true);
+		elementButtons[3]->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
 	}
 
 	void setAdditiveSelection() {
