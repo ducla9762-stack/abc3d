@@ -84,7 +84,7 @@ public:
 		vertPos.insert(vertPos.end(), mesh.vertPos.begin(), mesh.vertPos.end());
 
 		uint end = mesh.vertPos.size() + offset;
-		for (uint i = offset; i < end + offset; ++i) {
+		for (uint i = offset; i < end; ++i) {
 			vertIds.push_back({ objId, i });
 		}
 	}

@@ -32,7 +32,7 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 
 	count.faces = currOffset - 1;
 
-	offset.edges = 0;
+	offset.edges = currOffset;
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
 		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
@@ -40,7 +40,7 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 		currOffset += offset.meshEdges.back();
 	}
 
-	count.edges = currOffset - offset.faces;
+	count.edges = currOffset - offset.edges;
 	rndrs.edge.SetEdges(bufBuilder.EdgeIds(), bufBuilder.Edges(), GL_DYNAMIC_DRAW);
 
 	offset.verts = currOffset;
@@ -51,8 +51,7 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 		currOffset += offset.meshVerts.back();
 	}
 
-	count.verts = currOffset - offset.edges;
-
+	count.verts = currOffset - offset.verts;
 	rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
 
 	meshVertDrawCount = bufBuilder.Attributes().size();

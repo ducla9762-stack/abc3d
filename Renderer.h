@@ -77,7 +77,7 @@ const std::vector<Vec3u> TRI_CYLINDER_ELEMENTS = {
 class VertexRenderer {
 	GLuint vao;
 	
-	enum Uniform : int { SCALE = 1, VIEW_PROJ = 2 };
+	enum Uniform : int { SCALE = 0, VIEW_PROJ = 1 };
 	enum Attribute : GLuint { VERT = 0, POS = 1, ID = 2 };
 
 	struct Buffers {
@@ -140,6 +140,7 @@ public:
 
 		prog.RegisterUniform(SCALE, "scale");
 		prog.RegisterUniform(VIEW_PROJ, "viewProj");
+		prog.SetUniform(SCALE, 0.2f);
 
 		return true;
 	}
@@ -158,7 +159,7 @@ public:
 	void SetScale(float scale) {
 		this->scale = scale;
 		prog.Bind();
-		prog.SetUniform1(SCALE, &this->scale);
+		prog.SetUniform(SCALE, this->scale);
 	}
 
 	void SetViewProjection(float data[16]) {
@@ -375,7 +376,7 @@ class ABC3DRenderer {
 	} cam;
 
 	struct VisibleSettings {
-		bool vertices = false;
+		bool vertices = true;
 		bool grid = true;
 		bool edges = true;
 		bool surfaces = true;
@@ -440,7 +441,7 @@ public:
 		prog.shade.SetUniform("normTex", 1);
 		prog.shade.SetUniform("idTex", 2);
 
-		//rndrs.vert.Initialize();
+		rndrs.vert.Initialize();
 		//rndrs.edge.Initialize();
 		//rndrs.grid.Initialize();
 
@@ -487,7 +488,7 @@ public:
 		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
 
 		if (show.vertices) {
-			//rndrs.vert.Draw();
+			rndrs.vert.Draw();
 		}
 
 		// Draw gizmos before checking the selection texture.
@@ -592,12 +593,12 @@ public:
 		prog.mesh.Bind();
 		prog.mesh.SetUniformMatrix4("view", data);
 
-		//Matrix4f viewProj = transform.proj * transform.view;
-		//viewProj.Get(data);
+		Matrix4f viewProj = transform.proj * transform.view;
+		viewProj.Get(data);
 
 		//rndrs.grid.SetTransform(data);
 		//rndrs.edge.SetViewProjection(data);
-		//rndrs.vert.SetViewProjection(data);
+		rndrs.vert.SetViewProjection(data);
 
 		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
 		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);

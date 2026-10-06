@@ -1,6 +1,7 @@
 
-layout(location = 0) in vec3 pos;
-layout(location = 1) in uvec2 ids;
+layout(location = 0) in vec3 vertPos;
+layout(location = 1) in vec3 cubePos;
+layout(location = 2) in uvec2 ids;
 
 out uvec2 drawIds;
 
@@ -29,8 +30,10 @@ void main(){
 	vec3 translate = vec3(model.x, model.y, model.z);
     mat3 rot = mat3(model.col1, model.col2, model.col3);
 
-    vec3 worldPos = translate + (rot * (model.scale * (scale * pos)));
+    vec3 worldCubePos = translate + (rot * (model.scale * cubePos));
 
-	gl_Position = viewProj * vec4(worldPos, 1.0f);
+    vec3 worldVertPos = worldCubePos + (vertPos * scale);
+
+	gl_Position = viewProj * vec4(worldVertPos, 1.0f);
 	drawIds = ids;
 }
