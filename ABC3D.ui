@@ -733,12 +733,39 @@ color: white;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <attribute name="title">
            <string>Help</string>
           </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_9">
+           <item>
+            <widget class="QStackedWidget" name="helpStack">
+             <widget class="QWidget" name="helpBrowserPage">
+              <layout class="QVBoxLayout" name="verticalLayout_12">
+               <item>
+                <widget class="QTextBrowser" name="helpBrowser"/>
+               </item>
+               <item>
+                <widget class="QPushButton" name="loadHelpButton">
+                 <property name="text">
+                  <string>Load New Document</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="helpTreePage">
+              <layout class="QVBoxLayout" name="verticalLayout_13">
+               <item>
+                <widget class="QTreeView" name="helpTree"/>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+           </item>
+          </layout>
          </widget>
          <widget class="QWidget" name="tutorialPanel">
           <attribute name="title">
@@ -746,36 +773,31 @@ QTabBar:tab:selected{background: red; }</string>
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <widget class="QTextBrowser" name="tutorialBrowser">
-             <property name="autoFillBackground">
-              <bool>false</bool>
+            <widget class="QStackedWidget" name="tutorialStack">
+             <property name="currentIndex">
+              <number>0</number>
              </property>
-             <property name="styleSheet">
-              <string notr="true">border: 1px white;</string>
-             </property>
-            </widget>
-           </item>
-           <item alignment="Qt::AlignmentFlag::AlignHCenter">
-            <widget class="QPushButton" name="loadTutorialButton">
-             <property name="minimumSize">
-              <size>
-               <width>120</width>
-               <height>24</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>200</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: #646464;
-border-radius: 2px;</string>
-             </property>
-             <property name="text">
-              <string>Load Tutorial</string>
-             </property>
+             <widget class="QWidget" name="tutorialBrowserPage">
+              <layout class="QVBoxLayout" name="verticalLayout_11">
+               <item>
+                <widget class="QTextBrowser" name="tutorialBrowser"/>
+               </item>
+               <item>
+                <widget class="QPushButton" name="loadTutorialButton">
+                 <property name="text">
+                  <string>Load New Tutorial</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="tutorialTreePage">
+              <layout class="QVBoxLayout" name="verticalLayout_8">
+               <item>
+                <widget class="QTreeView" name="tutorialTree"/>
+               </item>
+              </layout>
+             </widget>
             </widget>
            </item>
           </layout>
@@ -787,6 +809,11 @@ border-radius: 2px;</string>
           <attribute name="title">
            <string>Scene Hierarchy</string>
           </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <widget class="QTreeView" name="sceneTree"/>
+           </item>
+          </layout>
          </widget>
         </widget>
        </item>
@@ -1155,6 +1182,13 @@ QPushButton:checked { background-color: red; }</string>
          </widget>
          <widget class="QWidget" name="subdivisionPanel">
           <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>PushButton</string>
+             </property>
+            </widget>
+           </item>
            <item>
             <widget class="QPushButton" name="subdivisionButton">
              <property name="text">

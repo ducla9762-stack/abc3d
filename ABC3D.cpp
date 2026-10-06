@@ -11,17 +11,46 @@ ABC3D::ABC3D(QWidget *parent)
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
     ui.topRightPanels->setCurrentIndex(1);
-    ui.tutorialBrowser->setReadOnly(true);
-    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(QString("assets/tutorials/Welcome.html")));
+    
+    // Makes the model and tree used to view all the help documents
+    QString helpPath = "assets/help documents";
+    helpFileModel->setRootPath(helpPath);
+    ui.helpTree->setModel(helpFileModel);
+    ui.helpTree->setRootIndex(helpFileModel->index(helpPath));
+    ui.helpTree->setColumnHidden(1, true);
+    ui.helpTree->setColumnHidden(2, true);
+    ui.helpTree->setColumnHidden(3, true);
+    ui.helpTree->header()->hide();
+    ui.helpTree->show();
+    ui.helpStack->setCurrentIndex(1);
+    ui.helpBrowser->setReadOnly(true);
+    //QObject::connect(ui.helpTree, &QTreeView::pressed, this, &ABC3D::helpRowClicked);
 
+    // Makes the model and tree used to view all the tutorial documents
+    QString tutorialPath = "assets/tutorials";
+    tutorialFileModel->setRootPath(tutorialPath);
+    ui.tutorialTree->setModel(tutorialFileModel);
+    ui.tutorialTree->setRootIndex(tutorialFileModel->index(tutorialPath));
+    ui.tutorialTree->setColumnHidden(1, true);
+    ui.tutorialTree->setColumnHidden(2, true);
+    ui.tutorialTree->setColumnHidden(3, true);
+    ui.tutorialTree->header()->hide();
+    ui.tutorialTree->show();
+    ui.tutorialStack->setCurrentIndex(1);
+    ui.tutorialBrowser->setReadOnly(true);
+    //QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
+
+    // Menu button for the camera panel - does the same thing as the toolbar
     QAction* actionCamera = new QAction("Camera", ui.menuBar);
     ui.menuBar->addAction(actionCamera);
     QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
 
+    // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
     //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
+    // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
     ui.menuBar->addAction(actionSimpleMode);
     //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
@@ -49,8 +78,14 @@ ABC3D::ABC3D(QWidget *parent)
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadTutorialButton, &QPushButton::released, this, [=]() {
-        QString file = QFileDialog::getOpenFileName(this, tr("Open Tutorial"), "assets/tutorials", tr("Text Files(*.txt * .html * .markdown * .md"));
-        ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
+        ui.tutorialStack->setCurrentIndex(0);
+        });
+
+    // Connects the "Load Tutorial" Button to the QTextBrowser
+    // Opens the file explorer in the "tutorials" folder
+    // Allows users to select text, HTML, or markdown file formats
+    QObject::connect(ui.loadHelpButton, &QPushButton::released, this, [=]() {
+        ui.helpStack->setCurrentIndex(0);
         });
 }
 
@@ -196,6 +231,18 @@ void ABC3D::showEvent(QShowEvent* event){
         QMetaObject::invokeMethod(this, &ABC3D::showStart, Qt::QueuedConnection);
         firstShow = false;
     }
+}
+
+void ABC3D::tutorialRowClicked(QModelIndex& index) {
+    ui.tutorialStack->setCurrentIndex(0);
+    QString file = tutorialFileModel->filePath(index);
+    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
+}
+
+void ABC3D::helpRowClicked(QModelIndex& index) {
+    ui.helpStack->setCurrentIndex(0);
+    QString file = helpFileModel->filePath(index);
+    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
 ABC3D::~ABC3D()

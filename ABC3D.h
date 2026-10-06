@@ -2,6 +2,8 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QFileDialog>
+#include <QFileSystemModel>
+#include <QTreeView>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -14,6 +16,9 @@ public:
     ~ABC3D();
 
     bool firstShow = true;
+
+    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
+    QFileSystemModel* helpFileModel = new QFileSystemModel;
 
 private:
     Ui::ABC3DClass ui;
@@ -111,6 +116,9 @@ private slots:
 
         ui.viewport->saveScene(projectFile.constData());
     }
+
+    void tutorialRowClicked(QModelIndex&);
+    void helpRowClicked(QModelIndex&);
 
 signals:
     void deleteKeyPressed();
