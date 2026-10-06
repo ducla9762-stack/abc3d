@@ -29,7 +29,7 @@ const vec3 Y = vec3(0.0f, 1.0f, 0.0f);
 const vec3 Z = vec3(0.0f, 0.0f, 1.0f);
 
 void main(){
-    CompactTransform140 model = trans.model[ids.x - 1];
+    CompactTransform140 model = trans.model[ids.x];
 
     vec3 translate = vec3(model.x, model.y, model.z);
     mat3 rot = mat3(model.col1, model.col2, model.col3);

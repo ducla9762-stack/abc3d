@@ -335,6 +335,10 @@ class ABC3DRenderer {
 		EdgeRenderer edge;
 	} rndrs;
 
+	enum TexBindings : int { POS = 0, NORM = 1, ID = 2 };
+
+	enum Uniforms : uint { VIEW = 0 };
+
 	struct Textures {
 		GLuint geom;
 		GLuint norm;
@@ -400,6 +404,7 @@ class ABC3DRenderer {
 		std::vector<uint> meshFaces;
 		std::vector<uint> meshEdges;
 		std::vector<uint> meshVerts;
+		void Clear() { meshFaces.clear(); meshEdges.clear(); meshVerts.clear(); }
 	} offset;
 
 	struct Counts {
@@ -431,6 +436,8 @@ public:
 			std::cout << "Failed to compile mesh shader program!" << std::endl;
 			return false;
 		}
+
+		prog.mesh.RegisterUniform(VIEW, "view");
 		
 		success = prog.shade.BuildFiles("assets/shaders/BasicLightPass.vert", "assets/shaders/BasicLightPass.frag");
 		if (!success) {
@@ -438,13 +445,13 @@ public:
 			return false;
 		}
 
-		prog.shade.SetUniform("posTex", 0);
-		prog.shade.SetUniform("normTex", 1);
-		prog.shade.SetUniform("idTex", 2);
+		prog.shade.SetUniform("posTex", TexBindings::POS);
+		prog.shade.SetUniform("normTex", TexBindings::NORM);
+		prog.shade.SetUniform("idTex", TexBindings::ID);
 
 		rndrs.vert.Initialize();
 		rndrs.edge.Initialize();
-		//rndrs.grid.Initialize();
+		rndrs.grid.Initialize();
 
 		// Initialize gizmo renderer
 		//if (!gizmoRenderer.Initialize()) {
@@ -483,10 +490,11 @@ public:
 		glClearBufferfv(GL_COLOR, 1, clearClr);
 		glClearBufferuiv(GL_COLOR, 2, clearId);
 
-		glBindVertexArray(vao.mesh);
-		prog.mesh.Bind();
-
-		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
+		if (show.surfaces) {
+			glBindVertexArray(vao.mesh);
+			prog.mesh.Bind();
+			glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
+		}
 
 		if (show.vertices) {
 			rndrs.vert.Draw();
@@ -509,20 +517,23 @@ public:
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+		glDepthMask(GL_FALSE);
 
 		glBindVertexArray(vao.frame);
 		prog.shade.Bind();
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		if (show.grid) {
-			//glEnable(GL_BLEND);
-			//glDepthMask(GL_FALSE);
+			glEnable(GL_BLEND);
+			
+			rndrs.grid.Draw();
 
-			//rndrs.grid.Draw();
-
-			//glDisable(GL_BLEND);
-			//glDepthMask(GL_TRUE);
+			glDisable(GL_BLEND);
 		}
+
+		glDepthMask(GL_TRUE);
 
 		//glFinish();
 		//steady_clock::time_point end = steady_clock::now();
@@ -545,19 +556,19 @@ public:
 		glBindRenderbuffer(GL_RENDERBUFFER, frame.depthBuf);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame.width, frame.height);
 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE0 + TexBindings::POS);
 		glBindTexture(GL_TEXTURE_2D, tex.geom);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE0 + TexBindings::NORM);
 		glBindTexture(GL_TEXTURE_2D, tex.norm);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture(GL_TEXTURE0 + TexBindings::ID);
 		glBindTexture(GL_TEXTURE_2D, tex.id);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, frame.width, frame.height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -596,12 +607,12 @@ public:
 		float data[16];
 		transform.view.Get(data);
 		prog.mesh.Bind();
-		prog.mesh.SetUniformMatrix4("view", data);
+		prog.mesh.SetUniformMatrix4(VIEW, data);
 
 		Matrix4f viewProj = transform.proj * transform.view;
 		viewProj.Get(data);
 
-		//rndrs.grid.SetTransform(data);
+		rndrs.grid.SetTransform(data);
 		rndrs.edge.SetViewProjection(data);
 		rndrs.vert.SetViewProjection(data);
 
@@ -635,10 +646,15 @@ public:
 	template <bool send>
 	void ResetColorBuffer() {
 		clrs.clear();
-		clrs.push_back(0);
-		clrs.insert(clrs.end(), count.faces, 1);
-		clrs.insert(clrs.end(), count.edges, 2);
-		clrs.insert(clrs.end(), count.verts, 3);
+
+		uint num = count.faces + count.edges + count.verts;
+
+		if (num == 0) {
+			clrs.push_back(0);
+		}
+		else {
+			clrs.insert(clrs.end(), num, 0);
+		}
 
 		if constexpr (send) {
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);

@@ -27,7 +27,7 @@ uniform mat4 proj;
 
 void main(){
 
-    CompactTransform140 model = trans.model[vertIds.x - 1];
+    CompactTransform140 model = trans.model[vertIds.x];
 
     vec3 translate = vec3(model.x, model.y, model.z);
     mat3 rot = mat3(model.col1, model.col2, model.col3);

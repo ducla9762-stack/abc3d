@@ -19,23 +19,24 @@ void ABC3DRenderer::UpdateProjectionUniforms() {
 }
 
 void ABC3DRenderer::UpdateRenderBuffers() {
+	offset.Clear();
 	bufBuilder.Clear();
-	uint currOffset = 1;
+	uint currOffset = 0;
 
 	offset.faces = 0;
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
-		bufBuilder.AddMeshToAttributes(*mesh, i + 1, currOffset);
+		bufBuilder.AddMeshToAttributes(*mesh, i, currOffset);
 		offset.meshFaces.push_back(mesh->FaceCount());
 		currOffset += offset.meshFaces.back();
 	}
 
-	count.faces = currOffset - 1;
+	count.faces = currOffset;
 
 	offset.edges = currOffset;
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
-		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i + 1, currOffset);
+		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i, currOffset);
 		offset.meshEdges.push_back(edgeCount);
 		currOffset += offset.meshEdges.back();
 	}
@@ -46,7 +47,7 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	offset.verts = currOffset;
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
-		bufBuilder.AddMeshToVertexList(*mesh, i + 1, currOffset);
+		bufBuilder.AddMeshToVertexList(*mesh, i, currOffset);
 		offset.meshVerts.push_back(mesh->VertexCount());
 		currOffset += offset.meshVerts.back();
 	}
