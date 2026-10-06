@@ -37,7 +37,7 @@ void main(){
     vec3 worldP0 = translate + (rot * (model.scale * p0));
     vec3 worldP1 = translate + (rot * (model.scale * p1));
 
-    vec3 edge = worldP0 - worldP1;
+    vec3 edge = worldP1 - worldP0;
     float len = length(edge);
     vec3 dir = normalize(edge);
 

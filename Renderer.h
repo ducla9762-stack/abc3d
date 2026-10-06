@@ -224,11 +224,11 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, bufs.edge);
 
 		glEnableVertexAttribArray(P0);
-		glVertexAttribPointer(P0, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f), (GLvoid*)0);
+		glVertexAttribPointer(P0, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f) * 2, (GLvoid*)0);
 		glVertexAttribDivisor(P0, 1);
 
 		glEnableVertexAttribArray(P1);
-		glVertexAttribPointer(P1, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f), (GLvoid*)sizeof(Vec3f));
+		glVertexAttribPointer(P1, 3, GL_FLOAT, GL_FALSE, sizeof(Vec3f) * 2, (GLvoid*)sizeof(Vec3f));
 		glVertexAttribDivisor(P1, 1);
 
 		// Generate instanced id buffer
@@ -253,6 +253,7 @@ public:
 
 		prog.RegisterUniform(RADIUS, "radius");
 		prog.RegisterUniform(VIEW_PROJ, "viewProj");
+		prog.SetUniform(RADIUS, 0.05f);
 
 		return true;
 	}
@@ -280,7 +281,7 @@ public:
 	}
 
 	void SetEdges(const std::vector<Vec2u>& ids, const std::vector<Vec3f>& edges, GLenum hint = GL_STATIC_DRAW) {
-		if (ids.size() != edges.size()) { return; }
+		if (ids.size() != edges.size() / 2) { return; }
 
 		count = uint(ids.size());
 
@@ -442,7 +443,7 @@ public:
 		prog.shade.SetUniform("idTex", 2);
 
 		rndrs.vert.Initialize();
-		//rndrs.edge.Initialize();
+		rndrs.edge.Initialize();
 		//rndrs.grid.Initialize();
 
 		// Initialize gizmo renderer
@@ -489,6 +490,10 @@ public:
 
 		if (show.vertices) {
 			rndrs.vert.Draw();
+		}
+
+		if (show.edges) {
+			rndrs.edge.Draw();
 		}
 
 		// Draw gizmos before checking the selection texture.
@@ -597,7 +602,7 @@ public:
 		viewProj.Get(data);
 
 		//rndrs.grid.SetTransform(data);
-		//rndrs.edge.SetViewProjection(data);
+		rndrs.edge.SetViewProjection(data);
 		rndrs.vert.SetViewProjection(data);
 
 		//arrowRenderer.SetViewProjectionUniform(data, fov, height);

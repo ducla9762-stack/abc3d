@@ -69,5 +69,4 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
-
 };
