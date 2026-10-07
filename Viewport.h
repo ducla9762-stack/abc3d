@@ -197,8 +197,8 @@ private:
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-	void handleSelection(const Vec3u& selectionIds);
-	SelectionItem createSelectionItem(const Vec3u& ids);
+	void handleSelection(const Vec2u& selectionIds);
+	SelectionItem createSelectionItem(const Vec2u& ids);
 	void setActiveElement(Element element);
 
 	/// <summary>
@@ -277,7 +277,7 @@ public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
 	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
-	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
+	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }

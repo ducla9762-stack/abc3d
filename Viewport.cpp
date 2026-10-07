@@ -264,7 +264,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged && ids.x != 0) {
-			//handleSelection(ids);
+			handleSelection(ids);
 		}
 
 		// Print selection ids.
@@ -341,9 +341,9 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		actionPerformed = translateEdgeDrag();
 		if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 		break;
-	case TRANSLATE_AXIS:
-		actionPerformed = translateGizmoDrag();
-		break;
+	//case TRANSLATE_AXIS:
+		//actionPerformed = translateGizmoDrag();
+		//break;
 	case SCALE:
 		//actionPerformed = scaleDrag();
 		actionPerformed = scaleGizmoDrag();
@@ -465,7 +465,7 @@ void Viewport::setAction(Action action) {
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-void Viewport::handleSelection(const Vec3u& selectionIds) {
+void Viewport::handleSelection(const Vec2u& selectionIds) {
 	// Create a selection item to send to the selection manager.
 	SelectionItem item = createSelectionItem(selectionIds);
 
@@ -479,15 +479,6 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 			emitSelectionChanged();
 		}
 		return;
-	}
-
-	// Store one half-edge for each logical edge.
-	// Render both half-edges as selected.
-	if (selectionManager.getActiveElement() == EDGE && item.meshId < scene.MeshCount()) {
-		const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
-		if (twinId != MAX_UINT && twinId < item.componentId) {
-			item.componentId = twinId;
-		}
 	}
 
 	selectionManager.processSelection(item);
@@ -521,59 +512,14 @@ void Viewport::setActiveElement(Element element) {
 	emit primarySelectionChanged(false);
 }
 
-SelectionItem Viewport::createSelectionItem(const Vec3u& ids)
+SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
 {
-	switch (selectionManager.getActiveElement()) {
-	case OBJECT:
-		// Normal hit.
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER) {
-			return SelectionItem{
-				ids.x - 1,
-				MAX_UINT
-			};
-		}
-		// Vertex hit belonging to object.
-		else if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				MAX_UINT
-			};
-		}
-
-		break;
-
-	case VERTEX:
-		if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				ids.z
-			};
-		}
-
-		break;
-
-	case FACE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.x != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.y
-			};
-		}
-
-		break;
-
-	case EDGE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.z != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.z
-			};
-		}
-
-		break;
+	if (ids.y == MAX_UINT) { return { MAX_UINT, MAX_UINT }; }
+	if (selectionManager.getActiveElement() == OBJECT) {
+		return{ ids.x, ids.x };
 	}
-
-	return { MAX_UINT, MAX_UINT };
+	
+	return { ids.x, ids.y };
 }
 
 void Viewport::updateSelectionVisuals() {

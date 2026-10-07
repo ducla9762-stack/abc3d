@@ -273,7 +273,7 @@ public:
 	void SetRadius(float radius) {
 		this->radius = radius;
 		prog.Bind();
-		prog.SetUniform1(RADIUS, &this->radius);
+		prog.SetUniform(RADIUS, radius);
 	}
 
 	void SetViewProjection(float data[16]) {
@@ -391,6 +391,7 @@ class ABC3DRenderer {
 	struct UpdateQueue {
 		bool renderBufs = false;
 		bool camera = false;
+		bool uniformBuf = false;
 	} update;
 
 	struct TransformCache {
@@ -416,269 +417,64 @@ class ABC3DRenderer {
 
 	RenderBufferBuilder bufBuilder;
 
+	std::vector<CompactTransform140> transformBuf;
+	std::vector<uint> clrs;
+
 	const Scene* scene;
 
 	uint meshVertDrawCount;
 
 public:
+// ---------------------------------------------------------------------------------------------
+// Core ----------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
-	bool Initialize(GLuint defaultFrameBuffer) {
+	bool Initialize(GLuint defaultFrameBuffer);
+	void Resize(int width, int height, GLuint defaultFrameBuffer);
+	void Draw(GLuint defaultFramebuffer);
 
-		glGenVertexArrays(2, &vao.mesh);
-		bufs.Initialize();
-
-		// Create textures
-		glGenTextures(3, &tex.geom);
-
-		// Compile shaders
-		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag",
-			nullptr, nullptr, nullptr, HEADER, &std::cout);
-		if (!success) {
-			std::cout << "Failed to compile mesh shader program!" << std::endl;
-			return false;
-		}
-
-		prog.mesh.RegisterUniform(VIEW, "view");
-		
-		success = prog.shade.BuildFiles("assets/shaders/BasicLightPass.vert", "assets/shaders/BasicLightPass.frag");
-		if (!success) {
-			std::cout << "Failed to compile deferred shader program!" << std::endl;
-			return false;
-		}
-
-		prog.shade.SetUniform("posTex", TexBindings::POS);
-		prog.shade.SetUniform("normTex", TexBindings::NORM);
-		prog.shade.SetUniform("idTex", TexBindings::ID);
-
-		rndrs.vert.Initialize();
-		rndrs.edge.Initialize();
-		rndrs.grid.Initialize();
-
-		// Initialize gizmo renderer
-		//if (!gizmoRenderer.Initialize()) {
-			//return false;
-		//}
-		// Clear so we don't draw on startup.
-		//gizmoRenderer.Clear();
-
-		// The gizmo programs must exist before their camera uniforms are uploaded.
-		//updateUniforms();
-
-		// Set clear color & blend function
-		glClearColor(0, 0, 0, 1);
-		glEnable(GL_DEPTH_TEST);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		return true;
-	}
+private:
+// ---------------------------------------------------------------------------------------------
+// Buffer Updates ------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
 	void UpdateRenderBuffers();
+	void InitFramebuffer(GLuint defaultFrameBuffer);
+	void UpdateUniformBuffer();
+	void ResetColorBuffer();
 
-	void Draw(GLuint defaultFramebuffer) {
-
-		if (update.renderBufs) { UpdateRenderBuffers(); update.renderBufs = false; }
-		if (update.camera) { updateUniforms(); update.camera = false; }
-
-		//glFinish();
-		//steady_clock::time_point start = steady_clock::now();
-
-		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
-
-		glClear(GL_DEPTH_BUFFER_BIT);
-		float clearClr[3] = { 0.0f, 0.0f, 0.0f };
-		uint clearId[3] = { 0, 0, 0 };
-		glClearBufferfv(GL_COLOR, 0, clearClr);
-		glClearBufferfv(GL_COLOR, 1, clearClr);
-		glClearBufferuiv(GL_COLOR, 2, clearId);
-
-		if (show.surfaces) {
-			glBindVertexArray(vao.mesh);
-			prog.mesh.Bind();
-			glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
-		}
-
-		if (show.vertices) {
-			rndrs.vert.Draw();
-		}
-
-		if (show.edges) {
-			rndrs.edge.Draw();
-		}
-
-		// Draw gizmos before checking the selection texture.
-		/*glDisable(GL_DEPTH_TEST);
-		glDepthMask(GL_FALSE);
-		glEnable(GL_BLEND);
-		//arrowRenderer.Draw();
-		gizmoRenderer.Draw();
-		glDisable(GL_BLEND);
-		glDepthMask(GL_TRUE);
-		glEnable(GL_DEPTH_TEST);*/
-
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-
-		glDepthMask(GL_FALSE);
-
-		glBindVertexArray(vao.frame);
-		prog.shade.Bind();
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		if (show.grid) {
-			glEnable(GL_BLEND);
-			
-			rndrs.grid.Draw();
-
-			glDisable(GL_BLEND);
-		}
-
-		glDepthMask(GL_TRUE);
-
-		//glFinish();
-		//steady_clock::time_point end = steady_clock::now();
-		//milliseconds ms = duration_cast<milliseconds>(end - start);
-		//std::cout << "Milliseconds: " << ms.count() << std::endl;
-	}
-
-	void InitFramebuffer(GLuint defaultFrameBuffer) {
-		// Delete old framebuffer
-		glDeleteFramebuffers(1, &frame.fbo);
-		glDeleteRenderbuffers(1, &frame.depthBuf);
-
-		// Create new framebuffer
-		glGenFramebuffers(1, &frame.fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
-
-		// Allocate textures and render buffer
-
-		glGenRenderbuffers(1, &frame.depthBuf);
-		glBindRenderbuffer(GL_RENDERBUFFER, frame.depthBuf);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frame.width, frame.height);
-
-		glActiveTexture(GL_TEXTURE0 + TexBindings::POS);
-		glBindTexture(GL_TEXTURE_2D, tex.geom);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glActiveTexture(GL_TEXTURE0 + TexBindings::NORM);
-		glBindTexture(GL_TEXTURE_2D, tex.norm);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, frame.width, frame.height, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glActiveTexture(GL_TEXTURE0 + TexBindings::ID);
-		glBindTexture(GL_TEXTURE_2D, tex.id);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, frame.width, frame.height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		// Attach textures and depth buffer
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, frame.depthBuf);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex.geom, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex.norm, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, tex.id, 0);
-
-		// Enable all color attachments for drawing
-		GLenum drawBuffers[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, drawBuffers);
-
-		// Make sure framebuffer is valid
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			std::cout << "Framebuffer is invalid!" << std::endl;
-		}
-
-		// Re-bind default framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
-	}
+// ---------------------------------------------------------------------------------------------
+// Uniform and Viewport Updates ----------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
 	void UpdateProjectionUniforms();
-	void SetPerspectiveAndViewport() {
-		transform.proj.SetPerspective(degreesToRadians(cam.fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
-		UpdateProjectionUniforms();
+	void SetPerspectiveAndViewport();
+	void UpdateViewUniforms();
 
-		glViewport(0, 0, frame.width, frame.height);
-	}
+public:
+// ---------------------------------------------------------------------------------------------
+// General API ---------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
-	void updateUniforms() {
-		transform.view = cam.type == ORBIT ? cam.orbit.transform() : cam.free.transform();
+	void UpdateTransforms() { update.uniformBuf = true; }
+	void UpdateGeometry() { update.renderBufs = true; }
 
-		float data[16];
-		transform.view.Get(data);
-		prog.mesh.Bind();
-		prog.mesh.SetUniformMatrix4(VIEW, data);
+	void SetScene(const Scene& scene) { this->scene = &scene; }
 
-		Matrix4f viewProj = transform.proj * transform.view;
-		viewProj.Get(data);
+	void ToggleGridVisibility() { show.grid = !show.grid; }
+	void ToggleVertexVisibility() { show.vertices = !show.vertices; }
+	void ToggleEdgeVisibility() { show.edges = !show.edges; }
+	void ToggleSurfaceVisibility() { show.surfaces = !show.surfaces; }
 
-		rndrs.grid.SetTransform(data);
-		rndrs.edge.SetViewProjection(data);
-		rndrs.vert.SetViewProjection(data);
+	void ShowGrid(bool visible) { show.grid = visible; }
+	void ShowVertices(bool visible) { show.vertices = visible; }
+	void ShowEdges(bool visible) { show.edges = visible; }
+	void ShowSurfaces(bool visible) { show.surfaces = visible; }
 
-		//arrowRenderer.SetViewProjectionUniform(data, fov, height);
-		//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
-	}
-
-	void Resize(int width, int height, GLuint defaultFrameBuffer) {
-		frame.width = width;
-		frame.height = height;
-		SetPerspectiveAndViewport();
-		InitFramebuffer(defaultFrameBuffer);
-	}
-
-	std::vector<CompactTransform140> transformBuf;
-
-	void UpdateUniformBuffer() {
-		transformBuf.clear();
-		for (uint i = 0; i < scene->MeshCount(); ++i) {
-			transformBuf.emplace_back();
-			scene->operator[](i)->getTransform(transformBuf.back());
-		}
-
-		glBindBuffer(GL_UNIFORM_BUFFER, bufs.matUBO);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data(), GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-
-	std::vector<uint> clrs;
-
-	template <bool send>
-	void ResetColorBuffer() {
-		clrs.clear();
-
-		uint num = count.faces + count.edges + count.verts;
-
-		if (num == 0) {
-			clrs.push_back(0);
-		}
-		else {
-			clrs.insert(clrs.end(), num, 0);
-		}
-
-		if constexpr (send) {
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);
-			glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint), clrs.data(), GL_DYNAMIC_DRAW);
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-		}
-	}
-
-	void UpdateTransformBuffer(const Scene& scene) {
-		this->scene = &scene; update.renderBufs = true;
-	}
-
-	void UpdateRenderBuffers(const Scene& scene) {
-		this->scene = &scene; update.renderBufs = true;
-	}
-
-	void ToggleGrid() { show.grid = !show.grid; }
-	void ToggleVertexPoints() { show.vertices = !show.vertices; }
-
-	bool GridVisible() const { return show.grid; }
-	bool VertexPointsVisible() const { return show.vertices; }
-	void SetGridVisible(bool visible) { show.grid = visible; }
-	void SetVertexPointsVisible(bool visible) { show.vertices = visible; }
+	bool ShowGrid() { return show.grid; }
+	bool ShowVertices() { return show.vertices; }
+	bool ShowEdges() { return show.edges; }
+	bool ShowSurfaces() { return show.surfaces; }
 
 	void mouseDrag(const Vec2f& drag) {
 		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }
@@ -723,7 +519,10 @@ public:
 		toggleCamType();
 	}
 
-	Vec3f ViewToWorldSpace(Vec3f viewPos) {
+	void SetVertexScale(float scale) { rndrs.vert.SetScale(scale); }
+	void SetEdgeRadius(float radius) { rndrs.edge.SetRadius(radius); }
+
+	Vec3f ViewToWorldSpace(Vec3f viewPos) const {
 		Vec3f worldPos;
 
 		viewPos -= Vec3f(transform.view.Column(3));
