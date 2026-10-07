@@ -2,6 +2,8 @@
 #include "shapes.h"
 #include <qpushbutton.h>
 #include <QMenu>
+#include <QPainter>
+#include <unordered_set>
 
 Viewport::Viewport(QWidget *parent)
 	: QOpenGLWidget(parent)
@@ -58,6 +60,10 @@ Viewport::Viewport(QWidget *parent)
 
 	selectionManager.setActiveElement(OBJECT);
 	setMouseTracking(true);
+
+	knifeOverlay = new OverlayWidget(this);
+	knifeOverlay->draw = [this](QPainter& painter) { drawKnifeOverlay(painter); };
+	knifeOverlay->hide();
 }
 
 Viewport::~Viewport()
@@ -221,6 +227,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	// The second click of a quick double click is a knife point (added on release), not a deselect
+	if (actionParams.action == KNIFE) { event->accept(); return; }
+
 	selectionManager.clearSelection();
 	makeCurrent();
 	updateSelectionVisuals();
@@ -242,6 +251,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+
+	// A click (not a camera drag) adds a point to the cut
+	if (actionParams.action == KNIFE) {
+		if (!mouseAction.dragged) {
+			knifeCursor = knifeToNdc(event->position());
+			knifeHasCursor = true;
+			knifePath.push_back(knifeCursor);
+			knifeRecompute();
+		}
+		update();
+		return;
+	}
 
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
@@ -309,6 +330,14 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 	// pressed. Hovering must not be interpreted as a camera drag.
 	if (dragging) {
 		mouseDragEvent(pos);
+		return;
+	}
+
+	if (actionParams.action == KNIFE) {
+		knifeCursor = knifeToNdc(event->position());
+		knifeHasCursor = true;
+		knifeRecompute();
+		update();
 		return;
 	}
 
@@ -382,6 +411,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// axis is degenerate from the current camera angle.
 	if (!actionPerformed && !draggingGizmo) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
+		knifeRecompute(); // the path stays put on the screen, so what it hits changes
 	}
 	else if (actionPerformed && updateRenderBuffers) {
 		renderer.UpdateRenderBuffers(scene);
@@ -408,6 +438,7 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	// Update renderer and viewport
 	makeCurrent();
 	renderer.mouseWheel(camChange.x, camChange.y);
+	knifeRecompute();
 
 	update();
 }
@@ -462,7 +493,10 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::setAction(Action action) {
+	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+
 	actionParams.action = action;
+	if (action == KNIFE) { knifeBegin(); }
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
@@ -1396,3 +1430,135 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	return gizmoChanged || rendererChanged;
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// Knife ---------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+Vec2f Viewport::knifeToNdc(const QPointF& pos) const {
+	return Vec2f(
+		2.0f * static_cast<float>(pos.x()) / std::max(1, width()) - 1.0f,
+		1.0f - 2.0f * static_cast<float>(pos.y()) / std::max(1, height()));
+}
+
+void Viewport::knifeBegin() {
+	knifeSession = true;
+	knifePath.clear();
+	knifeHasCursor = false;
+	knifeOriginals.clear();
+	knifeOccluders = KnifeOccluders();
+
+	// Only selected meshes are cut, but any mesh can hide them
+	std::unordered_set<uint> selected;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId < scene.MeshCount() && selected.insert(item.meshId).second) {
+			knifeOriginals.emplace_back(item.meshId, *scene[item.meshId]);
+		}
+	}
+	for (uint i = 0; i < scene.MeshCount(); ++i) { knifeOccluders.Add(*scene[i]); }
+}
+
+void Viewport::knifeRestoreOriginals() {
+	for (auto& original : knifeOriginals) {
+		if (original.first < scene.MeshCount()) { *scene[original.first] = original.second; }
+	}
+}
+
+void Viewport::knifeRecompute() {
+	if (!knifeSession || !rendererInitialized) { return; }
+
+	knifeRestoreOriginals();
+
+	std::vector<Vec2f> path = knifePath;
+	if (knifeHasCursor) { path.push_back(knifeCursor); }
+
+	if (path.size() >= 2) {
+		KnifeCamera camera;
+		camera.viewProj = renderer.ViewProjection();
+		camera.position = renderer.GetCamera()->position();
+
+		for (auto& original : knifeOriginals) {
+			if (original.first >= scene.MeshCount()) { continue; }
+			// Cut() leaves the mesh untouched when nothing was hit or the result was not valid
+			HalfEdgeMeshKnife knife(*scene[original.first]);
+			knife.Cut(camera, path, knifeCutThrough, knifeOccluders);
+		}
+	}
+
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+}
+
+void Viewport::knifeFinish() {
+	// Leaving the tool throws away anything unconfirmed
+	knifeHasCursor = false;
+	knifeRestoreOriginals();
+	knifeSession = false;
+	knifePath.clear();
+	knifeOriginals.clear();
+	knifeOccluders = KnifeOccluders();
+
+	if (rendererInitialized) {
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		updateSelectionVisuals();
+		updateGizmos();
+	}
+}
+
+void Viewport::knifeConfirm() {
+	if (!knifeSession || knifePath.size() < 2) { return; }
+
+	// The cursor is only a preview. Only clicked points are kept.
+	knifeHasCursor = false;
+	knifeRecompute();
+
+	// Same tool, next cut starts from the result
+	knifeBegin();
+
+	makeCurrent();
+	updateSelectionVisuals();
+	updateGizmos();
+	update();
+}
+
+bool Viewport::knifeCancel() {
+	if (!knifeSession || knifePath.empty()) { return false; }
+
+	knifePath.clear();
+	knifeRecompute();
+	update();
+	return true;
+}
+
+void Viewport::toggleKnifeCutThrough() {
+	knifeCutThrough = !knifeCutThrough;
+	knifeRecompute();
+	update();
+}
+
+void Viewport::drawKnifeOverlay(QPainter& painter) {
+	auto toWidget = [this](const Vec2f& ndc) {
+		return QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
+	};
+
+	painter.setPen(QPen(QColor(255, 220, 60), 2.0));
+	for (size_t i = 0; i + 1 < knifePath.size(); ++i) {
+		painter.drawLine(toWidget(knifePath[i]), toWidget(knifePath[i + 1]));
+	}
+
+	if (knifeHasCursor && !knifePath.empty()) {
+		painter.setPen(QPen(QColor(255, 220, 60, 150), 1.0, Qt::DashLine));
+		painter.drawLine(toWidget(knifePath.back()), toWidget(knifeCursor));
+	}
+
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(QColor(255, 220, 60));
+	for (const Vec2f& p : knifePath) { painter.drawEllipse(toWidget(p), 4.0, 4.0); }
+
+	painter.setPen(QColor(255, 255, 255));
+	QString hint = "Knife: click to cut, Enter to confirm, Esc to cancel, X cut through: ";
+	hint += knifeCutThrough ? "on" : "off";
+	if (knifeOriginals.empty()) { hint += "   (select a mesh to cut)"; }
+	painter.drawText(QPointF(12.0, 20.0), hint);
+}
