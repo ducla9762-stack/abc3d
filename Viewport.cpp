@@ -254,7 +254,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
-	//Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
+	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
 
@@ -263,14 +263,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	if (!gizmoDragWasCaptured) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
-		//if (!mouseAction.dragged && ids.x != 0) {
+		if (!mouseAction.dragged && ids.x != 0) {
 			//handleSelection(ids);
-		//}
+		}
 
 		// Print selection ids.
-		//std::cout << "Object Id: " << ids.x << std::endl;
-		//std::cout << "Component Id: " << ids.y << std::endl;
-		//std::cout << "Sub-Component Id: " << ids.z << std::endl;
+		std::cout << "Object Id: " << ids.x << std::endl;
+		std::cout << "Element Id: " << ids.y << std::endl;
 	}
 
 	draggingGizmo = false;

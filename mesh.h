@@ -437,10 +437,33 @@ public:
 		return (getTransform3x3() * pos) + this->pos;
 	}
 
-	Vec3f WorldPosToLocalPos(const Vec3f& pos) {
-		Matrix3f inv = getTransform3x3();
-		inv.Invert();
-		return inv * (pos - this->pos);
+	Vec3f WorldPosToLocalPos(const Vec3f& pos) const {
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		Vec3f local = pos - this->pos;
+
+		local.x = (
+			rot.cell[0] * pos[0] +
+			rot.cell[1] * pos[1] +
+			rot.cell[2] * pos[2]
+		);
+
+		local.y = (
+			rot.cell[3] * pos[0] +
+			rot.cell[4] * pos[1] +
+			rot.cell[5] * pos[2]
+		);
+
+		local.z = (
+			rot.cell[6] * pos[0] +
+			rot.cell[7] * pos[1] +
+			rot.cell[8] * pos[2]
+		);
+
+		local /= scale;
+
+		return local;
 	}
 
 	/// <param name="faceId">A face of the mesh.</param>
@@ -564,13 +587,13 @@ public:
 	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
-	uint VertexDegree(uint vertex) {
+	uint VertexDegree(uint vertex) const {
 		uint firstEdge = vertEdge[vertex];
 		uint currEdge = firstEdge;
 		uint degree = 0;
 
 		do {
-			HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
+			const HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
 			++degree;
 			currEdge = edges[edge.twin].next;
 		} while (currEdge != firstEdge);
@@ -587,7 +610,7 @@ public:
 		float nearestDistSqrd = std::numeric_limits<float>::infinity();
 
 		do {
-			HalfEdge& edge = edges[curr];
+			const HalfEdge& edge = edges[curr];
 			Vec3f next = vertPos[edge.dest];
 			Vec3f lineSeg = next - prev;
 			float t = pos.Dot(lineSeg) / lineSeg.LengthSquared();
@@ -603,6 +626,9 @@ public:
 			curr = edge.next;
 		} while (curr != first);
 
+		uint twin = edges[nearestEdge].twin;
+		if (twin < nearestEdge) { return twin; }
+
 		return nearestEdge;
 	}
 
@@ -614,7 +640,7 @@ public:
 		float nearestDistSqrd = std::numeric_limits<float>::infinity();
 
 		do {
-			HalfEdge& edge = edges[curr];
+			const HalfEdge& edge = edges[curr];
 
 			Vec3f vert = vertPos[edge.orig];
 			float distSqrd = (pos - vert).LengthSquared();

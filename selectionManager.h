@@ -1,6 +1,7 @@
 #ifndef _ABC3D_SELECTION_MANAGER_H_
 #define _ABC3D_SELECTION_MANAGER_H_
 
+#include <unordered_map>
 #include "helper.h"
 
 #undef max

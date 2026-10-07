@@ -46,7 +46,7 @@ const Vec3f ORIGIN = Vec3f(0.0f);
 
 // Compute distance of a point (pt) from a line (linePt + t * lineDir) 
 // using Lagrange's identity
-float DistToLine(const Vec3f& pt, const Vec3f& linePt, const Vec3f& lineDir) {
+inline float DistToLine(const Vec3f& pt, const Vec3f& linePt, const Vec3f& lineDir) {
 	Vec3f relPt = pt - linePt;
 	float dot = relPt.Dot(lineDir);
 	float dSqrd = relPt.LengthSquared() - ((dot * dot) / lineDir.LengthSquared());

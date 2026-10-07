@@ -723,6 +723,34 @@ public:
 		toggleCamType();
 	}
 
+	Vec3f ViewToWorldSpace(const Vec3f& viewPos) {
+		Vec3f worldPos;
+
+		// multiply by transpose of 3x3 sub matrix (rotation matrix)
+
+		worldPos.x = (	
+			transform.view.cell[0] * viewPos[0] +
+			transform.view.cell[1] * viewPos[1] +
+			transform.view.cell[2] * viewPos[2] 
+		);
+
+		worldPos.y = (	
+			transform.view.cell[4] * viewPos[0] +
+			transform.view.cell[5] * viewPos[1] +
+			transform.view.cell[6] * viewPos[2]
+		);
+
+		worldPos.z = (
+			transform.view.cell[8] * viewPos[0] +
+			transform.view.cell[9] * viewPos[1] +
+			transform.view.cell[10] * viewPos[2]
+		);
+
+		worldPos -= Vec3f(transform.view.Column(3));
+
+		return worldPos;
+	}
+
 	Vec2u SelectionIds(Element element, uint x, uint y) {
 		if (x >= frame.width || y >= frame.height) {
 			return Vec2u(MAX_UINT);
@@ -744,25 +772,36 @@ public:
 			if (ids.z != 1) { return Vec2u(ids.x, MAX_UINT); }
 			return Vec2u(ids.x, ids.y - offset.meshFaces[ids.x]);
 
-		case EDGE:
+		case EDGE: {
 			if (ids.z == 3) { return Vec2u(ids.x, MAX_UINT); }
 			if (ids.z == 2) { return Vec2u(ids.x, ids.y - offset.meshEdges[ids.x]); }
 
 			// read back pos tex and find closest edge in face
 			Vec3f pos;
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
-			glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &pos.x);
-			return Vec2u(ids.x, scene->operator[](ids.x)->NearestEdge(ids.y - offset.meshEdges[ids.x], pos));
+			glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos.x);
+			pos = ViewToWorldSpace(pos);
 
-		case VERTEX:
+			const HalfEdgeMesh& mesh = *(scene->operator[](ids.x));
+			pos = mesh.WorldPosToLocalPos(pos);
+			return Vec2u(ids.y, mesh.NearestEdge(ids.y - offset.meshFaces[ids.x], pos));
+		}
+
+		case VERTEX: {
 			if (ids.z == 2) { return Vec2u(ids.x, MAX_UINT); }
 			if (ids.z == 3) { return Vec2u(ids.x, ids.y - offset.meshVerts[ids.x]); }
 
 			// read pack pos tex and find closest vertex in face
 			Vec3f pos;
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
-			glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &pos.x);
-			return Vec2u(ids.x, scene->operator[](ids.x)->NearestVertex(ids.y - offset.meshEdges[ids.x], pos));
+			glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos.x);
+			pos = ViewToWorldSpace(pos);
+
+			const HalfEdgeMesh& mesh = *(scene->operator[](ids.x));
+			pos = mesh.WorldPosToLocalPos(pos);
+
+			return Vec2u(ids.y, mesh.NearestVertex(ids.y - offset.meshFaces[ids.x], pos));
+		}
 		}
 	}
 };

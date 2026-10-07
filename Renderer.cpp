@@ -27,8 +27,8 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
 		bufBuilder.AddMeshToAttributes(*mesh, i, currOffset);
-		offset.meshFaces.push_back(mesh->FaceCount());
-		currOffset += offset.meshFaces.back();
+		offset.meshFaces.push_back(currOffset);
+		currOffset += mesh->FaceCount();
 	}
 
 	count.faces = currOffset;
@@ -37,8 +37,8 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
 		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i, currOffset);
-		offset.meshEdges.push_back(edgeCount);
-		currOffset += offset.meshEdges.back();
+		offset.meshEdges.push_back(currOffset);
+		currOffset += edgeCount;
 	}
 
 	count.edges = currOffset - offset.edges;
@@ -48,8 +48,8 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
 		bufBuilder.AddMeshToVertexList(*mesh, i, currOffset);
-		offset.meshVerts.push_back(mesh->VertexCount());
-		currOffset += offset.meshVerts.back();
+		offset.meshVerts.push_back(currOffset);
+		currOffset += mesh->VertexCount();
 	}
 
 	count.verts = currOffset - offset.verts;
