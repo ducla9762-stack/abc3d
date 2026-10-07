@@ -194,6 +194,7 @@ private:
 	void extrudeSelectedElements();
 	bool extrudeDrag();
 	bool scaleDrag();
+	bool scaleSelectedComponents(float amount, uint axis, bool uniform);
 	bool rotateDrag();
 
 // ---------------------------------------------------------------------------------------------
@@ -516,6 +517,7 @@ public slots:
 
 		makeCurrent();
 		renderer.UpdateRenderBuffers(scene);
+		updateGizmos();
 		update();
 	}
 
@@ -527,6 +529,7 @@ public slots:
 			scene[item.meshId]->Scale(scale);
 			makeCurrent();
 			renderer.UpdateRenderBuffers(scene);
+			updateGizmos();
 			update();
 		}
 	}
