@@ -723,8 +723,10 @@ public:
 		toggleCamType();
 	}
 
-	Vec3f ViewToWorldSpace(const Vec3f& viewPos) {
+	Vec3f ViewToWorldSpace(Vec3f viewPos) {
 		Vec3f worldPos;
+
+		viewPos -= Vec3f(transform.view.Column(3));
 
 		// multiply by transpose of 3x3 sub matrix (rotation matrix)
 
@@ -745,8 +747,6 @@ public:
 			transform.view.cell[9] * viewPos[1] +
 			transform.view.cell[10] * viewPos[2]
 		);
-
-		worldPos -= Vec3f(transform.view.Column(3));
 
 		return worldPos;
 	}
@@ -784,6 +784,7 @@ public:
 
 			const HalfEdgeMesh& mesh = *(scene->operator[](ids.x));
 			pos = mesh.WorldPosToLocalPos(pos);
+
 			return Vec2u(ids.y, mesh.NearestEdge(ids.y - offset.meshFaces[ids.x], pos));
 		}
 
