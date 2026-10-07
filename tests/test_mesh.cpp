@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "mesh.h"
@@ -35,6 +36,12 @@ namespace {
 		EXPECT_EQ(mesh.FaceCount(), faces);
 		EXPECT_EQ(mesh.EdgeCount(), edges);
 	}
+
+	void ExpectVec3Near(const Vec3f& actual, const Vec3f& expected, float tolerance = 1e-5f) {
+		EXPECT_NEAR(actual.x, expected.x, tolerance);
+		EXPECT_NEAR(actual.y, expected.y, tolerance);
+		EXPECT_NEAR(actual.z, expected.z, tolerance);
+	}
 }
 
 // Test for the build wiring: abc3d_core links without FLTK or OpenGL.
@@ -65,6 +72,48 @@ TEST(MeshInvariants, PyramidStartsValid) {
 	EXPECT_EQ(mesh.VertexCount(), 5u);
 	EXPECT_EQ(mesh.FaceCount(), 5u);
 	EXPECT_EQ(mesh.EdgeCount(), 16u);
+}
+
+// --- Component scaling ----------------------------------------------------
+// AI-Generated Tests of scaling faces and edges.
+
+TEST(HalfEdgeMeshScale, EdgeScalesAroundItsMidpoint) {
+	HalfEdgeMesh mesh = Cube();
+	const HalfEdgeMesh::HalfEdge edge = mesh.GetEdge(0);
+	const Vec3f center = mesh.GetEdgeCenter(0);
+	const Vec3f origBefore = mesh.GetVertexPosition(edge.orig);
+	const Vec3f destBefore = mesh.GetVertexPosition(edge.dest);
+	const Vec3f factors(2.0f, 0.5f, 3.0f);
+
+	mesh.ScaleEdge(0, factors);
+
+	ExpectVec3Near(mesh.GetVertexPosition(edge.orig), center + (origBefore - center) * factors);
+	ExpectVec3Near(mesh.GetVertexPosition(edge.dest), center + (destBefore - center) * factors);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshScale, FaceScalesOnlyItsSharedBoundaryVertices) {
+	HalfEdgeMesh mesh = Cube();
+	std::vector<Vec3f> before;
+	before.reserve(mesh.VertexCount());
+	for (uint vertexId = 0; vertexId < mesh.VertexCount(); ++vertexId) {
+		before.push_back(mesh.GetVertexPosition(vertexId));
+	}
+
+	std::vector<uint> faceVertices;
+	mesh.GetFaceVertices(0, faceVertices);
+	const std::unordered_set<uint> scaledVertices(faceVertices.begin(), faceVertices.end());
+	const Vec3f center = mesh.faceCentroid(0);
+
+	mesh.ScaleFace(0, Vec3f(2.0f));
+
+	for (uint vertexId = 0; vertexId < mesh.VertexCount(); ++vertexId) {
+		const Vec3f expected = scaledVertices.count(vertexId)
+			? center + (before[vertexId] - center) * 2.0f
+			: before[vertexId];
+		ExpectVec3Near(mesh.GetVertexPosition(vertexId), expected);
+	}
+	EXPECT_TRUE(IsValid(mesh));
 }
 
 // --- Extrude ---------------------------------------------------------------

@@ -3,6 +3,7 @@
 #include <qpushbutton.h>
 #include <QMenu>
 #include <QPainter>
+#include <unordered_map>
 #include <unordered_set>
 
 Viewport::Viewport(QWidget *parent)
@@ -926,11 +927,20 @@ bool Viewport::extrudeDrag() {
 }
 
 bool Viewport::scaleDrag() {
-	if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
+	if (selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
 	float factor = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+	const Element activeElement = selectionManager.getActiveElement();
+
+	if (activeElement == EDGE || activeElement == FACE) {
+		return scaleSelectedComponents(factor, 0, true);
+	}
+
+	if (activeElement != OBJECT) {
+		return false;
+	}
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId < scene.MeshCount()) {
@@ -939,6 +949,72 @@ bool Viewport::scaleDrag() {
 	}
 
 	renderer.UpdateRenderBuffers(scene);
+
+	return true;
+}
+
+bool Viewport::scaleSelectedComponents(float amount, uint axis, bool uniform) {
+	const Element activeElement = selectionManager.getActiveElement();
+	// If the active element is not edge or face, or there is no selection, do nothing.
+	if ((activeElement != EDGE && activeElement != FACE) ||
+		selectionManager.getSelectedItems().empty() || (!uniform && axis >= 3)) {
+		return false;
+	}
+
+	// Collect all relevant vertices, pivots, and the number of pivots.
+	std::unordered_map<uint, std::unordered_set<uint>> selectedVertices;
+	std::unordered_map<uint, Vec3f> pivotSums;
+	std::unordered_map<uint, uint> pivotCounts;
+
+	// Loop through each selected item.
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Get the mesh, and collect the vertices that are within the selection.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		std::unordered_set<uint>& vertices = selectedVertices[item.meshId];
+		std::vector<uint> componentVertices;
+		// Init pivot sum.
+		if (!pivotCounts.count(item.meshId)) {
+			pivotSums[item.meshId] = Vec3f(0.0f);
+		}
+
+		// Collect edge vertices, calculate pivots.
+		if (activeElement == EDGE) {
+			componentVertices.reserve(2);
+			mesh->GetEdgeVertices(item.componentId, componentVertices);
+			pivotSums[item.meshId] += mesh->GetEdgeCenter(item.componentId);
+		}
+		// Collect face vertices, calculate pivots.
+		else {
+			mesh->GetFaceVertices(item.componentId, componentVertices);
+			pivotSums[item.meshId] += mesh->faceCentroid(item.componentId);
+		}
+		vertices.insert(componentVertices.begin(), componentVertices.end());
+		++pivotCounts[item.meshId];
+	}
+
+	if (selectedVertices.empty()) {
+		return false;
+	}
+
+	// Convert mouse movement into scale multiplier.
+	const float multiplier = std::max(0.001f, 1.0f + amount);
+	// Get scale factors, if uniform ignore axis.
+	Vec3f factors(uniform ? multiplier : 1.0f);
+	if (!uniform) {
+		factors[axis] = multiplier;
+	}
+
+	// Scale all the relevant vertices by factor.
+	for (auto& [meshId, vertices] : selectedVertices) {
+		HalfEdgeMesh* mesh = scene[meshId];
+		std::vector<uint> vertexIds(vertices.begin(), vertices.end());
+		const Vec3f pivot = pivotSums[meshId] / float(pivotCounts[meshId]);
+		mesh->ScaleVertices(vertexIds, pivot, factors);
+	}
 
 	return true;
 }
@@ -1155,9 +1231,9 @@ bool Viewport::translateGizmoDrag() {
 }
 
 bool Viewport::scaleGizmoDrag() {
-	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
+	// Do nothing if we aren't dragging a gizmo, if vertices are the active element, or have no selection.
 	if (!draggingGizmo ||
-		selectionManager.getActiveElement() != OBJECT ||
+		selectionManager.getActiveElement() == VERTEX ||
 		selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
@@ -1166,7 +1242,7 @@ bool Viewport::scaleGizmoDrag() {
 	if (draggedGizmoAxis == 3) {
 		const bool scaled = scaleDrag();
 		if (scaled) {
-			emitPrimarySelectionPosChanged();
+			emitPrimarySelectionScaleChanged();
 		}
 		return scaled;
 	}
@@ -1206,12 +1282,23 @@ bool Viewport::scaleGizmoDrag() {
 	const float factor = 0.01f * change.Dot(axisScreen);
 
 	bool scaled = false;
-	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId < scene.MeshCount()) {
-			HalfEdgeMesh* mesh = scene[item.meshId];
-			const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
-			mesh->Scale(static_cast<int>(draggedGizmoAxis), newScale);
-			scaled = true;
+	const Element activeElement = selectionManager.getActiveElement();
+	// If we are scaling edges or faces
+	if (activeElement == EDGE || activeElement == FACE) {
+		if (!localScale) {
+			return false;
+		}
+		scaled = scaleSelectedComponents(factor, draggedGizmoAxis, false);
+	}
+	// Else we are scaling meshes.
+	else {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				HalfEdgeMesh* mesh = scene[item.meshId];
+				const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
+				mesh->Scale(static_cast<int>(draggedGizmoAxis), newScale);
+				scaled = true;
+			}
 		}
 	}
 
@@ -1309,14 +1396,18 @@ void Viewport::updateGizmos() {
 		const bool scaleAction = actionParams.action == SCALE;
 		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
-		// If nothing selected, or the active element is not objects, clear gizmos.
-		if (!scaleAction || selectionManager.getActiveElement() != OBJECT ||
+		// A single vertex has no extent to scale, so only that element mode omits
+		// the scale gizmo.
+		const Element activeElement = selectionManager.getActiveElement();
+		const bool componentWorldScale =
+			(activeElement == EDGE || activeElement == FACE) && !localScale;
+		if (!scaleAction || activeElement == VERTEX || componentWorldScale ||
 			selectedItems.empty()) {
 			renderer.ClearGizmos();
 			return;
 		}
 
-		// Get the average position of all selected elements, only objects as scale is only defined for objects.
+		// Use the average selected-element center as the shared scale pivot.
 
 		Vec3f positionSum(0.0f);
 		uint positionCount = 0;
@@ -1328,6 +1419,19 @@ void Viewport::updateGizmos() {
 
 			HalfEdgeMesh* mesh = scene[item.meshId];
 			Vec3f worldPosition = mesh->Pos();
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				break;
+			case EDGE:
+				worldPosition = mesh->LocalPosToWorldPos(mesh->GetEdgeCenter(item.componentId));
+				break;
+			case FACE:
+				worldPosition = mesh->LocalPosToWorldPos(mesh->faceCentroid(item.componentId));
+				break;
+			default:
+				continue;
+			}
 
 			positionSum += worldPosition;
 			++positionCount;
