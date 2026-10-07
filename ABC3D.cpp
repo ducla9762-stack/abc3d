@@ -24,7 +24,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.helpTree->show();
     ui.helpStack->setCurrentIndex(1);
     ui.helpBrowser->setReadOnly(true);
-    //QObject::connect(ui.helpTree, &QTreeView::pressed, this, &ABC3D::helpRowClicked);
+    QObject::connect(ui.helpTree, &QTreeView::pressed, this, &ABC3D::helpRowClicked);
 
     // Makes the model and tree used to view all the tutorial documents
     QString tutorialPath = "assets/tutorials";
@@ -38,7 +38,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialTree->show();
     ui.tutorialStack->setCurrentIndex(1);
     ui.tutorialBrowser->setReadOnly(true);
-    //QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
+    QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
     // Menu button for the camera panel - does the same thing as the toolbar
     QAction* actionCamera = new QAction("Camera", ui.menuBar);
@@ -78,14 +78,14 @@ ABC3D::ABC3D(QWidget *parent)
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadTutorialButton, &QPushButton::released, this, [=]() {
-        ui.tutorialStack->setCurrentIndex(0);
+        ui.tutorialStack->setCurrentIndex(1);
         });
 
     // Connects the "Load Tutorial" Button to the QTextBrowser
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadHelpButton, &QPushButton::released, this, [=]() {
-        ui.helpStack->setCurrentIndex(0);
+        ui.helpStack->setCurrentIndex(1);
         });
 }
 
@@ -233,16 +233,16 @@ void ABC3D::showEvent(QShowEvent* event){
     }
 }
 
-void ABC3D::tutorialRowClicked(QModelIndex& index) {
+void ABC3D::tutorialRowClicked(const QModelIndex& index) {
     ui.tutorialStack->setCurrentIndex(0);
     QString file = tutorialFileModel->filePath(index);
     ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::helpRowClicked(QModelIndex& index) {
+void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpStack->setCurrentIndex(0);
     QString file = helpFileModel->filePath(index);
-    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
+    ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
 ABC3D::~ABC3D()

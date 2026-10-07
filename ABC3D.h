@@ -117,8 +117,8 @@ private slots:
         ui.viewport->saveScene(projectFile.constData());
     }
 
-    void tutorialRowClicked(QModelIndex&);
-    void helpRowClicked(QModelIndex&);
+    void tutorialRowClicked(const QModelIndex& index);
+    void helpRowClicked(const QModelIndex& index);
 
 signals:
     void deleteKeyPressed();
