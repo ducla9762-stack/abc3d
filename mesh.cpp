@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 #include <cstring>
 #include <cctype>
@@ -1157,6 +1158,44 @@ Vec3f HalfEdgeMesh::GetEdgeNormal(uint edgeId) {
 Vec3f HalfEdgeMesh::GetEdgeCenter(uint edgeId) const {
 	const HalfEdge& edge = edges.at(edgeId);
 	return (vertPos.at(edge.orig) + vertPos.at(edge.dest)) * 0.5f;
+}
+
+void HalfEdgeMesh::GetEdgeVertices(uint edgeId, std::vector<uint>& vertices) const {
+	const HalfEdge& edge = edges.at(edgeId);
+	vertices.push_back(edge.orig);
+	vertices.push_back(edge.dest);
+}
+
+void HalfEdgeMesh::GetFaceVertices(uint faceId, std::vector<uint>& vertices) const {
+	StartEdgeIterationConst(faceId)
+		vertices.push_back(edge.orig);
+	EndEdgeIteration
+}
+
+void HalfEdgeMesh::ScaleVertices(const std::vector<uint>& vertexIds, const Vec3f& pivot,
+	const Vec3f& factors) {
+	std::unordered_set<uint> uniqueVertices(vertexIds.begin(), vertexIds.end());
+	for (uint vertexId : uniqueVertices) {
+		if (vertexId >= vertPos.size()) {
+			continue;
+		}
+
+		vertPos[vertexId] = pivot + (vertPos[vertexId] - pivot) * factors;
+	}
+}
+
+void HalfEdgeMesh::ScaleEdge(uint edgeId, const Vec3f& factors) {
+	std::vector<uint> vertices;
+	vertices.reserve(2);
+	GetEdgeVertices(edgeId, vertices);
+	ScaleVertices(vertices, GetEdgeCenter(edgeId), factors);
+}
+
+void HalfEdgeMesh::ScaleFace(uint faceId, const Vec3f& factors) {
+	std::vector<uint> vertices;
+	vertices.reserve(FaceEdgeCount(faceId));
+	GetFaceVertices(faceId, vertices);
+	ScaleVertices(vertices, faceCentroid(faceId), factors);
 }
 
 void HalfEdgeMesh::TranslateFace(uint faceId, const Vec3f& translation) {

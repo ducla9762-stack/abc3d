@@ -544,6 +544,16 @@ public:
 	Vec3f GetEdgeNormal(uint edgeId);
 	/// <returns>The local-space midpoint of an edge.</returns>
 	Vec3f GetEdgeCenter(uint edgeId) const;
+	/// <summary>Appends the two vertex IDs belonging to an edge.</summary>
+	void GetEdgeVertices(uint edgeId, std::vector<uint>& vertices) const;
+	/// <summary>Appends every boundary vertex ID belonging to a face.</summary>
+	void GetFaceVertices(uint faceId, std::vector<uint>& vertices) const;
+	/// <summary>Scales vertices in local space around a local-space pivot.</summary>
+	void ScaleVertices(const std::vector<uint>& vertexIds, const Vec3f& pivot, const Vec3f& factors);
+	/// <summary>Scales an edge around its midpoint in local space.</summary>
+	void ScaleEdge(uint edgeId, const Vec3f& factors);
+	/// <summary>Scales a face around its centroid in local space.</summary>
+	void ScaleFace(uint faceId, const Vec3f& factors);
 	/// <summary> Translates a face. </summary>
 	/// <param name="faceId">Face to translate.</param>
 	/// <param name="translation">Translation factor.</param>
