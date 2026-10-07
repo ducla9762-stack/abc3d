@@ -1444,7 +1444,7 @@ bool HalfEdgeMesh::Validate(std::string& err) const {
 /// <param name="halfEdge">
 ///		A half-edge of the edge to be split.
 /// </param>
-void HalfEdgeMesh::refineEdge(uint hEdgeId) {
+uint HalfEdgeMesh::refineEdge(uint hEdgeId, float t) {
 	uint twinId = edges[hEdgeId].twin;
 	uint hEdge2Id = NewEdge(edges[hEdgeId]);
 	uint twin2Id = NewEdge(edges[twinId]);
@@ -1455,7 +1455,7 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	HalfEdge& hEdge2 = edges[hEdge2Id];
 	HalfEdge& hTwin2 = edges[twin2Id];
 
-	Vec3 midVertPos = (vertPos[hEdge.orig] + vertPos[hEdge.dest]) / 2.0f;
+	Vec3f midVertPos = vertPos[hEdge.orig] * (1.0f - t) + vertPos[hEdge.dest] * t;
 	uint midVert = NewVertex(midVertPos, hEdge2Id);
 
 	edges[hEdge.next].prev = hEdge2Id;
@@ -1475,6 +1475,8 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	hTwin2.prev = twinId;
 	hTwin2.orig = midVert;
 	hTwin2.twin = hEdgeId;
+
+	return midVert;
 }
 
 void HalfEdgeMesh::splitRefinedFace(uint faceId) {

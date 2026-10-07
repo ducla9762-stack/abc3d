@@ -608,8 +608,17 @@ QPushButton{background-color: #646464;}</string>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
+          <property name="toolTip">
+           <string>Knife Tool: click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. 'K' Key Shortcut</string>
+          </property>
           <property name="text">
            <string>Knife</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
           </property>
          </widget>
         </item>

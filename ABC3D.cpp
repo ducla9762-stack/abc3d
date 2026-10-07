@@ -26,6 +26,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
+    QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
     QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
@@ -65,10 +66,39 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_D:
         if (ctrl) { ui.viewport->duplicateSelection(); }
         break;
-    // Escape - Closes program
+    // Escape - Cancels the knife cut, or leaves the knife. Otherwise closes program
     case Qt::Key_Escape:
         event->accept();
+        if (ui.viewport->knifeActive()) {
+            if (!ui.viewport->knifeCancel()) {
+                ui.viewport->setActionSelect();
+                ui.bottomRightPanels->setCurrentIndex(0);
+                ui.selectToolButton->setChecked(true);
+            }
+            break;
+        }
         this->close();
+        break;
+    // Enter - Confirms the knife cut
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        if (ui.viewport->knifeActive()) {
+            event->accept();
+            ui.viewport->knifeConfirm();
+        }
+        break;
+    // Knife
+    case Qt::Key_K:
+        event->accept();
+        ui.viewport->setActionKnife();
+        ui.knifeToolButton->setChecked(true);
+        break;
+    // Knife cut through
+    case Qt::Key_X:
+        if (ui.viewport->knifeActive()) {
+            event->accept();
+            ui.viewport->toggleKnifeCutThrough();
+        }
         break;
     // Delete Selction
     case Qt::Key_Delete:
