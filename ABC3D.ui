@@ -733,7 +733,7 @@ color: white;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <attribute name="title">
@@ -783,11 +783,22 @@ QTabBar:tab:selected{background: red; }</string>
                 <widget class="QTextBrowser" name="tutorialBrowser"/>
                </item>
                <item>
-                <widget class="QPushButton" name="loadTutorialButton">
-                 <property name="text">
-                  <string>Load New Tutorial</string>
-                 </property>
-                </widget>
+                <layout class="QHBoxLayout" name="horizontalLayout_4">
+                 <item>
+                  <widget class="QPushButton" name="importTutorialButton">
+                   <property name="text">
+                    <string>Import Tutorial</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="loadTutorialButton">
+                   <property name="text">
+                    <string>Load Tutorial</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
              </widget>

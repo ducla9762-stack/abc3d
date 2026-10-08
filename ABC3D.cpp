@@ -81,11 +81,23 @@ ABC3D::ABC3D(QWidget *parent)
         ui.tutorialStack->setCurrentIndex(1);
         });
 
-    // Connects the "Load Tutorial" Button to the QTextBrowser
+    // Connects the "Load New Document" Button to the QTextBrowser
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadHelpButton, &QPushButton::released, this, [=]() {
         ui.helpStack->setCurrentIndex(1);
+        });
+
+    QObject::connect(ui.importTutorialButton, &QPushButton::released, this, [=]() {
+        // Opens a file dialog and sets the browser source
+        QString filePath = QFileDialog::getOpenFileName(this, tr("Import Tutorial"), "assets/tutorials", tr("Text Files(*.txt * .html * .markdown * .md"));
+        if (filePath.isEmpty()) { return; }
+        ui.tutorialBrowser->setSource(QUrl::fromLocalFile(filePath));
+
+        // Copies the imported file and adds it to the list in the tutorials panel
+        QFileInfo fileInfo(filePath);
+        QString fileName = fileInfo.fileName();
+        QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
 }
 
