@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "renderer.h"
 
 // ---------------------------------------------------------------------------------------------
@@ -80,47 +82,49 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 
 void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
-	if (update.renderBufs) { UpdateRenderBuffers(); update.renderBufs = false; }
-	if (update.camera) { UpdateViewUniforms(); update.camera = false; }
-
-	glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-	float clearClr[3] = { 0.0f, 0.0f, 0.0f };
-	uint clearId[3] = { 0, 0, 0 };
-	glClearBufferfv(GL_COLOR, 0, clearClr);
-	glClearBufferfv(GL_COLOR, 1, clearClr);
-	glClearBufferuiv(GL_COLOR, 2, clearId);
-
-	if (show.surfaces) {
-		glBindVertexArray(vao.mesh);
-		prog.mesh.Bind();
-		glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
+	if (update.renderBufs) { UpdateRenderBuffers(); }
+	if (update.uniformBuf) { UpdateUniformBuffer(); }
+	if (update.camera) { UpdateViewUniforms(); }
+	if (update.selection || update.hover) { 
+		ResetColorBuffer();
+		UpdateSelection(); 
+		UpdateHover(); 
+		UploadColorBuffer(); 
 	}
 
-	if (show.vertices) {
-		rndrs.vert.Draw();
+	if (update.renderBufs || update.uniformBuf || update.camera) {
+
+		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+		float clearClr[3] = { 0.0f, 0.0f, 0.0f };
+		uint clearId[3] = { 0, 0, 0 };
+		glClearBufferfv(GL_COLOR, 0, clearClr);
+		glClearBufferfv(GL_COLOR, 1, clearClr);
+		glClearBufferuiv(GL_COLOR, 2, clearId);
+
+		if (show.surfaces) {
+			glBindVertexArray(vao.mesh);
+			prog.mesh.Bind();
+			glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
+		}
+
+		if (show.vertices) {
+			rndrs.vert.Draw();
+		}
+
+		if (show.edges) {
+			rndrs.edge.Draw();
+		}
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
 	}
 
-	if (show.edges) {
-		rndrs.edge.Draw();
-	}
-
-	// Draw gizmos before checking the selection texture.
-	/*glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_BLEND);
-	//arrowRenderer.Draw();
-	gizmoRenderer.Draw();
-	glDisable(GL_BLEND);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);*/
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-
+	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
 
 	glBindVertexArray(vao.frame);
@@ -136,6 +140,8 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 	}
 
 	glDepthMask(GL_TRUE);
+
+	update.ClearAll();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -209,10 +215,15 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 
 	count.faces = currOffset;
 
+	for (std::vector<uint>& list : edgeIdMap) { list.clear(); }
+	if (uint(edgeIdMap.size()) < scene->MeshCount()) {
+		uint diff = scene->MeshCount() - uint(edgeIdMap.size());
+		edgeIdMap.insert(edgeIdMap.end(), diff, std::vector<uint>());
+	}
 	offset.edges = currOffset;
 	for (uint i = 0; i < scene->MeshCount(); ++i) {
 		const HalfEdgeMesh* mesh = scene->operator[](i);
-		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i, currOffset);
+		uint edgeCount = bufBuilder.AddMeshToEdgeList(*mesh, i, currOffset, edgeIdMap[i]);
 		offset.meshEdges.push_back(currOffset);
 		currOffset += edgeCount;
 	}
@@ -271,10 +282,104 @@ void ABC3DRenderer::ResetColorBuffer() {
 	else {
 		clrs.insert(clrs.end(), num, 0);
 	}
+}
 
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint), clrs.data(), GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+void ABC3DRenderer::SetObjectBlendColor(uint meshId, uint8_t blendClr) {
+	const HalfEdgeMesh* mesh = scene->operator[](meshId);
+
+	uint ofst = offset.meshFaces[meshId];
+	std::fill(
+		clrs.begin() + ofst,
+		clrs.begin() + ofst + mesh->FaceCount(),
+		blendClr
+	);
+
+	ofst = offset.meshEdges[meshId];
+	uint count;
+	if (meshId == uint(offset.meshEdges.size() - 1)) {
+		count = offset.verts - ofst;
+	}
+	else { count = offset.meshEdges[meshId + 1] - ofst; }
+	std::fill(
+		clrs.begin() + ofst,
+		clrs.begin() + ofst + count,
+		blendClr
+	);
+
+	ofst = offset.meshVerts[meshId];
+	std::fill(
+		clrs.begin() + ofst,
+		clrs.begin() + ofst + mesh->VertexCount(),
+		blendClr
+	);
+}
+
+void ABC3DRenderer::SetFaceBlendColor(uint meshId, uint faceId, uint8_t blendClr) {
+	clrs[offset.meshFaces[meshId] + faceId] = blendClr;
+	// TODO: Set corresponding edge and vertex colors
+}
+
+void ABC3DRenderer::SetEdgeBlendColor(uint meshId, uint edgeIndex, uint8_t blendClr) {
+	uint edgeId = edgeIdMap[meshId][edgeIndex];
+	if (edgeId == MAX_UINT) { return; }
+
+	clrs[offset.meshEdges[meshId] + edgeId] = blendClr;
+	// TODO: Set corresponding vertex colors
+}
+
+void ABC3DRenderer::UpdateSelection() {
+	const std::vector<SelectionItem>& items = selecQuery->getSelectedItems();
+	uint itemCount = uint(items.size());
+
+	for (uint i = 0; i < itemCount; ++i) {
+		const SelectionItem& item = items[i];
+		Element elmType = selecQuery->getActiveElement();
+		if (item.meshId == hover.mesh && (item.componentId == hover.element || elmType == OBJECT)) { continue; }
+		switch (elmType) {
+		case OBJECT:
+			SetObjectBlendColor(item.meshId, BlendColors::SELECT);
+			break;
+
+		case FACE:
+			SetFaceBlendColor(item.meshId, item.componentId, BlendColors::SELECT);
+			break;
+
+		case EDGE:
+			SetEdgeBlendColor(item.meshId, item.componentId, BlendColors::SELECT);
+			break;
+
+		case VERTEX:
+			clrs[offset.meshVerts[item.meshId] + item.componentId] = BlendColors::SELECT;
+			break;
+		}
+	}
+}
+
+void ABC3DRenderer::UpdateHover() {
+	if (hover.mesh == MAX_UINT) { return; }
+	uint8_t blendClr = BlendColors::HOVER;
+
+	Element elmType = selecQuery->getActiveElement();
+	if (elmType == OBJECT) { if (selecQuery->hasSelectedMesh(hover.mesh)) { blendClr = BlendColors::BOTH; } }
+	else if (selecQuery->isSelected(hover.mesh, hover.element)) { blendClr = BlendColors::BOTH; }
+
+	switch (elmType) {
+	case OBJECT:
+		SetObjectBlendColor(hover.mesh, blendClr);
+		break;
+
+	case FACE:
+		SetFaceBlendColor(hover.mesh, hover.element, blendClr);
+		break;
+
+	case EDGE:
+		SetEdgeBlendColor(hover.mesh, hover.element, blendClr);
+		break;
+
+	case VERTEX:
+		clrs[offset.meshVerts[hover.mesh] + hover.element] = blendClr;
+		break;
+	}
 }
 
 // ---------------------------------------------------------------------------------------------

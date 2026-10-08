@@ -77,7 +77,7 @@ public:
 	/// Returns the current element type that is selectable.
 	/// </summary>
 	/// <returns> The currently active element type. </returns>
-	Element getActiveElement() { return activeElement; }
+	Element getActiveElement() const { return activeElement; }
 
 	/// <summary>
 	/// Sets the active element type and clears previous selections.
@@ -157,8 +157,12 @@ public:
 
 	/// <param name="meshId"> Id of the mesh being queried </param>
 	/// <returns> True if contained false otherwise. </returns>
-	bool hasSelectedMesh(uint meshId) {
+	bool hasSelectedMesh(uint meshId) const {
 		return meshMap.count(meshId);
+	}
+
+	bool isSelected(uint meshId, uint elementId) const {
+		return itemMap.count({ meshId, elementId });
 	}
 };
 

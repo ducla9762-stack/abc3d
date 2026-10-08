@@ -89,7 +89,7 @@ public:
 		}
 	}
 
-	uint AddMeshToEdgeList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
+	uint AddMeshToEdgeList(const HalfEdgeMesh& mesh, uint objId, uint offset, std::vector<uint>& idMap) {
 		uint id = 0;
 		for (uint i = 0; i < uint(mesh.edges.size()); ++i) {
 			const HalfEdgeMesh::HalfEdge& edge = mesh.edges[i];
@@ -97,7 +97,11 @@ public:
 				edgeIds.push_back({ objId, id + offset });
 				edges.push_back(mesh.vertPos[edge.orig]);
 				edges.push_back(mesh.vertPos[edge.dest]);
+				idMap.push_back(id);
 				++id;
+			}
+			else {
+				idMap.push_back(MAX_UINT);
 			}
 		}
 		

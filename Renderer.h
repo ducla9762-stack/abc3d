@@ -392,7 +392,23 @@ class ABC3DRenderer {
 		bool renderBufs = false;
 		bool camera = false;
 		bool uniformBuf = false;
+		bool selection = false;
+		bool hover = false;
+
+		void ClearAll() {
+			renderBufs = false;
+			camera = false;
+			uniformBuf = false;
+			selection = false;
+			hover = false;
+		}
 	} update;
+
+	struct HoverItem {
+		Element type;
+		uint mesh;
+		uint element;
+	} hover;
 
 	struct TransformCache {
 		Matrix4f proj;
@@ -439,8 +455,10 @@ class ABC3DRenderer {
 
 	std::vector<CompactTransform140> transformBuf;
 	std::vector<uint> clrs;
+	std::vector<std::vector<uint>> edgeIdMap;
 
 	const Scene* scene;
+	const SelectionManager* selecQuery;
 
 	uint meshVertDrawCount;
 
@@ -462,6 +480,17 @@ private:
 	void InitFramebuffer(GLuint defaultFrameBuffer);
 	void UpdateUniformBuffer();
 	void ResetColorBuffer();
+	void UpdateSelection();
+	void SetFaceBlendColor(uint meshId, uint faceId, uint8_t blendClr);
+	void SetObjectBlendColor(uint meshId, uint8_t blendClr);
+	void SetEdgeBlendColor(uint meshId, uint edgeId, uint8_t blendClr);
+	void UpdateHover();
+
+	void UploadColorBuffer() {
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufs.clrSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, clrs.size() * sizeof(uint), clrs.data(), GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
 
 // ---------------------------------------------------------------------------------------------
 // Uniform and Viewport Updates ----------------------------------------------------------------
@@ -478,6 +507,20 @@ public:
 
 	void UpdateTransforms() { update.uniformBuf = true; }
 	void UpdateGeometry() { update.renderBufs = true; }
+
+	void UpdateSelection(const SelectionManager& selectManager) { 
+		update.selection = true; 
+		selecQuery = &selectManager;
+	}
+
+	void UpdateHover(uint mesh, uint element, Element type) {
+		hover.mesh = mesh;
+		hover.element = element;
+		hover.type = type;
+		update.hover = true;
+	}
+
+	void ClearHover() { hover.mesh = MAX_UINT; hover.element = MAX_UINT; }
 
 	void SetScene(const Scene& scene) { this->scene = &scene; }
 
