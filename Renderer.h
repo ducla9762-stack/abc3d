@@ -577,7 +577,8 @@ public:
 		update.camera = true;
 	}
 
-	void setOrbitOrigin(const Vec3f& origin) { cam.orbit.setOrigin(origin); update.camera = true; }
+	void setOrbitOrigin(const Vec3f& origin) { setCameraMode(CameraType::ORBIT); cam.orbit.setOrigin(origin); }
+
 	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
 
 	void toggleCamType() {
