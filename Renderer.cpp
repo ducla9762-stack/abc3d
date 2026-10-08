@@ -87,7 +87,6 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	if (update.renderBufs) { UpdateRenderBuffers(); }
 	if (update.uniformBuf) { UpdateUniformBuffer(); }
-	if (update.proj) { UpdateProjectionUniforms(); }
 	if (update.camera) { UpdateViewUniforms(); }
 	if (update.selection || update.hover) { 
 		ResetColorBuffer();

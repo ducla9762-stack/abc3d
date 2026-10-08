@@ -414,7 +414,6 @@ class ABC3DRenderer {
 		bool uniformBuf = false;
 		bool selection = false;
 		bool hover = false;
-		bool proj = false;
 
 		void ClearAll() {
 			renderBufs = false;
@@ -422,7 +421,6 @@ class ABC3DRenderer {
 			uniformBuf = false;
 			selection = false;
 			hover = false;
-			proj = false;
 		}
 	} update;
 
@@ -723,7 +721,7 @@ public:
 		prog.shade.SetUniform3(BlendColors::BOTH, &clr.x);
 	}
 
-	void FOV(float fov) { cam.fov = fov; update.proj = true; }
+	void FOV(float fov) { cam.fov = fov; UpdateProjectionUniforms(); }
 
 	float FOV() { return cam.fov; }
 
