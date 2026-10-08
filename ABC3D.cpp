@@ -264,5 +264,44 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
+void ABC3D::elementChanged(Element element) {
+    if (ui.bottomRightPanels->currentIndex() == 2) {
+        switch (element) {
+        case VERTEX:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(false);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        case EDGE:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(false);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.flipButton->setEnabled(true);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            break;
+        case FACE:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(true);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        case OBJECT:
+            ui.subdivisionButton->setEnabled(true);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.triangulationButton->setEnabled(true);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        }
+    }
+}
+
 ABC3D::~ABC3D()
 {}

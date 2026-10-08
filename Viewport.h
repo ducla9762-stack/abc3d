@@ -97,6 +97,7 @@ signals:
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
 	void orbitOriginChanged(const Vec3f& origin);
+	void elementChanged(Element element);
 
 public:
 
@@ -297,7 +298,8 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
-		setActiveElement(VERTEX); 
+		setActiveElement(VERTEX);
+		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
 	}
 
@@ -314,6 +316,7 @@ public slots:
 	// Edge Element
 	void setElementEdge() {
 		setActiveElement(EDGE);
+		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
 	}
 
@@ -330,6 +333,7 @@ public slots:
 	// Face Element
 	void setElementFace() {
 		setActiveElement(FACE);
+		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
 	}
 
@@ -346,6 +350,7 @@ public slots:
 	// Object Element
 	void setElementObject() { 
 		setActiveElement(OBJECT); 
+		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
 	}
 

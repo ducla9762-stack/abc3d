@@ -120,6 +120,7 @@ private slots:
 
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
+    void elementChanged(Element element);
 
 signals:
     void deleteKeyPressed();
