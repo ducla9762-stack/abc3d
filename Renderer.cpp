@@ -14,9 +14,11 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 	// Create textures
 	glGenTextures(3, &tex.geom);
 
+	std::string header = ConstructShaderHeader(maxObjectCount);
+
 	// Compile shaders
 	bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag",
-		nullptr, nullptr, nullptr, HEADER, &std::cout);
+		nullptr, nullptr, nullptr, header.data(), &std::cout);
 	if (!success) {
 		std::cout << "Failed to compile mesh shader program!" << std::endl;
 		return false;
@@ -51,8 +53,8 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 
 	prog.shade.SetUniform3(BlendColors::ALL, &blends.select.x, 3);
 
-	rndrs.vert.Initialize();
-	rndrs.edge.Initialize();
+	rndrs.vert.Initialize(header.data());
+	rndrs.edge.Initialize(header.data());
 	rndrs.grid.Initialize();
 
 	// Initialize gizmo renderer
@@ -242,6 +244,8 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	count.verts = currOffset - offset.verts;
 	rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
 
+	if (currOffset != uint(clrs.size())) { update.selection = true; update.hover = true;}
+
 	meshVertDrawCount = bufBuilder.Attributes().size();
 
 	glBindVertexArray(vao.mesh);
@@ -266,8 +270,15 @@ void ABC3DRenderer::UpdateUniformBuffer() {
 		scene->operator[](i)->getTransform(transformBuf.back());
 	}
 
+	uint objCount = uint(transformBuf.size());
+	bool recompileShaders = false;
+	while (objCount > maxObjectCount) { maxObjectCount <<= 1; recompileShaders = true; }
+	while (objCount < maxObjectCount >> 1) { maxObjectCount >>= 1; recompileShaders = true; }
+	if (recompileShaders) { RecompileShaders(); }
+
 	glBindBuffer(GL_UNIFORM_BUFFER, bufs.matUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * maxObjectCount, nullptr, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <string>
 
 #include <cyGL.h>
 #include <cyMatrix.h>
@@ -20,6 +21,15 @@
 #undef max
 
 inline const char* HEADER = "#version 450 core\n #define MAX_OBJECT_COUNT 64\n";
+
+inline std::string ConstructShaderHeader(uint maxObjectCount) {
+	std::string str;
+	str.reserve(128);
+	str += "#version 450 core\n #define MAX_OBJECT_COUNT ";
+	str += std::to_string(maxObjectCount);
+	str += '\n';
+	return str;
+}
 
 const std::array<Vec3f, 8> TRI_CUBE_VERTICES = {
 	Vec3f(0.5f, 0.5f, -0.5f),
@@ -95,7 +105,7 @@ class VertexRenderer {
 	GLSLProgram prog;
 
 public:
-	bool Initialize() {
+	bool Initialize(const char* header) {
 		// Generate and bind VAO
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -130,12 +140,8 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag",
-			nullptr, nullptr, nullptr, HEADER, &std::cout);
-		if (!success) {
-			std::cout << "Failed to compile vertex shader program!" << std::endl;
-			return false;
-		}
+		bool success = RecompileShaders(header);
+		if (!success) { return false; }
 
 		prog.Bind();
 
@@ -155,6 +161,15 @@ public:
 		glDrawElementsInstanced(GL_TRIANGLES, TRI_CUBE_ELEMENTS.size() * 3, GL_UNSIGNED_INT, 0, count);
 
 		glBindVertexArray(0);
+	}
+
+	bool RecompileShaders(const char* header) {
+		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag",
+			nullptr, nullptr, nullptr, header, &std::cout);
+
+		if (!success) { std::cout << "Failed to compile vertex shader program!" << std::endl; }
+
+		return success;
 	}
 
 	void SetScale(float scale) {
@@ -203,7 +218,7 @@ class EdgeRenderer {
 	GLSLProgram prog;
 
 public:
-	bool Initialize() { 
+	bool Initialize(const char* header) { 
 		// Generate and bind VAO
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -243,12 +258,8 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag",
-			nullptr, nullptr, nullptr, HEADER, &std::cout);
-		if (!success) {
-			std::cout << "Failed to compile edge shader program!" << std::endl;
-			return false;
-		}
+		bool success = RecompileShaders(header);
+		if (!success) { return false; }
 
 		prog.Bind();
 
@@ -268,6 +279,15 @@ public:
 		glDrawElementsInstanced(GL_TRIANGLES, TRI_CYLINDER_ELEMENTS.size() * 3, GL_UNSIGNED_INT, 0, count);
 
 		glBindVertexArray(0);
+	}
+
+	bool RecompileShaders(const char* header) {
+		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag",
+			nullptr, nullptr, nullptr, header, &std::cout);
+
+		if (!success) { std::cout << "Failed to compile edge shader program!" << std::endl; }
+
+		return success;
 	}
 
 	void SetRadius(float radius) {
@@ -461,6 +481,7 @@ class ABC3DRenderer {
 	const SelectionManager* selecQuery;
 
 	uint meshVertDrawCount;
+	uint maxObjectCount = 64; //hard coded for now
 
 public:
 // ---------------------------------------------------------------------------------------------
@@ -701,6 +722,20 @@ public:
 	void SelectHoverColor(const Vec3f& clr) {
 		blends.both = clr;
 		prog.shade.SetUniform3(BlendColors::BOTH, &clr.x);
+	}
+
+	bool RecompileShaders() {
+		std::string header = ConstructShaderHeader(maxObjectCount);
+
+		bool success = prog.mesh.BuildFiles("assets/shaders/GeomPass.vert", "assets/shaders/GeomPass.frag",
+			nullptr, nullptr, nullptr, header.data(), &std::cout);
+
+		if (!success) { std::cout << "Failed to compile mesh shader program!" << std::endl; }
+
+		success = success && rndrs.vert.RecompileShaders(header.data());
+		success = success && rndrs.edge.RecompileShaders(header.data());
+
+		return success;
 	}
 };
 
