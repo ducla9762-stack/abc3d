@@ -28,9 +28,26 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 		return false;
 	}
 
+	prog.shade.Bind();
+
 	prog.shade.SetUniform("posTex", TexBindings::POS);
 	prog.shade.SetUniform("normTex", TexBindings::NORM);
 	prog.shade.SetUniform("idTex", TexBindings::ID);
+
+	prog.shade.RegisterUniform(BaseColors::ALL, "colors");
+	prog.shade.RegisterUniform(BaseColors::BACKGROUND, "colors[0]");
+	prog.shade.RegisterUniform(BaseColors::FACES, "colors[1]");
+	prog.shade.RegisterUniform(BaseColors::EDGES, "colors[2]");
+	prog.shade.RegisterUniform(BaseColors::VERTICES, "colors[3]");
+
+	prog.shade.SetUniform3(BaseColors::ALL, &colors.background.x, 4);
+
+	prog.shade.RegisterUniform(BlendColors::ALL, "blendClrs");
+	prog.shade.RegisterUniform(BlendColors::SELECT, "blendClrs[0]");
+	prog.shade.RegisterUniform(BlendColors::HOVER, "blendClrs[1]");
+	prog.shade.RegisterUniform(BlendColors::BOTH, "blendClrs[2]");
+
+	prog.shade.SetUniform3(BlendColors::ALL, &blends.select.x, 3);
 
 	rndrs.vert.Initialize();
 	rndrs.edge.Initialize();
@@ -278,12 +295,12 @@ void ABC3DRenderer::UpdateProjectionUniforms() {
 	prog.mesh.Bind();
 	prog.mesh.SetUniformMatrix4("proj", data);
 
-	//Matrix4f viewProj = transform.proj * transform.view;
-	//viewProj.Get(data);
+	Matrix4f viewProj = transform.proj * transform.view;
+	viewProj.Get(data);
 
-	//rndrs.grid.SetTransform(data);
-	//rndrs.edge.SetViewProjection(data);
-	//rndrs.vert.SetViewProjection(data);
+	rndrs.grid.SetTransform(data);
+	rndrs.edge.SetViewProjection(data);
+	rndrs.vert.SetViewProjection(data);
 
 	//arrowRenderer.SetViewProjectionUniform(data, fov, height);
 	//gizmoRenderer.SetViewProjectionUniform(data, fov, height);

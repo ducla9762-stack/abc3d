@@ -88,7 +88,7 @@ class VertexRenderer {
 		GLuint id;
 	} bufs;
 
-	float scale;
+	float scale = 0.1f;
 
 	uint count;
 
@@ -141,7 +141,7 @@ public:
 
 		prog.RegisterUniform(SCALE, "scale");
 		prog.RegisterUniform(VIEW_PROJ, "viewProj");
-		prog.SetUniform(SCALE, 0.2f);
+		prog.SetUniform(SCALE, scale);
 
 		return true;
 	}
@@ -196,7 +196,7 @@ class EdgeRenderer {
 		GLuint id;
 	} bufs;
 
-	float radius;
+	float radius = 0.01f;
 
 	uint count;
 
@@ -254,7 +254,7 @@ public:
 
 		prog.RegisterUniform(RADIUS, "radius");
 		prog.RegisterUniform(VIEW_PROJ, "viewProj");
-		prog.SetUniform(RADIUS, 0.05f);
+		prog.SetUniform(RADIUS, radius);
 
 		return true;
 	}
@@ -414,6 +414,26 @@ class ABC3DRenderer {
 		uint edges;
 		uint verts;
 	} count;
+
+	struct BaseColors {
+		Vec3f background = Vec3f(0.0f);
+		Vec3f faces = Vec3f(1.0f, 0.0f, 0.0f);
+		Vec3f edges = Vec3f(1.0f, 1.0f, 0.0f);
+		Vec3f verts = Vec3f(1.0f, 0.0f, 1.0f);
+		enum ColorUniforms : uint {
+			ALL = 0, BACKGROUND = 1, FACES = 2, 
+			EDGES = 3, VERTICES = 4
+		};
+	} colors;
+
+	struct BlendColors {
+		Vec3f select = Vec3f(0.0f, 1.0f, 0.0f);
+		Vec3f hover = Vec3f(1.0f, 1.0f, 1.0f);
+		Vec3f both = Vec3f(0.25f, 0.75f, 0.25f);
+		enum BlendUniforms : uint {
+			ALL = 0, SELECT = 1, HOVER = 2, BOTH = 3
+		};
+	} blends;
 
 	RenderBufferBuilder bufBuilder;
 
@@ -603,6 +623,41 @@ public:
 			return Vec2u(ids.y, mesh.NearestVertex(ids.y - offset.meshFaces[ids.x], pos));
 		}
 		}
+	}
+
+	void FaceColor(const Vec3f& clr) {
+		colors.faces = clr; 
+		prog.shade.SetUniform3(BaseColors::FACES, &clr.x);
+	}
+
+	void EdgeColor(const Vec3f& clr) {
+		colors.edges = clr; 
+		prog.shade.SetUniform3(BaseColors::EDGES, &clr.x);
+	}
+
+	void VertexColor(const Vec3f& clr) {
+		colors.verts = clr;
+		prog.shade.SetUniform3(BaseColors::VERTICES, &clr.x);
+	}
+
+	void BackgroundColor(const Vec3f& clr) {
+		colors.background = clr; 
+		prog.shade.SetUniform3(BaseColors::BACKGROUND, &clr.x);
+	}
+
+	void SelectColor(const Vec3f& clr) {
+		blends.select = clr; 
+		prog.shade.SetUniform3(BlendColors::SELECT, &clr.x);
+	}
+
+	void HoverColor(const Vec3f& clr) {
+		blends.hover = clr;
+		prog.shade.SetUniform3(BlendColors::HOVER, &clr.x);
+	}
+
+	void SelectHoverColor(const Vec3f& clr) {
+		blends.both = clr;
+		prog.shade.SetUniform3(BlendColors::BOTH, &clr.x);
 	}
 };
 

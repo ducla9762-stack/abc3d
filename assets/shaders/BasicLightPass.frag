@@ -7,6 +7,7 @@ layout(std430, binding = 0) buffer ColorSSBO
     uint clrId[];
 };
 
+/*
 const vec3 colors[4] = vec3[4] (
     vec3(0.0f, 0.0f, 0.0f), // background color
     vec3(1.0f, 0.0f, 0.0f), // face color
@@ -19,6 +20,10 @@ const vec3 blendClrs[3] = vec3[3] (
     vec3(1.0f, 1.0f, 1.0f), // hover colors
     vec3(0.0f, 0.0f, 0.0f)
 );
+*/
+
+uniform vec3 colors[4];
+uniform vec3 blendClrs[3];
 
 uniform sampler2D   posTex;
 uniform sampler2D   normTex;
