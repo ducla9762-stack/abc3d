@@ -1500,4 +1500,3 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	// the logical mesh hover or gizmo hover actually changes.
 	return gizmoChanged || rendererChanged;
 }
-

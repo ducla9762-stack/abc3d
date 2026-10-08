@@ -802,9 +802,13 @@ public slots:
 		emit orbitOriginChanged(origin);
 	}
 
-	void setCameraModeOrbit() { renderer.setCameraMode(ORBIT); update(); }
+	void setCameraModeOrbit() {
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(ORBIT); update(); }
 
-	void setCameraModeFree() { renderer.setCameraMode(FREE); update(); }
+	void setCameraModeFree() { 
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(FREE); update(); }
 
+	void updateCameraFOV(int fov) { renderer.updateCameraPostion(fov); update(); }
 };
-

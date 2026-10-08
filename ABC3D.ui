@@ -733,7 +733,7 @@ color: white;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <attribute name="title">
@@ -1312,6 +1312,26 @@ QPushButton:checked { background-color: red; }</string>
              </property>
              <property name="text">
               <string>Always Show Vertices</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Field of View</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="fovSlider">
+             <property name="minimum">
+              <number>-5</number>
+             </property>
+             <property name="maximum">
+              <number>5</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>

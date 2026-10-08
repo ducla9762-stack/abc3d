@@ -55,14 +55,17 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
+    // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
     QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
+    // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
         ui.bottomRightPanels->setCurrentIndex(2); 
         });
 
+    // Pulls up shape panel
     QObject::connect(ui.shapeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(1);
         });
@@ -98,6 +101,10 @@ ABC3D::ABC3D(QWidget *parent)
         QFileInfo fileInfo(filePath);
         QString fileName = fileInfo.fileName();
         QFile::copy(filePath, "assets/tutorials/" + fileName);
+        });
+
+    QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
+        ui.viewport->updateCameraFOV(fov);
         });
 }
 
