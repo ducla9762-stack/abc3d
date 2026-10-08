@@ -78,7 +78,8 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 	frame.width = width;
 	frame.height = height;
-	SetPerspectiveAndViewport();
+	UpdateProjectionUniforms();
+	glViewport(0, 0, frame.width, frame.height);
 	InitFramebuffer(defaultFrameBuffer);
 }
 
@@ -86,6 +87,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	if (update.renderBufs) { UpdateRenderBuffers(); }
 	if (update.uniformBuf) { UpdateUniformBuffer(); }
+	if (update.proj) { UpdateProjectionUniforms(); }
 	if (update.camera) { UpdateViewUniforms(); }
 	if (update.selection || update.hover) { 
 		ResetColorBuffer();
@@ -395,17 +397,12 @@ void ABC3DRenderer::UpdateHover() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Uniform and Viewport Updates ----------------------------------------------------------------
+// Uniform Updates ----------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-void ABC3DRenderer::SetPerspectiveAndViewport() {
-	transform.proj.SetPerspective(degreesToRadians(cam.fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
-	UpdateProjectionUniforms();
-
-	glViewport(0, 0, frame.width, frame.height);
-}
-
 void ABC3DRenderer::UpdateProjectionUniforms() {
+	transform.proj.SetPerspective(degreesToRadians(cam.fov), float(frame.width) / float(frame.height), 0.1f, 1000.0f);
+
 	float data[16];
 	transform.proj.Get(data);
 

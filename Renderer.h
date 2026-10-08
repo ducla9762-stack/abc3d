@@ -414,6 +414,7 @@ class ABC3DRenderer {
 		bool uniformBuf = false;
 		bool selection = false;
 		bool hover = false;
+		bool proj = false;
 
 		void ClearAll() {
 			renderBufs = false;
@@ -421,13 +422,13 @@ class ABC3DRenderer {
 			uniformBuf = false;
 			selection = false;
 			hover = false;
+			proj = false;
 		}
 	} update;
 
 	struct HoverItem {
-		Element type;
-		uint mesh;
-		uint element;
+		uint mesh = MAX_UINT;
+		uint element = MAX_UINT;
 	} hover;
 
 	struct TransformCache {
@@ -514,11 +515,10 @@ private:
 	}
 
 // ---------------------------------------------------------------------------------------------
-// Uniform and Viewport Updates ----------------------------------------------------------------
+// Uniform Updates ----------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
 	void UpdateProjectionUniforms();
-	void SetPerspectiveAndViewport();
 	void UpdateViewUniforms();
 
 public:
@@ -534,10 +534,9 @@ public:
 		selecQuery = &selectManager;
 	}
 
-	void UpdateHover(uint mesh, uint element, Element type) {
+	void UpdateHover(uint mesh, uint element) {
 		hover.mesh = mesh;
 		hover.element = element;
-		hover.type = type;
 		update.hover = true;
 	}
 
@@ -723,6 +722,10 @@ public:
 		blends.both = clr;
 		prog.shade.SetUniform3(BlendColors::BOTH, &clr.x);
 	}
+
+	void FOV(float fov) { cam.fov = fov; update.proj = true; }
+
+	float FOV() { return cam.fov; }
 
 	bool RecompileShaders() {
 		std::string header = ConstructShaderHeader(maxObjectCount);

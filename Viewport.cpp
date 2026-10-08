@@ -93,14 +93,9 @@ void Viewport::initializeGL() {
 	rendererInitialized = true;
 
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
-	//renderer.SetVertexPointsVisible(verticesAlwaysVisible);
-	renderer.UpdateRenderBuffers(scene);
-	renderer.UpdateRenderBuffers();
-	renderer.ResetColorBuffer<true>();
-	renderer.UpdateUniformBuffer();
-	updateSelectionVisuals();
-	//renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
-	updateGizmos();
+	renderer.SetScene(scene);
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -168,7 +163,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		actionParams.stage = 0;
 		actionParams.ClearActionDirs();
 		actionParams.ClearElements();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
 		update();
 		return;
 	}
@@ -247,8 +242,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		initActionDirsToElementNormals(elementType, mesh);
 
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
 		update();
 		return;
 	}
@@ -304,7 +299,7 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 		translateActionElements();
 		mouseAction.EndMouseDragStep();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
 		update();
 		return;
 	}
