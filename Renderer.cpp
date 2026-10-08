@@ -245,6 +245,7 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 	rndrs.vert.SetVertices(bufBuilder.VertexIds(), bufBuilder.VertexPositions(), GL_DYNAMIC_DRAW);
 
 	if (currOffset != uint(clrs.size())) { update.selection = true; update.hover = true;}
+	if (scene->MeshCount() > uint(transformBuf.size())) { update.uniformBuf = true; }
 
 	meshVertDrawCount = bufBuilder.Attributes().size();
 
