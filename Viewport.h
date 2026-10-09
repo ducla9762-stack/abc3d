@@ -554,23 +554,23 @@ public slots:
 
 	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
 	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
-	void loadCylinder(){
+	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitCylinder(vertices, faces, 12);
+		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 	}
-	void loadTorus(){
+	void loadTorus(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 40, 20);
+		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(){
+	void loadUvSphere(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, 10, 10);
+		generateUVSphere(vertices, faces, resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 

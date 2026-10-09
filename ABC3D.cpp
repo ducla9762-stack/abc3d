@@ -70,6 +70,19 @@ ABC3D::ABC3D(QWidget *parent)
         ui.bottomRightPanels->setCurrentIndex(1);
         });
 
+    // Emits signal for when to create shapes (with resolutions)
+    QObject::connect(ui.torusButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadTorus(ui.torusSlider->value());
+        });
+
+    QObject::connect(ui.cylinderButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadCylinder(ui.cylinderSlider->value());
+        });
+
+    QObject::connect(ui.uvSphereButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadUvSphere(ui.uvSphereSlider->value());
+        });
+
     // The main Move tool defaults to Free translation. Its toolbar button and
     // the translation-mode buttons live in separate exclusive groups, so keep
     // the visible mode selection synchronized when returning to Move.

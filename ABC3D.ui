@@ -733,7 +733,7 @@ color: white;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <attribute name="title">
@@ -1138,25 +1138,39 @@ QPushButton:checked { background-color: red; }</string>
            <string notr="true"/>
           </property>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="cubeButton_5">
+           <item row="6" column="3">
+            <widget class="QPushButton" name="cylinderButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="text">
-              <string>Cube</string>
+              <string>Cylinder</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QPushButton" name="uvSphereButton_5">
-             <property name="styleSheet">
-              <string notr="true">QPushButton:checked { background-color: red; }</string>
-             </property>
-             <property name="text">
-              <string>UV Sphere</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
+           <item row="2" column="3">
             <widget class="QPushButton" name="pyramidButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="styleSheet">
               <string notr="true">QPushButton:checked { background-color: red; }</string>
              </property>
@@ -1165,15 +1179,146 @@ QPushButton:checked { background-color: red; }</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="cylinderButton_5">
-             <property name="text">
-              <string>Cylinder</string>
+           <item row="7" column="2">
+            <widget class="QSlider" name="torusSlider">
+             <property name="styleSheet">
+              <string notr="true">border: 1px solid white;</string>
+             </property>
+             <property name="minimum">
+              <number>3</number>
+             </property>
+             <property name="maximum">
+              <number>40</number>
+             </property>
+             <property name="singleStep">
+              <number>3</number>
+             </property>
+             <property name="sliderPosition">
+              <number>20</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="5" column="3">
+            <widget class="QPushButton" name="uvSphereButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPushButton:checked { background-color: red; }</string>
+             </property>
+             <property name="text">
+              <string>UV Sphere</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <widget class="QPushButton" name="icoSphereButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Ico-Sphere</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QSlider" name="uvSphereSlider">
+             <property name="styleSheet">
+              <string notr="true">border: 1px solid white;</string>
+             </property>
+             <property name="minimum">
+              <number>3</number>
+             </property>
+             <property name="maximum">
+              <number>20</number>
+             </property>
+             <property name="value">
+              <number>10</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QPushButton" name="cubeButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Cube</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="2">
+            <widget class="QSlider" name="cylinderSlider">
+             <property name="styleSheet">
+              <string notr="true">border: 1px solid white;</string>
+             </property>
+             <property name="minimum">
+              <number>3</number>
+             </property>
+             <property name="maximum">
+              <number>30</number>
+             </property>
+             <property name="singleStep">
+              <number>3</number>
+             </property>
+             <property name="value">
+              <number>12</number>
+             </property>
+             <property name="sliderPosition">
+              <number>12</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Orientation::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="3">
             <widget class="QPushButton" name="torusButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
              <property name="styleSheet">
               <string notr="true">QPushButton:checked { background-color: red; }</string>
              </property>
@@ -1182,10 +1327,24 @@ QPushButton:checked { background-color: red; }</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="icoSphereButton_5">
+           <item row="7" column="1">
+            <widget class="QLabel" name="label_6">
              <property name="text">
-              <string>Ico-Sphere</string>
+              <string>Resolution</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Resolution</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Resolution</string>
              </property>
             </widget>
            </item>
@@ -1954,22 +2113,6 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>uvSphereButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadUvSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1200</x>
-     <y>511</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>743</x>
-     <y>607</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>additiveModeButton</sender>
    <signal>clicked()</signal>
    <receiver>viewport</receiver>
@@ -2066,22 +2209,6 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>cylinderButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCylinder()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1200</x>
-     <y>505</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>745</x>
-     <y>524</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>axisModeTranslationButton</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
@@ -2110,22 +2237,6 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>801</x>
      <y>339</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>torusButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadTorus()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1244</x>
-     <y>505</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>684</x>
-     <y>531</y>
     </hint>
    </hints>
   </connection>
