@@ -222,7 +222,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Change modes, toggle grid &amp;amp; vertices, and orbit origin&lt;/p&gt;&lt;p&gt;'C' Key Shortcut&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Change modes and field of view, toggle grid &amp;amp; vertices, and orbit origin&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -321,7 +321,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected shape&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected element&lt;br/&gt;Restricted to object, face, and edge elements&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -368,7 +368,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Rotate Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Rotate Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Turns an object&lt;/p&gt;&lt;p&gt;'R' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Rotate Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Rotate Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Turns an object&lt;br/&gt;Restricted to object-level&lt;/p&gt;&lt;p&gt;'R' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -733,7 +733,7 @@ color: white;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <attribute name="title">
@@ -749,6 +749,9 @@ QTabBar:tab:selected{background: red; }</string>
                </item>
                <item>
                 <widget class="QPushButton" name="loadHelpButton">
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shows you a list of our help documents.&lt;br/&gt;These help you learn how to use the program and use the tools&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
                  <property name="text">
                   <string>Load New Document</string>
                  </property>
@@ -786,6 +789,9 @@ QTabBar:tab:selected{background: red; }</string>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
                   <widget class="QPushButton" name="importTutorialButton">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Allows you to import tutorials you find elsewhere or make yourself&lt;/p&gt;&lt;p&gt;Supports .html, .markdown, .md, and .txt&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
                    <property name="text">
                     <string>Import Tutorial</string>
                    </property>
@@ -793,6 +799,9 @@ QTabBar:tab:selected{background: red; }</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="loadTutorialButton">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shows you a list of our tutorial documents.&lt;br/&gt;These give you specific instructions to follow towards a goal&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
                    <property name="text">
                     <string>Load Tutorial</string>
                    </property>
@@ -1152,6 +1161,9 @@ QPushButton:checked { background-color: red; }</string>
                <height>64</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a cylinder using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Cylinder</string>
              </property>
@@ -1170,6 +1182,9 @@ QPushButton:checked { background-color: red; }</string>
                <width>64</width>
                <height>64</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1215,6 +1230,9 @@ QPushButton:checked { background-color: red; }</string>
                <height>64</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a sphere using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true">QPushButton:checked { background-color: red; }</string>
              </property>
@@ -1236,6 +1254,9 @@ QPushButton:checked { background-color: red; }</string>
                <width>64</width>
                <height>64</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a sphere with 12 vertices and 19 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Ico-Sphere</string>
@@ -1274,6 +1295,9 @@ QPushButton:checked { background-color: red; }</string>
                <width>64</width>
                <height>64</height>
               </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a cube with 8 vertices and 6 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Cube</string>
@@ -1319,6 +1343,9 @@ QPushButton:checked { background-color: red; }</string>
                <height>64</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a torus using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="styleSheet">
               <string notr="true">QPushButton:checked { background-color: red; }</string>
              </property>
@@ -1354,6 +1381,9 @@ QPushButton:checked { background-color: red; }</string>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
             <widget class="QPushButton" name="subdivisionButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;Restricted to objects&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Subdivide</string>
              </property>
@@ -1361,6 +1391,9 @@ QPushButton:checked { background-color: red; }</string>
            </item>
            <item>
             <widget class="QPushButton" name="tesselationButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;Works on any element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Tesselate</string>
              </property>
@@ -1368,6 +1401,9 @@ QPushButton:checked { background-color: red; }</string>
            </item>
            <item>
             <widget class="QPushButton" name="triangulationButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;Restricted to faces and objects&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Triangulate</string>
              </property>
@@ -1375,6 +1411,9 @@ QPushButton:checked { background-color: red; }</string>
            </item>
            <item>
             <widget class="QPushButton" name="flipButton">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Flip Edge</string>
              </property>
