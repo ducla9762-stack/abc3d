@@ -322,6 +322,8 @@ public:
 
 	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); updateCamera = true; }
 	const Camera* GetCamera() const { return camType == ORBIT ? (Camera*) &orbitCamera : (Camera*) &freeCamera; }
+	/// <returns>World -> clip transform for the current camera and window size, computed fresh.</returns>
+	Matrix4f ViewProjection() const { return projection * GetCamera()->transform(); }
 
 	void toggleCamType() {
 		if (camType == ORBIT) {

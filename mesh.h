@@ -121,6 +121,7 @@ public:
 };
 
 class HalfEdgeMeshBeveler;
+class HalfEdgeMeshKnife; 
 
 class HalfEdgeMesh {
 
@@ -155,6 +156,7 @@ private:
 
 	friend class RenderBufferBuilder;
 	friend class HalfEdgeMeshBeveler;
+	friend class HalfEdgeMeshKnife; 
 
 	/// <summary>
 	/// Adds a new face.
@@ -601,7 +603,12 @@ public:
 	/// <param name="halfEdge">
 	///		A half-edge of the edge to be split.
 	/// </param>
-	void refineEdge(uint hEdgeId);
+	/// <param name="t">
+	///		Where to split, measured from the half-edge's origin (0) to its destination (1). Defaults to the midpoint.
+	///		The original half-edge keeps the origin side of the split.
+	/// </param>
+	/// <returns>The id of the new vertex.</returns>
+	uint refineEdge(uint hEdgeId, float t = 0.5f);
 	void flipEdge(uint edgeId) {
 		HalfEdge& edge = edges[edgeId];
 		HalfEdge& twin = edges[edge.twin];

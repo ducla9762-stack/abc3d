@@ -6,6 +6,8 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QPainter>
+#include <functional>
 
 #include <algorithm>
 
@@ -16,6 +18,7 @@
 #include "shapes.h"
 #include "sceneFile.h"
 #include "MeshBeveler.h"
+#include "MeshKnife.h"
 
 inline bool initGlew = true;
 
@@ -86,6 +89,24 @@ struct MouseTracker {
 	}
 };
 
+// Plain widget that paints on top of the viewport. Drawing with a QPainter inside paintGL depends on the GL state the
+// renderer leaves behind, a child widget does not.
+class OverlayWidget : public QWidget {
+public:
+	std::function<void(QPainter&)> draw;
+	OverlayWidget(QWidget* parent) : QWidget(parent) {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
+		setAttribute(Qt::WA_TranslucentBackground);
+	}
+protected:
+	void paintEvent(QPaintEvent*) override {
+		QPainter painter(this);
+		painter.setRenderHint(QPainter::Antialiasing);
+		if (draw) { draw(painter); }
+	}
+};
+
 class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
@@ -103,7 +124,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE
 	};
 
 private:
@@ -145,15 +166,41 @@ private:
 	bool localScale = true;
 
 // ---------------------------------------------------------------------------------------------
+// Knife ---------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+	// The cut is kept as a path in normalized device coordinates and recomputed from the untouched meshes whenever
+	// the path, the cursor or the camera changes. Enter keeps the result, Esc throws it away.
+	bool knifeSession = false;
+	bool knifeCutThrough = false;
+	bool knifeHasCursor = false;
+	std::vector<Vec2f> knifePath;
+	Vec2f knifeCursor = Vec2f(0.0f);
+	std::vector<std::pair<uint, HalfEdgeMesh>> knifeOriginals; // selected meshes as they were before the cut
+	KnifeOccluders knifeOccluders; // every mesh in the scene, before the cut
+
+	Vec2f knifeToNdc(const QPointF& pos) const;
+	void knifeBegin();
+	void knifeRestoreOriginals();
+	void knifeRecompute();
+	void knifeFinish();
+	void drawKnifeOverlay(QPainter& painter);
+	OverlayWidget* knifeOverlay = nullptr;
+
+// ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
 	void initializeGL() override;
 
-	void paintGL() override { renderer.Draw(defaultFramebufferObject()); }
+	void paintGL() override {
+		renderer.Draw(defaultFramebufferObject());
+		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+	}
 
 	void resizeGL(int w, int h) override { 
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
+		knifeRecompute();
 	}
 
 // ---------------------------------------------------------------------------------------------
@@ -288,6 +335,17 @@ public slots:
 	void setActionRotate() { setAction(ROTATE); }
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
+	void setActionKnife() { setAction(KNIFE); }
+
+	/// <returns>True while the knife tool is the active tool.</returns>
+	bool knifeActive() const { return actionParams.action == KNIFE; }
+	/// <summary>Keeps the cut in progress.</summary>
+	void knifeConfirm();
+	/// <summary>Throws away the cut in progress.</summary>
+	/// <returns>False if there was no cut to throw away.</returns>
+	bool knifeCancel();
+	/// <summary>Toggles whether the knife also cuts what is hidden from the camera.</summary>
+	void toggleKnifeCutThrough();
 
 	void enableAllElements() {
 		for (int i = 0; i < 4; ++i) {
@@ -687,6 +745,7 @@ public slots:
 
 	// directly ported from FLTK Version's Viewport::deleteElement
 	void deleteSelection() {
+		if (knifeSession) { return; } // the knife holds mesh ids
 		std::cout << "delete" << std::endl;
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) {
@@ -787,6 +846,7 @@ public slots:
 	}
 
 	void duplicateSelection() {
+		if (knifeSession) { return; }
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
@@ -809,11 +869,11 @@ public slots:
 
 	void setCameraModeOrbit() {
 		std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(ORBIT); update(); }
+		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
 
 	void setCameraModeFree() { 
 		std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(FREE); update(); }
+		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
 	void updateCameraFOV(int fov) { renderer.updateCameraPostion(fov); update(); }
 };
