@@ -118,6 +118,7 @@ signals:
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
 	void orbitOriginChanged(const Vec3f& origin);
+	void elementChanged(Element element);
 
 public:
 
@@ -355,7 +356,8 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
-		setActiveElement(VERTEX); 
+		setActiveElement(VERTEX);
+		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
 	}
 
@@ -372,6 +374,7 @@ public slots:
 	// Edge Element
 	void setElementEdge() {
 		setActiveElement(EDGE);
+		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
 	}
 
@@ -388,6 +391,7 @@ public slots:
 	// Face Element
 	void setElementFace() {
 		setActiveElement(FACE);
+		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
 	}
 
@@ -404,6 +408,7 @@ public slots:
 	// Object Element
 	void setElementObject() { 
 		setActiveElement(OBJECT); 
+		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
 	}
 
@@ -607,23 +612,23 @@ public slots:
 
 	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
 	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
-	void loadCylinder(){
+	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitCylinder(vertices, faces, 12);
+		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 	}
-	void loadTorus(){
+	void loadTorus(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 40, 20);
+		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(){
+	void loadUvSphere(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, 10, 10);
+		generateUVSphere(vertices, faces, resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 
@@ -862,9 +867,13 @@ public slots:
 		emit orbitOriginChanged(origin);
 	}
 
-	void setCameraModeOrbit() { renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
+	void setCameraModeOrbit() {
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
 
-	void setCameraModeFree() { renderer.setCameraMode(FREE); knifeRecompute(); update(); }
+	void setCameraModeFree() { 
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
+	void updateCameraFOV(int fov) { renderer.updateCameraPostion(fov); update(); }
 };
-

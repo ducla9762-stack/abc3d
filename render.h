@@ -303,10 +303,21 @@ public:
 
 	CameraType GetActiveCamType() const { return camType; }
 
+	Vec3f getCameraPosition() { 
+		if (camType == ORBIT) { return orbitCamera.position(); } 
+		else				  { return freeCamera.position(); }
+		updateCamera = true;
+	}
+	
 	void setCameraPosition(const Vec3f& pos) {
 		if (camType == ORBIT)	{ orbitCamera.setPosition(pos); }
 		else					{ freeCamera.setPosition(pos); }
 		updateCamera = true;
+	}
+
+	void updateCameraPostion(int fov) {
+		Vec3f newFov = getCameraPosition() + fov;
+		setCameraPosition(newFov);
 	}
 
 	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); updateCamera = true; }

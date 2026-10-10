@@ -24,7 +24,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.helpTree->show();
     ui.helpStack->setCurrentIndex(1);
     ui.helpBrowser->setReadOnly(true);
-    //QObject::connect(ui.helpTree, &QTreeView::pressed, this, &ABC3D::helpRowClicked);
+    QObject::connect(ui.helpTree, &QTreeView::pressed, this, &ABC3D::helpRowClicked);
 
     // Makes the model and tree used to view all the tutorial documents
     QString tutorialPath = "assets/tutorials";
@@ -38,7 +38,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialTree->show();
     ui.tutorialStack->setCurrentIndex(1);
     ui.tutorialBrowser->setReadOnly(true);
-    //QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
+    QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
     // Menu button for the camera panel - does the same thing as the toolbar
     QAction* actionCamera = new QAction("Camera", ui.menuBar);
@@ -55,17 +55,35 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
-    QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
+    // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
     QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
+    QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
+
+
+    // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
         ui.bottomRightPanels->setCurrentIndex(2); 
         });
 
+    // Pulls up shape panel
     QObject::connect(ui.shapeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(1);
+        });
+
+    // Emits signal for when to create shapes (with resolutions)
+    QObject::connect(ui.torusButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadTorus(ui.torusSlider->value());
+        });
+
+    QObject::connect(ui.cylinderButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadCylinder(ui.cylinderSlider->value());
+        });
+
+    QObject::connect(ui.uvSphereButton_5, &QPushButton::released, this, [=]() {
+            ui.viewport->loadUvSphere(ui.uvSphereSlider->value());
         });
 
     // The main Move tool defaults to Free translation. Its toolbar button and
@@ -79,14 +97,30 @@ ABC3D::ABC3D(QWidget *parent)
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadTutorialButton, &QPushButton::released, this, [=]() {
-        ui.tutorialStack->setCurrentIndex(0);
+        ui.tutorialStack->setCurrentIndex(1);
         });
 
-    // Connects the "Load Tutorial" Button to the QTextBrowser
+    // Connects the "Load New Document" Button to the QTextBrowser
     // Opens the file explorer in the "tutorials" folder
     // Allows users to select text, HTML, or markdown file formats
     QObject::connect(ui.loadHelpButton, &QPushButton::released, this, [=]() {
-        ui.helpStack->setCurrentIndex(0);
+        ui.helpStack->setCurrentIndex(1);
+        });
+
+    QObject::connect(ui.importTutorialButton, &QPushButton::released, this, [=]() {
+        // Opens a file dialog and sets the browser source
+        QString filePath = QFileDialog::getOpenFileName(this, tr("Import Tutorial"), "assets/tutorials", tr("Text Files(*.txt * .html * .markdown * .md"));
+        if (filePath.isEmpty()) { return; }
+        ui.tutorialBrowser->setSource(QUrl::fromLocalFile(filePath));
+
+        // Copies the imported file and adds it to the list in the tutorials panel
+        QFileInfo fileInfo(filePath);
+        QString fileName = fileInfo.fileName();
+        QFile::copy(filePath, "assets/tutorials/" + fileName);
+        });
+
+    QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
+        ui.viewport->updateCameraFOV(fov);
         });
 }
 
@@ -263,16 +297,55 @@ void ABC3D::showEvent(QShowEvent* event){
     }
 }
 
-void ABC3D::tutorialRowClicked(QModelIndex& index) {
+void ABC3D::tutorialRowClicked(const QModelIndex& index) {
     ui.tutorialStack->setCurrentIndex(0);
     QString file = tutorialFileModel->filePath(index);
     ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::helpRowClicked(QModelIndex& index) {
+void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpStack->setCurrentIndex(0);
     QString file = helpFileModel->filePath(index);
-    ui.tutorialBrowser->setSource(QUrl::fromLocalFile(file));
+    ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
+}
+
+void ABC3D::elementChanged(Element element) {
+    if (ui.bottomRightPanels->currentIndex() == 2) {
+        switch (element) {
+        case VERTEX:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(false);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        case EDGE:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(false);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.flipButton->setEnabled(true);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            break;
+        case FACE:
+            ui.subdivisionButton->setEnabled(false);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.triangulationButton->setEnabled(true);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        case OBJECT:
+            ui.subdivisionButton->setEnabled(true);
+            ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.triangulationButton->setEnabled(true);
+            ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.flipButton->setEnabled(false);
+            ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            break;
+        }
+    }
 }
 
 ABC3D::~ABC3D()

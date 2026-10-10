@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QTreeView>
+#include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -117,8 +118,9 @@ private slots:
         ui.viewport->saveScene(projectFile.constData());
     }
 
-    void tutorialRowClicked(QModelIndex&);
-    void helpRowClicked(QModelIndex&);
+    void tutorialRowClicked(const QModelIndex& index);
+    void helpRowClicked(const QModelIndex& index);
+    void elementChanged(Element element);
 
 signals:
     void deleteKeyPressed();
