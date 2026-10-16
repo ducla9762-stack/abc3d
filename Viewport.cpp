@@ -95,6 +95,7 @@ void Viewport::initializeGL() {
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
 	renderer.SetScene(scene);
 	renderer.UpdateGeometry();
+	renderer.UpdateTransforms();
 	renderer.UpdateSelection(selectionManager);
 }
 
