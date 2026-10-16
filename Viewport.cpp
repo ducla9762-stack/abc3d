@@ -24,18 +24,24 @@ Viewport::Viewport(QWidget *parent)
 	setFormat(format);
 
 	// Element Buttons
+	elementButtons[0] = new QPushButton(QIcon("assets/icons/vertex.svg"), "", this);
+	elementButtons[1] = new QPushButton(QIcon("assets/icons/edge.svg"), "", this);
+	elementButtons[2] = new QPushButton(QIcon("assets/icons/face.svg"), "", this);
+	elementButtons[3] = new QPushButton(QIcon("assets/icons/object.svg"), "", this);
 
-	elementButtons[0] = new QPushButton("Vertex", this);
-	elementButtons[1] = new QPushButton("Edge", this);
-	elementButtons[2] = new QPushButton("Face", this);
-	elementButtons[3] = new QPushButton("Object", this);
+	elementButtons[0]->setToolTip("<b> Vertex Selection </b> <br> '1' Key shortcut");
+	elementButtons[1]->setToolTip("<b> Edge Selection </b> <br> '2' Key shortcut");
+	elementButtons[2]->setToolTip("<b> Face Selection </b> <br> '3' Key shortcut");
+	elementButtons[3]->setToolTip("<b> Object Selection </b> <br> '4' Key shortcut");
 
 	QObject::connect(elementButtons[0], &QPushButton::released, this, &Viewport::setElementVertex);
 	QObject::connect(elementButtons[1], &QPushButton::released, this, &Viewport::setElementEdge);
 	QObject::connect(elementButtons[2], &QPushButton::released, this, &Viewport::setElementFace);
 	QObject::connect(elementButtons[3], &QPushButton::released, this, &Viewport::setElementObject);
 
+
 	for (int i = 0; i < 4; ++i) {
+		elementButtons[i]->setIconSize(QSize(64, 64));
 		elementButtons[i]->setFixedWidth(64);
 		elementButtons[i]->setFixedHeight(64);
 		elementButtons[i]->setAutoExclusive(true);

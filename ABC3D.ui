@@ -231,7 +231,11 @@ QPushButton{background-color: #646464;}</string>
            <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
-           <string>Camera</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/camera.svg</normaloff>assets/icons/camera.svg</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -605,14 +609,24 @@ QPushButton{background-color: #646464;}</string>
             <height>64</height>
            </size>
           </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton:checked { background-color: red; }</string>
-          </property>
           <property name="toolTip">
            <string>Knife Tool: click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. 'K' Key Shortcut</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
-           <string>Knife</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/knife.svg</normaloff>assets/icons/knife.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -739,7 +753,8 @@ color: white;</string>
          </property>
          <property name="styleSheet">
           <string notr="true">QTabBar {background-color: #646464 }
-QTabBar:tab:selected{background: red; }</string>
+QTabBar:tab:selected{background: red; }
+QTabBar::tab{ background-color: #646464; }</string>
          </property>
          <property name="currentIndex">
           <number>2</number>
@@ -1173,8 +1188,21 @@ QPushButton:checked { background-color: red; }</string>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a cylinder using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
              <property name="text">
-              <string>Cylinder</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/cylinder.svg</normaloff>assets/icons/cylinder.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -1196,10 +1224,20 @@ QPushButton:checked { background-color: red; }</string>
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
-              <string notr="true">QPushButton:checked { background-color: red; }</string>
+              <string notr="true">color: black;</string>
              </property>
              <property name="text">
-              <string>Pyramid</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/pyramid.svg</normaloff>assets/icons/pyramid.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -1243,10 +1281,20 @@ QPushButton:checked { background-color: red; }</string>
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a sphere using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
-              <string notr="true">QPushButton:checked { background-color: red; }</string>
+              <string notr="true">color: black;</string>
              </property>
              <property name="text">
-              <string>UV Sphere</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/uvsphere.svg</normaloff>assets/icons/uvsphere.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -1267,8 +1315,21 @@ QPushButton:checked { background-color: red; }</string>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a sphere with 12 vertices and 19 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
              <property name="text">
-              <string>Ico-Sphere</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/icosphere.svg</normaloff>assets/icons/icosphere.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -1308,8 +1369,21 @@ QPushButton:checked { background-color: red; }</string>
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a cube with 8 vertices and 6 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
              <property name="text">
-              <string>Cube</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/cube.svg</normaloff>assets/icons/cube.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
@@ -1356,10 +1430,20 @@ QPushButton:checked { background-color: red; }</string>
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a torus using the resolution slider to the left&lt;br/&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
-              <string notr="true">QPushButton:checked { background-color: red; }</string>
+              <string notr="true">color: black;</string>
              </property>
              <property name="text">
-              <string>Torus</string>
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/torus.svg</normaloff>assets/icons/torus.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
              </property>
             </widget>
            </item>
