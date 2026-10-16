@@ -753,8 +753,7 @@ color: white;</string>
          </property>
          <property name="styleSheet">
           <string notr="true">QTabBar {background-color: #646464 }
-QTabBar:tab:selected{background: red; }
-QTabBar::tab{ background-color: #646464; }</string>
+QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
           <number>2</number>
@@ -1367,10 +1366,11 @@ QPushButton:checked { background-color: red; }</string>
               </size>
              </property>
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Creates a cube with 8 vertices and 6 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Creates a cube with 8 vertices and 6 faces&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
-              <string notr="true">color: black;</string>
+              <string notr="true">color: black;
+font-weight: normal;</string>
              </property>
              <property name="text">
               <string/>
@@ -1505,7 +1505,7 @@ QPushButton:checked { background-color: red; }</string>
            <item>
             <widget class="QPushButton" name="flipButton">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;color:black&quot;&gt;Flip-Edge&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Flip Edge</string>

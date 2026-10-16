@@ -14,6 +14,7 @@ ABC3D::ABC3D(QWidget *parent)
     
     // Makes the model and tree used to view all the help documents
     QString helpPath = "assets/help documents";
+    helpFileModel->setFilter(QDir::Files);
     helpFileModel->setRootPath(helpPath);
     ui.helpTree->setModel(helpFileModel);
     ui.helpTree->setRootIndex(helpFileModel->index(helpPath));
@@ -28,6 +29,7 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Makes the model and tree used to view all the tutorial documents
     QString tutorialPath = "assets/tutorials";
+    tutorialFileModel->setFilter(QDir::Files);
     tutorialFileModel->setRootPath(tutorialPath);
     ui.tutorialTree->setModel(tutorialFileModel);
     ui.tutorialTree->setRootIndex(tutorialFileModel->index(tutorialPath));
