@@ -581,6 +581,13 @@ public:
 	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
+	/// <summary>
+	/// Merges sourceVertex into targetVertex and removes the source vertex.
+	/// The mesh is changed only when the resulting topology is valid.
+	/// </summary>
+	/// <returns>True when the merge was applied; false when it was rejected.</returns>
+	bool MergeVertices(uint sourceVertex, uint targetVertex);
+
 	uint VertexDegree(uint vertex) {
 		uint firstEdge = vertEdge[vertex];
 		uint currEdge = firstEdge;

@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QPainter>
 #include <functional>
+#include <optional>
 
 #include <algorithm>
 
@@ -164,6 +165,7 @@ private:
 	Vec3f draggedRotationAxis = Vec3f(0.0f);
 
 	bool localScale = true;
+	std::optional<SelectionItem> mergeFirstVertex;
 
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
@@ -250,6 +252,7 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	void handleSelection(const Vec3u& selectionIds);
+	void handleMergeVertexClick(const Vec3u& selectionIds);
 	SelectionItem createSelectionItem(const Vec3u& ids);
 	void setActiveElement(Element element);
 
@@ -336,7 +339,13 @@ public slots:
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
-	void setActionMerge() { setAction(MERGE); }
+	void setActionMerge() {
+		mergeFirstVertex.reset();
+		setActiveElement(VERTEX);
+		elementButtons[0]->setChecked(true);
+		emit elementChanged(VERTEX);
+		setAction(MERGE);
+	}
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }

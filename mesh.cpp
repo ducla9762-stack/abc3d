@@ -651,6 +651,117 @@ void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 	vertPos.at(vertId) = pos;
 }
 
+bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
+	if (sourceVertex >= VertexCount() || targetVertex >= VertexCount() ||
+		sourceVertex == targetVertex) {
+		return false;
+	}
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+	bool originalIsClosed = true;
+	for (const HalfEdge& edge : edges) {
+		if (edge.face == MAX_UINT) {
+			originalIsClosed = false;
+			break;
+		}
+	}
+
+	// Work on a copy so every rejected merge leaves the original mesh exactly
+	// as it was.
+	HalfEdgeMesh merged = *this;
+
+	// Rebuild the face list after replacing the source with the target. A face
+	// that contains the merged edge collapses to a lower-sided polygon; remove
+	// only the duplicate corner introduced by the collapse.
+	// The target keeps its original position, matching source-into-target
+	// semantics.
+	std::vector<std::vector<uint>> mergedFaces;
+	mergedFaces.reserve(merged.FaceCount());
+	for (uint faceId = 0; faceId < merged.FaceCount(); ++faceId) {
+		std::vector<uint> face;
+		uint edgeId = merged.faceEdges[faceId];
+		do {
+			const HalfEdge& edge = merged.edges[edgeId];
+			if (edge.orig >= VertexCount() || edge.dest >= VertexCount()) {
+				return false;
+			}
+
+			uint remapped = edge.orig == sourceVertex ? targetVertex : edge.orig;
+			if (remapped > sourceVertex) {
+				--remapped;
+			}
+			face.push_back(remapped);
+			edgeId = edge.next;
+		} while (edgeId != merged.faceEdges[faceId]);
+
+		std::vector<uint> collapsedFace;
+		collapsedFace.reserve(face.size());
+		for (uint vertex : face) {
+			if (collapsedFace.empty() || collapsedFace.back() != vertex) {
+				collapsedFace.push_back(vertex);
+			}
+		}
+		if (collapsedFace.size() > 1 && collapsedFace.front() == collapsedFace.back()) {
+			collapsedFace.pop_back();
+		}
+
+		std::unordered_set<uint> uniqueVertices(collapsedFace.begin(), collapsedFace.end());
+		if (uniqueVertices.size() == collapsedFace.size() && collapsedFace.size() >= 3) {
+			mergedFaces.push_back(std::move(collapsedFace));
+		}
+	}
+	// Do not allow the last surface face to collapse away. Without this guard,
+	// repeated merges could reduce a mesh to isolated vertices or a degenerate
+	// edge, which is not a drawable mesh.
+	if (mergedFaces.empty()) {
+		return false;
+	}
+	merged.vertPos.erase(merged.vertPos.begin() + sourceVertex);
+
+	const Vec3f originalPos = merged.pos;
+	const Vec3f originalScale = merged.scale;
+	const Vec3f originalRotation = merged.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!merged.build(mergedFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() centers newly built geometry by moving the centroid into pos.
+	// Restore the existing transform and local-space positions so merging does
+	// not move the object or change its scale/rotation.
+	const Vec3f buildOffset = merged.pos - originalPos;
+	merged.translateVertices(buildOffset);
+	merged.pos = originalPos;
+	merged.scale = originalScale;
+	merged.eulerRot = originalRotation;
+
+	std::string error;
+	if (!merged.Validate(error)) {
+		return false;
+	}
+	if (originalIsClosed) {
+		// A closed surface must not become open as a side effect of merging.
+		// Exterior half-edges are the boundary representation used by this mesh.
+		for (const HalfEdge& edge : merged.edges) {
+			if (edge.face == MAX_UINT) {
+				return false;
+			}
+		}
+		for (uint edgeId : merged.vertEdge) {
+			if (edgeId == MAX_UINT) {
+				return false;
+			}
+		}
+	}
+
+	*this = std::move(merged);
+	return true;
+}
+
 void HalfEdgeMesh::translateVertices(const Vec3f& add) {
 	for (Vec3f& vert : vertPos) {
 		vert += add;

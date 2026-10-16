@@ -236,6 +236,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
+	if (actionParams.action == MERGE) {
+		mergeFirstVertex.reset();
+	}
 
 	selectionManager.clearSelection();
 	makeCurrent();
@@ -302,7 +305,12 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged && ids.x != 0) {
-			handleSelection(ids);
+			if (actionParams.action == MERGE) {
+				handleMergeVertexClick(ids);
+			}
+			else {
+				handleSelection(ids);
+			}
 		}
 
 		// Print selection ids.
@@ -501,6 +509,10 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 void Viewport::setAction(Action action) {
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+	if (actionParams.action == MERGE && action != MERGE) {
+		mergeFirstVertex.reset();
+		selectionManager.clearSelection();
+	}
 
 	actionParams.action = action;
 	if (action == KNIFE) { knifeBegin(); }
@@ -510,6 +522,9 @@ void Viewport::setAction(Action action) {
 	draggedRotationAxis = Vec3f(0.0f);
 	if (rendererInitialized) {
 		makeCurrent();
+		if (action != MERGE) {
+			updateSelectionVisuals();
+		}
 		updateGizmos();
 	}
 	update();
@@ -518,6 +533,62 @@ void Viewport::setAction(Action action) {
 // ---------------------------------------------------------------------------------------------
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
+
+void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
+	// Vertex-point hits are encoded as (MAX_UINT, one-based mesh ID,
+	// zero-based vertex ID). Surface hits are intentionally ignored.
+	if (selectionIds.x != MAX_UINT || selectionIds.y == 0 ||
+		selectionIds.y == MAX_UINT || selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.y - 1;
+	const uint vertexId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || vertexId >= scene[meshId]->VertexCount()) {
+		return;
+	}
+
+	const SelectionItem clicked{ meshId, vertexId };
+	std::cout << "Merge mode vertex clicked: mesh " << meshId
+		<< ", vertex " << vertexId << std::endl;
+
+	if (!mergeFirstVertex.has_value()) {
+		mergeFirstVertex = clicked;
+		selectionManager.clearSelection();
+		selectionManager.addSelection(clicked);
+		updateSelectionVisuals();
+		updateGizmos();
+		emitSelectionChanged();
+		update();
+		return;
+	}
+
+	const SelectionItem source = *mergeFirstVertex;
+	if (source == clicked) {
+		std::cout << "Merge rejected: choose a different target vertex." << std::endl;
+		return;
+	}
+	if (source.meshId != clicked.meshId) {
+		std::cout << "Merge rejected: both vertices must belong to the same mesh." << std::endl;
+		return;
+	}
+
+	if (!scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
+		std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
+		return;
+	}
+
+	std::cout << "Merged vertex " << source.componentId << " into vertex "
+		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
+	mergeFirstVertex.reset();
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
 
 void Viewport::handleSelection(const Vec3u& selectionIds) {
 	// Create a selection item to send to the selection manager.
