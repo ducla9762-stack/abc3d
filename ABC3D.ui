@@ -656,6 +656,37 @@ QPushButton{background-color: #646464;}</string>
           <property name="text">
            <string>Pen</string>
           </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="mergeToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>64</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>64</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Merge</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
@@ -684,6 +715,7 @@ QPushButton{background-color: #646464;}</string>
        <zorder>knifeToolButton</zorder>
        <zorder>penToolButton</zorder>
        <zorder>verticalSpacer</zorder>
+       <zorder>mergeToolButton</zorder>
       </widget>
      </widget>
     </item>
@@ -871,6 +903,61 @@ QPushButton:checked {background-color: red}</string>
            <property name="spacing">
             <number>2</number>
            </property>
+           <item>
+            <widget class="QWidget" name="mergeModes" native="true">
+             <layout class="QVBoxLayout" name="verticalLayout_16">
+              <item>
+               <widget class="QLabel" name="label_9">
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Merge Mode&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="mergeModeButton">
+                <property name="text">
+                 <string>Merge</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="dissolveModeButton">
+                <property name="text">
+                 <string>Dissolve</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="collapseModeButton">
+                <property name="text">
+                 <string>Collapse</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoExclusive">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item>
             <widget class="QWidget" name="selectionInputModes" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -1963,12 +2050,12 @@ color: white;</string>
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1200</x>
-     <y>506</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1244</x>
-     <y>503</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
    </hints>
   </connection>
@@ -1999,8 +2086,8 @@ color: white;</string>
      <y>538</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>743</y>
+     <x>1767</x>
+     <y>1010</y>
     </hint>
    </hints>
   </connection>
@@ -2015,8 +2102,8 @@ color: white;</string>
      <y>523</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>803</y>
+     <x>1767</x>
+     <y>1070</y>
     </hint>
    </hints>
   </connection>
@@ -2027,8 +2114,8 @@ color: white;</string>
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>511</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -2043,8 +2130,8 @@ color: white;</string>
    <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>506</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -2063,8 +2150,8 @@ color: white;</string>
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1244</x>
-     <y>503</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
    </hints>
   </connection>
@@ -2075,8 +2162,8 @@ color: white;</string>
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>499</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -2091,8 +2178,8 @@ color: white;</string>
    <slot>setCameraModeOrbit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1200</x>
-     <y>506</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>738</x>
@@ -2107,8 +2194,8 @@ color: white;</string>
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>509</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -2123,8 +2210,8 @@ color: white;</string>
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1200</x>
-     <y>499</y>
+     <x>1498</x>
+     <y>695</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -2139,8 +2226,8 @@ color: white;</string>
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1289</x>
-     <y>629</y>
+     <x>1602</x>
+     <y>896</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -2155,8 +2242,8 @@ color: white;</string>
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>511</y>
+     <x>1498</x>
+     <y>695</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -2171,8 +2258,8 @@ color: white;</string>
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>504</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -2187,8 +2274,8 @@ color: white;</string>
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>514</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -2207,8 +2294,8 @@ color: white;</string>
      <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>773</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
    </hints>
   </connection>
@@ -2219,8 +2306,8 @@ color: white;</string>
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>499</y>
+     <x>1498</x>
+     <y>695</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -2251,8 +2338,8 @@ color: white;</string>
    <slot>setAdditiveSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>545</y>
+     <x>1767</x>
+     <y>812</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2267,8 +2354,8 @@ color: white;</string>
    <slot>setActionTranslateEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>629</y>
+     <x>1767</x>
+     <y>896</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -2283,8 +2370,8 @@ color: white;</string>
    <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>773</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -2303,8 +2390,8 @@ color: white;</string>
      <y>498</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>803</y>
+     <x>1767</x>
+     <y>1070</y>
     </hint>
    </hints>
   </connection>
@@ -2319,8 +2406,8 @@ color: white;</string>
      <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>743</y>
+     <x>1767</x>
+     <y>1010</y>
     </hint>
    </hints>
   </connection>
@@ -2347,8 +2434,8 @@ color: white;</string>
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>599</y>
+     <x>1767</x>
+     <y>866</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -2363,8 +2450,8 @@ color: white;</string>
    <slot>setSingleSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1289</x>
-     <y>545</y>
+     <x>1602</x>
+     <y>812</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2379,8 +2466,8 @@ color: white;</string>
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>507</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2399,8 +2486,8 @@ color: white;</string>
      <y>459</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>773</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
    </hints>
   </connection>
@@ -2411,8 +2498,8 @@ color: white;</string>
    <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>803</y>
+     <x>1767</x>
+     <y>1070</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -2431,8 +2518,8 @@ color: white;</string>
      <y>504</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>773</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
    </hints>
   </connection>
@@ -2447,8 +2534,8 @@ color: white;</string>
      <y>505</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>803</y>
+     <x>1767</x>
+     <y>1070</y>
     </hint>
    </hints>
   </connection>
@@ -2459,8 +2546,8 @@ color: white;</string>
    <slot>setOrbitOrigin(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1244</x>
-     <y>503</y>
+     <x>1534</x>
+     <y>661</y>
     </hint>
     <hint type="destinationlabel">
      <x>730</x>
@@ -2475,8 +2562,8 @@ color: white;</string>
    <slot>setPrimarySelectionPos(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1422</x>
-     <y>743</y>
+     <x>1767</x>
+     <y>1010</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -2575,8 +2662,8 @@ color: white;</string>
      <y>53</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>551</y>
+     <x>1767</x>
+     <y>818</y>
     </hint>
    </hints>
   </connection>
@@ -2623,8 +2710,8 @@ color: white;</string>
      <y>179</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1422</x>
-     <y>629</y>
+     <x>1767</x>
+     <y>896</y>
     </hint>
    </hints>
   </connection>
@@ -2767,8 +2854,8 @@ color: white;</string>
      <y>245</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1169</x>
-     <y>679</y>
+     <x>1767</x>
+     <y>980</y>
     </hint>
    </hints>
   </connection>
@@ -2779,8 +2866,8 @@ color: white;</string>
    <slot>setGlobalScaleMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1275</x>
-     <y>689</y>
+     <x>1602</x>
+     <y>962</y>
     </hint>
     <hint type="destinationlabel">
      <x>1104</x>
@@ -2795,8 +2882,8 @@ color: white;</string>
    <slot>setLocalScaleMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1305</x>
-     <y>687</y>
+     <x>1749</x>
+     <y>962</y>
     </hint>
     <hint type="destinationlabel">
      <x>1103</x>
@@ -3057,6 +3144,22 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>888</x>
      <y>620</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mergeToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mergeModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>744</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1453</x>
+     <y>731</y>
     </hint>
    </hints>
   </connection>

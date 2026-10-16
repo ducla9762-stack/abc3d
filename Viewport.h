@@ -124,7 +124,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE
 	};
 
 private:
@@ -336,6 +336,7 @@ public slots:
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
+	void setActionMerge() { setAction(MERGE); }
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
