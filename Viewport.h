@@ -216,9 +216,13 @@ private:
 	void loadMesh(const T& vertices, const U& faces) {
 		scene.NewMesh()->load(vertices, faces);
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
-		renderer.UpdateUniformBuffer();
+		// 10/16/26 - Update to public API.
+		//renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		//renderer.ResetColorBuffer<true>();
+		renderer.UpdateSelection(selectionManager);
+		//renderer.UpdateUniformBuffer();
+		renderer.UpdateTransforms();
 		update();
 	}
 
@@ -442,8 +446,13 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -457,8 +466,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -483,8 +498,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -498,7 +519,12 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		
+		//renderer.UpdateRenderBuffers(scene);
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+
 		update();
 	}
 
@@ -511,14 +537,20 @@ public slots:
 			if (selectionManager.itemCount() != 1) { return; }
 			Vec3f vertPos = scene[item.meshId]->WorldDirToLocalDir(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
+
+			// 10/16/26 - Updated to public API, in vertex case, update geometry (topology changes).
+			renderer.UpdateGeometry();
 		}
 		else {
 			scene[item.meshId]->Pos(pos);
+
+			// In mesh case, update transforms.
+			renderer.UpdateTransforms();
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateUniformBuffer();
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.UpdateUniformBuffer();
 		update();
 	}
 
@@ -529,8 +561,12 @@ public slots:
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Scale(scale);
 			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
-			renderer.UpdateUniformBuffer();
+			/*renderer.UpdateRenderBuffers(scene);
+			renderer.UpdateUniformBuffer();*/
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
 			update();
 		}
 	}
@@ -542,8 +578,12 @@ public slots:
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Rot(rot);
 			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
-			renderer.UpdateUniformBuffer();
+			//renderer.UpdateRenderBuffers(scene);
+			//renderer.UpdateUniformBuffer();
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
 			updateGizmos();
 			update();
 		}
@@ -588,9 +628,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		/*renderer.UpdateRenderBuffers(scene);
 		renderer.UpdateUniformBuffer();
-		renderer.ResetColorBuffer<true>();
+		renderer.ResetColorBuffer<true>();*/
+
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 		return report;
 	}
@@ -642,7 +687,10 @@ public slots:
 
 		//camPos = doc.camera;
 		//renderer.SetCamera(sphericalToCartesian(camPos));
-		renderer.SetGridVisible(doc.grid);
+
+		// 10/16/26 - Updated to public API.
+
+		renderer.ShowGrid(doc.grid);
 		//renderer.SetVertexPointsVisible(doc.points);
 
 		//setElementObject();
@@ -658,11 +706,12 @@ public slots:
 		emitSelectionChanged();
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
-		renderer.UpdateUniformBuffer();
-		updateSelectionVisuals();
-		updateGizmos();
+		renderer.SetScene(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+		//updateSelectionVisuals();
+		//updateGizmos();
 		update();
 
 		return true;
@@ -715,11 +764,21 @@ public slots:
 
 		makeCurrent();
 		selectionManager.clearSelection();
-		renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();
-		renderer.UpdateUniformBuffer();
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+		//renderer.UpdateUniformBuffer();
+		//updateSelectionVisuals();
+		//updateGizmos();
+
+		// 10/16/26 - Changed to public API.
+		// Need to update geometry because the mesh list/IDs/vertex buffers have changed.
+		// Need to update mesh transforms (?)
+		// Clear old highlights
+
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -755,8 +814,10 @@ public slots:
 		SceneFile doc;
 
 		//doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
-		doc.grid = renderer.GridVisible();
-		doc.points = renderer.VertexPointsVisible();
+
+		// 10/16/26 - Updated to new public API
+		doc.grid = renderer.ShowGrid();
+		doc.points = renderer.ShowVertices();
 
 		//Object selection id just mesh id
 		//sub-object selection is not saved

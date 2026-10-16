@@ -367,10 +367,22 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 	}
 	else if (actionPerformed && updateRenderBuffers) {
-		renderer.UpdateRenderBuffers(scene);
+		// 10/16/26 - Update to public API.
+		// Check if we need to update geometry or if we only need to update transforms.
+		const Element element = selectionManager.getActiveElement();
+		// If we are scaling, rotating, or translating (object only) then we just need to update transforms.
+		const bool transformAction = actionParams.action == SCALE || actionParams.action == ROTATE || ((actionParams.action == TRANSLATE_FREE || actionParams.action == TRANSLATE_OUT) && element == OBJECT);
+
+		if (transformAction) {
+			renderer.UpdateTransforms();
+		}
+		else {
+			renderer.UpdateGeometry();
+		}
+		//renderer.UpdateRenderBuffers(scene);
 	}
 
-	updateGizmos();
+	//updateGizmos();
 
 	// Update MouseAction struct
 	mouseAction.EndMouseDragStep();
@@ -832,7 +844,10 @@ bool Viewport::scaleDrag() {
 	}
 
 	//renderer.UpdateRenderBuffers(scene);
-	renderer.UpdateUniformBuffer();
+	//renderer.UpdateUniformBuffer();
+
+	// 10/16/26 - Update to public API.
+	renderer.UpdateTransforms();
 
 	return true;
 }
@@ -867,7 +882,9 @@ bool Viewport::rotateDrag() {
 		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
 	}
 
-	renderer.UpdateUniformBuffer();
+	// 10/16/26 - Update to public API.
+	renderer.UpdateTransforms();
+	//renderer.UpdateUniformBuffer();
 
 	return true;
 }
@@ -897,7 +914,8 @@ bool Viewport::rotateGizmoDrag() {
 	bool rotated = false;
 	std::cout << "Rotation along axis: " << draggedGizmoAxis << " captured, but logic not implemented." << std::endl;
 
-	renderer.UpdateRenderBuffers(scene);
+	// 10/16/26 - Update Gizmos.
+	//renderer.UpdateRenderBuffers(scene);
 
 	if (rotated) {
 		emitPrimarySelectionRotChanged();
