@@ -143,12 +143,6 @@ public:
 		bool success = RecompileShaders(header);
 		if (!success) { return false; }
 
-		prog.Bind();
-
-		prog.RegisterUniform(SCALE, "scale");
-		prog.RegisterUniform(VIEW_PROJ, "viewProj");
-		prog.SetUniform(SCALE, scale);
-
 		return true;
 	}
 
@@ -168,6 +162,12 @@ public:
 			nullptr, nullptr, nullptr, header, &std::cout);
 
 		if (!success) { std::cout << "Failed to compile vertex shader program!" << std::endl; }
+
+		prog.Bind();
+		prog.RegisterUniform(VIEW_PROJ, "viewProj");
+		prog.RegisterUniform(SCALE, "scale");
+
+		prog.SetUniform(SCALE, scale);
 
 		return success;
 	}
@@ -261,12 +261,6 @@ public:
 		bool success = RecompileShaders(header);
 		if (!success) { return false; }
 
-		prog.Bind();
-
-		prog.RegisterUniform(RADIUS, "radius");
-		prog.RegisterUniform(VIEW_PROJ, "viewProj");
-		prog.SetUniform(RADIUS, radius);
-
 		return true;
 	}
 
@@ -286,6 +280,12 @@ public:
 			nullptr, nullptr, nullptr, header, &std::cout);
 
 		if (!success) { std::cout << "Failed to compile edge shader program!" << std::endl; }
+
+		prog.Bind();
+		prog.RegisterUniform(RADIUS, "radius");
+		prog.RegisterUniform(VIEW_PROJ, "viewProj");
+
+		prog.SetUniform(RADIUS, radius);
 
 		return success;
 	}
@@ -734,8 +734,13 @@ public:
 
 		if (!success) { std::cout << "Failed to compile mesh shader program!" << std::endl; }
 
+		prog.mesh.RegisterUniform(VIEW, "view");
+
 		success = success && rndrs.vert.RecompileShaders(header.data());
 		success = success && rndrs.edge.RecompileShaders(header.data());
+
+		UpdateProjectionUniforms();
+		UpdateViewUniforms();
 
 		return success;
 	}
