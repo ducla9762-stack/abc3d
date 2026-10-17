@@ -191,6 +191,11 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	event->accept();
 	makeCurrent();
 
+	// An edge choice belongs to one mouse drag.  Do not carry a previously
+	// chosen half-edge into the next drag (or into a changed selection).
+	edgeDragEdges.clear();
+	edgeDragDistances.clear();
+
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
@@ -615,7 +620,20 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 		}
 	}
 
-	selectionManager.processSelection(item);
+	// Edge translation is intentionally a single-vertex operation.  Ignore
+	// Ctrl/additive selection while this action is active and replace the
+	// current vertex with the one that was clicked.
+	if (actionParams.action == TRANSLATE_EDGE &&
+		selectionManager.getActiveElement() == VERTEX) {
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+		if (selectedItems.size() != 1 || !(selectedItems.front() == item)) {
+			selectionManager.clearSelection();
+			selectionManager.addSelection(item);
+		}
+	}
+	else {
+		selectionManager.processSelection(item);
+	}
 
 	// Tell the renderer to update the selection visuals.
 	updateSelectionVisuals();
@@ -910,7 +928,77 @@ bool Viewport::translateOutDrag() {
 	return true;
 }
 
-bool translateEdgeDrag() { return false; }
+// AI-generated Code
+bool Viewport::translateEdgeDrag() {
+	// Edge translation is defined for vertices: the vertex remains selected and
+	// moves along one of its incident edges.  The edge is selected from the
+	// direction of the first drag movement.
+	if (selectionManager.getActiveElement() != VERTEX ||
+		selectionManager.getSelectedItems().size() != 1) {
+		return false;
+	}
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (mouseAction.firstMoveEvent) {
+		Vec3f forward, up, right;
+		renderer.GetCamera()->directions(forward, up, right);
+
+		// Mouse positions are converted to a bottom-left origin in the Qt event
+		// handlers. Camera::directions() uses the opposite-handed basis from the
+		// view matrix (its right/up vectors point toward screen-left/down), so
+		// negate both axes before comparing projected edges to the mouse vector.
+		const Vec2f& dragDir = mouseAction.initialDragDir;
+		if (dragDir.LengthSquared() < 1e-12f) {
+			return false;
+		}
+
+		edgeDragEdges.clear();
+		edgeDragDistances.clear();
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			const uint edge = mesh->PickOutgoingHalfEdge(
+				item.componentId, dragDir, -right, -up);
+			if (edge != MAX_UINT) {
+				edgeDragEdges.emplace(item, edge);
+				edgeDragDistances.emplace(item, 0.0f);
+			}
+		}
+	}
+
+	if (edgeDragEdges.empty()) {
+		return false;
+	}
+
+	const float delta = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+	bool transformed = false;
+	for (const SelectionItem& item : selectedItems) {
+		auto edge = edgeDragEdges.find(item);
+		auto distance = edgeDragDistances.find(item);
+		if (edge == edgeDragEdges.end() || distance == edgeDragDistances.end() ||
+			item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Do not allow a reversed drag to carry the vertex past its starting
+		// position. Keep reporting the drag as handled at the limit so the
+		// camera does not start orbiting when the clamp is reached.
+		const float nextDistance = std::max(0.0f, distance->second + delta);
+		const float appliedDistance = nextDistance - distance->second;
+		distance->second = nextDistance;
+		if (std::abs(appliedDistance) > 1e-12f) {
+			scene[item.meshId]->TranslateVertexAlongEdge(
+				item.componentId, edge->second, appliedDistance);
+		}
+		transformed = true;
+	}
+
+	return transformed;
+}
 
 void Viewport::setupBevelDrag() {
 	if (beveler) { delete beveler; }

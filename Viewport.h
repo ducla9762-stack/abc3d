@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <functional>
 #include <optional>
+#include <unordered_map>
 
 #include <algorithm>
 
@@ -167,6 +168,15 @@ private:
 	bool localScale = true;
 	std::optional<SelectionItem> mergeFirstVertex;
 
+	// AI-generated code:
+	// Edge translation chooses an adjacent edge from the first drag direction.
+	// Keep that choice per selected vertex for the duration of the drag so
+	// multi-selection does not make every vertex use the same half-edge id.
+	std::unordered_map<SelectionItem, uint> edgeDragEdges;
+	// Signed movement accumulated along each chosen edge.  This lets the drag
+	// clamp at the vertex's original position when the mouse reverses.
+	std::unordered_map<SelectionItem, float> edgeDragDistances;
+
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
@@ -238,7 +248,7 @@ private:
 	void translateSelections();
 	void translateActionElements();
 	bool translateOutDrag();
-	bool translateEdgeDrag() { return false; }
+	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
 	void extrudeSelectedElements();
@@ -329,7 +339,24 @@ public:
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
-	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	void setActionTranslateEdge() {
+		// The constrained operation is vertex only.
+		if (selectionManager.getActiveElement() != VERTEX) {
+			setActiveElement(VERTEX);
+			elementButtons[0]->setChecked(true);
+			emit elementChanged(VERTEX);
+		}
+		// This operation only makes sense on one selection, prevent additive selection with this tool.
+		bool reducedSelection = false;
+		if (selectionManager.itemCount() > 1) {
+			const SelectionItem keep = selectionManager.getSelectedItems().front();
+			selectionManager.clearSelection();
+			selectionManager.addSelection(keep);
+			reducedSelection = true;
+		}
+		setAction(TRANSLATE_EDGE);
+		if (reducedSelection) { emitSelectionChanged(); }
+	}
 	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 
 	void setActionExtrude() { setAction(EXTRUDE); }
