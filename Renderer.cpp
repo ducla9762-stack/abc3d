@@ -96,6 +96,8 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		UploadColorBuffer(); 
 	}
 
+	glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+
 	if (update.renderBufs || update.uniformBuf || update.camera || update.resized) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
@@ -126,6 +128,8 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 	}
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
