@@ -100,8 +100,6 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 
-		std::cout << "Draw 1: " << glGetError() << std::endl;
-
 		glClear(GL_DEPTH_BUFFER_BIT);
 		float clearClr[3] = { 1.0f, 1.0f, 1.0f };
 		uint clearId[3] = { 0, 0, 0 };
@@ -109,30 +107,24 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glClearBufferfv(GL_COLOR, 1, clearClr);
 		glClearBufferuiv(GL_COLOR, 2, clearId);
 
-		std::cout << "Draw 2: " << glGetError() << std::endl;
-
 		if (show.surfaces) {
 			glBindVertexArray(vao.mesh);
 			prog.mesh.Bind();
 			glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
-			std::cout << "Draw 3: " << glGetError() << std::endl;
 		}
 
 		if (show.vertices) {
 			rndrs.vert.Draw();
-			std::cout << "Draw 4: " << glGetError() << std::endl;
 		}
 
 		if (show.edges) {
 			rndrs.edge.Draw();
-			std::cout << "Draw 5: " << glGetError() << std::endl;
 		}
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		std::cout << "Draw 6: " << glGetError() << std::endl;
 	}
 
 	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
@@ -149,13 +141,10 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	glEnable(GL_DEPTH_TEST);
 
-	std::cout << "Draw 7: " << glGetError() << std::endl;
-
 	if (show.grid) {
 		glEnable(GL_BLEND);
 
 		rndrs.grid.Draw();
-		std::cout << "Draw 8: " << glGetError() << std::endl;
 
 		glDisable(GL_BLEND);
 	}
