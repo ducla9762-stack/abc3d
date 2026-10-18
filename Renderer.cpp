@@ -81,6 +81,7 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 	UpdateProjectionUniforms();
 	glViewport(0, 0, frame.width, frame.height);
 	InitFramebuffer(defaultFrameBuffer);
+	update.resized = true;
 }
 
 void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
@@ -95,7 +96,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		UploadColorBuffer(); 
 	}
 
-	if (update.renderBufs || update.uniformBuf || update.camera) {
+	if (update.renderBufs || update.uniformBuf || update.camera || update.resized) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 

@@ -390,8 +390,8 @@ class ABC3DRenderer {
 	struct FrameBuffer {
 		int width = 0;
 		int height = 0;
-		GLuint fbo;
-		GLuint depthBuf;
+		GLuint fbo = 0;
+		GLuint depthBuf = 0;
 	} frame;
 
 	struct CameraSettings {
@@ -414,6 +414,7 @@ class ABC3DRenderer {
 		bool uniformBuf = false;
 		bool selection = false;
 		bool hover = false;
+		bool resized = false;
 
 		void ClearAll() {
 			renderBufs = false;
@@ -421,6 +422,7 @@ class ABC3DRenderer {
 			uniformBuf = false;
 			selection = false;
 			hover = false;
+			resized = false;
 		}
 	} update;
 
