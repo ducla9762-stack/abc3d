@@ -103,7 +103,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		std::cout << "Draw 1: " << glGetError() << std::endl;
 
 		glClear(GL_DEPTH_BUFFER_BIT);
-		float clearClr[3] = { 0.000001f, 0.000001f, 0.000001f };
+		float clearClr[3] = { 1.0f, 1.0f, 1.0f };
 		uint clearId[3] = { 0, 0, 0 };
 		glClearBufferfv(GL_COLOR, 0, clearClr);
 		glClearBufferfv(GL_COLOR, 1, clearClr);
