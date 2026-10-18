@@ -55,6 +55,10 @@ void main(){
 
     clr = mix(clr, blend, 0.5f);
 
+    if(isnan(clr.r) || isnan(clr.g) || isnan(clr.b)){
+        clr = vec3(0.2f, 0.6f, 0.8f);
+    }
+
     color = vec4(clr, 1.0f);
 }
 
