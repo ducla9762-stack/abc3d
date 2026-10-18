@@ -131,10 +131,12 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 
 		glClear(GL_DEPTH_BUFFER_BIT);
-		glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 		std::cout << "Draw 6: " << glGetError() << std::endl;
 	}
+
+	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
