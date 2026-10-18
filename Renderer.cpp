@@ -100,25 +100,32 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 
+		std::cout << "Draw 1: " << glGetError() << std::endl;
+
 		glClear(GL_DEPTH_BUFFER_BIT);
-		float clearClr[3] = { 0.0f, 0.0f, 0.0f };
+		float clearClr[3] = { 0.000001f, 0.000001f, 0.000001f };
 		uint clearId[3] = { 0, 0, 0 };
 		glClearBufferfv(GL_COLOR, 0, clearClr);
 		glClearBufferfv(GL_COLOR, 1, clearClr);
 		glClearBufferuiv(GL_COLOR, 2, clearId);
 
+		std::cout << "Draw 2: " << glGetError() << std::endl;
+
 		if (show.surfaces) {
 			glBindVertexArray(vao.mesh);
 			prog.mesh.Bind();
 			glDrawArrays(GL_TRIANGLES, 0, meshVertDrawCount);
+			std::cout << "Draw 3: " << glGetError() << std::endl;
 		}
 
 		if (show.vertices) {
 			rndrs.vert.Draw();
+			std::cout << "Draw 4: " << glGetError() << std::endl;
 		}
 
 		if (show.edges) {
 			rndrs.edge.Draw();
+			std::cout << "Draw 5: " << glGetError() << std::endl;
 		}
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
@@ -126,19 +133,27 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
+		std::cout << "Draw 6: " << glGetError() << std::endl;
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDepthMask(GL_FALSE);
 
+	glDisable(GL_DEPTH_TEST);
+
 	glBindVertexArray(vao.frame);
 	prog.shade.Bind();
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glEnable(GL_DEPTH_TEST);
+
+	std::cout << "Draw 7: " << glGetError() << std::endl;
 
 	if (show.grid) {
 		glEnable(GL_BLEND);
 
 		rndrs.grid.Draw();
+		std::cout << "Draw 8: " << glGetError() << std::endl;
 
 		glDisable(GL_BLEND);
 	}
@@ -157,9 +172,13 @@ void ABC3DRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 	glDeleteFramebuffers(1, &frame.fbo);
 	glDeleteRenderbuffers(1, &frame.depthBuf);
 
+	std::cout << "FB 1: " << glGetError() << std::endl;
+
 	// Create new framebuffer
 	glGenFramebuffers(1, &frame.fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+
+	std::cout << "FB 2: " << glGetError() << std::endl;
 
 	// Allocate textures and render buffer
 
@@ -202,6 +221,8 @@ void ABC3DRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 
 	// Re-bind default framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
+
+	std::cout << "FB 3: " << glGetError() << std::endl;
 }
 
 void ABC3DRenderer::UpdateRenderBuffers() {
@@ -264,6 +285,8 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 
 	glEnableVertexAttribArray(2);
 	glVertexAttribIPointer(2, 2, GL_UNSIGNED_INT, sizeof(VertexAttributes), (GLvoid*)offsetof(VertexAttributes, ids));
+
+	std::cout << "GRB 1: " << glGetError() << std::endl;
 };
 
 void ABC3DRenderer::UpdateUniformBuffer() {
@@ -283,6 +306,8 @@ void ABC3DRenderer::UpdateUniformBuffer() {
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * maxObjectCount, nullptr, GL_DYNAMIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	std::cout << "UBO 1: " << glGetError() << std::endl;
 }
 
 void ABC3DRenderer::ResetColorBuffer() {
