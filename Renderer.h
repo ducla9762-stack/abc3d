@@ -668,7 +668,7 @@ public:
 			const HalfEdgeMesh& mesh = *(scene->operator[](ids.x));
 			pos = mesh.WorldPosToLocalPos(pos);
 
-			return Vec2u(ids.y, mesh.NearestEdge(ids.y - offset.meshFaces[ids.x], pos));
+			return Vec2u(ids.x, mesh.NearestEdge(ids.y - offset.meshFaces[ids.x], pos));
 		}
 
 		case VERTEX: {
@@ -684,7 +684,7 @@ public:
 			const HalfEdgeMesh& mesh = *(scene->operator[](ids.x));
 			pos = mesh.WorldPosToLocalPos(pos);
 
-			return Vec2u(ids.y, mesh.NearestVertex(ids.y - offset.meshFaces[ids.x], pos));
+			return Vec2u(ids.x, mesh.NearestVertex(ids.y - offset.meshFaces[ids.x], pos));
 		}
 		}
 	}
