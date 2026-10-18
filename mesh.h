@@ -444,21 +444,21 @@ public:
 		Vec3f local = pos - this->pos;
 
 		local.x = (
-			rot.cell[0] * pos[0] +
-			rot.cell[1] * pos[1] +
-			rot.cell[2] * pos[2]
+			rot.cell[0] * local[0] +
+			rot.cell[1] * local[1] +
+			rot.cell[2] * local[2]
 		);
 
 		local.y = (
-			rot.cell[3] * pos[0] +
-			rot.cell[4] * pos[1] +
-			rot.cell[5] * pos[2]
+			rot.cell[3] * local[0] +
+			rot.cell[4] * local[1] +
+			rot.cell[5] * local[2]
 		);
 
 		local.z = (
-			rot.cell[6] * pos[0] +
-			rot.cell[7] * pos[1] +
-			rot.cell[8] * pos[2]
+			rot.cell[6] * local[0] +
+			rot.cell[7] * local[1] +
+			rot.cell[8] * local[2]
 		);
 
 		local /= scale;
@@ -613,9 +613,10 @@ public:
 			const HalfEdge& edge = edges[curr];
 			Vec3f next = vertPos[edge.dest];
 			Vec3f lineSeg = next - prev;
-			float t = pos.Dot(lineSeg) / lineSeg.LengthSquared();
+			Vec3f relPos = pos - prev;
+			float t = relPos.Dot(lineSeg) / lineSeg.LengthSquared();
 			if (t >= 0.0f && t <= 1.0f) {
-				Vec3f rejection = pos - (t * lineSeg);
+				Vec3f rejection = relPos - (t * lineSeg);
 				float distSqrd = rejection.LengthSquared();
 				if (distSqrd < nearestDistSqrd) {
 					nearestDistSqrd = distSqrd;
