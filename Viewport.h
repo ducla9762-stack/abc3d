@@ -126,7 +126,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
 	};
 
 private:
@@ -263,6 +263,7 @@ private:
 
 	void handleSelection(const Vec3u& selectionIds);
 	void handleMergeVertexClick(const Vec3u& selectionIds);
+	void handleCollapseEdgeClick(const Vec3u& selectionIds);
 	SelectionItem createSelectionItem(const Vec3u& ids);
 	void setActiveElement(Element element);
 
@@ -374,6 +375,14 @@ public slots:
 		setAction(MERGE);
 	}
 
+	void setActionCollapse() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(COLLAPSE);
+	}
+	void setActionDissolve() { setAction(DISSOLVE); }
+
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
 	/// <summary>Keeps the cut in progress.</summary>
@@ -393,6 +402,7 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -400,7 +410,7 @@ public slots:
 
 	void enableElementVertex() {
 		elementButtons[0]->setEnabled(true);
-		elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; ");
+        elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
 	}
 
 	void disableElementVertex() {
@@ -427,6 +437,7 @@ public slots:
 
 	// Face Element
 	void setElementFace() {
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -444,6 +455,7 @@ public slots:
 
 	// Object Element
 	void setElementObject() { 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
 		setActiveElement(OBJECT); 
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);

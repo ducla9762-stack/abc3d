@@ -762,6 +762,40 @@ bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
 	return true;
 }
 
+bool HalfEdgeMesh::CollapseEdge(uint edgeId) {
+	if (edgeId >= edges.size()) {
+		return false;
+	}
+
+	const HalfEdge& selectedEdge = edges[edgeId];
+	if (selectedEdge.twin >= edges.size()) {
+		return false;
+	}
+
+	// Prefer the face-owned half-edge when the caller supplied an exterior twin.
+	if (selectedEdge.face == MAX_UINT && edges[selectedEdge.twin].face != MAX_UINT) {
+		edgeId = selectedEdge.twin;
+	}
+
+	const HalfEdge& edge = edges[edgeId];
+	if (edge.orig >= VertexCount() || edge.dest >= VertexCount() ||
+		edge.orig == edge.dest) {
+		return false;
+	}
+
+	const uint sourceVertex = edge.orig;
+	const uint targetVertex = edge.dest;
+	const Vec3f midpoint = (vertPos[sourceVertex] + vertPos[targetVertex]) * 0.5f;
+
+	if (!MergeVertices(sourceVertex, targetVertex)) {
+		return false;
+	}
+
+	const uint mergedVertex = targetVertex > sourceVertex ? targetVertex - 1 : targetVertex;
+	vertPos[mergedVertex] = midpoint;
+	return true;
+}
+
 void HalfEdgeMesh::translateVertices(const Vec3f& add) {
 	for (Vec3f& vert : vertPos) {
 		vert += add;

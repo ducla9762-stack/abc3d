@@ -150,6 +150,21 @@ TEST(HalfEdgeMeshMerge, RejectsCollapseOfLastFace) {
 	EXPECT_TRUE(IsValid(mesh));
 }
 
+TEST(HalfEdgeMeshCollapse, CollapsesCubeEdgeToItsMidpoint) {
+	HalfEdgeMesh mesh = Cube();
+	const HalfEdgeMesh::HalfEdge edge = mesh.GetEdge(0);
+	const uint mergedVertex = edge.dest > edge.orig ? edge.dest - 1 : edge.dest;
+	const Vec3f midpoint = (mesh.GetVertexPosition(edge.orig) +
+		mesh.GetVertexPosition(edge.dest)) * 0.5f;
+
+	EXPECT_TRUE(mesh.CollapseEdge(0));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	ExpectVec3Near(mesh.GetVertexPosition(mergedVertex), midpoint);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
 // --- Component scaling ----------------------------------------------------
 // AI-Generated Tests of scaling faces and edges.
 

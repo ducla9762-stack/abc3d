@@ -678,6 +678,9 @@ QPushButton{background-color: #646464;}</string>
             <height>16777215</height>
            </size>
           </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton:checked { background-color: red; }</string>
+          </property>
           <property name="text">
            <string>Merge</string>
           </property>
@@ -1914,6 +1917,9 @@ color: white;</string>
     <slot>enableElementObject()</slot>
     <slot>disableElementObject()</slot>
     <slot>enableAllElements()</slot>
+    <slot>setActionMerge()</slot>
+    <slot>setActionDissolve()</slot>
+    <slot>setActionCollapse()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -3162,6 +3168,78 @@ color: white;</string>
      <y>731</y>
     </hint>
    </hints>
+  </connection>
+  <connection>
+   <sender>mergeModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionMerge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1476</x>
+     <y>684</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1421</x>
+     <y>687</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dissolveModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionDissolve()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1473</x>
+     <y>712</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1425</x>
+     <y>703</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionCollapse()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1461</x>
+     <y>746</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1425</x>
+     <y>746</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>enableElementEdge()</slot>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementVertex()</slot>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementFace()</slot>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementObject()</slot>
   </connection>
  </connections>
  <slots>

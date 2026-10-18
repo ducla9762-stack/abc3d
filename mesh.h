@@ -588,6 +588,15 @@ public:
 	/// <returns>True when the merge was applied; false when it was rejected.</returns>
 	bool MergeVertices(uint sourceVertex, uint targetVertex);
 
+	/// <summary>
+	/// Collapses an edge by merging its endpoints and placing the new vertex at
+	/// the edge midpoint. The mesh is changed only when the resulting topology
+	/// is valid and does not open a previously closed surface.
+	/// </summary>
+	/// <param name="edgeId">A half-edge belonging to the edge to collapse.</param>
+	/// <returns>True when the collapse was applied; false when it was rejected.</returns>
+	bool CollapseEdge(uint edgeId);
+
 	uint VertexDegree(uint vertex) {
 		uint firstEdge = vertEdge[vertex];
 		uint currEdge = firstEdge;

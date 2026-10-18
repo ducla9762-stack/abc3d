@@ -76,6 +76,10 @@ ABC3D::ABC3D(QWidget *parent)
         ui.bottomRightPanels->setCurrentIndex(1);
         });
 
+    QObject::connect(ui.mergeToolButton, &QPushButton::released, this, [=]() {
+        ui.bottomRightPanels->setCurrentIndex(0);
+        });
+
     // Emits signal for when to create shapes (with resolutions)
     QObject::connect(ui.torusButton_5, &QPushButton::released, this, [=]() {
             ui.viewport->loadTorus(ui.torusSlider->value());

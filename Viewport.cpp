@@ -313,6 +313,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			if (actionParams.action == MERGE) {
 				handleMergeVertexClick(ids);
 			}
+			else if (actionParams.action == COLLAPSE) {
+				handleCollapseEdgeClick(ids);
+			}
 			else {
 				handleSelection(ids);
 			}
@@ -514,12 +517,28 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 void Viewport::setAction(Action action) {
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
-	if (actionParams.action == MERGE && action != MERGE) {
-		mergeFirstVertex.reset();
+	if ((actionParams.action == MERGE && action != MERGE) ||
+		(actionParams.action == COLLAPSE && action != COLLAPSE)) {
+		if (actionParams.action == MERGE) {
+			mergeFirstVertex.reset();
+		}
 		selectionManager.clearSelection();
+		enableAllElements();
 	}
 
 	actionParams.action = action;
+	if (action == MERGE) {
+		enableElementVertex();
+		disableElementEdge();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == COLLAPSE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
 	if (action == KNIFE) { knifeBegin(); }
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
@@ -586,6 +605,38 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 	std::cout << "Merged vertex " << source.componentId << " into vertex "
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are (one-based mesh ID, face ID, half-edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Collapse mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->CollapseEdge(edgeId)) {
+		std::cout << "Edge collapse rejected: the result would have invalid or open topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
 	makeCurrent();
 	renderer.UpdateRenderBuffers(scene);
