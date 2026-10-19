@@ -762,6 +762,60 @@ bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
 	return true;
 }
 
+bool HalfEdgeMesh::DeleteFace(uint faceId) {
+	if (faceId >= FaceCount()) {
+		return false;
+	}
+
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+
+	HalfEdgeMesh deleted = *this;
+	std::vector<std::vector<uint>> remainingFaces;
+	remainingFaces.reserve(deleted.FaceCount() - 1);
+	for (uint currentFace = 0; currentFace < deleted.FaceCount(); ++currentFace) {
+		if (currentFace == faceId) {
+			continue;
+		}
+
+		std::vector<uint> face;
+		uint edgeId = deleted.faceEdges[currentFace];
+		do {
+			face.push_back(deleted.edges[edgeId].orig);
+			edgeId = deleted.edges[edgeId].next;
+		} while (edgeId != deleted.faceEdges[currentFace]);
+		remainingFaces.push_back(std::move(face));
+	}
+
+	const Vec3f originalPos = deleted.pos;
+	const Vec3f originalScale = deleted.scale;
+	const Vec3f originalRotation = deleted.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!deleted.build(remainingFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() recenters the remaining geometry. Restore the original object
+	// transform and local-space placement after removing the face.
+	const Vec3f buildOffset = deleted.pos - originalPos;
+	deleted.translateVertices(buildOffset);
+	deleted.pos = originalPos;
+	deleted.scale = originalScale;
+	deleted.eulerRot = originalRotation;
+
+	std::string error;
+	if (!deleted.Validate(error)) {
+		return false;
+	}
+
+	*this = std::move(deleted);
+	return true;
+}
+
 
 bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
 	if (edgeId >= edges.size()) {

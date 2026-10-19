@@ -596,6 +596,12 @@ public:
 	bool DissolveEdge(uint edgeId);
 
 	/// <summary>
+	/// Removes a face and rebuilds its boundary as an open mesh boundary.
+	/// </summary>
+	/// <returns>True when the face was removed; false when the face ID or resulting topology is invalid.</returns>
+	bool DeleteFace(uint faceId);
+
+	/// <summary>
 	/// Collapses an edge by merging its endpoints and placing the new vertex at
 	/// the edge midpoint. The mesh is changed only when the resulting topology
 	/// is valid and does not open a previously closed surface.

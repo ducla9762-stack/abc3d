@@ -821,11 +821,13 @@ public slots:
 				break;
 
 			case EDGE:
-				// todo
+				// Dissolve edge as delete operation.
+				scene[item.meshId]->DissolveEdge(item.componentId);
 				break;
 
 			case FACE:
-				// todo
+				// The operation is implemented, but intentionally disabled for now.
+				//scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
 		}

@@ -192,6 +192,25 @@ TEST(HalfEdgeMeshDissolve, RejectsBoundaryEdge) {
 	EXPECT_TRUE(IsValid(mesh));
 }
 
+TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+
+	bool hasBoundary = false;
+	for (uint edgeId = 0; edgeId < mesh.EdgeCount(); ++edgeId) {
+		if (mesh.GetEdge(edgeId).face == MAX_UINT) {
+			hasBoundary = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(hasBoundary);
+}
+
 // --- Component scaling ----------------------------------------------------
 // AI-Generated Tests of scaling faces and edges.
 
