@@ -191,6 +191,11 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	event->accept();
 	makeCurrent();
 
+	// An edge choice belongs to one mouse drag.  Do not carry a previously
+	// chosen half-edge into the next drag (or into a changed selection).
+	edgeDragEdges.clear();
+	edgeDragDistances.clear();
+
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
@@ -236,7 +241,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
-
+	if (actionParams.action == MERGE) {
+		mergeFirstVertex.reset();
+	}
 	selectionManager.clearSelection();
 	makeCurrent();
 	updateSelectionVisuals();
@@ -302,7 +309,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged && ids.x != 0) {
-			handleSelection(ids);
+			if (actionParams.action == MERGE) {
+				handleMergeVertexClick(ids);
+			}
+			else if (actionParams.action == COLLAPSE) {
+				handleCollapseEdgeClick(ids);
+			}
+			else if (actionParams.action == DISSOLVE) {
+				handleDissolveEdgeClick(ids);
+			}
+			else {
+				handleSelection(ids);
+			}
 		}
 
 		// Print selection ids.
@@ -501,8 +519,35 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 void Viewport::setAction(Action action) {
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+	if ((actionParams.action == MERGE && action != MERGE) ||
+		(actionParams.action == COLLAPSE && action != COLLAPSE) ||
+		(actionParams.action == DISSOLVE && action != DISSOLVE)) {
+		if (actionParams.action == MERGE) {
+			mergeFirstVertex.reset();
+		}
+		selectionManager.clearSelection();
+		enableAllElements();
+	}
 
 	actionParams.action = action;
+	if (action == MERGE) {
+		enableElementVertex();
+		disableElementEdge();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == COLLAPSE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == DISSOLVE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
 	if (action == KNIFE) { knifeBegin(); }
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
@@ -510,6 +555,9 @@ void Viewport::setAction(Action action) {
 	draggedRotationAxis = Vec3f(0.0f);
 	if (rendererInitialized) {
 		makeCurrent();
+		if (action != MERGE) {
+			updateSelectionVisuals();
+		}
 		updateGizmos();
 	}
 	update();
@@ -518,6 +566,126 @@ void Viewport::setAction(Action action) {
 // ---------------------------------------------------------------------------------------------
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
+
+void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
+	// Vertex-point hits are encoded as (MAX_UINT, one-based mesh ID,
+	// zero-based vertex ID). Surface hits are intentionally ignored.
+	if (selectionIds.x != MAX_UINT || selectionIds.y == 0 ||
+		selectionIds.y == MAX_UINT || selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.y - 1;
+	const uint vertexId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || vertexId >= scene[meshId]->VertexCount()) {
+		return;
+	}
+
+	const SelectionItem clicked{ meshId, vertexId };
+	std::cout << "Merge mode vertex clicked: mesh " << meshId
+		<< ", vertex " << vertexId << std::endl;
+
+	if (!mergeFirstVertex.has_value()) {
+		mergeFirstVertex = clicked;
+		selectionManager.clearSelection();
+		selectionManager.addSelection(clicked);
+		updateSelectionVisuals();
+		updateGizmos();
+		emitSelectionChanged();
+		update();
+		return;
+	}
+
+	const SelectionItem source = *mergeFirstVertex;
+	if (source == clicked) {
+		std::cout << "Merge rejected: choose a different target vertex." << std::endl;
+		return;
+	}
+	if (source.meshId != clicked.meshId) {
+		std::cout << "Merge rejected: both vertices must belong to the same mesh." << std::endl;
+		return;
+	}
+
+	if (!scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
+		std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
+		return;
+	}
+
+	std::cout << "Merged vertex " << source.componentId << " into vertex "
+		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
+	mergeFirstVertex.reset();
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are (one-based mesh ID, face ID, half-edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Collapse mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->CollapseEdge(edgeId)) {
+		std::cout << "Edge collapse rejected: the result would have invalid or open topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are encoded as (one-based mesh ID, face ID, edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Dissolve mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->DissolveEdge(edgeId)) {
+		std::cout << "Dissolve rejected: choose an interior edge with valid topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
 
 void Viewport::handleSelection(const Vec3u& selectionIds) {
 	// Create a selection item to send to the selection manager.
@@ -544,7 +712,20 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 		}
 	}
 
-	selectionManager.processSelection(item);
+	// Edge translation is intentionally a single-vertex operation.  Ignore
+	// Ctrl/additive selection while this action is active and replace the
+	// current vertex with the one that was clicked.
+	if (actionParams.action == TRANSLATE_EDGE &&
+		selectionManager.getActiveElement() == VERTEX) {
+		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+		if (selectedItems.size() != 1 || !(selectedItems.front() == item)) {
+			selectionManager.clearSelection();
+			selectionManager.addSelection(item);
+		}
+	}
+	else {
+		selectionManager.processSelection(item);
+	}
 
 	// Tell the renderer to update the selection visuals.
 	updateSelectionVisuals();
@@ -839,7 +1020,77 @@ bool Viewport::translateOutDrag() {
 	return true;
 }
 
-bool translateEdgeDrag() { return false; }
+// AI-generated Code
+bool Viewport::translateEdgeDrag() {
+	// Edge translation is defined for vertices: the vertex remains selected and
+	// moves along one of its incident edges.  The edge is selected from the
+	// direction of the first drag movement.
+	if (selectionManager.getActiveElement() != VERTEX ||
+		selectionManager.getSelectedItems().size() != 1) {
+		return false;
+	}
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (mouseAction.firstMoveEvent) {
+		Vec3f forward, up, right;
+		renderer.GetCamera()->directions(forward, up, right);
+
+		// Mouse positions are converted to a bottom-left origin in the Qt event
+		// handlers. Camera::directions() uses the opposite-handed basis from the
+		// view matrix (its right/up vectors point toward screen-left/down), so
+		// negate both axes before comparing projected edges to the mouse vector.
+		const Vec2f& dragDir = mouseAction.initialDragDir;
+		if (dragDir.LengthSquared() < 1e-12f) {
+			return false;
+		}
+
+		edgeDragEdges.clear();
+		edgeDragDistances.clear();
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			const uint edge = mesh->PickOutgoingHalfEdge(
+				item.componentId, dragDir, -right, -up);
+			if (edge != MAX_UINT) {
+				edgeDragEdges.emplace(item, edge);
+				edgeDragDistances.emplace(item, 0.0f);
+			}
+		}
+	}
+
+	if (edgeDragEdges.empty()) {
+		return false;
+	}
+
+	const float delta = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+	bool transformed = false;
+	for (const SelectionItem& item : selectedItems) {
+		auto edge = edgeDragEdges.find(item);
+		auto distance = edgeDragDistances.find(item);
+		if (edge == edgeDragEdges.end() || distance == edgeDragDistances.end() ||
+			item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Do not allow a reversed drag to carry the vertex past its starting
+		// position. Keep reporting the drag as handled at the limit so the
+		// camera does not start orbiting when the clamp is reached.
+		const float nextDistance = std::max(0.0f, distance->second + delta);
+		const float appliedDistance = nextDistance - distance->second;
+		distance->second = nextDistance;
+		if (std::abs(appliedDistance) > 1e-12f) {
+			scene[item.meshId]->TranslateVertexAlongEdge(
+				item.componentId, edge->second, appliedDistance);
+		}
+		transformed = true;
+	}
+
+	return transformed;
+}
 
 void Viewport::setupBevelDrag() {
 	if (beveler) { delete beveler; }

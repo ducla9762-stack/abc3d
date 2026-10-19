@@ -74,6 +74,143 @@ TEST(MeshInvariants, PyramidStartsValid) {
 	EXPECT_EQ(mesh.EdgeCount(), 16u);
 }
 
+TEST(HalfEdgeMeshMerge, RemovesSourceVertexAndKeepsTargetPosition) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f),
+			Vec3f(2.0f, 2.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	ASSERT_TRUE(IsValid(mesh));
+	ASSERT_TRUE(mesh.MergeVertices(3, 1));
+	EXPECT_EQ(mesh.VertexCount(), 3u);
+	ExpectVec3Near(mesh.GetVertexPosition(1), Vec3f(1.0f, 0.0f, 0.0f));
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, CollapsesAdjacentCubeEdge) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.MergeVertices(0, 4));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, AllowsClosedFaceReductionWhenResultStaysClosed) {
+	HalfEdgeMesh mesh = Cube();
+
+	// This merge removes a face, but the rebuilt surface remains closed.
+	EXPECT_TRUE(mesh.MergeVertices(0, 3));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.EdgeCount(), 20u);
+	EXPECT_TRUE(IsValid(mesh));
+	for (uint edgeId = 0; edgeId < mesh.EdgeCount(); ++edgeId) {
+		EXPECT_NE(mesh.GetEdge(edgeId).face, MAX_UINT);
+	}
+}
+
+TEST(HalfEdgeMeshMerge, RejectsSameVertexWithoutChangingMesh) {
+	HalfEdgeMesh mesh = Cube();
+	const uint vertexCount = mesh.VertexCount();
+	const uint edgeCount = mesh.EdgeCount();
+	const Vec3f original = mesh.GetVertexPosition(0);
+
+	EXPECT_FALSE(mesh.MergeVertices(0, 0));
+	EXPECT_EQ(mesh.VertexCount(), vertexCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	ExpectVec3Near(mesh.GetVertexPosition(0), original);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, RejectsCollapseOfLastFace) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	const uint vertexCount = mesh.VertexCount();
+	const uint faceCount = mesh.FaceCount();
+	const uint edgeCount = mesh.EdgeCount();
+
+	EXPECT_FALSE(mesh.MergeVertices(0, 1));
+	EXPECT_EQ(mesh.VertexCount(), vertexCount);
+	EXPECT_EQ(mesh.FaceCount(), faceCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshCollapse, CollapsesCubeEdgeToItsMidpoint) {
+	HalfEdgeMesh mesh = Cube();
+	const HalfEdgeMesh::HalfEdge edge = mesh.GetEdge(0);
+	const uint mergedVertex = edge.dest > edge.orig ? edge.dest - 1 : edge.dest;
+	const Vec3f midpoint = (mesh.GetVertexPosition(edge.orig) +
+		mesh.GetVertexPosition(edge.dest)) * 0.5f;
+
+	EXPECT_TRUE(mesh.CollapseEdge(0));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	ExpectVec3Near(mesh.GetVertexPosition(mergedVertex), midpoint);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDissolve, DissolvesInteriorEdgeDirectly) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDissolve, RejectsBoundaryEdge) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	const uint faceCount = mesh.FaceCount();
+	const uint edgeCount = mesh.EdgeCount();
+	EXPECT_FALSE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), faceCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+
+	bool hasBoundary = false;
+	for (uint edgeId = 0; edgeId < mesh.EdgeCount(); ++edgeId) {
+		if (mesh.GetEdge(edgeId).face == MAX_UINT) {
+			hasBoundary = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(hasBoundary);
+}
+
 // --- Component scaling ----------------------------------------------------
 // AI-Generated Tests of scaling faces and edges.
 

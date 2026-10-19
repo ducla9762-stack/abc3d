@@ -7,6 +7,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.setupUi(this);
     ui.transformModes->setVisible(false);
     ui.scaleModes->setVisible(false);
+    ui.mergeModes->setVisible(false);
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
@@ -63,7 +64,7 @@ ABC3D::ABC3D(QWidget *parent)
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
     QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
-
+    QObject::connect(ui.mergeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionMerge);
 
     // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
@@ -73,6 +74,10 @@ ABC3D::ABC3D(QWidget *parent)
     // Pulls up shape panel
     QObject::connect(ui.shapeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(1);
+        });
+
+    QObject::connect(ui.mergeToolButton, &QPushButton::released, this, [=]() {
+        ui.bottomRightPanels->setCurrentIndex(0);
         });
 
     // Emits signal for when to create shapes (with resolutions)
