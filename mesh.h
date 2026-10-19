@@ -581,6 +581,35 @@ public:
 	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
+	/// <summary>
+	/// Merges sourceVertex into targetVertex and removes the source vertex.
+	/// The mesh is changed only when the resulting topology is valid.
+	/// </summary>
+	/// <returns>True when the merge was applied; false when it was rejected.</returns>
+	bool MergeVertices(uint sourceVertex, uint targetVertex);
+
+	/// <summary>
+	/// Dissolves an interior edge by merging the two faces attached to it.
+	/// Boundary edges are rejected because they have only one attached face.
+	/// </summary>
+	/// <returns>True when the dissolve was applied; false when it was rejected.</returns>
+	bool DissolveEdge(uint edgeId);
+
+	/// <summary>
+	/// Removes a face and rebuilds its boundary as an open mesh boundary.
+	/// </summary>
+	/// <returns>True when the face was removed; false when the face ID or resulting topology is invalid.</returns>
+	bool DeleteFace(uint faceId);
+
+	/// <summary>
+	/// Collapses an edge by merging its endpoints and placing the new vertex at
+	/// the edge midpoint. The mesh is changed only when the resulting topology
+	/// is valid and does not open a previously closed surface.
+	/// </summary>
+	/// <param name="edgeId">A half-edge belonging to the edge to collapse.</param>
+	/// <returns>True when the collapse was applied; false when it was rejected.</returns>
+	bool CollapseEdge(uint edgeId);
+
 	uint VertexDegree(uint vertex) {
 		uint firstEdge = vertEdge[vertex];
 		uint currEdge = firstEdge;

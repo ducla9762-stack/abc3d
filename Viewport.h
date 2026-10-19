@@ -8,6 +8,8 @@
 #include <QPushButton>
 #include <QPainter>
 #include <functional>
+#include <optional>
+#include <unordered_map>
 
 #include <algorithm>
 
@@ -124,7 +126,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
 	};
 
 private:
@@ -164,6 +166,16 @@ private:
 	Vec3f draggedRotationAxis = Vec3f(0.0f);
 
 	bool localScale = true;
+	std::optional<SelectionItem> mergeFirstVertex;
+
+	// AI-generated code:
+	// Edge translation chooses an adjacent edge from the first drag direction.
+	// Keep that choice per selected vertex for the duration of the drag so
+	// multi-selection does not make every vertex use the same half-edge id.
+	std::unordered_map<SelectionItem, uint> edgeDragEdges;
+	// Signed movement accumulated along each chosen edge.  This lets the drag
+	// clamp at the vertex's original position when the mouse reverses.
+	std::unordered_map<SelectionItem, float> edgeDragDistances;
 
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
@@ -236,7 +248,7 @@ private:
 	void translateSelections();
 	void translateActionElements();
 	bool translateOutDrag();
-	bool translateEdgeDrag() { return false; }
+	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
 	void extrudeSelectedElements();
@@ -250,6 +262,9 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	void handleSelection(const Vec3u& selectionIds);
+	void handleMergeVertexClick(const Vec3u& selectionIds);
+	void handleCollapseEdgeClick(const Vec3u& selectionIds);
+	void handleDissolveEdgeClick(const Vec3u& selectionIds);
 	SelectionItem createSelectionItem(const Vec3u& ids);
 	void setActiveElement(Element element);
 
@@ -326,7 +341,24 @@ public:
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
-	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	void setActionTranslateEdge() {
+		// The constrained operation is vertex only.
+		if (selectionManager.getActiveElement() != VERTEX) {
+			setActiveElement(VERTEX);
+			elementButtons[0]->setChecked(true);
+			emit elementChanged(VERTEX);
+		}
+		// This operation only makes sense on one selection, prevent additive selection with this tool.
+		bool reducedSelection = false;
+		if (selectionManager.itemCount() > 1) {
+			const SelectionItem keep = selectionManager.getSelectedItems().front();
+			selectionManager.clearSelection();
+			selectionManager.addSelection(keep);
+			reducedSelection = true;
+		}
+		setAction(TRANSLATE_EDGE);
+		if (reducedSelection) { emitSelectionChanged(); }
+	}
 	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 
 	void setActionExtrude() { setAction(EXTRUDE); }
@@ -336,6 +368,26 @@ public slots:
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
+	void setActionMerge() {
+		mergeFirstVertex.reset();
+		setActiveElement(VERTEX);
+		elementButtons[0]->setChecked(true);
+		emit elementChanged(VERTEX);
+		setAction(MERGE);
+	}
+
+	void setActionCollapse() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(COLLAPSE);
+	}
+	void setActionDissolve() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(DISSOLVE);
+	}
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
@@ -356,6 +408,8 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -363,7 +417,7 @@ public slots:
 
 	void enableElementVertex() {
 		elementButtons[0]->setEnabled(true);
-		elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; ");
+        elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
 	}
 
 	void disableElementVertex() {
@@ -373,6 +427,7 @@ public slots:
 
 	// Edge Element
 	void setElementEdge() {
+		if (actionParams.action == MERGE) { return; }
 		setActiveElement(EDGE);
 		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
@@ -390,6 +445,8 @@ public slots:
 
 	// Face Element
 	void setElementFace() {
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -407,6 +464,8 @@ public slots:
 
 	// Object Element
 	void setElementObject() { 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(OBJECT); 
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
@@ -762,11 +821,13 @@ public slots:
 				break;
 
 			case EDGE:
-				// todo
+				// Dissolve edge as delete operation.
+				scene[item.meshId]->DissolveEdge(item.componentId);
 				break;
 
 			case FACE:
-				// todo
+				// The operation is implemented, but intentionally disabled for now.
+				//scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
 		}
