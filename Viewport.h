@@ -806,7 +806,20 @@ public slots:
 	void deleteSelection() {
 		if (knifeSession) { return; } // the knife holds mesh ids
 		std::cout << "delete" << std::endl;
-		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		std::vector<SelectionItem> selectedItems = selectionManager.getSelectedItems();
+		if (selectionManager.getActiveElement() == FACE) {
+			// Delete higher face IDs first so removing a face does not shift the
+			// IDs of selected faces that are still waiting to be deleted.
+			std::sort(selectedItems.begin(), selectedItems.end(),
+				[](const SelectionItem& left, const SelectionItem& right) {
+					if (left.meshId != right.meshId) {
+						return left.meshId < right.meshId;
+					}
+					return left.componentId > right.componentId;
+				});
+		}
+
+		for (const SelectionItem& item : selectedItems) {
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -826,7 +839,7 @@ public slots:
 				break;
 
 			case FACE:
-				// The operation is implemented, but intentionally disabled for now.
+				// Delete faces in descending ID order; see the sort above.
 				//scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
