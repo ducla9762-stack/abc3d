@@ -589,6 +589,13 @@ public:
 	bool MergeVertices(uint sourceVertex, uint targetVertex);
 
 	/// <summary>
+	/// Dissolves an interior edge by merging the two faces attached to it.
+	/// Boundary edges are rejected because they have only one attached face.
+	/// </summary>
+	/// <returns>True when the dissolve was applied; false when it was rejected.</returns>
+	bool DissolveEdge(uint edgeId);
+
+	/// <summary>
 	/// Collapses an edge by merging its endpoints and placing the new vertex at
 	/// the edge midpoint. The mesh is changed only when the resulting topology
 	/// is valid and does not open a previously closed surface.

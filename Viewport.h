@@ -264,6 +264,7 @@ private:
 	void handleSelection(const Vec3u& selectionIds);
 	void handleMergeVertexClick(const Vec3u& selectionIds);
 	void handleCollapseEdgeClick(const Vec3u& selectionIds);
+	void handleDissolveEdgeClick(const Vec3u& selectionIds);
 	SelectionItem createSelectionItem(const Vec3u& ids);
 	void setActiveElement(Element element);
 
@@ -381,7 +382,12 @@ public slots:
 		emit elementChanged(EDGE);
 		setAction(COLLAPSE);
 	}
-	void setActionDissolve() { setAction(DISSOLVE); }
+	void setActionDissolve() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(DISSOLVE);
+	}
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
@@ -402,7 +408,8 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
-		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -420,6 +427,7 @@ public slots:
 
 	// Edge Element
 	void setElementEdge() {
+		if (actionParams.action == MERGE) { return; }
 		setActiveElement(EDGE);
 		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
@@ -437,7 +445,8 @@ public slots:
 
 	// Face Element
 	void setElementFace() {
-		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -455,7 +464,8 @@ public slots:
 
 	// Object Element
 	void setElementObject() { 
-		if (actionParams.action == MERGE || actionParams.action == COLLAPSE) { return; }
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(OBJECT); 
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);

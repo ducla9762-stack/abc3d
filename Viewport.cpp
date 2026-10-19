@@ -244,7 +244,6 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	if (actionParams.action == MERGE) {
 		mergeFirstVertex.reset();
 	}
-
 	selectionManager.clearSelection();
 	makeCurrent();
 	updateSelectionVisuals();
@@ -315,6 +314,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			}
 			else if (actionParams.action == COLLAPSE) {
 				handleCollapseEdgeClick(ids);
+			}
+			else if (actionParams.action == DISSOLVE) {
+				handleDissolveEdgeClick(ids);
 			}
 			else {
 				handleSelection(ids);
@@ -518,7 +520,8 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 void Viewport::setAction(Action action) {
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
 	if ((actionParams.action == MERGE && action != MERGE) ||
-		(actionParams.action == COLLAPSE && action != COLLAPSE)) {
+		(actionParams.action == COLLAPSE && action != COLLAPSE) ||
+		(actionParams.action == DISSOLVE && action != DISSOLVE)) {
 		if (actionParams.action == MERGE) {
 			mergeFirstVertex.reset();
 		}
@@ -534,6 +537,12 @@ void Viewport::setAction(Action action) {
 		disableElementObject();
 	}
 	else if (action == COLLAPSE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == DISSOLVE) {
 		enableElementEdge();
 		disableElementVertex();
 		disableElementFace();
@@ -637,6 +646,38 @@ void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
 	}
 
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are encoded as (one-based mesh ID, face ID, edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Dissolve mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->DissolveEdge(edgeId)) {
+		std::cout << "Dissolve rejected: choose an interior edge with valid topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
 	makeCurrent();
 	renderer.UpdateRenderBuffers(scene);

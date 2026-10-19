@@ -165,6 +165,33 @@ TEST(HalfEdgeMeshCollapse, CollapsesCubeEdgeToItsMidpoint) {
 	EXPECT_TRUE(IsValid(mesh));
 }
 
+TEST(HalfEdgeMeshDissolve, DissolvesInteriorEdgeDirectly) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDissolve, RejectsBoundaryEdge) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	const uint faceCount = mesh.FaceCount();
+	const uint edgeCount = mesh.EdgeCount();
+	EXPECT_FALSE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), faceCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
 // --- Component scaling ----------------------------------------------------
 // AI-Generated Tests of scaling faces and edges.
 

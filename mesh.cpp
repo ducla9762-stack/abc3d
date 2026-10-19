@@ -762,6 +762,152 @@ bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
 	return true;
 }
 
+
+bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
+	if (edgeId >= edges.size()) {
+		return false;
+	}
+	const HalfEdge& selectedEdge = edges[edgeId];
+	if (selectedEdge.twin >= edges.size() || selectedEdge.face == MAX_UINT ||
+		edges[selectedEdge.twin].face == MAX_UINT) {
+		return false;
+	}
+
+	const uint firstFace = selectedEdge.face;
+	const uint secondFace = edges[selectedEdge.twin].face;
+
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+
+	bool originalIsClosed = true;
+	for (const HalfEdge& edge : edges) {
+		if (edge.face == MAX_UINT) {
+			originalIsClosed = false;
+			break;
+		}
+	}
+
+	// Find the one interior half-edge on firstFace whose twin belongs to
+	// secondFace. Requiring exactly one shared edge prevents accidentally
+	// dissolving unrelated or multiply-connected face pairs.
+	uint sharedEdge = MAX_UINT;
+	uint sharedTwin = MAX_UINT;
+	uint sharedEdgeCount = 0;
+	uint walkEdge = faceEdges[firstFace];
+	do {
+		const HalfEdge& edge = edges[walkEdge];
+		if (edge.twin < edges.size() && edges[edge.twin].face == secondFace) {
+			sharedEdge = walkEdge;
+			sharedTwin = edge.twin;
+			++sharedEdgeCount;
+		}
+		walkEdge = edge.next;
+	} while (walkEdge != faceEdges[firstFace]);
+
+	if (sharedEdgeCount != 1) {
+		return false;
+	}
+
+	HalfEdgeMesh dissolved = *this;
+
+	// Walk each face while omitting the shared half-edge. The first path ends
+	// at the start of the second path, so the duplicate join vertex is removed
+	// before the two paths are joined into one polygon.
+	auto boundaryWithoutEdge = [&dissolved](uint removedEdge) {
+		std::vector<uint> boundary;
+		uint current = dissolved.edges[removedEdge].next;
+		uint steps = 0;
+		while (current != removedEdge && steps++ <= dissolved.edges.size()) {
+			boundary.push_back(dissolved.edges[current].orig);
+			current = dissolved.edges[current].next;
+		}
+		if (current != removedEdge) {
+			boundary.clear();
+		}
+		return boundary;
+	};
+
+	const std::vector<uint> firstBoundary = boundaryWithoutEdge(sharedEdge);
+	const std::vector<uint> secondBoundary = boundaryWithoutEdge(sharedTwin);
+	if (firstBoundary.size() < 3 || secondBoundary.size() < 3) {
+		return false;
+	}
+
+	std::vector<uint> mergedFace = firstBoundary;
+	for (uint i = 0; i < secondBoundary.size(); ++i) {
+		if (i == 0 && !mergedFace.empty() && mergedFace.back() == secondBoundary[i]) {
+			continue;
+		}
+		mergedFace.push_back(secondBoundary[i]);
+	}
+	if (mergedFace.size() > 1 && mergedFace.front() == mergedFace.back()) {
+		mergedFace.pop_back();
+	}
+
+	// A face pair that also touches at another vertex would create a
+	// self-touching polygon. Reject it rather than asking build() to create
+	// invalid topology.
+	std::unordered_set<uint> uniqueVertices(mergedFace.begin(), mergedFace.end());
+	if (mergedFace.size() < 3 || uniqueVertices.size() != mergedFace.size()) {
+		return false;
+	}
+
+	std::vector<std::vector<uint>> rebuiltFaces;
+	rebuiltFaces.reserve(dissolved.FaceCount() - 1);
+	for (uint faceId = 0; faceId < dissolved.FaceCount(); ++faceId) {
+		if (faceId == firstFace) {
+			rebuiltFaces.push_back(mergedFace);
+			continue;
+		}
+		if (faceId == secondFace) {
+			continue;
+		}
+
+		std::vector<uint> face;
+		uint current = dissolved.faceEdges[faceId];
+		do {
+			face.push_back(dissolved.edges[current].orig);
+			current = dissolved.edges[current].next;
+		} while (current != dissolved.faceEdges[faceId]);
+		rebuiltFaces.push_back(std::move(face));
+	}
+
+	const Vec3f originalPos = dissolved.pos;
+	const Vec3f originalScale = dissolved.scale;
+	const Vec3f originalRotation = dissolved.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!dissolved.build(rebuiltFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() recenters geometry. Restore the original object transform and
+	// local-space placement, as the other topology-changing operations do.
+	const Vec3f buildOffset = dissolved.pos - originalPos;
+	dissolved.translateVertices(buildOffset);
+	dissolved.pos = originalPos;
+	dissolved.scale = originalScale;
+	dissolved.eulerRot = originalRotation;
+
+	std::string error;
+	if (!dissolved.Validate(error)) {
+		return false;
+	}
+	if (originalIsClosed) {
+		for (const HalfEdge& edge : dissolved.edges) {
+			if (edge.face == MAX_UINT) {
+				return false;
+			}
+		}
+	}
+
+	*this = std::move(dissolved);
+	return true;
+}
+
 bool HalfEdgeMesh::CollapseEdge(uint edgeId) {
 	if (edgeId >= edges.size()) {
 		return false;
