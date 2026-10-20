@@ -1,0 +1,6 @@
+# Test A: face references vertex 9, only 3 vertices exist.
+# Expected: build() rejects (face[0] = 8 >= vertPos.size() == 3), import fails.
+v 0.0 0.0 0.0
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+f 9 2 3

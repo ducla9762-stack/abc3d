@@ -6,31 +6,48 @@ layout(location = 1) out uvec3 selectIds;
 flat in uvec2 ids;
 
 const uint MAX_SELECTION_ITEMS = 64u;
+const uint OBJECT = 0u;
 const uint VERTEX = 3u;
-// AI-generated code: Vertex hover coloring while preserving selection color.
+const uint NO_HOVER = 4294967295u;
 const vec4 HOVER_COLOR = vec4(1.0f, 0.5f, 0.0f, 1.0f);
 
 uniform uint selectionCount;
 // Array of selected items.
 uniform uvec3 selectedItems[MAX_SELECTION_ITEMS];
-uniform uvec3 hoveredItem;
+// (element type, object ID, component ID) values under the mouse cursor.
+uniform uvec3 hoveredItems[2];
 
 void main(){
 	bool selected = false;
+	bool hovered = false;
 	// Loop through all selected items.
 	for (uint i = 0u; i < selectionCount; ++i) {
 		uvec3 item = selectedItems[i];
-		// Only vertex-level selection changes the vertex square color.
+		// If the selected item is this vertex.
 		if (item.x == VERTEX && item.y == ids.x && item.z == ids.y) {
 			selected = true;
 			break;
 		}
 	}
 
-	bool hovered =
-		(hoveredItem.x == VERTEX && hoveredItem.y == ids.x && hoveredItem.z == ids.y);
+	// AI-generated: Applies the same hover-state convention to vertex points
+	// while preserving the existing selected-versus-unselected colors.
+	for (uint i = 0u; i < 2u; ++i) {
+		uvec3 hoveredItem = hoveredItems[i];
+		if (hoveredItem.x == NO_HOVER) {
+			continue;
+		}
+
+		if ((hoveredItem.x == OBJECT && hoveredItem.y == ids.x) ||
+			(hoveredItem.x == VERTEX && hoveredItem.y == ids.x && hoveredItem.z == ids.y)) {
+			hovered = true;
+			break;
+		}
+	}
 
 	// Default purple, selected green, hovered orange.
-	color = selected ? vec4(0, 1, 0, 1) : (hovered ? HOVER_COLOR : vec4(1, 0, 1, 1));
+	color = selected ? vec4(0, 1, 0, 1) :
+		hovered ? HOVER_COLOR :
+		vec4(1, 0, 1, 1);
 	selectIds = uvec3(4294967295, ids);
 }
