@@ -2012,7 +2012,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QPushButton" name="pushButton">
+               <widget class="ColorButton" name="pushButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2070,7 +2070,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QPushButton" name="pushButton_2">
+               <widget class="ColorButton" name="pushButton_2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2083,7 +2083,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QPushButton" name="pushButton_3">
+               <widget class="ColorButton" name="pushButton_3">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2096,7 +2096,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="QPushButton" name="pushButton_4">
+               <widget class="ColorButton" name="pushButton_4">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2109,7 +2109,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="5" column="1">
-               <widget class="QPushButton" name="pushButton_5">
+               <widget class="ColorButton" name="pushButton_5">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2122,7 +2122,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="6" column="1">
-               <widget class="QPushButton" name="pushButton_6">
+               <widget class="ColorButton" name="pushButton_6">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2368,6 +2368,14 @@ color: white;</string>
    <slots>
     <signal>valChanged(Vec3f)</signal>
     <slot>setValue(Vec3f)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>ColorButton</class>
+   <extends>QPushButton</extends>
+   <header>ColorButton.h</header>
+   <slots>
+    <signal>ColorSelected(Vec3f)</signal>
    </slots>
   </customwidget>
  </customwidgets>
@@ -3796,6 +3804,86 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>1334</x>
      <y>859</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetFaceColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1583</x>
+     <y>968</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1206</x>
+     <y>976</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetEdgeColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1578</x>
+     <y>990</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1350</x>
+     <y>984</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetVertexColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1603</x>
+     <y>1024</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1331</x>
+     <y>1018</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_4</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetBackgroundColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1591</x>
+     <y>1057</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1331</x>
+     <y>1057</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_5</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetSelectColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1578</x>
+     <y>1084</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1294</x>
+     <y>1037</y>
     </hint>
    </hints>
   </connection>
