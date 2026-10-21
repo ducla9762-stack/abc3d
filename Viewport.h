@@ -201,11 +201,6 @@ private:
 	SelectionItem createSelectionItem(const Vec2u& ids);
 	void setActiveElement(Element element);
 
-	/// <summary>
-	/// Update the selection visuals for the renderer.
-	/// </summary>
-	void updateSelectionVisuals();
-
 // ---------------------------------------------------------------------------------------------
 // Misc. Helpers -------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
@@ -548,9 +543,6 @@ public slots:
 			renderer.UpdateTransforms();
 		}
 
-		makeCurrent();
-		//renderer.UpdateRenderBuffers(scene);
-		//renderer.UpdateUniformBuffer();
 		update();
 	}
 
@@ -560,9 +552,6 @@ public slots:
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Scale(scale);
-			makeCurrent();
-			/*renderer.UpdateRenderBuffers(scene);
-			renderer.UpdateUniformBuffer();*/
 
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
@@ -577,14 +566,11 @@ public slots:
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Rot(rot);
-			makeCurrent();
-			//renderer.UpdateRenderBuffers(scene);
-			//renderer.UpdateUniformBuffer();
 
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
-			updateGizmos();
+			//updateGizmos();
 			update();
 		}
 	}
@@ -626,11 +612,6 @@ public slots:
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
 		}
-
-		makeCurrent();
-		/*renderer.UpdateRenderBuffers(scene);
-		renderer.UpdateUniformBuffer();
-		renderer.ResetColorBuffer<true>();*/
 
 		renderer.UpdateGeometry();
 		renderer.UpdateTransforms();
@@ -706,7 +687,7 @@ public slots:
 		emitSelectionChanged();
 
 		makeCurrent();
-		renderer.SetScene(scene);
+		//renderer.SetScene(scene);
 		renderer.UpdateGeometry();
 		renderer.UpdateTransforms();
 		renderer.UpdateSelection(selectionManager);
@@ -722,16 +703,14 @@ public slots:
 	}
 
 	void setAlwaysShowVertices(bool show) {
-		verticesAlwaysVisible = show;
 		if(selectionManager.getActiveElement() != VERTEX){
-			//renderer.SetVertexPointsVisible(verticesAlwaysVisible);
+			renderer.ShowVertices(show);
 			update();
 		}
 	}
 
 	void setAlwaysShowGrid(bool show) {
-		gridAlwaysVisible = show;
-		//renderer.SetGridVisible(gridAlwaysVisible);
+		renderer.ShowGrid(show);
 		update();
 	}
 
