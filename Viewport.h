@@ -949,5 +949,23 @@ public slots:
 		std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
-	void updateCameraFOV(int fov) { renderer.updateCameraPostion(fov); update(); }
+	void SetFOV(float fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
+
+	void SetSurfaceVisibility(bool show) { /*renderer.ShowSurfaces(show); update();*/ }
+
+	void SetEdgeVisibility(bool show) {/* renderer.ShowEdges(show); update();*/ }
+
+	void SetFaceColor(const Vec3f& clr) { /*makeCurrent(); renderer.FaceColor(clr); update();*/ }
+
+	void SetEdgeColor(const Vec3f& clr) { /*makeCurrent(); renderer.EdgeColor(clr); update();*/ }
+
+	void SetVertexColor(const Vec3f& clr) { /*makeCurrent(); renderer.VertexColor(clr); update();*/ }
+
+	void SetBackgroundColor(const Vec3f& clr) { /*makeCurrent(); renderer.BackgroundColor(clr); update();*/ }
+
+	void SetSelectColor(const Vec3f& clr) { /*makeCurrent(); renderer.SelectColor(clr); update();*/ }
+
+	void SetEdgeRadius(double radius){}
+
+	void SetVertexScale(double scale){}
 };

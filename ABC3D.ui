@@ -2348,6 +2348,16 @@ color: white;</string>
     <slot>setActionMerge()</slot>
     <slot>setActionDissolve()</slot>
     <slot>setActionCollapse()</slot>
+    <slot>SetSurfaceVisibility(bool)</slot>
+    <slot>SetEdgeVisibility(bool)</slot>
+    <slot>SetFOV(double)</slot>
+    <slot>SetFaceColor(Vec3f)</slot>
+    <slot>SetEdgeColor(Vec3f)</slot>
+    <slot>SetVertexColor(Vec3f)</slot>
+    <slot>SetBackgroundColor(Vec3f)</slot>
+    <slot>SetSelectColor(Vec3f)</slot>
+    <slot>SetVertexScale(double)</slot>
+    <slot>SetEdgeRadius(double)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -2548,8 +2558,8 @@ color: white;</string>
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1767</x>
-     <y>774</y>
+     <x>1602</x>
+     <y>805</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -2900,8 +2910,8 @@ color: white;</string>
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1767</x>
-     <y>747</y>
+     <x>1602</x>
+     <y>778</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -3706,6 +3716,86 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>86</x>
      <y>41</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetSurfaceVisibility(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1633</x>
+     <y>773</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1334</x>
+     <y>731</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_2</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetEdgeVisibility(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1659</x>
+     <y>794</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1320</x>
+     <y>769</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>edgeRadiusSpinner</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetEdgeRadius(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1654</x>
+     <y>825</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1310</x>
+     <y>824</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>doubleSpinBox</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetVertexScale(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1676</x>
+     <y>845</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1324</x>
+     <y>835</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>fovSpinner</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetFOV(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1648</x>
+     <y>894</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1334</x>
+     <y>859</y>
     </hint>
    </hints>
   </connection>
