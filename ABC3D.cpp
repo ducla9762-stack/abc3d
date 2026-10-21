@@ -68,7 +68,8 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
-        ui.bottomRightPanels->setCurrentIndex(2); 
+        ui.bottomRightPanels->setCurrentIndex(2);
+        emit elementChanged(ui.viewport->getActiveElement());
         });
 
     // Pulls up shape panel
@@ -99,7 +100,7 @@ ABC3D::ABC3D(QWidget *parent)
     // the visible mode selection synchronized when returning to Move.
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
         ui.axisModeTranslationButton->setChecked(true);
-        //emit elementChanged();
+        emit elementChanged(ui.viewport->getActiveElement());
         });
 
     // Connects the "Load Tutorial" Button to the QTextBrowser
@@ -128,6 +129,7 @@ ABC3D::ABC3D(QWidget *parent)
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
 
+    // TODO: Fix FOV slider
     QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
         ui.viewport->updateCameraFOV(fov);
         });
@@ -281,6 +283,11 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.bevelToolButton->setChecked(true);
         break;
+    case Qt::Key_M:
+        event->accept();
+        ui.viewport->setActionMerge();
+        ui.bottomRightPanels->setCurrentIndex(0);
+        ui.mergeToolButton->setChecked(true);
     default:
         QMainWindow::keyPressEvent(event);
         return;

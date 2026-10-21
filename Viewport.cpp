@@ -734,6 +734,10 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 	emitSelectionChanged();
 }
 
+Element Viewport::getActiveElement() {
+	return selectionManager.getActiveElement();
+}
+
 void Viewport::setActiveElement(Element element) {
 	selectionManager.setActiveElement(element);
 
