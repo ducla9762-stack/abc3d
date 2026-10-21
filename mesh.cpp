@@ -552,42 +552,31 @@ Vec3f HalfEdgeMesh::ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount)
 }
 
 Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
-	Vec3f sum(0.0f);
-	float vertexCount = 0.0f;
-	uint first = faceEdges[faceId];
-	uint next = first;
+	Vec3f weightedSum(0.0f);
+	float areaSum = 0.0f;
 
-	do {
-		++vertexCount;
-		sum += vertPos[edges[next].orig];
-		next = edges[next].next;
-	} while (next != first);
+	std::vector<Vec3u> triVertices;
+	triVertices.reserve(50);
 
-	return sum / vertexCount;
-}
+	GetTriangulation(faceId, triVertices);
 
-// Old. Doesn't work with n-gons or non-convex quads yet.
-float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
-	uint faceVertices[4];
-	GetQuadVertices(faceId, faceVertices);
-	Vec3f vert0 = vertPos[faceVertices[0]];
-	Vec3f vert1 = vertPos[faceVertices[1]];
-	Vec3f vert2 = vertPos[faceVertices[2]];
+	for (const Vec3u& tri : triVertices) {
+		Vec3f pos[3];
+		pos[0] = vertPos[tri[0]];
+		pos[1] = vertPos[tri[1]];
+		pos[2] = vertPos[tri[2]];
 
-	Vec3f seg01 = vert1 - vert0;
-	Vec3f seg02 = vert2 - vert0;
-	float area = seg01.Cross(seg02).Length();
+		Vec3f avg = (pos[0] + pos[1] + pos[2]) / 3.0f;
+		Vec3f cross = (pos[1] - pos[0]).Cross(pos[2] - pos[0]);
+		float area = cross.Length();
 
-	if (faceVertices[3] != MAX_UINT) {
-		vert1 = vertPos[faceVertices[3]];
-		seg01 = vert1 - vert0;
-		area += seg01.Cross(seg02).Length();
+		areaSum += area;
+		weightedSum += avg * area;
 	}
 
-	return area;
+	return weightedSum / areaSum;
 }
 
-// Old. approxFaceSurfaceArea doesn't work with N-gons yet.
 Vec3f HalfEdgeMesh::computeCentroid() {
 	uint faceCount = faceEdges.size();
 	if (faceCount == 0) return Vec3f(0.0f);
@@ -595,10 +584,26 @@ Vec3f HalfEdgeMesh::computeCentroid() {
 	Vec3f weightedSum(0.0f);
 	float areaSum = 0.0f;
 
-	for (uint i = 0; i < faceCount; ++i) {
-		float area = approxFaceSurfaceArea(i);
-		areaSum += area;
-		weightedSum += faceCentroid(i) * area;
+	std::vector<Vec3u> triVertices; 
+	triVertices.reserve(50);
+
+	for (uint i = 0; i < uint(faceEdges.size()); ++i) {
+		if (faceEdges[i] == MAX_UINT) { continue; }
+		triVertices.clear();
+		GetTriangulation(i, triVertices);
+		for (const Vec3u& tri : triVertices) {
+			Vec3f pos[3];
+			pos[0] = vertPos[tri[0]];
+			pos[1] = vertPos[tri[1]];
+			pos[2] = vertPos[tri[2]];
+
+			Vec3f avg = (pos[0] + pos[1] + pos[2]) / 3.0f;
+			Vec3f cross = (pos[1] - pos[0]).Cross(pos[2] - pos[0]);
+			float area = cross.Length();
+
+			areaSum += area;
+			weightedSum += avg * area;
+		}
 	}
 
 	return weightedSum / areaSum;

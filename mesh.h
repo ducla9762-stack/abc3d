@@ -257,14 +257,7 @@ private:
 	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
 
 	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Approximates the surface area of a face.
-	/// </summary>
-	/// <param name="faceId">The face whose area will be approximated.</param>
-	/// <returns>Approximate surface area of the face.</returns>
-	float approxFaceSurfaceArea(uint faceId);
-
-	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Computes the area based centroid of the mesh.
+	/// Computes the area based centroid of the mesh.
 	/// </summary>
 	/// <returns>The area based centroid of the mesh.</returns>
 	Vec3f computeCentroid();
@@ -382,6 +375,12 @@ public:
 		return edges.at(edgeId);
 	}
 
+	void RecenterOnCentroid() {
+		Vec3f centroid = computeCentroid();
+		for (Vec3f& pos : vertPos) { pos -= centroid; }
+		pos += centroid;
+	}
+
 	/// <returns>Mesh's scale factor.</returns>
 	const Vec3f& Scale() const { return scale; }
 	/// <returns>Mesh's world-space position.</returns>
@@ -495,9 +494,6 @@ public:
 	/// <returns>True if mesh satisfies conditions</returns>
 	bool Validate(std::string& err) const; 
 
-	/// <summary>
-	/// OUTDATED AND NEEDS UPDATE.
-	/// </summary>
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <returns>Centroid of the face.</returns>
 	Vec3f faceCentroid(uint faceId);
@@ -886,7 +882,7 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
 	const Vec3f centroid = computeCentroid();
 	translateVertices(-centroid);
-	pos += centroid;
+	pos = centroid;
 
 	return true;
 }
