@@ -291,8 +291,6 @@ void ABC3DRenderer::UpdateUniformBuffer() {
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CompactTransform140) * maxObjectCount, nullptr, GL_DYNAMIC_DRAW);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CompactTransform140) * transformBuf.size(), transformBuf.data());
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	std::cout << "UBO 1: " << glGetError() << std::endl;
 }
 
 void ABC3DRenderer::ResetColorBuffer() {

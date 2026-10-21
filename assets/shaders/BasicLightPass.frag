@@ -42,7 +42,7 @@ void main(){
     vec3 clr = colors[id.z];
 
     uint blendId = clrId[id.y];
-    bool doBlend = blendId != 0;
+    bool doBlend = blendId != 0 && id.z != 0;
     blendId -= uint(doBlend);
 
     float clrScale = 0.5f * abs(dot(norm, -normalize(pos))) + 0.5f;
