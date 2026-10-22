@@ -121,6 +121,7 @@ public:
 };
 
 class HalfEdgeMeshBeveler;
+class HalfEdgeMeshKnife; 
 
 class HalfEdgeMesh {
 
@@ -155,6 +156,7 @@ private:
 
 	friend class RenderBufferBuilder;
 	friend class HalfEdgeMeshBeveler;
+	friend class HalfEdgeMeshKnife; 
 
 	/// <summary>
 	/// Adds a new face.
@@ -255,14 +257,7 @@ private:
 	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
 
 	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Approximates the surface area of a face.
-	/// </summary>
-	/// <param name="faceId">The face whose area will be approximated.</param>
-	/// <returns>Approximate surface area of the face.</returns>
-	float approxFaceSurfaceArea(uint faceId);
-
-	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Computes the area based centroid of the mesh.
+	/// Computes the area based centroid of the mesh.
 	/// </summary>
 	/// <returns>The area based centroid of the mesh.</returns>
 	Vec3f computeCentroid();
@@ -378,6 +373,12 @@ public:
 
 	HalfEdge GetEdge(uint edgeId) const {
 		return edges.at(edgeId);
+	}
+
+	void RecenterOnCentroid() {
+		Vec3f centroid = computeCentroid();
+		for (Vec3f& pos : vertPos) { pos -= centroid; }
+		pos += centroid;
 	}
 
 	/// <returns>Mesh's scale factor.</returns>
@@ -511,9 +512,23 @@ public:
 	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
 
+	/// <returns>Number of faces in mesh</returns>
+	uint FaceCount() const{ return static_cast<uint>(faceEdges.size());}
+
+	/// <returns>Number of half-edges in a mesh</returns>
+	uint EdgeCount() const { return static_cast<uint>(edges.size());  }
+
 	/// <summary>
-	/// OUTDATED AND NEEDS UPDATE.
+	/// Checks: 
+	/// 1) Every twin is symmetric. 
+	/// 2) Every next/prev cycle closes and matches FaceEdgeCount. 
+	/// 3) Every edge e that has a face (edges[e].face != MAX_UINT), we check if our cycle from step 2 CONFIRMS this
+	/// 4) No face references to a deleted edge. 
 	/// </summary>
+	/// <param name="err">Description of first failure or success</param>
+	/// <returns>True if mesh satisfies conditions</returns>
+	bool Validate(std::string& err) const; 
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <returns>Centroid of the face.</returns>
 	Vec3f faceCentroid(uint faceId);
@@ -562,6 +577,16 @@ public:
 	Vec3f GetEdgeNormal(uint edgeId);
 	/// <returns>The local-space midpoint of an edge.</returns>
 	Vec3f GetEdgeCenter(uint edgeId) const;
+	/// <summary>Appends the two vertex IDs belonging to an edge.</summary>
+	void GetEdgeVertices(uint edgeId, std::vector<uint>& vertices) const;
+	/// <summary>Appends every boundary vertex ID belonging to a face.</summary>
+	void GetFaceVertices(uint faceId, std::vector<uint>& vertices) const;
+	/// <summary>Scales vertices in local space around a local-space pivot.</summary>
+	void ScaleVertices(const std::vector<uint>& vertexIds, const Vec3f& pivot, const Vec3f& factors);
+	/// <summary>Scales an edge around its midpoint in local space.</summary>
+	void ScaleEdge(uint edgeId, const Vec3f& factors);
+	/// <summary>Scales a face around its centroid in local space.</summary>
+	void ScaleFace(uint faceId, const Vec3f& factors);
 	/// <summary> Translates a face. </summary>
 	/// <param name="faceId">Face to translate.</param>
 	/// <param name="translation">Translation factor.</param>
@@ -587,7 +612,36 @@ public:
 	/// <param name="pos">The vertex's new position.</param>
 	void SetVertexPosition(uint vertId, const Vec3f& pos);
 
-	uint VertexDegree(uint vertex) const {
+	/// <summary>
+	/// Merges sourceVertex into targetVertex and removes the source vertex.
+	/// The mesh is changed only when the resulting topology is valid.
+	/// </summary>
+	/// <returns>True when the merge was applied; false when it was rejected.</returns>
+	bool MergeVertices(uint sourceVertex, uint targetVertex);
+
+	/// <summary>
+	/// Dissolves an interior edge by merging the two faces attached to it.
+	/// Boundary edges are rejected because they have only one attached face.
+	/// </summary>
+	/// <returns>True when the dissolve was applied; false when it was rejected.</returns>
+	bool DissolveEdge(uint edgeId);
+
+	/// <summary>
+	/// Removes a face and rebuilds its boundary as an open mesh boundary.
+	/// </summary>
+	/// <returns>True when the face was removed; false when the face ID or resulting topology is invalid.</returns>
+	bool DeleteFace(uint faceId);
+
+	/// <summary>
+	/// Collapses an edge by merging its endpoints and placing the new vertex at
+	/// the edge midpoint. The mesh is changed only when the resulting topology
+	/// is valid and does not open a previously closed surface.
+	/// </summary>
+	/// <param name="edgeId">A half-edge belonging to the edge to collapse.</param>
+	/// <returns>True when the collapse was applied; false when it was rejected.</returns>
+	bool CollapseEdge(uint edgeId);
+
+	uint VertexDegree(uint vertex) {
 		uint firstEdge = vertEdge[vertex];
 		uint currEdge = firstEdge;
 		uint degree = 0;
@@ -666,7 +720,12 @@ public:
 	/// <param name="halfEdge">
 	///		A half-edge of the edge to be split.
 	/// </param>
-	void refineEdge(uint hEdgeId);
+	/// <param name="t">
+	///		Where to split, measured from the half-edge's origin (0) to its destination (1). Defaults to the midpoint.
+	///		The original half-edge keeps the origin side of the split.
+	/// </param>
+	/// <returns>The id of the new vertex.</returns>
+	uint refineEdge(uint hEdgeId, float t = 0.5f);
 	void flipEdge(uint edgeId) {
 		HalfEdge& edge = edges[edgeId];
 		HalfEdge& twin = edges[edge.twin];
@@ -876,18 +935,21 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	uint interiorEdgeCount = edges.size();
 
 	for (uint i = 0; i < interiorEdgeCount; ++i) {
-		HalfEdge& edge = edges[i];
-		Vec2<uint> twinVertices(edge.dest, edge.orig);
+		// Copy, not a reference: NewEdge below can reallocate the edge array
+		const uint edgeOrig = edges[i].orig;
+		const uint edgeDest = edges[i].dest;
+		Vec2<uint> twinVertices(edgeDest, edgeOrig);
 
-		if (edgeIndices.count(twinVertices) != 0) {
-			edge.twin = edgeIndices[twinVertices];
+		auto found = edgeIndices.find(twinVertices);
+		if (found != edgeIndices.end()) {
+			edges[i].twin = found->second;
 		}
 		else {
 			uint twinIndex;
 			HalfEdge& twin = NewEdge(twinIndex);
 
-			twin.orig = edge.dest;
-			twin.dest = edge.orig;
+			twin.orig = edgeDest;
+			twin.dest = edgeOrig;
 			twin.twin = i;
 
 			edges[i].twin = twinIndex;
@@ -915,7 +977,7 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
 	const Vec3f centroid = computeCentroid();
 	translateVertices(-centroid);
-	pos += centroid;
+	pos = centroid;
 
 	return true;
 }

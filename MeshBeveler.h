@@ -105,6 +105,16 @@ class HalfEdgeMeshBeveler {
 			vMesh.incidentEdges[vMesh.degree - 1][1] = vMesh.patchEdgeCount;
 			++vMesh.patchEdgeCount;
 		}
+
+		// A degree 2 vertex with one beveled edge would otherwise collapse to a single
+		// patch vertex, leaving that edge's side of the strip without an edge to use.
+		// Split it so the beveled edge and the other edge get their own vertex.
+		if (vMesh.degree == 2 && vMesh.bevelDegree == 1) {
+			for (uint i = 0; i < 2; ++i) {
+				vMesh.incidentEdges[i][1] = vMesh.edgeIsBevel[i] ? 0 : 1;
+			}
+			vMesh.patchEdgeCount = 2;
+		}
 	}
 
 	/// <summary>
@@ -119,11 +129,36 @@ class HalfEdgeMeshBeveler {
 	///		2. will be the corresponding side of the beveled edge's bevel strip (edge.twin.next in final mesh)
 	/// </param>
 	void IncorporateVEdge(VMesh& vMesh, std::unordered_map<uint, uint>& bevelMap) {
-		if (vMesh.degree != 3 && vMesh.degree != 4) { return; }
+		if (vMesh.degree < 2 || vMesh.degree > 4) { return; }
 
 		uint edgeId = mesh.NewEdge();
 		uint twinId = mesh.NewEdge();
 		vMesh.id = edgeId;
+
+		// Degree 2: the vertex is split in two, and the new edge joins the halves
+		if (vMesh.degree == 2) {
+			uint orig, dest;
+			if (vMesh.bevelDegree == 2) {
+				// Both edges are beveled, so the new edge and its twin are the two strip sides
+				orig = vMesh.incidentEdges[0][1];
+				dest = vMesh.incidentEdges[1][1];
+				mesh.SetTwins(edgeId, twinId, orig, dest);
+
+				bevelMap[vMesh.incidentEdges[0][0]] = edgeId;
+				bevelMap[vMesh.incidentEdges[1][0]] = twinId;
+			}
+			else {
+				uint bevelIndex = vMesh.edgeIsBevel[0] ? 0 : 1;
+				orig = vMesh.incidentEdges[bevelIndex][1];
+				dest = vMesh.incidentEdges[1 - bevelIndex][1];
+				mesh.SetTwins(edgeId, twinId, orig, dest);
+
+				bevelMap[vMesh.incidentEdges[bevelIndex][0]] = edgeId;
+				// The twin closes the gap in the face the beveled edge leaves
+				mesh.InsertPrev(vMesh.incidentEdges[bevelIndex][0], twinId);
+			}
+			return;
+		}
 
 		// Degree 4 is specific edge case
 		if (vMesh.degree == 4) {

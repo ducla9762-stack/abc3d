@@ -5,6 +5,7 @@
 #include <vector>
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 #include <cstring>
 #include <cctype>
@@ -551,42 +552,31 @@ Vec3f HalfEdgeMesh::ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount)
 }
 
 Vec3f HalfEdgeMesh::faceCentroid(uint faceId) {
-	Vec3f sum(0.0f);
-	float vertexCount = 0.0f;
-	uint first = faceEdges[faceId];
-	uint next = first;
+	Vec3f weightedSum(0.0f);
+	float areaSum = 0.0f;
 
-	do {
-		++vertexCount;
-		sum += vertPos[edges[next].orig];
-		next = edges[next].next;
-	} while (next != first);
+	std::vector<Vec3u> triVertices;
+	triVertices.reserve(50);
 
-	return sum / vertexCount;
-}
+	GetTriangulation(faceId, triVertices);
 
-// Old. Doesn't work with n-gons or non-convex quads yet.
-float HalfEdgeMesh::approxFaceSurfaceArea(uint faceId) {
-	uint faceVertices[4];
-	GetQuadVertices(faceId, faceVertices);
-	Vec3f vert0 = vertPos[faceVertices[0]];
-	Vec3f vert1 = vertPos[faceVertices[1]];
-	Vec3f vert2 = vertPos[faceVertices[2]];
+	for (const Vec3u& tri : triVertices) {
+		Vec3f pos[3];
+		pos[0] = vertPos[tri[0]];
+		pos[1] = vertPos[tri[1]];
+		pos[2] = vertPos[tri[2]];
 
-	Vec3f seg01 = vert1 - vert0;
-	Vec3f seg02 = vert2 - vert0;
-	float area = seg01.Cross(seg02).Length();
+		Vec3f avg = (pos[0] + pos[1] + pos[2]) / 3.0f;
+		Vec3f cross = (pos[1] - pos[0]).Cross(pos[2] - pos[0]);
+		float area = cross.Length();
 
-	if (faceVertices[3] != MAX_UINT) {
-		vert1 = vertPos[faceVertices[3]];
-		seg01 = vert1 - vert0;
-		area += seg01.Cross(seg02).Length();
+		areaSum += area;
+		weightedSum += avg * area;
 	}
 
-	return area;
+	return weightedSum / areaSum;
 }
 
-// Old. approxFaceSurfaceArea doesn't work with N-gons yet.
 Vec3f HalfEdgeMesh::computeCentroid() {
 	uint faceCount = faceEdges.size();
 	if (faceCount == 0) return Vec3f(0.0f);
@@ -594,10 +584,26 @@ Vec3f HalfEdgeMesh::computeCentroid() {
 	Vec3f weightedSum(0.0f);
 	float areaSum = 0.0f;
 
-	for (uint i = 0; i < faceCount; ++i) {
-		float area = approxFaceSurfaceArea(i);
-		areaSum += area;
-		weightedSum += faceCentroid(i) * area;
+	std::vector<Vec3u> triVertices; 
+	triVertices.reserve(50);
+
+	for (uint i = 0; i < uint(faceEdges.size()); ++i) {
+		if (faceEdges[i] == MAX_UINT) { continue; }
+		triVertices.clear();
+		GetTriangulation(i, triVertices);
+		for (const Vec3u& tri : triVertices) {
+			Vec3f pos[3];
+			pos[0] = vertPos[tri[0]];
+			pos[1] = vertPos[tri[1]];
+			pos[2] = vertPos[tri[2]];
+
+			Vec3f avg = (pos[0] + pos[1] + pos[2]) / 3.0f;
+			Vec3f cross = (pos[1] - pos[0]).Cross(pos[2] - pos[0]);
+			float area = cross.Length();
+
+			areaSum += area;
+			weightedSum += avg * area;
+		}
 	}
 
 	return weightedSum / areaSum;
@@ -648,6 +654,351 @@ Vec3f HalfEdgeMesh::GetVertexPosition(uint vertId) {
 
 void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 	vertPos.at(vertId) = pos;
+}
+
+bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
+	if (sourceVertex >= VertexCount() || targetVertex >= VertexCount() ||
+		sourceVertex == targetVertex) {
+		return false;
+	}
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+	bool originalIsClosed = true;
+	for (const HalfEdge& edge : edges) {
+		if (edge.face == MAX_UINT) {
+			originalIsClosed = false;
+			break;
+		}
+	}
+
+	// Work on a copy so every rejected merge leaves the original mesh exactly
+	// as it was.
+	HalfEdgeMesh merged = *this;
+
+	// Rebuild the face list after replacing the source with the target. A face
+	// that contains the merged edge collapses to a lower-sided polygon; remove
+	// only the duplicate corner introduced by the collapse.
+	// The target keeps its original position, matching source-into-target
+	// semantics.
+	std::vector<std::vector<uint>> mergedFaces;
+	mergedFaces.reserve(merged.FaceCount());
+	for (uint faceId = 0; faceId < merged.FaceCount(); ++faceId) {
+		std::vector<uint> face;
+		uint edgeId = merged.faceEdges[faceId];
+		do {
+			const HalfEdge& edge = merged.edges[edgeId];
+			if (edge.orig >= VertexCount() || edge.dest >= VertexCount()) {
+				return false;
+			}
+
+			uint remapped = edge.orig == sourceVertex ? targetVertex : edge.orig;
+			if (remapped > sourceVertex) {
+				--remapped;
+			}
+			face.push_back(remapped);
+			edgeId = edge.next;
+		} while (edgeId != merged.faceEdges[faceId]);
+
+		std::vector<uint> collapsedFace;
+		collapsedFace.reserve(face.size());
+		for (uint vertex : face) {
+			if (collapsedFace.empty() || collapsedFace.back() != vertex) {
+				collapsedFace.push_back(vertex);
+			}
+		}
+		if (collapsedFace.size() > 1 && collapsedFace.front() == collapsedFace.back()) {
+			collapsedFace.pop_back();
+		}
+
+		std::unordered_set<uint> uniqueVertices(collapsedFace.begin(), collapsedFace.end());
+		if (uniqueVertices.size() == collapsedFace.size() && collapsedFace.size() >= 3) {
+			mergedFaces.push_back(std::move(collapsedFace));
+		}
+	}
+	// Do not allow the last surface face to collapse away. Without this guard,
+	// repeated merges could reduce a mesh to isolated vertices or a degenerate
+	// edge, which is not a drawable mesh.
+	if (mergedFaces.empty()) {
+		return false;
+	}
+	merged.vertPos.erase(merged.vertPos.begin() + sourceVertex);
+
+	const Vec3f originalPos = merged.pos;
+	const Vec3f originalScale = merged.scale;
+	const Vec3f originalRotation = merged.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!merged.build(mergedFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() centers newly built geometry by moving the centroid into pos.
+	// Restore the existing transform and local-space positions so merging does
+	// not move the object or change its scale/rotation.
+	const Vec3f buildOffset = merged.pos - originalPos;
+	merged.translateVertices(buildOffset);
+	merged.pos = originalPos;
+	merged.scale = originalScale;
+	merged.eulerRot = originalRotation;
+
+	std::string error;
+	if (!merged.Validate(error)) {
+		return false;
+	}
+	if (originalIsClosed) {
+		// A closed surface must not become open as a side effect of merging.
+		// Exterior half-edges are the boundary representation used by this mesh.
+		for (const HalfEdge& edge : merged.edges) {
+			if (edge.face == MAX_UINT) {
+				return false;
+			}
+		}
+		for (uint edgeId : merged.vertEdge) {
+			if (edgeId == MAX_UINT) {
+				return false;
+			}
+		}
+	}
+
+	*this = std::move(merged);
+	return true;
+}
+
+bool HalfEdgeMesh::DeleteFace(uint faceId) {
+	if (faceId >= FaceCount()) {
+		return false;
+	}
+
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+
+	HalfEdgeMesh deleted = *this;
+	std::vector<std::vector<uint>> remainingFaces;
+	remainingFaces.reserve(deleted.FaceCount() - 1);
+	for (uint currentFace = 0; currentFace < deleted.FaceCount(); ++currentFace) {
+		if (currentFace == faceId) {
+			continue;
+		}
+
+		std::vector<uint> face;
+		uint edgeId = deleted.faceEdges[currentFace];
+		do {
+			face.push_back(deleted.edges[edgeId].orig);
+			edgeId = deleted.edges[edgeId].next;
+		} while (edgeId != deleted.faceEdges[currentFace]);
+		remainingFaces.push_back(std::move(face));
+	}
+
+	const Vec3f originalPos = deleted.pos;
+	const Vec3f originalScale = deleted.scale;
+	const Vec3f originalRotation = deleted.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!deleted.build(remainingFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() recenters the remaining geometry. Restore the original object
+	// transform and local-space placement after removing the face.
+	const Vec3f buildOffset = deleted.pos - originalPos;
+	deleted.translateVertices(buildOffset);
+	deleted.pos = originalPos;
+	deleted.scale = originalScale;
+	deleted.eulerRot = originalRotation;
+
+	std::string error;
+	if (!deleted.Validate(error)) {
+		return false;
+	}
+
+	*this = std::move(deleted);
+	return true;
+}
+
+
+bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
+	if (edgeId >= edges.size()) {
+		return false;
+	}
+	const HalfEdge& selectedEdge = edges[edgeId];
+	if (selectedEdge.twin >= edges.size() || selectedEdge.face == MAX_UINT ||
+		edges[selectedEdge.twin].face == MAX_UINT) {
+		return false;
+	}
+
+	const uint firstFace = selectedEdge.face;
+	const uint secondFace = edges[selectedEdge.twin].face;
+
+	std::string originalError;
+	if (!Validate(originalError)) {
+		return false;
+	}
+
+	bool originalIsClosed = true;
+	for (const HalfEdge& edge : edges) {
+		if (edge.face == MAX_UINT) {
+			originalIsClosed = false;
+			break;
+		}
+	}
+
+	// Find the one interior half-edge on firstFace whose twin belongs to
+	// secondFace. Requiring exactly one shared edge prevents accidentally
+	// dissolving unrelated or multiply-connected face pairs.
+	uint sharedEdge = MAX_UINT;
+	uint sharedTwin = MAX_UINT;
+	uint sharedEdgeCount = 0;
+	uint walkEdge = faceEdges[firstFace];
+	do {
+		const HalfEdge& edge = edges[walkEdge];
+		if (edge.twin < edges.size() && edges[edge.twin].face == secondFace) {
+			sharedEdge = walkEdge;
+			sharedTwin = edge.twin;
+			++sharedEdgeCount;
+		}
+		walkEdge = edge.next;
+	} while (walkEdge != faceEdges[firstFace]);
+
+	if (sharedEdgeCount != 1) {
+		return false;
+	}
+
+	HalfEdgeMesh dissolved = *this;
+
+	// Walk each face while omitting the shared half-edge. The first path ends
+	// at the start of the second path, so the duplicate join vertex is removed
+	// before the two paths are joined into one polygon.
+	auto boundaryWithoutEdge = [&dissolved](uint removedEdge) {
+		std::vector<uint> boundary;
+		uint current = dissolved.edges[removedEdge].next;
+		uint steps = 0;
+		while (current != removedEdge && steps++ <= dissolved.edges.size()) {
+			boundary.push_back(dissolved.edges[current].orig);
+			current = dissolved.edges[current].next;
+		}
+		if (current != removedEdge) {
+			boundary.clear();
+		}
+		return boundary;
+	};
+
+	const std::vector<uint> firstBoundary = boundaryWithoutEdge(sharedEdge);
+	const std::vector<uint> secondBoundary = boundaryWithoutEdge(sharedTwin);
+	if (firstBoundary.size() < 3 || secondBoundary.size() < 3) {
+		return false;
+	}
+
+	std::vector<uint> mergedFace = firstBoundary;
+	for (uint i = 0; i < secondBoundary.size(); ++i) {
+		if (i == 0 && !mergedFace.empty() && mergedFace.back() == secondBoundary[i]) {
+			continue;
+		}
+		mergedFace.push_back(secondBoundary[i]);
+	}
+	if (mergedFace.size() > 1 && mergedFace.front() == mergedFace.back()) {
+		mergedFace.pop_back();
+	}
+
+	// A face pair that also touches at another vertex would create a
+	// self-touching polygon. Reject it rather than asking build() to create
+	// invalid topology.
+	std::unordered_set<uint> uniqueVertices(mergedFace.begin(), mergedFace.end());
+	if (mergedFace.size() < 3 || uniqueVertices.size() != mergedFace.size()) {
+		return false;
+	}
+
+	std::vector<std::vector<uint>> rebuiltFaces;
+	rebuiltFaces.reserve(dissolved.FaceCount() - 1);
+	for (uint faceId = 0; faceId < dissolved.FaceCount(); ++faceId) {
+		if (faceId == firstFace) {
+			rebuiltFaces.push_back(mergedFace);
+			continue;
+		}
+		if (faceId == secondFace) {
+			continue;
+		}
+
+		std::vector<uint> face;
+		uint current = dissolved.faceEdges[faceId];
+		do {
+			face.push_back(dissolved.edges[current].orig);
+			current = dissolved.edges[current].next;
+		} while (current != dissolved.faceEdges[faceId]);
+		rebuiltFaces.push_back(std::move(face));
+	}
+
+	const Vec3f originalPos = dissolved.pos;
+	const Vec3f originalScale = dissolved.scale;
+	const Vec3f originalRotation = dissolved.eulerRot;
+	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
+		return static_cast<uint>(face.size());
+	};
+	if (!dissolved.build(rebuiltFaces, faceVertexCount)) {
+		return false;
+	}
+
+	// build() recenters geometry. Restore the original object transform and
+	// local-space placement, as the other topology-changing operations do.
+	const Vec3f buildOffset = dissolved.pos - originalPos;
+	dissolved.translateVertices(buildOffset);
+	dissolved.pos = originalPos;
+	dissolved.scale = originalScale;
+	dissolved.eulerRot = originalRotation;
+
+	std::string error;
+	if (!dissolved.Validate(error)) {
+		return false;
+	}
+	if (originalIsClosed) {
+		for (const HalfEdge& edge : dissolved.edges) {
+			if (edge.face == MAX_UINT) {
+				return false;
+			}
+		}
+	}
+
+	*this = std::move(dissolved);
+	return true;
+}
+
+bool HalfEdgeMesh::CollapseEdge(uint edgeId) {
+	if (edgeId >= edges.size()) {
+		return false;
+	}
+
+	const HalfEdge& selectedEdge = edges[edgeId];
+	if (selectedEdge.twin >= edges.size()) {
+		return false;
+	}
+
+	// Prefer the face-owned half-edge when the caller supplied an exterior twin.
+	if (selectedEdge.face == MAX_UINT && edges[selectedEdge.twin].face != MAX_UINT) {
+		edgeId = selectedEdge.twin;
+	}
+
+	const HalfEdge& edge = edges[edgeId];
+	if (edge.orig >= VertexCount() || edge.dest >= VertexCount() ||
+		edge.orig == edge.dest) {
+		return false;
+	}
+
+	const uint sourceVertex = edge.orig;
+	const uint targetVertex = edge.dest;
+	const Vec3f midpoint = (vertPos[sourceVertex] + vertPos[targetVertex]) * 0.5f;
+
+	if (!MergeVertices(sourceVertex, targetVertex)) {
+		return false;
+	}
+
+	const uint mergedVertex = targetVertex > sourceVertex ? targetVertex - 1 : targetVertex;
+	vertPos[mergedVertex] = midpoint;
+	return true;
 }
 
 void HalfEdgeMesh::translateVertices(const Vec3f& add) {
@@ -883,25 +1234,32 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangles) 
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	triangles.reserve(triangles.size() + numVertices - 2);
 
 	while (numVertices > 2) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			corner->prev->next = corner->next;
 			corner->next->prev = corner->prev;
 			--numVertices;
@@ -949,26 +1307,33 @@ void HalfEdgeMesh::GetTriangulation(uint faceId, std::vector<Vec3u>& triangleVer
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	triangleVertices.reserve(triangleVertices.size() + numVertices - 2);
 	triangleEdges.reserve(triangleVertices.size() + numVertices - 2);
 
 	while (numVertices > 3) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			corner->prev->next = corner->next;
 			corner->next->prev = corner->prev;
 			--numVertices;
@@ -1000,9 +1365,12 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 	};
 
 	int numVertices = FaceEdgeCount(faceId);
+	Vec3f normal = NewellNormal(faceId);
+	if (!(normal.LengthSquared() > 1e-20f))
+		return; //zero-area or NaN, nothing to triangulate
+
 	PolygonCorner* polyCorners = new PolygonCorner[numVertices];
 	uint edgeId = faceEdges[faceId];
-	Vec3f normal = NewellNormal(faceId);
 
 	for (int i = 0; i < numVertices; ++i) {
 		const HalfEdge& edge = edges[edgeId];
@@ -1014,23 +1382,30 @@ void HalfEdgeMesh::TriangulateFace(uint faceId) {
 	}
 
 	PolygonCorner* corner = polyCorners;
+	int stalled = 0;
 
 	while (numVertices > 3) {
-		if (!isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+		// A full lap with no ear (collinear or degenerate input) would spin forever,
+		// so after one lap clip whatever corner we are on to keep making progress.
+		const bool forced = stalled > numVertices;
+		if (!forced && !isConvex(corner->prev->pos, corner->pos, corner->next->pos)) {
+			++stalled;
 			corner = corner->next;
 			continue;
 		}
 
 		PolygonCorner* next = corner->next->next;
 		bool validEar = true;
-		while (next != corner->prev && validEar == true) {
+		while (!forced && next != corner->prev && validEar == true) {
 			validEar = !(isConvex(corner->prev->pos, corner->pos, next->pos)
 				&& isConvex(corner->pos, corner->next->pos, next->pos)
 				&& isConvex(corner->next->pos, corner->prev->pos, next->pos));
 			next = next->next;
 		}
 
+		if (!validEar) { ++stalled; }
 		if (validEar) {
+			stalled = 0;
 			uint innerClip, outerClip, cornerFace;
 			ClipCorner(corner->halfEdge, innerClip, outerClip, cornerFace);
 
@@ -1135,6 +1510,44 @@ Vec3f HalfEdgeMesh::GetEdgeCenter(uint edgeId) const {
 	return (vertPos.at(edge.orig) + vertPos.at(edge.dest)) * 0.5f;
 }
 
+void HalfEdgeMesh::GetEdgeVertices(uint edgeId, std::vector<uint>& vertices) const {
+	const HalfEdge& edge = edges.at(edgeId);
+	vertices.push_back(edge.orig);
+	vertices.push_back(edge.dest);
+}
+
+void HalfEdgeMesh::GetFaceVertices(uint faceId, std::vector<uint>& vertices) const {
+	StartEdgeIterationConst(faceId)
+		vertices.push_back(edge.orig);
+	EndEdgeIteration
+}
+
+void HalfEdgeMesh::ScaleVertices(const std::vector<uint>& vertexIds, const Vec3f& pivot,
+	const Vec3f& factors) {
+	std::unordered_set<uint> uniqueVertices(vertexIds.begin(), vertexIds.end());
+	for (uint vertexId : uniqueVertices) {
+		if (vertexId >= vertPos.size()) {
+			continue;
+		}
+
+		vertPos[vertexId] = pivot + (vertPos[vertexId] - pivot) * factors;
+	}
+}
+
+void HalfEdgeMesh::ScaleEdge(uint edgeId, const Vec3f& factors) {
+	std::vector<uint> vertices;
+	vertices.reserve(2);
+	GetEdgeVertices(edgeId, vertices);
+	ScaleVertices(vertices, GetEdgeCenter(edgeId), factors);
+}
+
+void HalfEdgeMesh::ScaleFace(uint faceId, const Vec3f& factors) {
+	std::vector<uint> vertices;
+	vertices.reserve(FaceEdgeCount(faceId));
+	GetFaceVertices(faceId, vertices);
+	ScaleVertices(vertices, faceCentroid(faceId), factors);
+}
+
 void HalfEdgeMesh::TranslateFace(uint faceId, const Vec3f& translation) {
 	StartEdgeIteration(faceId)
 		TranslateVertex(edge.orig, translation);
@@ -1168,6 +1581,9 @@ Matrix3f HalfEdgeMesh::getTransform3x3() const {
 
 Vec3f HalfEdgeMesh::WorldDirToLocalDir(const Vec3f& worldDir) {
 	Matrix3f transform = getTransform3x3();
+	// A zero scale axis makes the transform singular; the inverse would be NaN.
+	if (transform.GetDeterminant() == 0.0f)
+		return Vec3f(0.0f);
 	transform.Invert();
 
 	return transform * worldDir;
@@ -1274,6 +1690,141 @@ uint HalfEdgeMesh::VertexCount() const {
 	return vertPos.size();
 }
 
+bool HalfEdgeMesh::Validate(std::string& err) const {
+	const uint V = static_cast<uint>(vertPos.size());
+	const uint F = static_cast<uint>(faceEdges.size());
+	const uint E = static_cast<uint>(edges.size());
+
+	//Report only the first failure and stop. One bad index is usually the root cause
+	//These lambdas are helper functions that modify the &err string passed by reference
+	auto fail = [&err](const std::string& what) {
+		err = what;
+		return false;
+		};
+
+	auto at = [](const char* what, uint id) {
+		return std::string(what) + " " + std::to_string(id) + ": ";
+	};
+
+	auto atE = [&at](uint e) {return at("edge", e);};
+	auto atF = [&at](uint f) {return at("face", f); };
+	auto atV = [&at](uint v) {return at("vertex", v); };
+
+
+	//Basic check, the edge vector must be equal to the vertex positions vector size
+	if (vertEdge.size() != V)
+		return fail("vertEdge size mismatch with vertPos");
+
+	//Check for 1: Every twin symmetric
+	for (uint e = 0; e < E; ++e) {
+		const HalfEdge& h = edges[e]; 
+
+		if (h.orig >= V || h.dest >= V)
+			return fail(atE(e) + "index past the vertex array");
+
+		if (h.orig == h.dest)
+			return fail(atE(e) + "self-loop or degenerate edge"); 
+
+		if (h.twin >= E || h.twin == e || edges[h.twin].twin != e)
+			return fail(atE(e) + "twin symmetry");
+		
+		if (edges[h.twin].orig != h.dest || edges[h.twin].dest != h.orig)
+			return fail(atE(e) + "twin points the same way instead of back");
+
+		if (h.next >= E || h.prev >= E)
+			return fail(atE(e) + "index past the edge array");
+		
+		if (edges[h.next].prev != e || edges[h.prev].next != e)
+			return fail(atE(e) + "next/prev disagree");
+		
+		if (edges[h.next].orig != h.dest)
+			return fail(atE(e) + "loop is not geometrically continuous");
+
+		if (h.face != MAX_UINT && h.face >= F)
+			return fail(atE(e) + "face index past the face array"); 
+
+		if (edges[h.next].face != h.face)
+			return fail("a next-cycle changes the face midway"); 
+	}
+
+	//Check for 2: Every next/prev cycle closes and matches FaceEdgeCount. 
+	std::vector<uint> seen(E, MAX_UINT); 
+	for (uint f = 0; f < F; ++f) {
+		if (faceEdges[f] >= E)
+			return fail(atF(f) + "the first edge of this face is out of bounds of edges"); 
+
+		if (edges[faceEdges[f]].face != f)
+			return fail(atF(f) + "the edges when referenced by faceEdges does NOT return the face"); 
+
+		
+		const uint start = faceEdges[f]; 
+		uint cur = start; 
+
+		for (uint i = 0; i < E; ++i) {
+			if (seen[cur] != MAX_UINT)
+				return fail(atF(f) + atE(cur) + (seen[cur] == f
+					? "walk revisits this edge before returning to the start"
+					: "edge already claimed by face " + std::to_string(seen[cur])));
+			
+			seen[cur] = f; 
+
+			cur = edges[cur].next; 
+
+			if (edges[cur].face != f)
+				return fail(atF(f) + atE(cur) + "for this face and edge, the edge does not have a face equal to f. We traverse an edge not belonging to the current face before reaching the start halfedge."); 
+
+			if (cur == start) {
+				//Must have a cycle >= 3 for at least a triangle
+				if (i < 2)
+					return fail(atF(f) + atE(cur) + "for this face and edge, there are less than 3 edges for this face"); 
+				
+				break; 
+			}
+		}
+
+		if (cur != start)
+			return fail(atF(f) + "this face never has a closed loop."); 
+	}
+
+	//Check for 3: Every edge e that has a face (edges[e].face != MAX_UINT), we check if our cycle from step 2 CONFIRMS this
+	for (uint e = 0; e < E; ++e) {
+		if (edges[e].face != MAX_UINT && seen[e] != edges[e].face)
+			return fail(atE(e) + atF(edges[e].face) + "for this edge and face, this edge claims this face, but the cycle finds a different"); 
+	}
+
+	//Check for 4: Make sure we come back to the vertex after traversing all the edges the vertex is adjacent to
+	for (uint v = 0; v < V; ++v) {
+		//stray vertex no connected to any edge, legal
+		if (vertEdge[v] == MAX_UINT)
+			continue; 
+
+		if (vertEdge[v] >= E)
+			return fail(atV(v) + "this vertex has vertEdge that is out of bounds for all edges.");
+		
+		if (edges[vertEdge[v]].orig != v)
+			return fail(atV(v) + "the first edge in vertEdge did not actually originate here"); 
+
+		uint start = vertEdge[v];
+		uint cur = start;
+
+		for (uint e = 0; e < E; ++e) {
+			cur = edges[edges[cur].twin].next;
+				
+			if (edges[cur].orig != v)
+				return fail(atV(v) + atE(e) + "the half edge does not have the same v as the start");
+
+			if (cur == start)
+				break; 
+		}
+
+		if (cur != start)
+			return fail(atV(v) + "the one-ring around this vertex never closes");
+	}
+
+	err.clear(); 
+	return true; 
+}
+
 /// <summary>
 ///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
 ///		half-edge (one with the vertex as it's origin). Additionally, adjacent faces
@@ -1282,7 +1833,7 @@ uint HalfEdgeMesh::VertexCount() const {
 /// <param name="halfEdge">
 ///		A half-edge of the edge to be split.
 /// </param>
-void HalfEdgeMesh::refineEdge(uint hEdgeId) {
+uint HalfEdgeMesh::refineEdge(uint hEdgeId, float t) {
 	uint twinId = edges[hEdgeId].twin;
 	uint hEdge2Id = NewEdge(edges[hEdgeId]);
 	uint twin2Id = NewEdge(edges[twinId]);
@@ -1293,7 +1844,7 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	HalfEdge& hEdge2 = edges[hEdge2Id];
 	HalfEdge& hTwin2 = edges[twin2Id];
 
-	Vec3 midVertPos = (vertPos[hEdge.orig] + vertPos[hEdge.dest]) / 2.0f;
+	Vec3f midVertPos = vertPos[hEdge.orig] * (1.0f - t) + vertPos[hEdge.dest] * t;
 	uint midVert = NewVertex(midVertPos, hEdge2Id);
 
 	edges[hEdge.next].prev = hEdge2Id;
@@ -1313,6 +1864,8 @@ void HalfEdgeMesh::refineEdge(uint hEdgeId) {
 	hTwin2.prev = twinId;
 	hTwin2.orig = midVert;
 	hTwin2.twin = hEdgeId;
+
+	return midVert;
 }
 
 void HalfEdgeMesh::splitRefinedFace(uint faceId) {

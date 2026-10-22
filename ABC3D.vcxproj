@@ -119,6 +119,7 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="scene.cpp" />
@@ -135,8 +136,10 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
+    <QtMoc Include="ColorButton.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="helper.h" />
+    <ClInclude Include="MeshKnife.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="renderBufferBuilder.h" />
@@ -158,6 +161,8 @@
     <None Include="assets\shaders\Grid.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />
+    <None Include="assets\shaders\RotationRing.vert" />
+    <None Include="assets\shaders\RotationRing.frag" />
     <None Include="assets\shaders\Mesh.frag" />
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\PointDrawing.vert" />

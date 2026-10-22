@@ -6,6 +6,10 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QPainter>
+#include <functional>
+#include <optional>
+#include <unordered_map>
 
 #include <algorithm>
 
@@ -16,6 +20,7 @@
 #include "shapes.h"
 #include "sceneFile.h"
 #include "MeshBeveler.h"
+#include "MeshKnife.h"
 
 inline bool initGlew = true;
 
@@ -86,6 +91,24 @@ struct MouseTracker {
 	}
 };
 
+// Plain widget that paints on top of the viewport. Drawing with a QPainter inside paintGL depends on the GL state the
+// renderer leaves behind, a child widget does not.
+class OverlayWidget : public QWidget {
+public:
+	std::function<void(QPainter&)> draw;
+	OverlayWidget(QWidget* parent) : QWidget(parent) {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
+		setAttribute(Qt::WA_TranslucentBackground);
+	}
+protected:
+	void paintEvent(QPaintEvent*) override {
+		QPainter painter(this);
+		painter.setRenderHint(QPainter::Antialiasing);
+		if (draw) { draw(painter); }
+	}
+};
+
 class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
@@ -97,12 +120,13 @@ signals:
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
 	void orbitOriginChanged(const Vec3f& origin);
+	void elementChanged(Element element);
 
 public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
 	};
 
 private:
@@ -137,8 +161,43 @@ private:
 	// remain active even if the cursor moves away from the gizmo.
 	uint draggedGizmoAxis = MAX_UINT;
 	bool draggingGizmo = false;
+	// Rotation must keep using the axis that was displayed and clicked at press
+	// time, even though the selected mesh may rotate while the drag is active.
+	Vec3f draggedRotationAxis = Vec3f(0.0f);
 
 	bool localScale = true;
+	std::optional<SelectionItem> mergeFirstVertex;
+
+	// AI-generated code:
+	// Edge translation chooses an adjacent edge from the first drag direction.
+	// Keep that choice per selected vertex for the duration of the drag so
+	// multi-selection does not make every vertex use the same half-edge id.
+	std::unordered_map<SelectionItem, uint> edgeDragEdges;
+	// Signed movement accumulated along each chosen edge.  This lets the drag
+	// clamp at the vertex's original position when the mouse reverses.
+	std::unordered_map<SelectionItem, float> edgeDragDistances;
+
+// ---------------------------------------------------------------------------------------------
+// Knife ---------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+	// The cut is kept as a path in normalized device coordinates and recomputed from the untouched meshes whenever
+	// the path, the cursor or the camera changes. Enter keeps the result, Esc throws it away.
+	bool knifeSession = false;
+	bool knifeCutThrough = false;
+	bool knifeHasCursor = false;
+	std::vector<Vec2f> knifePath;
+	Vec2f knifeCursor = Vec2f(0.0f);
+	std::vector<std::pair<uint, HalfEdgeMesh>> knifeOriginals; // selected meshes as they were before the cut
+	KnifeOccluders knifeOccluders; // every mesh in the scene, before the cut
+
+	Vec2f knifeToNdc(const QPointF& pos) const;
+	void knifeBegin();
+	void knifeRestoreOriginals();
+	void knifeRecompute();
+	void knifeFinish();
+	void drawKnifeOverlay(QPainter& painter);
+	OverlayWidget* knifeOverlay = nullptr;
 
 // ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
@@ -146,10 +205,14 @@ private:
 
 	void initializeGL() override;
 
-	void paintGL() override { renderer.Draw(defaultFramebufferObject()); }
+	void paintGL() override {
+		renderer.Draw(defaultFramebufferObject());
+		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+	}
 
 	void resizeGL(int w, int h) override { 
 		renderer.Resize(devicePixelRatio() * w, devicePixelRatio() * h, defaultFramebufferObject());
+		knifeRecompute();
 	}
 
 // ---------------------------------------------------------------------------------------------
@@ -185,12 +248,13 @@ private:
 	void translateSelections();
 	void translateActionElements();
 	bool translateOutDrag();
-	bool translateEdgeDrag() { return false; }
+	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
 	void extrudeSelectedElements();
 	bool extrudeDrag();
 	bool scaleDrag();
+	bool scaleSelectedComponents(float amount, uint axis, bool uniform);
 	bool rotateDrag();
 
 // ---------------------------------------------------------------------------------------------
@@ -199,6 +263,9 @@ private:
 
 	void handleSelection(const Vec2u& selectionIds);
 	SelectionItem createSelectionItem(const Vec2u& ids);
+	void handleMergeVertexClick(const Vec3u& selectionIds);
+	void handleCollapseEdgeClick(const Vec3u& selectionIds);
+	void handleDissolveEdgeClick(const Vec3u& selectionIds);
 	void setActiveElement(Element element);
 
 // ---------------------------------------------------------------------------------------------
@@ -277,6 +344,24 @@ public slots:
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
 	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
 	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
+	void setActionTranslateEdge() {
+		// The constrained operation is vertex only.
+		if (selectionManager.getActiveElement() != VERTEX) {
+			setActiveElement(VERTEX);
+			elementButtons[0]->setChecked(true);
+			emit elementChanged(VERTEX);
+		}
+		// This operation only makes sense on one selection, prevent additive selection with this tool.
+		bool reducedSelection = false;
+		if (selectionManager.itemCount() > 1) {
+			const SelectionItem keep = selectionManager.getSelectedItems().front();
+			selectionManager.clearSelection();
+			selectionManager.addSelection(keep);
+			reducedSelection = true;
+		}
+		setAction(TRANSLATE_EDGE);
+		if (reducedSelection) { emitSelectionChanged(); }
+	}
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
@@ -284,6 +369,37 @@ public slots:
 	void setActionRotate() { setAction(ROTATE); }
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
+	void setActionKnife() { setAction(KNIFE); }
+	void setActionMerge() {
+		mergeFirstVertex.reset();
+		setActiveElement(VERTEX);
+		elementButtons[0]->setChecked(true);
+		emit elementChanged(VERTEX);
+		setAction(MERGE);
+	}
+
+	void setActionCollapse() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(COLLAPSE);
+	}
+	void setActionDissolve() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(DISSOLVE);
+	}
+
+	/// <returns>True while the knife tool is the active tool.</returns>
+	bool knifeActive() const { return actionParams.action == KNIFE; }
+	/// <summary>Keeps the cut in progress.</summary>
+	void knifeConfirm();
+	/// <summary>Throws away the cut in progress.</summary>
+	/// <returns>False if there was no cut to throw away.</returns>
+	bool knifeCancel();
+	/// <summary>Toggles whether the knife also cuts what is hidden from the camera.</summary>
+	void toggleKnifeCutThrough();
 
 	void enableAllElements() {
 		for (int i = 0; i < 4; ++i) {
@@ -294,13 +410,16 @@ public slots:
 
 	// Vertex Element
 	void setElementVertex() { 
-		setActiveElement(VERTEX); 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
+		setActiveElement(VERTEX);
+		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
 	}
 
 	void enableElementVertex() {
 		elementButtons[0]->setEnabled(true);
-		elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; ");
+        elementButtons[0]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
 	}
 
 	void disableElementVertex() {
@@ -310,7 +429,9 @@ public slots:
 
 	// Edge Element
 	void setElementEdge() {
+		if (actionParams.action == MERGE) { return; }
 		setActiveElement(EDGE);
+		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
 	}
 
@@ -326,7 +447,10 @@ public slots:
 
 	// Face Element
 	void setElementFace() {
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(FACE);
+		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
 	}
 
@@ -342,7 +466,10 @@ public slots:
 
 	// Object Element
 	void setElementObject() { 
+		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
+			actionParams.action == DISSOLVE) { return; }
 		setActiveElement(OBJECT); 
+		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
 	}
 
@@ -577,23 +704,23 @@ public slots:
 
 	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
 	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
-	void loadCylinder(){
+	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitCylinder(vertices, faces, 12);
+		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 	}
-	void loadTorus(){
+	void loadTorus(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 40, 20);
+		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(){
+	void loadUvSphere(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, 10, 10);
+		generateUVSphere(vertices, faces, resolution, resolution);
 		loadMesh(vertices, faces);
 	}
 
@@ -716,8 +843,22 @@ public slots:
 
 	// directly ported from FLTK Version's Viewport::deleteElement
 	void deleteSelection() {
+		if (knifeSession) { return; } // the knife holds mesh ids
 		std::cout << "delete" << std::endl;
-		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		std::vector<SelectionItem> selectedItems = selectionManager.getSelectedItems();
+		if (selectionManager.getActiveElement() == FACE) {
+			// Delete higher face IDs first so removing a face does not shift the
+			// IDs of selected faces that are still waiting to be deleted.
+			std::sort(selectedItems.begin(), selectedItems.end(),
+				[](const SelectionItem& left, const SelectionItem& right) {
+					if (left.meshId != right.meshId) {
+						return left.meshId < right.meshId;
+					}
+					return left.componentId > right.componentId;
+				});
+		}
+
+		for (const SelectionItem& item : selectedItems) {
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -732,11 +873,13 @@ public slots:
 				break;
 
 			case EDGE:
-				// todo
+				// Dissolve edge as delete operation.
+				scene[item.meshId]->DissolveEdge(item.componentId);
 				break;
 
 			case FACE:
-				// todo
+				// Delete faces in descending ID order; see the sort above.
+				//scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
 		}
@@ -830,6 +973,7 @@ public slots:
 	}
 
 	void duplicateSelection() {
+		if (knifeSession) { return; }
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
@@ -850,9 +994,31 @@ public slots:
 		emit orbitOriginChanged(origin);
 	}
 
-	void setCameraModeOrbit() { renderer.setCameraMode(ORBIT); update(); }
+	void setCameraModeOrbit() {
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
 
-	void setCameraModeFree() { renderer.setCameraMode(FREE); update(); }
+	void setCameraModeFree() { 
+		std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
+	void SetFOV(double fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
+
+	void SetSurfaceVisibility(bool show) { /*renderer.ShowSurfaces(show); update();*/ }
+
+	void SetEdgeVisibility(bool show) {/* renderer.ShowEdges(show); update();*/ }
+
+	void SetFaceColor(const Vec3f& clr) { /*makeCurrent(); renderer.FaceColor(clr); update();*/ }
+
+	void SetEdgeColor(const Vec3f& clr) { /*makeCurrent(); renderer.EdgeColor(clr); update();*/ }
+
+	void SetVertexColor(const Vec3f& clr) { /*makeCurrent(); renderer.VertexColor(clr); update();*/ }
+
+	void SetBackgroundColor(const Vec3f& clr) { /*makeCurrent(); renderer.BackgroundColor(clr); update();*/ }
+
+	void SetSelectColor(const Vec3f& clr) { /*makeCurrent(); renderer.SelectColor(clr); update();*/ }
+
+	void SetEdgeRadius(double radius){}
+
+	void SetVertexScale(double scale){}
 };
-

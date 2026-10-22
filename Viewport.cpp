@@ -2,6 +2,9 @@
 #include "shapes.h"
 #include <qpushbutton.h>
 #include <QMenu>
+#include <QPainter>
+#include <unordered_map>
+#include <unordered_set>
 
 Viewport::Viewport(QWidget *parent)
 	: QOpenGLWidget(parent)
@@ -21,18 +24,24 @@ Viewport::Viewport(QWidget *parent)
 	setFormat(format);
 
 	// Element Buttons
+	elementButtons[0] = new QPushButton(QIcon("assets/icons/vertex.svg"), "", this);
+	elementButtons[1] = new QPushButton(QIcon("assets/icons/edge.svg"), "", this);
+	elementButtons[2] = new QPushButton(QIcon("assets/icons/face.svg"), "", this);
+	elementButtons[3] = new QPushButton(QIcon("assets/icons/object.svg"), "", this);
 
-	elementButtons[0] = new QPushButton("Vertex", this);
-	elementButtons[1] = new QPushButton("Edge", this);
-	elementButtons[2] = new QPushButton("Face", this);
-	elementButtons[3] = new QPushButton("Object", this);
+	elementButtons[0]->setToolTip("<b> Vertex Selection </b> <br> '1' Key shortcut");
+	elementButtons[1]->setToolTip("<b> Edge Selection </b> <br> '2' Key shortcut");
+	elementButtons[2]->setToolTip("<b> Face Selection </b> <br> '3' Key shortcut");
+	elementButtons[3]->setToolTip("<b> Object Selection </b> <br> '4' Key shortcut");
 
 	QObject::connect(elementButtons[0], &QPushButton::released, this, &Viewport::setElementVertex);
 	QObject::connect(elementButtons[1], &QPushButton::released, this, &Viewport::setElementEdge);
 	QObject::connect(elementButtons[2], &QPushButton::released, this, &Viewport::setElementFace);
 	QObject::connect(elementButtons[3], &QPushButton::released, this, &Viewport::setElementObject);
 
+
 	for (int i = 0; i < 4; ++i) {
+		elementButtons[i]->setIconSize(QSize(64, 64));
 		elementButtons[i]->setFixedWidth(64);
 		elementButtons[i]->setFixedHeight(64);
 		elementButtons[i]->setAutoExclusive(true);
@@ -58,6 +67,10 @@ Viewport::Viewport(QWidget *parent)
 
 	selectionManager.setActiveElement(OBJECT);
 	setMouseTracking(true);
+
+	knifeOverlay = new OverlayWidget(this);
+	knifeOverlay->draw = [this](QPainter& painter) { drawKnifeOverlay(painter); };
+	knifeOverlay->hide();
 }
 
 Viewport::~Viewport()
@@ -176,6 +189,11 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	event->accept();
 	makeCurrent();
 
+	// An edge choice belongs to one mouse drag.  Do not carry a previously
+	// chosen half-edge into the next drag (or into a changed selection).
+	edgeDragEdges.clear();
+	edgeDragDistances.clear();
+
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
@@ -190,21 +208,42 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	const int rawX = static_cast<int>(pos.x * pixelRatio);
 	const int rawY = static_cast<int>(pos.y * pixelRatio);
 	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));*/
-	//const Vec3u ids = renderer.SelectionIds(x, y);
-	//const bool activeGizmo =
-		//(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		//(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
-		//(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	//const bool gizmoHit =
-		//ids.x == GIZMO_IDENTIFIER && activeGizmo &&
-		//((ids.y == 4 && ids.z == 3) || ids.z < 3);
-	//draggingGizmo = gizmoHit;
-	//draggedGizmoAxis = gizmoHit ? ids.z : MAX_UINT;
+	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+	const Vec3u ids = renderer.SelectionIds(x, y);
+	const bool activeGizmo =
+		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
+		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
+	const bool gizmoHit =
+		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
+		((ids.y == 4 && ids.z == 3) || ids.z < 3);
+	draggingGizmo = gizmoHit;
+	draggedGizmoAxis = gizmoHit ? ids.z : MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
+	if (gizmoHit && actionParams.action == ROTATE && ids.z < 3) {
+		Vec3f localAxis(0.0f);
+		switch (ids.z) {
+		case 0: localAxis.x = 1.0f; break;
+		case 1: localAxis.y = 1.0f; break;
+		case 2: localAxis.z = 1.0f; break;
+		default: break;
+		}
+
+		// Capture the same oriented axis used to draw the rotation rings. This
+		// value must not be recomputed after each incremental rotation.
+		draggedRotationAxis = getGizmoRotation() * localAxis;
+		draggedRotationAxis.Normalize();
+	}
+	*/
 	draggingGizmo = false;
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	// The second click of a quick double click is a knife point (added on release), not a deselect
+	if (actionParams.action == KNIFE) { event->accept(); return; }
+	if (actionParams.action == MERGE) {
+		mergeFirstVertex.reset();
+	}
 	selectionManager.clearSelection();
 	renderer.UpdateSelection(selectionManager);
 	//updateGizmos();
@@ -225,6 +264,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	// Retrieve the current logical (not physical) pixel position
 	Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+
+	// A click (not a camera drag) adds a point to the cut
+	if (actionParams.action == KNIFE) {
+		if (!mouseAction.dragged) {
+			knifeCursor = knifeToNdc(event->position());
+			knifeHasCursor = true;
+			knifePath.push_back(knifeCursor);
+			knifeRecompute();
+		}
+		update();
+		return;
+	}
 
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
@@ -258,7 +309,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged) {
-			handleSelection(ids);
+			if (actionParams.action == MERGE) {
+				handleMergeVertexClick(ids);
+			}
+			else if (actionParams.action == COLLAPSE) {
+				handleCollapseEdgeClick(ids);
+			}
+			else if (actionParams.action == DISSOLVE) {
+				handleDissolveEdgeClick(ids);
+			}
+			else {
+				handleSelection(ids);
+			}
 		}
 
 		// Print selection ids.
@@ -268,6 +330,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
 
 	// A captured gizmo click does not change selection or hover state, so it
 	// does not need another repaint on release.
@@ -291,6 +354,14 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 	// pressed. Hovering must not be interpreted as a camera drag.
 	if (dragging) {
 		mouseDragEvent(pos);
+		return;
+	}
+
+	if (actionParams.action == KNIFE) {
+		knifeCursor = knifeToNdc(event->position());
+		knifeHasCursor = true;
+		knifeRecompute();
+		update();
 		return;
 	}
 
@@ -364,6 +435,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// axis is degenerate from the current camera angle.
 	if (!actionPerformed && !draggingGizmo) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
+		knifeRecompute(); // the path stays put on the screen, so what it hits changes
 	}
 
 	//updateGizmos();
@@ -386,6 +458,7 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 
 	// Update renderer and viewport
 	renderer.mouseWheel(camChange.x, camChange.y);
+	knifeRecompute();
 
 	update();
 }
@@ -440,13 +513,47 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::setAction(Action action) {
+	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+	if ((actionParams.action == MERGE && action != MERGE) ||
+		(actionParams.action == COLLAPSE && action != COLLAPSE) ||
+		(actionParams.action == DISSOLVE && action != DISSOLVE)) {
+		if (actionParams.action == MERGE) {
+			mergeFirstVertex.reset();
+		}
+		selectionManager.clearSelection();
+		enableAllElements();
+	}
+
 	actionParams.action = action;
+	if (action == MERGE) {
+		enableElementVertex();
+		disableElementEdge();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == COLLAPSE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
+	else if (action == DISSOLVE) {
+		enableElementEdge();
+		disableElementVertex();
+		disableElementFace();
+		disableElementObject();
+	}
+	if (action == KNIFE) { knifeBegin(); }
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
 	if (rendererInitialized) {
-		//makeCurrent();
-		//updateGizmos();
+		// makeCurrent();
+		if (action != MERGE) {
+			// updateSelectionVisuals();
+		}
+		// updateGizmos();
 	}
 	//update();
 }
@@ -455,7 +562,127 @@ void Viewport::setAction(Action action) {
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-void Viewport::handleSelection(const Vec2u& selectionIds) {
+void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
+	// Vertex-point hits are encoded as (MAX_UINT, one-based mesh ID,
+	// zero-based vertex ID). Surface hits are intentionally ignored.
+	if (selectionIds.x != MAX_UINT || selectionIds.y == 0 ||
+		selectionIds.y == MAX_UINT || selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.y - 1;
+	const uint vertexId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || vertexId >= scene[meshId]->VertexCount()) {
+		return;
+	}
+
+	const SelectionItem clicked{ meshId, vertexId };
+	std::cout << "Merge mode vertex clicked: mesh " << meshId
+		<< ", vertex " << vertexId << std::endl;
+
+	if (!mergeFirstVertex.has_value()) {
+		mergeFirstVertex = clicked;
+		selectionManager.clearSelection();
+		selectionManager.addSelection(clicked);
+		updateSelectionVisuals();
+		updateGizmos();
+		emitSelectionChanged();
+		update();
+		return;
+	}
+
+	const SelectionItem source = *mergeFirstVertex;
+	if (source == clicked) {
+		std::cout << "Merge rejected: choose a different target vertex." << std::endl;
+		return;
+	}
+	if (source.meshId != clicked.meshId) {
+		std::cout << "Merge rejected: both vertices must belong to the same mesh." << std::endl;
+		return;
+	}
+
+	if (!scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
+		std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
+		return;
+	}
+
+	std::cout << "Merged vertex " << source.componentId << " into vertex "
+		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
+	mergeFirstVertex.reset();
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are (one-based mesh ID, face ID, half-edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Collapse mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->CollapseEdge(edgeId)) {
+		std::cout << "Edge collapse rejected: the result would have invalid or open topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
+	// Surface edge hits are encoded as (one-based mesh ID, face ID, edge ID).
+	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
+		selectionIds.z == MAX_UINT) {
+		return;
+	}
+
+	const uint meshId = selectionIds.x - 1;
+	const uint edgeId = selectionIds.z;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	std::cout << "Dissolve mode edge clicked: mesh " << meshId
+		<< ", edge " << edgeId << std::endl;
+
+	if (!scene[meshId]->DissolveEdge(edgeId)) {
+		std::cout << "Dissolve rejected: choose an interior edge with valid topology."
+			<< std::endl;
+		return;
+	}
+
+	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
+	selectionManager.clearSelection();
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+	updateSelectionVisuals();
+	updateGizmos();
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::handleSelection(const Vec3u& selectionIds) {
 	// Create a selection item to send to the selection manager.
 	SelectionItem item = createSelectionItem(selectionIds);
 
@@ -694,7 +921,77 @@ bool Viewport::translateOutDrag() {
 	return true;
 }
 
-bool translateEdgeDrag() { return false; }
+// AI-generated Code
+bool Viewport::translateEdgeDrag() {
+	// Edge translation is defined for vertices: the vertex remains selected and
+	// moves along one of its incident edges.  The edge is selected from the
+	// direction of the first drag movement.
+	if (selectionManager.getActiveElement() != VERTEX ||
+		selectionManager.getSelectedItems().size() != 1) {
+		return false;
+	}
+
+	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+
+	if (mouseAction.firstMoveEvent) {
+		Vec3f forward, up, right;
+		renderer.GetCamera()->directions(forward, up, right);
+
+		// Mouse positions are converted to a bottom-left origin in the Qt event
+		// handlers. Camera::directions() uses the opposite-handed basis from the
+		// view matrix (its right/up vectors point toward screen-left/down), so
+		// negate both axes before comparing projected edges to the mouse vector.
+		const Vec2f& dragDir = mouseAction.initialDragDir;
+		if (dragDir.LengthSquared() < 1e-12f) {
+			return false;
+		}
+
+		edgeDragEdges.clear();
+		edgeDragDistances.clear();
+		for (const SelectionItem& item : selectedItems) {
+			if (item.meshId >= scene.MeshCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh* mesh = scene[item.meshId];
+			const uint edge = mesh->PickOutgoingHalfEdge(
+				item.componentId, dragDir, -right, -up);
+			if (edge != MAX_UINT) {
+				edgeDragEdges.emplace(item, edge);
+				edgeDragDistances.emplace(item, 0.0f);
+			}
+		}
+	}
+
+	if (edgeDragEdges.empty()) {
+		return false;
+	}
+
+	const float delta = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+	bool transformed = false;
+	for (const SelectionItem& item : selectedItems) {
+		auto edge = edgeDragEdges.find(item);
+		auto distance = edgeDragDistances.find(item);
+		if (edge == edgeDragEdges.end() || distance == edgeDragDistances.end() ||
+			item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Do not allow a reversed drag to carry the vertex past its starting
+		// position. Keep reporting the drag as handled at the limit so the
+		// camera does not start orbiting when the clamp is reached.
+		const float nextDistance = std::max(0.0f, distance->second + delta);
+		const float appliedDistance = nextDistance - distance->second;
+		distance->second = nextDistance;
+		if (std::abs(appliedDistance) > 1e-12f) {
+			scene[item.meshId]->TranslateVertexAlongEdge(
+				item.componentId, edge->second, appliedDistance);
+		}
+		transformed = true;
+	}
+
+	return transformed;
+}
 
 void Viewport::setupBevelDrag() {
 	if (beveler) { delete beveler; }
@@ -795,11 +1092,20 @@ bool Viewport::extrudeDrag() {
 }
 
 bool Viewport::scaleDrag() {
-	if (selectionManager.getActiveElement() != OBJECT || selectionManager.getSelectedItems().empty()) {
+	if (selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
 
 	float factor = 0.01f * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+	const Element activeElement = selectionManager.getActiveElement();
+
+	if (activeElement == EDGE || activeElement == FACE) {
+		return scaleSelectedComponents(factor, 0, true);
+	}
+
+	if (activeElement != OBJECT) {
+		return false;
+	}
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 		if (item.meshId < scene.MeshCount()) {
@@ -808,6 +1114,72 @@ bool Viewport::scaleDrag() {
 	}
 
 	renderer.UpdateTransforms();
+
+	return true;
+}
+
+bool Viewport::scaleSelectedComponents(float amount, uint axis, bool uniform) {
+	const Element activeElement = selectionManager.getActiveElement();
+	// If the active element is not edge or face, or there is no selection, do nothing.
+	if ((activeElement != EDGE && activeElement != FACE) ||
+		selectionManager.getSelectedItems().empty() || (!uniform && axis >= 3)) {
+		return false;
+	}
+
+	// Collect all relevant vertices, pivots, and the number of pivots.
+	std::unordered_map<uint, std::unordered_set<uint>> selectedVertices;
+	std::unordered_map<uint, Vec3f> pivotSums;
+	std::unordered_map<uint, uint> pivotCounts;
+
+	// Loop through each selected item.
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId >= scene.MeshCount()) {
+			continue;
+		}
+
+		// Get the mesh, and collect the vertices that are within the selection.
+		HalfEdgeMesh* mesh = scene[item.meshId];
+		std::unordered_set<uint>& vertices = selectedVertices[item.meshId];
+		std::vector<uint> componentVertices;
+		// Init pivot sum.
+		if (!pivotCounts.count(item.meshId)) {
+			pivotSums[item.meshId] = Vec3f(0.0f);
+		}
+
+		// Collect edge vertices, calculate pivots.
+		if (activeElement == EDGE) {
+			componentVertices.reserve(2);
+			mesh->GetEdgeVertices(item.componentId, componentVertices);
+			pivotSums[item.meshId] += mesh->GetEdgeCenter(item.componentId);
+		}
+		// Collect face vertices, calculate pivots.
+		else {
+			mesh->GetFaceVertices(item.componentId, componentVertices);
+			pivotSums[item.meshId] += mesh->faceCentroid(item.componentId);
+		}
+		vertices.insert(componentVertices.begin(), componentVertices.end());
+		++pivotCounts[item.meshId];
+	}
+
+	if (selectedVertices.empty()) {
+		return false;
+	}
+
+	// Convert mouse movement into scale multiplier.
+	const float multiplier = std::max(0.001f, 1.0f + amount);
+	// Get scale factors, if uniform ignore axis.
+	Vec3f factors(uniform ? multiplier : 1.0f);
+	if (!uniform) {
+		factors[axis] = multiplier;
+	}
+
+	// Scale all the relevant vertices by factor.
+	for (auto& [meshId, vertices] : selectedVertices) {
+		HalfEdgeMesh* mesh = scene[meshId];
+		std::vector<uint> vertexIds(vertices.begin(), vertices.end());
+		const Vec3f pivot = pivotSums[meshId] / float(pivotCounts[meshId]);
+		mesh->ScaleVertices(vertexIds, pivot, factors);
+	}
 
 	return true;
 }
@@ -868,9 +1240,9 @@ bool Viewport::rotateGizmoDrag() {
 		return false;
 	}
 
-	// Todo: axis rotation.
-	bool rotated = false;
-	std::cout << "Rotation along axis: " << draggedGizmoAxis << " captured, but logic not implemented." << std::endl;
+	if (draggedRotationAxis.LengthSquared() <= 1e-8f) {
+		return false;
+	}
 
 	// 10/16/26 - Update Gizmos.
 	//renderer.UpdateRenderBuffers(scene);
@@ -979,9 +1351,9 @@ bool Viewport::translateGizmoDrag() {
 }
 
 bool Viewport::scaleGizmoDrag() {
-	// If we aren't dragging the gizmo, or the active element is not object, or there is nothing selected, do nothing.
+	// Do nothing if we aren't dragging a gizmo, if vertices are the active element, or have no selection.
 	if (!draggingGizmo ||
-		selectionManager.getActiveElement() != OBJECT ||
+		selectionManager.getActiveElement() == VERTEX ||
 		selectionManager.getSelectedItems().empty()) {
 		return false;
 	}
@@ -990,7 +1362,7 @@ bool Viewport::scaleGizmoDrag() {
 	if (draggedGizmoAxis == 3) {
 		const bool scaled = scaleDrag();
 		if (scaled) {
-			emitPrimarySelectionPosChanged();
+			emitPrimarySelectionScaleChanged();
 		}
 		return scaled;
 	}
@@ -1030,12 +1402,23 @@ bool Viewport::scaleGizmoDrag() {
 	const float factor = 0.01f * change.Dot(axisScreen);
 
 	bool scaled = false;
-	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId < scene.MeshCount()) {
-			HalfEdgeMesh* mesh = scene[item.meshId];
-			const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
-			mesh->Scale(static_cast<int>(draggedGizmoAxis), newScale);
-			scaled = true;
+	const Element activeElement = selectionManager.getActiveElement();
+	// If we are scaling edges or faces
+	if (activeElement == EDGE || activeElement == FACE) {
+		if (!localScale) {
+			return false;
+		}
+		scaled = scaleSelectedComponents(factor, draggedGizmoAxis, false);
+	}
+	// Else we are scaling meshes.
+	else {
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId < scene.MeshCount()) {
+				HalfEdgeMesh* mesh = scene[item.meshId];
+				const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
+				mesh->Scale(static_cast<int>(draggedGizmoAxis), newScale);
+				scaled = true;
+			}
 		}
 	}
 
@@ -1133,14 +1516,18 @@ void Viewport::updateGizmos() {
 		const bool scaleAction = actionParams.action == SCALE;
 		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
 
-		// If nothing selected, or the active element is not objects, clear gizmos.
-		if (!scaleAction || selectionManager.getActiveElement() != OBJECT ||
+		// A single vertex has no extent to scale, so only that element mode omits
+		// the scale gizmo.
+		const Element activeElement = selectionManager.getActiveElement();
+		const bool componentWorldScale =
+			(activeElement == EDGE || activeElement == FACE) && !localScale;
+		if (!scaleAction || activeElement == VERTEX || componentWorldScale ||
 			selectedItems.empty()) {
 			//renderer.ClearGizmos();
 			return;
 		}
 
-		// Get the average position of all selected elements, only objects as scale is only defined for objects.
+		// Use the average selected-element center as the shared scale pivot.
 
 		Vec3f positionSum(0.0f);
 		uint positionCount = 0;
@@ -1152,6 +1539,19 @@ void Viewport::updateGizmos() {
 
 			HalfEdgeMesh* mesh = scene[item.meshId];
 			Vec3f worldPosition = mesh->Pos();
+
+			switch (selectionManager.getActiveElement()) {
+			case OBJECT:
+				break;
+			case EDGE:
+				worldPosition = mesh->LocalPosToWorldPos(mesh->GetEdgeCenter(item.componentId));
+				break;
+			case FACE:
+				worldPosition = mesh->LocalPosToWorldPos(mesh->faceCentroid(item.componentId));
+				break;
+			default:
+				continue;
+			}
 
 			positionSum += worldPosition;
 			++positionCount;
@@ -1254,4 +1654,134 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 	//return gizmoChanged || rendererChanged;
 	return false;
 }
+// ---------------------------------------------------------------------------------------------
+// Knife ---------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
+Vec2f Viewport::knifeToNdc(const QPointF& pos) const {
+	return Vec2f(
+		2.0f * static_cast<float>(pos.x()) / std::max(1, width()) - 1.0f,
+		1.0f - 2.0f * static_cast<float>(pos.y()) / std::max(1, height()));
+}
+
+void Viewport::knifeBegin() {
+	knifeSession = true;
+	knifePath.clear();
+	knifeHasCursor = false;
+	knifeOriginals.clear();
+	knifeOccluders = KnifeOccluders();
+
+	// Only selected meshes are cut, but any mesh can hide them
+	std::unordered_set<uint> selected;
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId < scene.MeshCount() && selected.insert(item.meshId).second) {
+			knifeOriginals.emplace_back(item.meshId, *scene[item.meshId]);
+		}
+	}
+	for (uint i = 0; i < scene.MeshCount(); ++i) { knifeOccluders.Add(*scene[i]); }
+}
+
+void Viewport::knifeRestoreOriginals() {
+	for (auto& original : knifeOriginals) {
+		if (original.first < scene.MeshCount()) { *scene[original.first] = original.second; }
+	}
+}
+
+void Viewport::knifeRecompute() {
+	if (!knifeSession || !rendererInitialized) { return; }
+
+	knifeRestoreOriginals();
+
+	std::vector<Vec2f> path = knifePath;
+	if (knifeHasCursor) { path.push_back(knifeCursor); }
+
+	if (path.size() >= 2) {
+		KnifeCamera camera;
+		camera.viewProj = renderer.ViewProjection();
+		camera.position = renderer.GetCamera()->position();
+
+		for (auto& original : knifeOriginals) {
+			if (original.first >= scene.MeshCount()) { continue; }
+			// Cut() leaves the mesh untouched when nothing was hit or the result was not valid
+			HalfEdgeMeshKnife knife(*scene[original.first]);
+			knife.Cut(camera, path, knifeCutThrough, knifeOccluders);
+		}
+	}
+
+	makeCurrent();
+	renderer.UpdateRenderBuffers(scene);
+}
+
+void Viewport::knifeFinish() {
+	// Leaving the tool throws away anything unconfirmed
+	knifeHasCursor = false;
+	knifeRestoreOriginals();
+	knifeSession = false;
+	knifePath.clear();
+	knifeOriginals.clear();
+	knifeOccluders = KnifeOccluders();
+
+	if (rendererInitialized) {
+		makeCurrent();
+		renderer.UpdateRenderBuffers(scene);
+		updateSelectionVisuals();
+		updateGizmos();
+	}
+}
+
+void Viewport::knifeConfirm() {
+	if (!knifeSession || knifePath.size() < 2) { return; }
+
+	// The cursor is only a preview. Only clicked points are kept.
+	knifeHasCursor = false;
+	knifeRecompute();
+
+	// Same tool, next cut starts from the result
+	knifeBegin();
+
+	makeCurrent();
+	updateSelectionVisuals();
+	updateGizmos();
+	update();
+}
+
+bool Viewport::knifeCancel() {
+	if (!knifeSession || knifePath.empty()) { return false; }
+
+	knifePath.clear();
+	knifeRecompute();
+	update();
+	return true;
+}
+
+void Viewport::toggleKnifeCutThrough() {
+	knifeCutThrough = !knifeCutThrough;
+	knifeRecompute();
+	update();
+}
+
+void Viewport::drawKnifeOverlay(QPainter& painter) {
+	auto toWidget = [this](const Vec2f& ndc) {
+		return QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
+	};
+
+	painter.setPen(QPen(QColor(255, 220, 60), 2.0));
+	for (size_t i = 0; i + 1 < knifePath.size(); ++i) {
+		painter.drawLine(toWidget(knifePath[i]), toWidget(knifePath[i + 1]));
+	}
+
+	if (knifeHasCursor && !knifePath.empty()) {
+		painter.setPen(QPen(QColor(255, 220, 60, 150), 1.0, Qt::DashLine));
+		painter.drawLine(toWidget(knifePath.back()), toWidget(knifeCursor));
+	}
+
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(QColor(255, 220, 60));
+	for (const Vec2f& p : knifePath) { painter.drawEllipse(toWidget(p), 4.0, 4.0); }
+
+	painter.setPen(QColor(255, 255, 255));
+	QString hint = "Knife: click to cut, Enter to confirm, Esc to cancel, X cut through: ";
+	hint += knifeCutThrough ? "on" : "off";
+	if (knifeOriginals.empty()) { hint += "   (select a mesh to cut)"; }
+	painter.drawText(QPointF(12.0, 20.0), hint);
+}

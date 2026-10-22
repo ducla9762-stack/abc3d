@@ -140,6 +140,11 @@ private:
 		void setGizmoRotationUniform(const Matrix3f& rotation);
 
 		/// <summary>
+		/// Configures the rotation ring's visible or selection-only pass.
+		/// </summary>
+		void setRotationRingMode(float tolerance, bool selectionOnly);
+
+		/// <summary>
 		/// Sets the gizmos to draw.
 		/// </summary>
 		/// <param name="maces">List of maces</param>
@@ -161,6 +166,7 @@ private:
 	// Gizmo programs.
 	Gizmo translation;
 	Gizmo scale;
+	Gizmo rotationSelection;
 	Gizmo rotation;
 	Gizmo free;
 
@@ -297,14 +303,27 @@ public:
 
 	CameraType GetActiveCamType() const { return camType; }
 
+	Vec3f getCameraPosition() { 
+		if (camType == ORBIT) { return orbitCamera.position(); } 
+		else				  { return freeCamera.position(); }
+		updateCamera = true;
+	}
+	
 	void setCameraPosition(const Vec3f& pos) {
 		if (camType == ORBIT)	{ orbitCamera.setPosition(pos); }
 		else					{ freeCamera.setPosition(pos); }
 		updateCamera = true;
 	}
 
+	void updateCameraPostion(int fov) {
+		Vec3f newFov = getCameraPosition() + fov;
+		setCameraPosition(newFov);
+	}
+
 	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); updateCamera = true; }
 	const Camera* GetCamera() const { return camType == ORBIT ? (Camera*) &orbitCamera : (Camera*) &freeCamera; }
+	/// <returns>World -> clip transform for the current camera and window size, computed fresh.</returns>
+	Matrix4f ViewProjection() const { return projection * GetCamera()->transform(); }
 
 	void toggleCamType() {
 		if (camType == ORBIT) {
