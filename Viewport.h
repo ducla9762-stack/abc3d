@@ -841,7 +841,7 @@ public slots:
 
 			case FACE:
 				// Delete faces in descending ID order; see the sort above.
-				//scene[item.meshId]->DeleteFace(item.componentId);
+				scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
 		}
