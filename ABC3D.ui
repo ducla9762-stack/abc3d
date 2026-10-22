@@ -1678,357 +1678,459 @@ li.checked::marker { content: &quot;\2612&quot;; }
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
-            <widget class="QWidget" name="camModes" native="true">
-             <layout class="QGridLayout" name="gridLayout_3">
-              <property name="leftMargin">
-               <number>0</number>
+            <widget class="QScrollArea" name="scrollArea">
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <widget class="QWidget" name="scrollAreaWidgetContents_2">
+              <property name="geometry">
+               <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>324</width>
+                <height>590</height>
+               </rect>
               </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="freeButton">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Unrestricted looking in every direction&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton:checked { background-color: red; }</string>
-                </property>
-                <property name="text">
-                 <string>Free</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="orbitButton">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Keeps the camera centered around the specified middle&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton:checked { background-color: red; }</string>
-                </property>
-                <property name="text">
-                 <string>Orbit</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <property name="autoExclusive">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="2">
-               <widget class="QLabel" name="cameraModeLabel">
-                <property name="text">
-                 <string>Camera Mode</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
+              <layout class="QVBoxLayout" name="verticalLayout_14">
+               <property name="spacing">
+                <number>2</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QWidget" name="camModes" native="true">
+                 <layout class="QGridLayout" name="gridLayout_3">
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <item row="0" column="0" colspan="2">
+                   <widget class="QLabel" name="cameraModeLabel">
+                    <property name="text">
+                     <string>Camera Mode</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QPushButton" name="freeButton">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Unrestricted looking in every direction&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton:checked { background-color: red; }</string>
+                    </property>
+                    <property name="text">
+                     <string>Free</string>
+                    </property>
+                    <property name="checkable">
+                     <bool>true</bool>
+                    </property>
+                    <property name="autoExclusive">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QPushButton" name="orbitButton">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Keeps the camera centered around the specified middle&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton:checked { background-color: red; }</string>
+                    </property>
+                    <property name="text">
+                     <string>Orbit</string>
+                    </property>
+                    <property name="checkable">
+                     <bool>true</bool>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                    <property name="autoExclusive">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="VectorInput" name="originInput" native="true"/>
+               </item>
+               <item>
+                <widget class="QWidget" name="widget_4" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <layout class="QGridLayout" name="gridLayout_4">
+                  <item row="4" column="0">
+                   <widget class="QCheckBox" name="vertexVisibilityBox">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="text">
+                     <string>Vertices</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="1">
+                   <widget class="QCheckBox" name="checkBox">
+                    <property name="text">
+                     <string>Surfaces</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QCheckBox" name="gridVisibilityBox">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="layoutDirection">
+                     <enum>Qt::LayoutDirection::LeftToRight</enum>
+                    </property>
+                    <property name="text">
+                     <string>Grid</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0" colspan="2">
+                   <widget class="QLabel" name="label_10">
+                    <property name="text">
+                     <string>Show</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="4" column="1">
+                   <widget class="QCheckBox" name="checkBox_2">
+                    <property name="text">
+                     <string>Edges</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="widget_6" native="true">
+                 <layout class="QGridLayout" name="gridLayout_6">
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_12">
+                    <property name="text">
+                     <string>Vertex Size</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="label_11">
+                    <property name="text">
+                     <string>Edge Radius</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QDoubleSpinBox" name="vertexScaleSpinner">
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.010000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>0.100000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QDoubleSpinBox" name="edgeRadiusSpinner">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.001000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>0.010000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="label_5">
+                    <property name="text">
+                     <string>Field of View</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="1">
+                   <widget class="QDoubleSpinBox" name="fovSpinner">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                    <property name="minimum">
+                     <double>30.000000000000000</double>
+                    </property>
+                    <property name="maximum">
+                     <double>220.000000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>70.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="showGrid" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <layout class="QGridLayout" name="gridLayout_7">
+                  <item row="2" column="3">
+                   <widget class="ColorButton" name="backgroundColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>0</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="3">
+                   <widget class="ColorButton" name="edgeColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>251</red>
+                      <green>255</green>
+                      <blue>28</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0" colspan="4">
+                   <widget class="QLabel" name="label_13">
+                    <property name="text">
+                     <string>Colors</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_14">
+                    <property name="text">
+                     <string>Surface</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="ColorButton" name="faceColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>255</red>
+                      <green>28</green>
+                      <blue>32</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="1">
+                   <widget class="ColorButton" name="vertexColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>221</red>
+                      <green>23</green>
+                      <blue>185</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="2">
+                   <widget class="QLabel" name="label_17">
+                    <property name="text">
+                     <string>Background</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="2">
+                   <widget class="QLabel" name="label_15">
+                    <property name="text">
+                     <string>Edge</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="label_16">
+                    <property name="text">
+                     <string>Vertex</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QLabel" name="label_18">
+                    <property name="text">
+                     <string>Selected</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="1">
+                   <widget class="ColorButton" name="selectColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>2</red>
+                      <green>255</green>
+                      <blue>2</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="2">
+                   <widget class="QLabel" name="label_19">
+                    <property name="text">
+                     <string>Hovered</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="3">
+                   <widget class="ColorButton" name="hoverColorButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="color" stdset="0">
+                     <color>
+                      <red>255</red>
+                      <green>182</green>
+                      <blue>12</blue>
+                     </color>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <spacer name="verticalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
             </widget>
-           </item>
-           <item>
-            <widget class="VectorInput" name="originInput" native="true"/>
-           </item>
-           <item>
-            <widget class="QWidget" name="widget_4" native="true">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>50</height>
-              </size>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_4">
-              <item row="3" column="1">
-               <widget class="QDoubleSpinBox" name="edgeRadiusSpinner"/>
-              </item>
-              <item row="2" column="0">
-               <widget class="QCheckBox" name="vertexVisibilityBox">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string>Vertices</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QCheckBox" name="checkBox_2">
-                <property name="text">
-                 <string>Edges</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QCheckBox" name="gridVisibilityBox">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="layoutDirection">
-                 <enum>Qt::LayoutDirection::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string>Grid</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="2">
-               <widget class="QLabel" name="label_10">
-                <property name="text">
-                 <string>Show</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QCheckBox" name="checkBox">
-                <property name="text">
-                 <string>Surfaces</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QLabel" name="label_11">
-                <property name="text">
-                 <string>Edge Radius</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_12">
-                <property name="text">
-                 <string>Vertex Size</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="widget_2" native="true">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <item>
-               <widget class="QLabel" name="label_5">
-                <property name="text">
-                 <string>Field of View</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDoubleSpinBox" name="fovSpinner">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-                <property name="minimum">
-                 <double>30.000000000000000</double>
-                </property>
-                <property name="maximum">
-                 <double>220.000000000000000</double>
-                </property>
-                <property name="value">
-                 <double>90.000000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="widget_5" native="true">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <layout class="QGridLayout" name="gridLayout_5">
-              <item row="3" column="0">
-               <widget class="QLabel" name="label_16">
-                <property name="text">
-                 <string>Vertex</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="ColorButton" name="pushButton">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_15">
-                <property name="text">
-                 <string>Edge</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_14">
-                <property name="text">
-                 <string>Surface</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_17">
-                <property name="text">
-                 <string>Background</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="label_18">
-                <property name="text">
-                 <string>Selected</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="2">
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>Colors</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="6" column="0">
-               <widget class="QLabel" name="label_19">
-                <property name="text">
-                 <string>Hovered</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="ColorButton" name="pushButton_2">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="ColorButton" name="pushButton_3">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="ColorButton" name="pushButton_4">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="ColorButton" name="pushButton_5">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-              <item row="6" column="1">
-               <widget class="ColorButton" name="pushButton_6">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>PushButton</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Orientation::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>
@@ -2431,7 +2533,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>48</x>
-     <y>327</y>
+     <y>311</y>
     </hint>
     <hint type="destinationlabel">
      <x>668</x>
@@ -2447,7 +2549,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>45</x>
-     <y>204</y>
+     <y>195</y>
     </hint>
     <hint type="destinationlabel">
      <x>669</x>
@@ -2463,7 +2565,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>45</x>
-     <y>460</y>
+     <y>427</y>
     </hint>
     <hint type="destinationlabel">
      <x>692</x>
@@ -2495,7 +2597,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>13</x>
-     <y>588</y>
+     <y>543</y>
     </hint>
     <hint type="destinationlabel">
      <x>695</x>
@@ -2511,7 +2613,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>49</x>
-     <y>514</y>
+     <y>485</y>
     </hint>
     <hint type="destinationlabel">
      <x>715</x>
@@ -2527,7 +2629,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>57</x>
-     <y>277</y>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
      <x>669</x>
@@ -2543,7 +2645,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>44</x>
-     <y>385</y>
+     <y>369</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -2591,7 +2693,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>22</x>
-     <y>138</y>
+     <y>137</y>
     </hint>
     <hint type="destinationlabel">
      <x>522</x>
@@ -2623,7 +2725,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>48</x>
-     <y>435</y>
+     <y>427</y>
     </hint>
     <hint type="destinationlabel">
      <x>347</x>
@@ -2639,7 +2741,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>32</x>
-     <y>326</y>
+     <y>311</y>
     </hint>
     <hint type="destinationlabel">
      <x>539</x>
@@ -2655,7 +2757,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>54</x>
-     <y>568</y>
+     <y>543</y>
     </hint>
     <hint type="destinationlabel">
      <x>525</x>
@@ -2719,7 +2821,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>32</x>
-     <y>373</y>
+     <y>369</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -2863,7 +2965,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>32</x>
-     <y>565</y>
+     <y>543</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -2879,7 +2981,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>32</x>
-     <y>437</y>
+     <y>427</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -2895,7 +2997,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>32</x>
-     <y>501</y>
+     <y>485</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -2952,14 +3054,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>doubleSpinBox</sender>
+   <sender>vertexScaleSpinner</sender>
    <signal>valueChanged(double)</signal>
    <receiver>viewport</receiver>
    <slot>SetVertexScale(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1676</x>
-     <y>845</y>
+     <x>1748</x>
+     <y>859</y>
     </hint>
     <hint type="destinationlabel">
      <x>1324</x>
@@ -3070,8 +3172,8 @@ color: white;</string>
    <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1767</x>
-     <y>695</y>
+     <x>1757</x>
+     <y>696</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -3086,7 +3188,7 @@ color: white;</string>
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1525</x>
+     <x>1523</x>
      <y>650</y>
     </hint>
     <hint type="destinationlabel">
@@ -3102,12 +3204,12 @@ color: white;</string>
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
-     <y>695</y>
+     <x>1592</x>
+     <y>696</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1767</x>
-     <y>720</y>
+     <x>1766</x>
+     <y>717</y>
     </hint>
    </hints>
   </connection>
@@ -3128,14 +3230,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_2</sender>
+   <sender>edgeColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetEdgeColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1578</x>
-     <y>990</y>
+     <x>1757</x>
+     <y>959</y>
     </hint>
     <hint type="destinationlabel">
      <x>1350</x>
@@ -3150,8 +3252,8 @@ color: white;</string>
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
-     <y>805</y>
+     <x>1592</x>
+     <y>796</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -3160,14 +3262,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_4</sender>
+   <sender>backgroundColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetBackgroundColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1591</x>
-     <y>1057</y>
+     <x>1757</x>
+     <y>989</y>
     </hint>
     <hint type="destinationlabel">
      <x>1331</x>
@@ -3182,8 +3284,8 @@ color: white;</string>
    <slot>setOrbitOrigin(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1767</x>
-     <y>720</y>
+     <x>1766</x>
+     <y>717</y>
     </hint>
     <hint type="destinationlabel">
      <x>730</x>
@@ -3198,7 +3300,7 @@ color: white;</string>
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1525</x>
+     <x>1523</x>
      <y>645</y>
     </hint>
     <hint type="destinationlabel">
@@ -3214,8 +3316,8 @@ color: white;</string>
    <slot>SetEdgeVisibility(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1659</x>
-     <y>794</y>
+     <x>1748</x>
+     <y>796</y>
     </hint>
     <hint type="destinationlabel">
      <x>1320</x>
@@ -3278,8 +3380,8 @@ color: white;</string>
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
-     <y>778</y>
+     <x>1592</x>
+     <y>770</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -3288,14 +3390,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>faceColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetFaceColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>968</y>
+     <x>1592</x>
+     <y>959</y>
     </hint>
     <hint type="destinationlabel">
      <x>1206</x>
@@ -3358,8 +3460,8 @@ color: white;</string>
    <slot>SetFOV(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1648</x>
-     <y>894</y>
+     <x>1757</x>
+     <y>893</y>
     </hint>
     <hint type="destinationlabel">
      <x>1334</x>
@@ -3406,8 +3508,8 @@ color: white;</string>
    <slot>SetSurfaceVisibility(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1633</x>
-     <y>773</y>
+     <x>1748</x>
+     <y>770</y>
     </hint>
     <hint type="destinationlabel">
      <x>1334</x>
@@ -3432,14 +3534,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_5</sender>
+   <sender>selectColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetSelectColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1578</x>
-     <y>1084</y>
+     <x>1592</x>
+     <y>1019</y>
     </hint>
     <hint type="destinationlabel">
      <x>1294</x>
@@ -3454,7 +3556,7 @@ color: white;</string>
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1525</x>
+     <x>1523</x>
      <y>655</y>
     </hint>
     <hint type="destinationlabel">
@@ -3486,8 +3588,8 @@ color: white;</string>
    <slot>SetEdgeRadius(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1654</x>
-     <y>825</y>
+     <x>1666</x>
+     <y>839</y>
     </hint>
     <hint type="destinationlabel">
      <x>1310</x>
@@ -3534,7 +3636,7 @@ color: white;</string>
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
+     <x>1601</x>
      <y>896</y>
     </hint>
     <hint type="destinationlabel">
@@ -3544,14 +3646,14 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
+   <sender>vertexColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetVertexColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1603</x>
-     <y>1024</y>
+     <x>1592</x>
+     <y>989</y>
     </hint>
     <hint type="destinationlabel">
      <x>1331</x>
@@ -3582,7 +3684,7 @@ color: white;</string>
    <slot>setSingleSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
+     <x>1601</x>
      <y>812</y>
     </hint>
     <hint type="destinationlabel">
@@ -3614,7 +3716,7 @@ color: white;</string>
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1525</x>
+     <x>1523</x>
      <y>640</y>
     </hint>
     <hint type="destinationlabel">
@@ -3631,7 +3733,7 @@ color: white;</string>
    <hints>
     <hint type="sourcelabel">
      <x>45</x>
-     <y>744</y>
+     <y>659</y>
     </hint>
     <hint type="destinationlabel">
      <x>1453</x>
@@ -3662,7 +3764,7 @@ color: white;</string>
    <slot>setGlobalScaleMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
+     <x>1601</x>
      <y>962</y>
     </hint>
     <hint type="destinationlabel">
@@ -3726,8 +3828,8 @@ color: white;</string>
    <slot>setCameraModeOrbit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1602</x>
-     <y>695</y>
+     <x>1592</x>
+     <y>696</y>
     </hint>
     <hint type="destinationlabel">
      <x>738</x>
@@ -3746,8 +3848,8 @@ color: white;</string>
      <y>460</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1767</x>
-     <y>720</y>
+     <x>1766</x>
+     <y>717</y>
     </hint>
    </hints>
   </connection>
