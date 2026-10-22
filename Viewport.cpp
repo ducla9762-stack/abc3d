@@ -310,13 +310,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged) {
 			if (actionParams.action == MERGE) {
-				handleMergeVertexClick(ids);
+				//handleMergeVertexClick(ids);
 			}
 			else if (actionParams.action == COLLAPSE) {
-				handleCollapseEdgeClick(ids);
+				//handleCollapseEdgeClick(ids);
 			}
 			else if (actionParams.action == DISSOLVE) {
-				handleDissolveEdgeClick(ids);
+				//handleDissolveEdgeClick(ids);
 			}
 			else {
 				handleSelection(ids);
@@ -584,10 +584,10 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		mergeFirstVertex = clicked;
 		selectionManager.clearSelection();
 		selectionManager.addSelection(clicked);
-		updateSelectionVisuals();
-		updateGizmos();
-		emitSelectionChanged();
-		update();
+		//updateSelectionVisuals();
+		//updateGizmos();
+		//emitSelectionChanged();
+		//update();
 		return;
 	}
 
@@ -610,10 +610,10 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
 	emitSelectionChanged();
 	update();
 }
@@ -642,12 +642,12 @@ void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
-	emitSelectionChanged();
-	update();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//emitSelectionChanged();
+	//update();
 }
 
 void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
@@ -674,15 +674,15 @@ void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
-	emitSelectionChanged();
-	update();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//emitSelectionChanged();
+	//update();
 }
 
-void Viewport::handleSelection(const Vec3u& selectionIds) {
+void Viewport::handleSelection(const Vec2u& selectionIds) {
 	// Create a selection item to send to the selection manager.
 	SelectionItem item = createSelectionItem(selectionIds);
 
@@ -1247,10 +1247,11 @@ bool Viewport::rotateGizmoDrag() {
 	// 10/16/26 - Update Gizmos.
 	//renderer.UpdateRenderBuffers(scene);
 
-	if (rotated) {
+	/*if (rotated) {
 		emitPrimarySelectionRotChanged();
-	}
-	return rotated;
+	}*/
+	//return rotated;
+	return false;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -1697,8 +1698,8 @@ void Viewport::knifeRecompute() {
 
 	if (path.size() >= 2) {
 		KnifeCamera camera;
-		camera.viewProj = renderer.ViewProjection();
-		camera.position = renderer.GetCamera()->position();
+		//camera.viewProj = renderer.ViewProjection();
+		//camera.position = renderer.GetCamera()->position();
 
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
@@ -1709,7 +1710,7 @@ void Viewport::knifeRecompute() {
 	}
 
 	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
+	//renderer.UpdateRenderBuffers(scene);
 }
 
 void Viewport::knifeFinish() {
@@ -1723,9 +1724,9 @@ void Viewport::knifeFinish() {
 
 	if (rendererInitialized) {
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.UpdateRenderBuffers(scene);
+		//updateSelectionVisuals();
+		//updateGizmos();
 	}
 }
 
@@ -1737,12 +1738,12 @@ void Viewport::knifeConfirm() {
 	knifeRecompute();
 
 	// Same tool, next cut starts from the result
-	knifeBegin();
+	//knifeBegin();
 
-	makeCurrent();
-	updateSelectionVisuals();
-	updateGizmos();
-	update();
+	//makeCurrent();
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//update();
 }
 
 bool Viewport::knifeCancel() {

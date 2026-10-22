@@ -46,12 +46,12 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 
 	prog.shade.SetUniform3(BaseColors::ALL, &colors.background.x, 4);
 
-	prog.shade.RegisterUniform(BlendColors::ALL, "blendClrs");
-	prog.shade.RegisterUniform(BlendColors::SELECT, "blendClrs[0]");
-	prog.shade.RegisterUniform(BlendColors::HOVER, "blendClrs[1]");
-	prog.shade.RegisterUniform(BlendColors::BOTH, "blendClrs[2]");
+	prog.shade.RegisterUniform(BlendColors::ALL + 5, "blendClrs");
+	prog.shade.RegisterUniform(BlendColors::SELECT + 5, "blendClrs[0]");
+	prog.shade.RegisterUniform(BlendColors::HOVER + 5, "blendClrs[1]");
+	prog.shade.RegisterUniform(BlendColors::BOTH + 5, "blendClrs[2]");
 
-	prog.shade.SetUniform3(BlendColors::ALL, &blends.select.x, 3);
+	prog.shade.SetUniform3(BlendColors::ALL + 5, &blends.select.x, 3);
 
 	rndrs.vert.Initialize(header.data());
 	rndrs.edge.Initialize(header.data());
@@ -72,6 +72,8 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	initialized = true;
+
 	return true;
 }
 
@@ -81,7 +83,7 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 	UpdateProjectionUniforms();
 	glViewport(0, 0, frame.width, frame.height);
 	InitFramebuffer(defaultFrameBuffer);
-	update.resized = true;
+	update.rerenderGeom = true;
 }
 
 void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
@@ -96,7 +98,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		UploadColorBuffer(); 
 	}
 
-	if (update.renderBufs || update.uniformBuf || update.camera || update.resized) {
+	if (update.renderBufs || update.uniformBuf || update.camera || update.rerenderGeom) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 

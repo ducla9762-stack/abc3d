@@ -1873,7 +1873,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
               <item row="3" column="1">
-               <widget class="QDoubleSpinBox" name="edgeRadiusSpinner"/>
+               <widget class="QDoubleSpinBox" name="edgeRadiusSpinner">
+                <property name="value">
+                 <double>0.010000000000000</double>
+                </property>
+               </widget>
               </item>
               <item row="2" column="0">
                <widget class="QCheckBox" name="vertexVisibilityBox">
@@ -1939,7 +1943,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+               <widget class="QDoubleSpinBox" name="doubleSpinBox">
+                <property name="value">
+                 <double>0.100000000000000</double>
+                </property>
+               </widget>
               </item>
               <item row="4" column="0">
                <widget class="QLabel" name="label_12">
@@ -1988,7 +1996,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  <double>220.000000000000000</double>
                 </property>
                 <property name="value">
-                 <double>90.000000000000000</double>
+                 <double>70.000000000000000</double>
                 </property>
                </widget>
               </item>
@@ -2012,7 +2020,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="ColorButton" name="pushButton">
+               <widget class="ColorButton" name="faceColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2020,7 +2028,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
+                </property>
+                <property name="color" stdset="0">
+                 <color>
+                  <red>255</red>
+                  <green>41</green>
+                  <blue>41</blue>
+                 </color>
                 </property>
                </widget>
               </item>
@@ -2070,7 +2085,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="ColorButton" name="pushButton_2">
+               <widget class="ColorButton" name="edgeColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2078,12 +2093,19 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
+                </property>
+                <property name="color" stdset="0">
+                 <color>
+                  <red>223</red>
+                  <green>255</green>
+                  <blue>64</blue>
+                 </color>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="ColorButton" name="pushButton_3">
+               <widget class="ColorButton" name="vertexColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2091,12 +2113,19 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
+                </property>
+                <property name="color" stdset="0">
+                 <color>
+                  <red>199</red>
+                  <green>27</green>
+                  <blue>229</blue>
+                 </color>
                 </property>
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="ColorButton" name="pushButton_4">
+               <widget class="ColorButton" name="backgroundColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2104,12 +2133,19 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
+                </property>
+                <property name="color" stdset="0">
+                 <color>
+                  <red>0</red>
+                  <green>0</green>
+                  <blue>0</blue>
+                 </color>
                 </property>
                </widget>
               </item>
               <item row="5" column="1">
-               <widget class="ColorButton" name="pushButton_5">
+               <widget class="ColorButton" name="selectColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2117,12 +2153,19 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
+                </property>
+                <property name="color" stdset="0">
+                 <color>
+                  <red>17</red>
+                  <green>220</green>
+                  <blue>14</blue>
+                 </color>
                 </property>
                </widget>
               </item>
               <item row="6" column="1">
-               <widget class="ColorButton" name="pushButton_6">
+               <widget class="ColorButton" name="hoverColorButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2130,7 +2173,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>PushButton</string>
+                 <string/>
                 </property>
                </widget>
               </item>
@@ -3808,7 +3851,7 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>faceColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetFaceColor(Vec3f)</slot>
@@ -3824,7 +3867,7 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_2</sender>
+   <sender>edgeColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetEdgeColor(Vec3f)</slot>
@@ -3840,7 +3883,7 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_3</sender>
+   <sender>vertexColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetVertexColor(Vec3f)</slot>
@@ -3856,7 +3899,7 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_4</sender>
+   <sender>backgroundColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetBackgroundColor(Vec3f)</slot>
@@ -3872,7 +3915,7 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_5</sender>
+   <sender>selectColorButton</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetSelectColor(Vec3f)</slot>

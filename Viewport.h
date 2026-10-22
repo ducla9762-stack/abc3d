@@ -342,7 +342,7 @@ public:
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
-	void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	//void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
 	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateEdge() {
 		// The constrained operation is vertex only.
@@ -995,30 +995,84 @@ public slots:
 	}
 
 	void setCameraModeOrbit() {
-		std::cout << renderer.getCameraPosition() << std::endl;
+		//std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
 
 	void setCameraModeFree() { 
-		std::cout << renderer.getCameraPosition() << std::endl;
+		//std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
-	void SetFOV(double fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
+	void SetFOV(double fov) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.FOV<true>(fov);
+			update();
+		}
+		else {
+			renderer.FOV<false>(fov);
+		}
+	}
 
-	void SetSurfaceVisibility(bool show) { /*renderer.ShowSurfaces(show); update();*/ }
+	void SetSurfaceVisibility(bool show) { renderer.ShowSurfaces(show); update(); }
 
-	void SetEdgeVisibility(bool show) {/* renderer.ShowEdges(show); update();*/ }
+	void SetEdgeVisibility(bool show) { renderer.ShowEdges(show); update(); }
 
-	void SetFaceColor(const Vec3f& clr) { /*makeCurrent(); renderer.FaceColor(clr); update();*/ }
+	void SetFaceColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent(); 
+			renderer.FaceColor<true>(clr); 
+			update();
+		}
+		else {
+			renderer.FaceColor<false>(clr);
+		}
+	}
 
-	void SetEdgeColor(const Vec3f& clr) { /*makeCurrent(); renderer.EdgeColor(clr); update();*/ }
+	void SetEdgeColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.EdgeColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.EdgeColor<false>(clr);
+		}
+	}
 
-	void SetVertexColor(const Vec3f& clr) { /*makeCurrent(); renderer.VertexColor(clr); update();*/ }
+	void SetVertexColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.VertexColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.VertexColor<false>(clr);
+		}
+	}
 
-	void SetBackgroundColor(const Vec3f& clr) { /*makeCurrent(); renderer.BackgroundColor(clr); update();*/ }
+	void SetBackgroundColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.BackgroundColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.BackgroundColor<false>(clr);
+		}
+	}
 
-	void SetSelectColor(const Vec3f& clr) { /*makeCurrent(); renderer.SelectColor(clr); update();*/ }
+	void SetSelectColor(const Vec3f& clr) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.SelectColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.SelectColor<false>(clr);
+		}
+	}
 
-	void SetEdgeRadius(double radius){}
+	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
 
-	void SetVertexScale(double scale){}
+	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
 };

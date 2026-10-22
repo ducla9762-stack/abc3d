@@ -402,7 +402,7 @@ class ABC3DRenderer {
 	} cam;
 
 	struct VisibleSettings {
-		bool vertices = true;
+		bool vertices = false;
 		bool grid = true;
 		bool edges = true;
 		bool surfaces = true;
@@ -414,7 +414,7 @@ class ABC3DRenderer {
 		bool uniformBuf = false;
 		bool selection = false;
 		bool hover = false;
-		bool resized = false;
+		bool rerenderGeom = false;
 
 		void ClearAll() {
 			renderBufs = false;
@@ -422,7 +422,7 @@ class ABC3DRenderer {
 			uniformBuf = false;
 			selection = false;
 			hover = false;
-			resized = false;
+			rerenderGeom = false;
 		}
 	} update;
 
@@ -472,6 +472,10 @@ class ABC3DRenderer {
 		};
 	} blends;
 
+	bool initialized = false;
+	uint meshVertDrawCount;
+	uint maxObjectCount = 64; //hard coded for now
+
 	RenderBufferBuilder bufBuilder;
 
 	std::vector<CompactTransform140> transformBuf;
@@ -480,9 +484,6 @@ class ABC3DRenderer {
 
 	const Scene* scene;
 	const SelectionManager* selecQuery;
-
-	uint meshVertDrawCount;
-	uint maxObjectCount = 64; //hard coded for now
 
 public:
 // ---------------------------------------------------------------------------------------------
@@ -545,19 +546,21 @@ public:
 	void SetScene(const Scene& scene) { this->scene = &scene; }
 
 	void ToggleGridVisibility() { show.grid = !show.grid; }
-	void ToggleVertexVisibility() { show.vertices = !show.vertices; }
-	void ToggleEdgeVisibility() { show.edges = !show.edges; }
-	void ToggleSurfaceVisibility() { show.surfaces = !show.surfaces; }
+	void ToggleVertexVisibility() { show.vertices = !show.vertices; update.rerenderGeom = true; }
+	void ToggleEdgeVisibility() { show.edges = !show.edges; update.rerenderGeom = true; }
+	void ToggleSurfaceVisibility() { show.surfaces = !show.surfaces; update.rerenderGeom = true; }
 
 	void ShowGrid(bool visible) { show.grid = visible; }
-	void ShowVertices(bool visible) { show.vertices = visible; }
-	void ShowEdges(bool visible) { show.edges = visible; }
-	void ShowSurfaces(bool visible) { show.surfaces = visible; }
+	void ShowVertices(bool visible) { show.vertices = visible; update.rerenderGeom = true; }
+	void ShowEdges(bool visible) { show.edges = visible; update.rerenderGeom = true; }
+	void ShowSurfaces(bool visible) { show.surfaces = visible; update.rerenderGeom = true; }
 
 	bool ShowGrid() { return show.grid; }
 	bool ShowVertices() { return show.vertices; }
 	bool ShowEdges() { return show.edges; }
 	bool ShowSurfaces() { return show.surfaces; }
+
+	bool Initialized() { return initialized; }
 
 	void mouseDrag(const Vec2f& drag) {
 		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }
@@ -603,8 +606,8 @@ public:
 		toggleCamType();
 	}
 
-	void SetVertexScale(float scale) { rndrs.vert.SetScale(scale); }
-	void SetEdgeRadius(float radius) { rndrs.edge.SetRadius(radius); }
+	void SetVertexScale(float scale) { rndrs.vert.SetScale(scale); update.rerenderGeom = true; }
+	void SetEdgeRadius(float radius) { rndrs.edge.SetRadius(radius); update.rerenderGeom = true; }
 
 	Vec3f ViewToWorldSpace(Vec3f viewPos) const {
 		Vec3f worldPos;
@@ -689,42 +692,84 @@ public:
 		}
 	}
 
+	template <bool uploadUniform>
 	void FaceColor(const Vec3f& clr) {
 		colors.faces = clr; 
-		prog.shade.SetUniform3(BaseColors::FACES, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BaseColors::FACES, &colors.faces.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void EdgeColor(const Vec3f& clr) {
-		colors.edges = clr; 
-		prog.shade.SetUniform3(BaseColors::EDGES, &clr.x);
+		colors.edges = clr;
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BaseColors::EDGES, &colors.edges.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void VertexColor(const Vec3f& clr) {
 		colors.verts = clr;
-		prog.shade.SetUniform3(BaseColors::VERTICES, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BaseColors::VERTICES, &colors.verts.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void BackgroundColor(const Vec3f& clr) {
 		colors.background = clr; 
-		prog.shade.SetUniform3(BaseColors::BACKGROUND, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BaseColors::BACKGROUND, &colors.background.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void SelectColor(const Vec3f& clr) {
 		blends.select = clr; 
-		prog.shade.SetUniform3(BlendColors::SELECT, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BlendColors::SELECT + 5, &blends.select.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void HoverColor(const Vec3f& clr) {
 		blends.hover = clr;
-		prog.shade.SetUniform3(BlendColors::HOVER, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BlendColors::HOVER + 5, &blends.hover.x);
+			update.rerenderGeom = true;
+		}
 	}
 
+	template <bool uploadUniform>
 	void SelectHoverColor(const Vec3f& clr) {
 		blends.both = clr;
-		prog.shade.SetUniform3(BlendColors::BOTH, &clr.x);
+		if constexpr (uploadUniform) {
+			prog.shade.Bind();
+			prog.shade.SetUniform3(BlendColors::BOTH + 5, &blends.both.x);
+			update.rerenderGeom = true;
+		}
 	}
 
-	void FOV(float fov) { cam.fov = fov; UpdateProjectionUniforms(); }
+	template <bool uploadUniform>
+	void FOV(float fov) { 
+		cam.fov = fov; 
+		if constexpr (uploadUniform) {
+			UpdateProjectionUniforms();
+			update.rerenderGeom = true;
+		}
+	}
 
 	float FOV() { return cam.fov; }
 

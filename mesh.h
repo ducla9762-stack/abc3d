@@ -512,12 +512,6 @@ public:
 	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
 
-	/// <returns>Number of faces in mesh</returns>
-	uint FaceCount() const{ return static_cast<uint>(faceEdges.size());}
-
-	/// <returns>Number of half-edges in a mesh</returns>
-	uint EdgeCount() const { return static_cast<uint>(edges.size());  }
-
 	/// <summary>
 	/// Checks: 
 	/// 1) Every twin is symmetric. 
