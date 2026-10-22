@@ -43,11 +43,6 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
-    // Menu button for the camera panel - does the same thing as the toolbar
-    QAction* actionCamera = new QAction("Camera", ui.menuBar);
-    ui.menuBar->addAction(actionCamera);
-    QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
-
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
