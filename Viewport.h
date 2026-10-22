@@ -119,7 +119,7 @@ signals:
 	void primarySelectionRotChanged(const Vec3f& rot);
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
-	void orbitOriginChanged(const Vec3f& origin);
+	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
 
 public:
@@ -152,8 +152,6 @@ private:
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
-	bool gridAlwaysVisible = false;
-	bool rendererInitialized = false;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredGizmoAxis = MAX_UINT;
@@ -500,7 +498,7 @@ public slots:
 
 	void setLocalScaleMode() {
 		localScale = true;
-		if (rendererInitialized) {
+		if (renderer.Initialized()) {
 			makeCurrent();
 			updateGizmos();
 		}
@@ -508,7 +506,7 @@ public slots:
 	}
 	void setGlobalScaleMode() {
 		localScale = false;
-		if (rendererInitialized) {
+		if (renderer.Initialized()) {
 			makeCurrent();
 			updateGizmos();
 		}
@@ -832,6 +830,7 @@ public slots:
 
 	void setAlwaysShowVertices(bool show) {
 		if(selectionManager.getActiveElement() != VERTEX){
+			verticesAlwaysVisible = show;
 			renderer.ShowVertices(show);
 			update();
 		}
@@ -984,6 +983,12 @@ public slots:
 
 	void setOrbitOrigin(const Vec3f& origin) {
 		renderer.setOrbitOrigin(origin);
+		emit primaryCamParamChanged(origin);
+		update();
+	}
+
+	void setPrimaryCamParam(const Vec3f& param) {
+		renderer.setPrimaryCamParam(param);
 		update();
 	}
 
@@ -992,16 +997,20 @@ public slots:
 		Vec3f origin = scene[selectionManager.getSelectedItems()[0].meshId]->Pos();
 		setOrbitOrigin(origin);
 
-		emit orbitOriginChanged(origin);
+		emit primaryCamParamChanged(origin);
 	}
 
 	void setCameraModeOrbit() {
 		//std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
+		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); 
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
 
 	void setCameraModeFree() { 
 		//std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
+		renderer.setCameraMode(FREE); knifeRecompute(); update(); 
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
 
 	void SetFOV(double fov) {
 		if (renderer.Initialized()) {

@@ -40,6 +40,7 @@ public:
 	OrbitCamera() { }
 
 	void setOrigin(const Vec3f& origin) { this->origin = origin; }
+	Vec3f getOrigin() const { return origin; }
 	void setSphericalPosition(const Vec3f& pos) {
 		spherical = pos;
 		cartesian = sphericalToCartesian(pos);

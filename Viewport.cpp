@@ -103,8 +103,6 @@ void Viewport::initializeGL() {
 		return;
 	}
 
-	rendererInitialized = true;
-
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
 	renderer.SetScene(scene);
 	renderer.UpdateGeometry();
@@ -435,6 +433,9 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// axis is degenerate from the current camera angle.
 	if (!actionPerformed && !draggingGizmo) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
+		if (renderer.GetActiveCamType() == CameraType::FREE) {
+			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+		}
 		knifeRecompute(); // the path stays put on the screen, so what it hits changes
 	}
 
@@ -458,6 +459,11 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 
 	// Update renderer and viewport
 	renderer.mouseWheel(camChange.x, camChange.y);
+
+	if (renderer.GetActiveCamType() == CameraType::FREE) {
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
+
 	knifeRecompute();
 
 	update();
@@ -548,7 +554,7 @@ void Viewport::setAction(Action action) {
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
 	draggedRotationAxis = Vec3f(0.0f);
-	if (rendererInitialized) {
+	if (renderer.Initialized()) {
 		// makeCurrent();
 		if (action != MERGE) {
 			// updateSelectionVisuals();
@@ -716,8 +722,11 @@ Element Viewport::getActiveElement() {
 void Viewport::setActiveElement(Element element) {
 	selectionManager.setActiveElement(element);
 
-	if (!renderer.ShowVertices()) {
-		renderer.ShowVertices(element == VERTEX);
+	if (element == VERTEX) {
+		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }
+	}
+	else if(!verticesAlwaysVisible) {
+		renderer.ShowVertices(false);
 	}
 
 	// Changing element mode clears the selection in SelectionManager. Push the
@@ -1693,7 +1702,7 @@ void Viewport::knifeRestoreOriginals() {
 }
 
 void Viewport::knifeRecompute() {
-	if (!knifeSession || !rendererInitialized) { return; }
+	if (!knifeSession || !renderer.Initialized()) { return; }
 
 	knifeRestoreOriginals();
 
@@ -1726,7 +1735,7 @@ void Viewport::knifeFinish() {
 	knifeOriginals.clear();
 	knifeOccluders = KnifeOccluders();
 
-	if (rendererInitialized) {
+	if (renderer.Initialized()) {
 		makeCurrent();
 		//renderer.UpdateRenderBuffers(scene);
 		//updateSelectionVisuals();

@@ -582,7 +582,27 @@ public:
 		update.camera = true;
 	}
 
-	void setOrbitOrigin(const Vec3f& origin) { setCameraMode(CameraType::ORBIT); cam.orbit.setOrigin(origin); }
+	void setOrbitOrigin(const Vec3f& origin) { setCameraMode(CameraType::ORBIT); cam.orbit.setOrigin(origin); update.camera = true; }
+
+	void setPrimaryCamParam(const Vec3f& param) {
+		if (cam.type == ORBIT) {
+			cam.orbit.setOrigin(param);
+		}
+		else {
+			cam.free.setPosition(param);
+		}
+
+		update.camera = true;
+	}
+
+	Vec3f getPrimaryCamParam() {
+		if (cam.type == ORBIT) {
+			return cam.orbit.getOrigin();
+		}
+		else {
+			cam.free.position();
+		}
+	}
 
 	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
 
