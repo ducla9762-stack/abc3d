@@ -342,10 +342,15 @@ public:
 
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
-	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
-	//void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	void setActionTranslateOut() {
+		if (getActiveElement() == OBJECT) {
+			setActiveElement(FACE);
+			elementButtons[2]->setChecked(true);
+		}
+		setAction(TRANSLATE_OUT); 
+	}
 	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
-	void setActionTranslateEdge() {
+	/*void setActionTranslateEdge() {
 		// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
 			setActiveElement(VERTEX);
@@ -362,12 +367,21 @@ public slots:
 		}
 		setAction(TRANSLATE_EDGE);
 		if (reducedSelection) { emitSelectionChanged(); }
-	}
+	} */
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
-	void setActionScale() { setAction(SCALE); }
-	void setActionRotate() { setAction(ROTATE); }
+	void setActionScale() { 
+		if (getActiveElement() == VERTEX) {
+			setActiveElement(OBJECT);
+			elementButtons[3]->setChecked(true);
+		}
+		setAction(SCALE); }
+	void setActionRotate() { 
+		setActiveElement(OBJECT);
+		elementButtons[3]->setChecked(true);
+		setAction(ROTATE); 
+	}
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
