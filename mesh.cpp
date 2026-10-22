@@ -657,41 +657,27 @@ void HalfEdgeMesh::SetVertexPosition(uint vertId, const Vec3f& pos) {
 }
 
 bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
+	// Check if the vertices are valid, prevent merging into oneself.
 	if (sourceVertex >= VertexCount() || targetVertex >= VertexCount() ||
 		sourceVertex == targetVertex) {
 		return false;
 	}
-	std::string originalError;
-	if (!Validate(originalError)) {
-		return false;
-	}
-	bool originalIsClosed = true;
-	for (const HalfEdge& edge : edges) {
-		if (edge.face == MAX_UINT) {
-			originalIsClosed = false;
-			break;
-		}
-	}
 
-	// Work on a copy so every rejected merge leaves the original mesh exactly
-	// as it was.
-	HalfEdgeMesh merged = *this;
-
-	// Rebuild the face list after replacing the source with the target. A face
-	// that contains the merged edge collapses to a lower-sided polygon; remove
-	// only the duplicate corner introduced by the collapse.
-	// The target keeps its original position, matching source-into-target
-	// semantics.
+	// Rebuild the face list after replacing the source with the target.
 	std::vector<std::vector<uint>> mergedFaces;
-	mergedFaces.reserve(merged.FaceCount());
-	for (uint faceId = 0; faceId < merged.FaceCount(); ++faceId) {
+	mergedFaces.reserve(FaceCount());
+	bool incident = false;
+	for (uint faceId = 0; faceId < FaceCount(); ++faceId) {
 		std::vector<uint> face;
-		uint edgeId = merged.faceEdges[faceId];
+		uint edgeId = faceEdges[faceId];
 		do {
-			const HalfEdge& edge = merged.edges[edgeId];
+			const HalfEdge& edge = edges[edgeId];
 			if (edge.orig >= VertexCount() || edge.dest >= VertexCount()) {
 				return false;
 			}
+			incident = incident ||
+				((edge.orig == sourceVertex && edge.dest == targetVertex) ||
+				 (edge.orig == targetVertex && edge.dest == sourceVertex));
 
 			uint remapped = edge.orig == sourceVertex ? targetVertex : edge.orig;
 			if (remapped > sourceVertex) {
@@ -699,7 +685,7 @@ bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
 			}
 			face.push_back(remapped);
 			edgeId = edge.next;
-		} while (edgeId != merged.faceEdges[faceId]);
+		} while (edgeId != faceEdges[faceId]);
 
 		std::vector<uint> collapsedFace;
 		collapsedFace.reserve(face.size());
@@ -717,63 +703,80 @@ bool HalfEdgeMesh::MergeVertices(uint sourceVertex, uint targetVertex) {
 			mergedFaces.push_back(std::move(collapsedFace));
 		}
 	}
-	// Do not allow the last surface face to collapse away. Without this guard,
-	// repeated merges could reduce a mesh to isolated vertices or a degenerate
-	// edge, which is not a drawable mesh.
+	if (!incident) {
+		return false;
+	}
+	// Do not allow the last surface face to collapse away.
 	if (mergedFaces.empty()) {
 		return false;
 	}
-	merged.vertPos.erase(merged.vertPos.begin() + sourceVertex);
 
-	const Vec3f originalPos = merged.pos;
-	const Vec3f originalScale = merged.scale;
-	const Vec3f originalRotation = merged.eulerRot;
-	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
-		return static_cast<uint>(face.size());
-	};
-	if (!merged.build(mergedFaces, faceVertexCount)) {
-		return false;
-	}
+	// Erase the source vertex.
+	vertPos.erase(vertPos.begin() + sourceVertex);
 
-	// build() centers newly built geometry by moving the centroid into pos.
-	// Restore the existing transform and local-space positions so merging does
-	// not move the object or change its scale/rotation.
-	const Vec3f buildOffset = merged.pos - originalPos;
-	merged.translateVertices(buildOffset);
-	merged.pos = originalPos;
-	merged.scale = originalScale;
-	merged.eulerRot = originalRotation;
+	// The source vertex has been removed, all topology must be re-indexed.
+	// Recreate the half-edges from the surviving face loops.
+	vertEdge.assign(vertPos.size(), MAX_UINT);
+	faceEdges.clear();
+	edges.clear();
+	faceEdges.reserve(mergedFaces.size());
 
-	std::string error;
-	if (!merged.Validate(error)) {
-		return false;
-	}
-	if (originalIsClosed) {
-		// A closed surface must not become open as a side effect of merging.
-		// Exterior half-edges are the boundary representation used by this mesh.
-		for (const HalfEdge& edge : merged.edges) {
-			if (edge.face == MAX_UINT) {
-				return false;
-			}
-		}
-		for (uint edgeId : merged.vertEdge) {
-			if (edgeId == MAX_UINT) {
-				return false;
-			}
+	std::unordered_map<Vec2<uint>, uint> edgeIndices;
+	for (uint faceId = 0; faceId < mergedFaces.size(); ++faceId) {
+		const std::vector<uint>& face = mergedFaces[faceId];
+		const uint vertexCount = static_cast<uint>(face.size());
+		const uint firstEdge = static_cast<uint>(edges.size());
+		NewFace(firstEdge);
+
+		for (uint i = 0; i < vertexCount; ++i) {
+			const uint next = WrapInc(i, vertexCount - 1);
+			const uint prev = WrapDec(i, vertexCount - 1);
+			const Vec2<uint> edgeVertices(face[i], face[next]);
+
+			uint edgeId;
+			HalfEdge& edge = NewEdge(edgeId);
+			edge.orig = edgeVertices[0];
+			edge.dest = edgeVertices[1];
+			edge.next = firstEdge + next;
+			edge.prev = firstEdge + prev;
+			edge.face = faceId;
+
+			edgeIndices[edgeVertices] = edgeId;
+			vertEdge[edge.orig] = edgeId;
 		}
 	}
 
-	*this = std::move(merged);
+	// Connect each interior edge to its reverse. Edges without a reverse get
+	// an exterior twin, as in the normal mesh representation.
+	const uint interiorEdgeCount = static_cast<uint>(edges.size());
+	for (uint edgeId = 0; edgeId < interiorEdgeCount; ++edgeId) {
+		const uint orig = edges[edgeId].orig;
+		const uint dest = edges[edgeId].dest;
+		auto reverse = edgeIndices.find(Vec2<uint>(dest, orig));
+		if (reverse != edgeIndices.end()) {
+			SetTwins(edgeId, reverse->second, orig, dest);
+		}
+		else {
+			NewTwin(edgeId, MAX_UINT);
+		}
+	}
+
+	// Link the exterior twins into boundary loops. The edge IDs are used
+	// throughout because emplacing a twin can reallocate the edge vector.
+	for (uint edgeId = interiorEdgeCount; edgeId < edges.size(); ++edgeId) {
+		uint next = edges[edgeId].twin;
+		while (edges[next].prev != MAX_UINT) {
+			next = edges[edges[next].prev].twin;
+		}
+		edges[edgeId].next = next;
+		edges[next].prev = edgeId;
+	}
+
 	return true;
 }
 
 bool HalfEdgeMesh::DeleteFace(uint faceId) {
 	if (faceId >= FaceCount()) {
-		return false;
-	}
-
-	std::string originalError;
-	if (!Validate(originalError)) {
 		return false;
 	}
 
@@ -794,27 +797,64 @@ bool HalfEdgeMesh::DeleteFace(uint faceId) {
 		remainingFaces.push_back(std::move(face));
 	}
 
-	const Vec3f originalPos = deleted.pos;
-	const Vec3f originalScale = deleted.scale;
-	const Vec3f originalRotation = deleted.eulerRot;
-	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
-		return static_cast<uint>(face.size());
-	};
-	if (!deleted.build(remainingFaces, faceVertexCount)) {
-		return false;
+	// Removing the final face removes the mesh itself, including stray vertices.
+	if (remainingFaces.empty()) {
+		Clear();
+		return true;
 	}
 
-	// build() recenters the remaining geometry. Restore the original object
-	// transform and local-space placement after removing the face.
-	const Vec3f buildOffset = deleted.pos - originalPos;
-	deleted.translateVertices(buildOffset);
-	deleted.pos = originalPos;
-	deleted.scale = originalScale;
-	deleted.eulerRot = originalRotation;
+	// Recreate the remaining connectivity directly, preserving vertex positions
+	// and the existing object transform.
+	deleted.vertEdge.assign(deleted.vertPos.size(), MAX_UINT);
+	deleted.faceEdges.clear();
+	deleted.edges.clear();
+	deleted.faceEdges.reserve(remainingFaces.size());
 
-	std::string error;
-	if (!deleted.Validate(error)) {
-		return false;
+	std::unordered_map<Vec2<uint>, uint> edgeIndices;
+	for (uint newFaceId = 0; newFaceId < remainingFaces.size(); ++newFaceId) {
+		const std::vector<uint>& face = remainingFaces[newFaceId];
+		const uint vertexCount = static_cast<uint>(face.size());
+		const uint firstEdge = static_cast<uint>(deleted.edges.size());
+		deleted.NewFace(firstEdge);
+
+		for (uint i = 0; i < vertexCount; ++i) {
+			const uint next = WrapInc(i, vertexCount - 1);
+			const uint prev = WrapDec(i, vertexCount - 1);
+			const Vec2<uint> edgeVertices(face[i], face[next]);
+
+			uint edgeId;
+			HalfEdge& edge = deleted.NewEdge(edgeId);
+			edge.orig = edgeVertices[0];
+			edge.dest = edgeVertices[1];
+			edge.next = firstEdge + next;
+			edge.prev = firstEdge + prev;
+			edge.face = newFaceId;
+
+			edgeIndices[edgeVertices] = edgeId;
+			deleted.vertEdge[edge.orig] = edgeId;
+		}
+	}
+
+	const uint interiorEdgeCount = static_cast<uint>(deleted.edges.size());
+	for (uint edgeId = 0; edgeId < interiorEdgeCount; ++edgeId) {
+		const uint orig = deleted.edges[edgeId].orig;
+		const uint dest = deleted.edges[edgeId].dest;
+		auto reverse = edgeIndices.find(Vec2<uint>(dest, orig));
+		if (reverse != edgeIndices.end()) {
+			deleted.SetTwins(edgeId, reverse->second, orig, dest);
+		}
+		else {
+			deleted.NewTwin(edgeId, MAX_UINT);
+		}
+	}
+
+	for (uint edgeId = interiorEdgeCount; edgeId < deleted.edges.size(); ++edgeId) {
+		uint next = deleted.edges[edgeId].twin;
+		while (deleted.edges[next].prev != MAX_UINT) {
+			next = deleted.edges[deleted.edges[next].prev].twin;
+		}
+		deleted.edges[edgeId].next = next;
+		deleted.edges[next].prev = edgeId;
 	}
 
 	*this = std::move(deleted);
@@ -834,19 +874,6 @@ bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
 
 	const uint firstFace = selectedEdge.face;
 	const uint secondFace = edges[selectedEdge.twin].face;
-
-	std::string originalError;
-	if (!Validate(originalError)) {
-		return false;
-	}
-
-	bool originalIsClosed = true;
-	for (const HalfEdge& edge : edges) {
-		if (edge.face == MAX_UINT) {
-			originalIsClosed = false;
-			break;
-		}
-	}
 
 	// Find the one interior half-edge on firstFace whose twin belongs to
 	// secondFace. Requiring exactly one shared edge prevents accidentally
@@ -906,8 +933,7 @@ bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
 	}
 
 	// A face pair that also touches at another vertex would create a
-	// self-touching polygon. Reject it rather than asking build() to create
-	// invalid topology.
+	// self-touching polygon.
 	std::unordered_set<uint> uniqueVertices(mergedFace.begin(), mergedFace.end());
 	if (mergedFace.size() < 3 || uniqueVertices.size() != mergedFace.size()) {
 		return false;
@@ -933,45 +959,70 @@ bool HalfEdgeMesh::DissolveEdge(uint edgeId) {
 		rebuiltFaces.push_back(std::move(face));
 	}
 
-	const Vec3f originalPos = dissolved.pos;
-	const Vec3f originalScale = dissolved.scale;
-	const Vec3f originalRotation = dissolved.eulerRot;
-	uint (*faceVertexCount)(const std::vector<uint>&) = [](const std::vector<uint>& face) {
-		return static_cast<uint>(face.size());
-	};
-	if (!dissolved.build(rebuiltFaces, faceVertexCount)) {
-		return false;
-	}
+	// Recreate the remaining connectivity directly, preserving vertex positions
+	// and the existing object transform.
+	dissolved.vertEdge.assign(dissolved.vertPos.size(), MAX_UINT);
+	dissolved.faceEdges.clear();
+	dissolved.edges.clear();
+	dissolved.faceEdges.reserve(rebuiltFaces.size());
 
-	// build() recenters geometry. Restore the original object transform and
-	// local-space placement, as the other topology-changing operations do.
-	const Vec3f buildOffset = dissolved.pos - originalPos;
-	dissolved.translateVertices(buildOffset);
-	dissolved.pos = originalPos;
-	dissolved.scale = originalScale;
-	dissolved.eulerRot = originalRotation;
+	std::unordered_map<Vec2<uint>, uint> edgeIndices;
+	for (uint newFaceId = 0; newFaceId < rebuiltFaces.size(); ++newFaceId) {
+		const std::vector<uint>& face = rebuiltFaces[newFaceId];
+		const uint vertexCount = static_cast<uint>(face.size());
+		const uint firstEdge = static_cast<uint>(dissolved.edges.size());
+		dissolved.NewFace(firstEdge);
 
-	std::string error;
-	if (!dissolved.Validate(error)) {
-		return false;
-	}
-	if (originalIsClosed) {
-		for (const HalfEdge& edge : dissolved.edges) {
-			if (edge.face == MAX_UINT) {
-				return false;
-			}
+		for (uint i = 0; i < vertexCount; ++i) {
+			const uint next = WrapInc(i, vertexCount - 1);
+			const uint prev = WrapDec(i, vertexCount - 1);
+			const Vec2<uint> edgeVertices(face[i], face[next]);
+
+			uint newEdgeId;
+			HalfEdge& newEdge = dissolved.NewEdge(newEdgeId);
+			newEdge.orig = edgeVertices[0];
+			newEdge.dest = edgeVertices[1];
+			newEdge.next = firstEdge + next;
+			newEdge.prev = firstEdge + prev;
+			newEdge.face = newFaceId;
+
+			edgeIndices[edgeVertices] = newEdgeId;
+			dissolved.vertEdge[newEdge.orig] = newEdgeId;
 		}
 	}
 
+	const uint interiorEdgeCount = static_cast<uint>(dissolved.edges.size());
+	for (uint newEdgeId = 0; newEdgeId < interiorEdgeCount; ++newEdgeId) {
+		const uint orig = dissolved.edges[newEdgeId].orig;
+		const uint dest = dissolved.edges[newEdgeId].dest;
+		auto reverse = edgeIndices.find(Vec2<uint>(dest, orig));
+		if (reverse != edgeIndices.end()) {
+			dissolved.SetTwins(newEdgeId, reverse->second, orig, dest);
+		}
+		else {
+			dissolved.NewTwin(newEdgeId, MAX_UINT);
+		}
+	}
+
+	for (uint newEdgeId = interiorEdgeCount; newEdgeId < dissolved.edges.size(); ++newEdgeId) {
+		uint next = dissolved.edges[newEdgeId].twin;
+		while (dissolved.edges[next].prev != MAX_UINT) {
+			next = dissolved.edges[dissolved.edges[next].prev].twin;
+		}
+		dissolved.edges[newEdgeId].next = next;
+		dissolved.edges[next].prev = newEdgeId;
+	}
 	*this = std::move(dissolved);
 	return true;
 }
 
 bool HalfEdgeMesh::CollapseEdge(uint edgeId) {
+	// Do nothing if invalid edge.
 	if (edgeId >= edges.size()) {
 		return false;
 	}
 
+	// Get the selected edge.
 	const HalfEdge& selectedEdge = edges[edgeId];
 	if (selectedEdge.twin >= edges.size()) {
 		return false;
@@ -982,20 +1033,25 @@ bool HalfEdgeMesh::CollapseEdge(uint edgeId) {
 		edgeId = selectedEdge.twin;
 	}
 
+	// Ensure vertices are valid.
 	const HalfEdge& edge = edges[edgeId];
 	if (edge.orig >= VertexCount() || edge.dest >= VertexCount() ||
 		edge.orig == edge.dest) {
 		return false;
 	}
 
+	// Get the vertices belonging to the edge.
 	const uint sourceVertex = edge.orig;
 	const uint targetVertex = edge.dest;
+	// Calculate the midpoint between them.
 	const Vec3f midpoint = (vertPos[sourceVertex] + vertPos[targetVertex]) * 0.5f;
 
+	// Do not collapse the edge if the vertices cannot merge.
 	if (!MergeVertices(sourceVertex, targetVertex)) {
 		return false;
 	}
 
+	// Make a new vertex and insert it at the midpoint.
 	const uint mergedVertex = targetVertex > sourceVertex ? targetVertex - 1 : targetVertex;
 	vertPos[mergedVertex] = midpoint;
 	return true;

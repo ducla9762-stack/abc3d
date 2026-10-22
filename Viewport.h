@@ -631,7 +631,7 @@ public slots:
 
 		if (selectionManager.getActiveElement() == VERTEX) {
 			if (selectionManager.itemCount() != 1) { return; }
-			Vec3f vertPos = scene[item.meshId]->WorldDirToLocalDir(pos);
+			Vec3f vertPos = scene[item.meshId]->WorldPosToLocalPos(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
 		}
 		else {
@@ -841,7 +841,7 @@ public slots:
 
 			case FACE:
 				// Delete faces in descending ID order; see the sort above.
-				//scene[item.meshId]->DeleteFace(item.componentId);
+				scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
 		}

@@ -74,7 +74,7 @@ TEST(MeshInvariants, PyramidStartsValid) {
 	EXPECT_EQ(mesh.EdgeCount(), 16u);
 }
 
-TEST(HalfEdgeMeshMerge, RemovesSourceVertexAndKeepsTargetPosition) {
+TEST(HalfEdgeMeshMerge, RejectsNonIncidentVertices) {
 	HalfEdgeMesh mesh;
 	mesh.load(
 		std::vector<Vec3f>{
@@ -86,8 +86,8 @@ TEST(HalfEdgeMeshMerge, RemovesSourceVertexAndKeepsTargetPosition) {
 		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
 
 	ASSERT_TRUE(IsValid(mesh));
-	ASSERT_TRUE(mesh.MergeVertices(3, 1));
-	EXPECT_EQ(mesh.VertexCount(), 3u);
+	EXPECT_FALSE(mesh.MergeVertices(3, 1));
+	EXPECT_EQ(mesh.VertexCount(), 4u);
 	ExpectVec3Near(mesh.GetVertexPosition(1), Vec3f(1.0f, 0.0f, 0.0f));
 	EXPECT_TRUE(IsValid(mesh));
 }
@@ -102,18 +102,14 @@ TEST(HalfEdgeMeshMerge, CollapsesAdjacentCubeEdge) {
 	EXPECT_TRUE(IsValid(mesh));
 }
 
-TEST(HalfEdgeMeshMerge, AllowsClosedFaceReductionWhenResultStaysClosed) {
+TEST(HalfEdgeMeshMerge, RejectsNonIncidentCubeVertices) {
 	HalfEdgeMesh mesh = Cube();
 
-	// This merge removes a face, but the rebuilt surface remains closed.
-	EXPECT_TRUE(mesh.MergeVertices(0, 3));
-	EXPECT_EQ(mesh.VertexCount(), 7u);
-	EXPECT_EQ(mesh.FaceCount(), 5u);
-	EXPECT_EQ(mesh.EdgeCount(), 20u);
+	EXPECT_FALSE(mesh.MergeVertices(0, 3));
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
 	EXPECT_TRUE(IsValid(mesh));
-	for (uint edgeId = 0; edgeId < mesh.EdgeCount(); ++edgeId) {
-		EXPECT_NE(mesh.GetEdge(edgeId).face, MAX_UINT);
-	}
 }
 
 TEST(HalfEdgeMeshMerge, RejectsSameVertexWithoutChangingMesh) {
@@ -209,6 +205,19 @@ TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
 		}
 	}
 	EXPECT_TRUE(hasBoundary);
+}
+
+TEST(HalfEdgeMeshDelete, DeletingFinalFaceClearsMesh) {
+	HalfEdgeMesh mesh = Cube();
+
+	while (mesh.FaceCount() > 0) {
+		EXPECT_TRUE(mesh.DeleteFace(0));
+	}
+
+	EXPECT_EQ(mesh.VertexCount(), 0u);
+	EXPECT_EQ(mesh.FaceCount(), 0u);
+	EXPECT_EQ(mesh.EdgeCount(), 0u);
+	EXPECT_TRUE(IsValid(mesh));
 }
 
 // --- Component scaling ----------------------------------------------------
