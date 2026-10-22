@@ -678,17 +678,17 @@ public slots:
 		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 	}
-	void loadTorus(int resolution){
+	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
+		generateUnitTorus(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 	}
 	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(int resolution){
+	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, resolution, resolution);
+		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 	}
 
