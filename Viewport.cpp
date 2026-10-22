@@ -531,6 +531,26 @@ void Viewport::setAction(Action action) {
 	}
 
 	actionParams.action = action;
+	if (action == TRANSLATE_FREE) {
+		enableAllElements();
+	}
+
+	else if (action == TRANSLATE_OUT) {
+		enableElementVertex();
+		enableElementEdge();
+		enableElementFace();
+		disableElementObject();
+	}
+
+	else if (action == TRANSLATE_EDGE) {
+		enableElementVertex();
+		disableElementEdge();
+		disableElementFace();
+		disableElementObject();
+	}
+
+	
+
 	if (action == MERGE) {
 		enableElementVertex();
 		disableElementEdge();

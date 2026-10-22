@@ -416,12 +416,6 @@ void ABC3D::elementChanged(Element element) {
     if (ui.bottomRightPanels->currentIndex() == 2 || ui.bottomRightPanels->currentIndex() == 0) {
         switch (element) {
         case VERTEX:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -431,12 +425,6 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case EDGE:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(true);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -446,12 +434,6 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             break;
         case FACE:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -461,12 +443,6 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case OBJECT:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(false);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(true);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
