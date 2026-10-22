@@ -631,7 +631,7 @@ public slots:
 
 		if (selectionManager.getActiveElement() == VERTEX) {
 			if (selectionManager.itemCount() != 1) { return; }
-			Vec3f vertPos = scene[item.meshId]->WorldDirToLocalDir(pos);
+			Vec3f vertPos = scene[item.meshId]->WorldPosToLocalPos(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
 		}
 		else {
