@@ -212,6 +212,12 @@ ABC3D::ABC3D(QWidget *parent)
         QString fileName = fileInfo.fileName();
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
+
+    ui.viewport->SetFaceColor(ui.faceColorButton->GetColorF());
+    ui.viewport->SetEdgeColor(ui.edgeColorButton->GetColorF());
+    ui.viewport->SetVertexColor(ui.vertexColorButton->GetColorF());
+    ui.viewport->SetBackgroundColor(ui.backgroundColorButton->GetColorF());
+    ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
