@@ -667,7 +667,7 @@ public:
 				mesh.InsertPrev(currEdge, vFaceTwin);
 
 				vFaceEdge.face = bevel.faceId;
-				vFaceEdge.prev = firstNewEdge + WrapInc(i, bevel.degree - 1, firstNewEdge);
+				vFaceEdge.prev = firstNewEdge + WrapInc(i, bevel.degree - 1);
 				vFaceEdge.next = vFaceEdgeId - 1;
 
 				vertices.push_back(edge.orig);
