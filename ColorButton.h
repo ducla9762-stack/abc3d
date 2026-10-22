@@ -5,6 +5,7 @@
 #include <QColorDialog>
 
 #include <cyVector.h>
+#include "helper.h"
 
 class ColorButton  : public QPushButton
 {
@@ -17,7 +18,7 @@ public:
 	~ColorButton();
 
 signals:
-	void ColorSelected(const cy::Vec3f& selectedClr);
+	void ColorSelected(const Vec3f& selectedClr);
 
 private:
 	void mousePressEvent(QMouseEvent* event) override {

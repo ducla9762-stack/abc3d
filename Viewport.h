@@ -949,7 +949,7 @@ public slots:
 		std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
-	void SetFOV(float fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
+	void SetFOV(double fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
 
 	void SetSurfaceVisibility(bool show) { /*renderer.ShowSurfaces(show); update();*/ }
 

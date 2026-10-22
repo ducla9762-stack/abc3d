@@ -119,6 +119,7 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="scene.cpp" />
@@ -135,6 +136,7 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
+    <QtMoc Include="ColorButton.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="MeshKnife.h" />

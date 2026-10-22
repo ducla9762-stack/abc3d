@@ -125,10 +125,6 @@ ABC3D::ABC3D(QWidget *parent)
         QString fileName = fileInfo.fileName();
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
-
-    QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
-        ui.viewport->updateCameraFOV(fov);
-        });
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
