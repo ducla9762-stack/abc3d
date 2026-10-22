@@ -79,6 +79,7 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Pulls up merge panel
     QObject::connect(ui.mergeToolButton, &QPushButton::released, this, [=]() {
+        ui.mergeModeButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         });
 
@@ -281,6 +282,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_M:
         event->accept();
         ui.viewport->setActionMerge();
+        ui.mergeModeButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.mergeToolButton->setChecked(true);
     default:
