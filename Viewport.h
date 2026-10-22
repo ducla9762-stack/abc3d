@@ -350,8 +350,8 @@ public slots:
 		setAction(TRANSLATE_OUT); 
 	}
 	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
-	/*void setActionTranslateEdge() {
-		// The constrained operation is vertex only.
+	void setActionTranslateEdge() {
+		/*// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
 			setActiveElement(VERTEX);
 			elementButtons[0]->setChecked(true);
@@ -366,8 +366,8 @@ public slots:
 			reducedSelection = true;
 		}
 		setAction(TRANSLATE_EDGE);
-		if (reducedSelection) { emitSelectionChanged(); }
-	} */
+		if (reducedSelection) { emitSelectionChanged(); } */
+	}
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
