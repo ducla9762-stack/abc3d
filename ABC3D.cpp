@@ -68,7 +68,8 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
-        ui.bottomRightPanels->setCurrentIndex(2); 
+        ui.bottomRightPanels->setCurrentIndex(2);
+        emit elementChanged(ui.viewport->getActiveElement());
         });
 
     // Pulls up shape panel
@@ -76,6 +77,7 @@ ABC3D::ABC3D(QWidget *parent)
         ui.bottomRightPanels->setCurrentIndex(1);
         });
 
+    // Pulls up merge panel
     QObject::connect(ui.mergeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(0);
         });
@@ -98,6 +100,7 @@ ABC3D::ABC3D(QWidget *parent)
     // the visible mode selection synchronized when returning to Move.
     QObject::connect(ui.translateToolButton, &QPushButton::released, this, [=]() {
         ui.axisModeTranslationButton->setChecked(true);
+        emit elementChanged(ui.viewport->getActiveElement());
         });
 
     // Connects the "Load Tutorial" Button to the QTextBrowser
@@ -124,6 +127,11 @@ ABC3D::ABC3D(QWidget *parent)
         QFileInfo fileInfo(filePath);
         QString fileName = fileInfo.fileName();
         QFile::copy(filePath, "assets/tutorials/" + fileName);
+        });
+
+    // TODO: Fix FOV slider
+    QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
+        ui.viewport->updateCameraFOV(fov);
         });
 }
 
@@ -275,6 +283,11 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.bevelToolButton->setChecked(true);
         break;
+    case Qt::Key_M:
+        event->accept();
+        ui.viewport->setActionMerge();
+        ui.bottomRightPanels->setCurrentIndex(0);
+        ui.mergeToolButton->setChecked(true);
     default:
         QMainWindow::keyPressEvent(event);
         return;
@@ -313,9 +326,16 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
 }
 
 void ABC3D::elementChanged(Element element) {
-    if (ui.bottomRightPanels->currentIndex() == 2) {
+    if (ui.bottomRightPanels->currentIndex() == 2 || ui.bottomRightPanels->currentIndex() == 0) {
         switch (element) {
         case VERTEX:
+            // Translation Modes
+            ui.edgeModeTranslationButton->setEnabled(false);
+            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.outModeTranslationButton->setEnabled(true);
+            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+
+            // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.triangulationButton->setEnabled(false);
@@ -324,6 +344,13 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case EDGE:
+            // Translation Modes
+            ui.edgeModeTranslationButton->setEnabled(true);
+            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.outModeTranslationButton->setEnabled(true);
+            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+
+            // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.triangulationButton->setEnabled(false);
@@ -332,6 +359,13 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             break;
         case FACE:
+            // Translation Modes
+            ui.edgeModeTranslationButton->setEnabled(false);
+            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.outModeTranslationButton->setEnabled(true);
+            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+
+            // Subdivision panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.triangulationButton->setEnabled(true);
@@ -340,6 +374,13 @@ void ABC3D::elementChanged(Element element) {
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case OBJECT:
+            // Translation Modes
+            ui.edgeModeTranslationButton->setEnabled(false);
+            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.outModeTranslationButton->setEnabled(false);
+            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+
+            // Subdivision Panel
             ui.subdivisionButton->setEnabled(true);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             ui.triangulationButton->setEnabled(true);
