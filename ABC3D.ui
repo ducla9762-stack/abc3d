@@ -19,6 +19,9 @@
   <property name="windowTitle">
    <string>ABC3D</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QToolTip{color: white; background-color: #1c1c1c; }</string>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -32,8 +35,8 @@
      <height>0</height>
     </size>
    </property>
-   <property name="styleSheet">
-    <string notr="true">QToolTip{background-color: #1c1c1c; color: white;}</string>
+   <property name="toolTip">
+    <string/>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
@@ -61,13 +64,13 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>66</width>
+        <width>58</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>66</width>
+        <width>58</width>
         <height>16777215</height>
        </size>
       </property>
@@ -100,7 +103,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>66</width>
+         <width>58</width>
          <height>1219</height>
         </rect>
        </property>
@@ -112,13 +115,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>66</width>
+         <width>58</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>66</width>
+         <width>58</width>
          <height>16777215</height>
         </size>
        </property>
@@ -149,14 +152,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="selectToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -166,7 +169,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows selection of vertices, edges, faces, and objects&lt;/p&gt;&lt;p&gt;Deselect by double-clicking or chaning the active element&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows selection of elements with classic and additive modes&lt;/p&gt;&lt;p&gt;Deselect by double-clicking or chaning the active element&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -183,8 +186,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -205,14 +208,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="cameraToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -222,7 +225,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Change modes and field of view, toggle grid &amp;amp; vertices, and orbit origin&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Brings up the panel to change between orbit and free modes, field of view, and toggling the grid and vertices&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -239,8 +242,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -261,14 +264,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="translateToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -278,7 +281,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows translation with free, outward, and edge modes&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -292,8 +295,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -308,14 +311,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="scaleToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -339,8 +342,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -355,14 +358,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="rotateToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -386,8 +389,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -402,14 +405,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="shapeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -419,7 +422,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;Brings up the panel to add shapes to your scene&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -433,8 +436,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -449,14 +452,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="extrudeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -480,8 +483,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -496,14 +499,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="subdivideToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -519,7 +522,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This brings up the panel to access subdivision, tesselation, triangulation, and edge-flip&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the panel to access subdivision, tesselation, triangulation, and edge-flip&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -533,8 +536,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -549,14 +552,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="bevelToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -583,8 +586,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -599,18 +602,18 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="knifeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="toolTip">
-           <string>Knife Tool: click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. 'K' Key Shortcut</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Knife Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. &lt;/p&gt;&lt;p&gt;'K' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -624,37 +627,9 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="penToolButton">
-          <property name="minimumSize">
-           <size>
-            <width>64</width>
-            <height>64</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>64</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton:checked { background-color: red; }</string>
-          </property>
-          <property name="text">
-           <string>Pen</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -668,21 +643,34 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="mergeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>16777215</height>
+            <width>58</width>
+            <height>58</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Merge Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the page for merge, dissolve, and collapse&lt;br/&gt;'M' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
-           <string>Merge</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/merge.svg</normaloff>assets/icons/merge.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>58</width>
+            <height>58</height>
+           </size>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -716,7 +704,6 @@ QPushButton{background-color: #646464;}</string>
        <zorder>bevelToolButton</zorder>
        <zorder>cameraToolButton</zorder>
        <zorder>knifeToolButton</zorder>
-       <zorder>penToolButton</zorder>
        <zorder>verticalSpacer</zorder>
        <zorder>mergeToolButton</zorder>
       </widget>
@@ -942,6 +929,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="mergeModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to vertices&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Merge</string>
                 </property>
@@ -958,6 +948,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="dissolveModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Dissolve</string>
                 </property>
@@ -971,6 +964,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="collapseModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Collapse</string>
                 </property>
@@ -1040,14 +1036,7 @@ QPushButton:checked {background-color: red}</string>
                  <item>
                   <widget class="QPushButton" name="classicModeButton">
                    <property name="toolTip">
-                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;Allows the selection of only one element, unless you're holding CTRL&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Allows the selection of only one element, unless you're holding CTRL&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="styleSheet">
                     <string notr="true">QPushButton{ outline: 1px solid white; }
@@ -1070,14 +1059,7 @@ QPushButton:checked { background-color: red; }</string>
                  <item>
                   <widget class="QPushButton" name="additiveModeButton">
                    <property name="toolTip">
-                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Adds to your selection whenever you click another element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds to your selection whenever you click another element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="styleSheet">
                     <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1130,7 +1112,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; &quot;&gt;&lt;span&gt;Restricted to vertices, edges, and faces&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1156,7 +1138,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; &quot;&gt;&lt;span&gt;Restricted to vertices&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1192,7 +1174,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Translate however you want along the x, y, and z axes&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; ;&quot;&gt;&lt;span&gt;Translate however you want along the x, y, and z axes&lt;br /&gt;Enabled for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1237,7 +1219,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Scale relative to the scene&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>World</string>
@@ -1263,7 +1245,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Scale relative to local axes&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>Local</string>
@@ -1354,305 +1336,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
            <string notr="true"/>
           </property>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="2" column="3">
-            <widget class="QPushButton" name="pyramidButton_5">
-             <property name="minimumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: black;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>assets/icons/pyramid.svg</normaloff>assets/icons/pyramid.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="2">
-            <widget class="QSlider" name="uvSphereSlider">
-             <property name="styleSheet">
-              <string notr="true">QSlider {border: 1px solid white; }</string>
-             </property>
-             <property name="minimum">
-              <number>3</number>
-             </property>
-             <property name="maximum">
-              <number>20</number>
-             </property>
-             <property name="value">
-              <number>10</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="2">
-            <widget class="QSlider" name="torusSlider">
-             <property name="styleSheet">
-              <string notr="true">QSlider {border: 1px solid white; }
-</string>
-             </property>
-             <property name="minimum">
-              <number>3</number>
-             </property>
-             <property name="maximum">
-              <number>40</number>
-             </property>
-             <property name="singleStep">
-              <number>3</number>
-             </property>
-             <property name="sliderPosition">
-              <number>20</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="3">
-            <widget class="QPushButton" name="torusButton_5">
-             <property name="minimumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a torus using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: black;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>assets/icons/torus.svg</normaloff>assets/icons/torus.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Resolution</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="3">
-            <widget class="QPushButton" name="uvSphereButton_5">
-             <property name="minimumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a sphere using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: black;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>assets/icons/uvsphere.svg</normaloff>assets/icons/uvsphere.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="3">
-            <widget class="QPushButton" name="icoSphereButton_5">
-             <property name="minimumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a sphere with 12 vertices and 19 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: black;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>assets/icons/icosphere.svg</normaloff>assets/icons/icosphere.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QSlider" name="cylinderSlider">
-             <property name="styleSheet">
-              <string notr="true">border: 1px solid white;</string>
-             </property>
-             <property name="minimum">
-              <number>3</number>
-             </property>
-             <property name="maximum">
-              <number>30</number>
-             </property>
-             <property name="singleStep">
-              <number>3</number>
-             </property>
-             <property name="value">
-              <number>12</number>
-             </property>
-             <property name="sliderPosition">
-              <number>12</number>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="3">
-            <widget class="QPushButton" name="cylinderButton_5">
-             <property name="minimumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a cylinder using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">color: black;</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>assets/icons/cylinder.svg</normaloff>assets/icons/cylinder.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>64</width>
-               <height>64</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Resolution</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Resolution</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
+           <item row="2" column="0">
             <widget class="QPushButton" name="cubeButton_5">
              <property name="minimumSize">
               <size>
@@ -1674,7 +1358,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; color: black; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a cube with 8 vertices and 6 faces &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot;margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a cube with 8 vertices and 6 faces &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true"/>
@@ -1685,6 +1369,216 @@ li.checked::marker { content: &quot;\2612&quot;; }
              <property name="icon">
               <iconset>
                <normaloff>assets/icons/cube.svg</normaloff>assets/icons/cube.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="pyramidButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/pyramid.svg</normaloff>assets/icons/pyramid.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QPushButton" name="icoSphereButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Creates a sphere with 12 vertices and 19 faces&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/icosphere.svg</normaloff>assets/icons/icosphere.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QPushButton" name="uvSphereButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Creates a sphere using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/uvsphere.svg</normaloff>assets/icons/uvsphere.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QPushButton" name="cylinderButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Creates a cylinder using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/cylinder.svg</normaloff>assets/icons/cylinder.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QPushButton" name="torusButton_5">
+             <property name="minimumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>64</width>
+               <height>64</height>
+              </size>
+             </property>
+             <property name="toolTip">
+              <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Creates a torus using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: black;</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>assets/icons/torus.svg</normaloff>assets/icons/torus.svg</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -1708,8 +1602,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;pre style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Cascadia Mono'; color:#000000;&quot;&gt;Splits an object into more faces and smooths&lt;/span&gt;&lt;/pre&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Cascadia Mono'; color:#ffffff;&quot;&gt;Splits an object into more faces and smooths&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#1c1c1c;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Restricted to objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">QTooltip: { color: black; }</string>
@@ -1729,8 +1623,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Tesselate&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Works for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Tesselate&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Works for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">QTooltip: { color: black; }</string>
@@ -1750,8 +1644,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Splits the element into more triangular faces &lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to faces and objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Splits the element into more triangular faces &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Restricted to faces and objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Triangulate</string>
@@ -1768,8 +1662,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Flip-Edge&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to edges&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Flip-Edge&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Restricted to edges&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Flip Edge</string>
@@ -1795,14 +1689,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="1">
                <widget class="QPushButton" name="freeButton">
                 <property name="toolTip">
-                 <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Unrestricted looking in every direction&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Unrestricted looking in every direction&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1821,14 +1708,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="0">
                <widget class="QPushButton" name="orbitButton">
                 <property name="toolTip">
-                 <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;Keeps the camera centered around the specified middle&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Keeps the camera centered around the specified middle&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1873,16 +1753,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
              </property>
              <layout class="QGridLayout" name="gridLayout_4">
               <item row="3" column="1">
-               <widget class="QDoubleSpinBox" name="edgeRadiusSpinner">
-                <property name="value">
-                 <double>0.010000000000000</double>
-                </property>
-               </widget>
+               <widget class="QDoubleSpinBox" name="edgeRadiusSpinner"/>
               </item>
               <item row="2" column="0">
                <widget class="QCheckBox" name="vertexVisibilityBox">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
                  <string>Vertices</string>
@@ -1902,7 +1778,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="0">
                <widget class="QCheckBox" name="gridVisibilityBox">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color: white; background-color: #1c1c1c; &quot;&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="layoutDirection">
                  <enum>Qt::LayoutDirection::LeftToRight</enum>
@@ -1943,11 +1819,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="QDoubleSpinBox" name="doubleSpinBox">
-                <property name="value">
-                 <double>0.100000000000000</double>
-                </property>
-               </widget>
+               <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
               </item>
               <item row="4" column="0">
                <widget class="QLabel" name="label_12">
@@ -1996,7 +1868,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  <double>220.000000000000000</double>
                 </property>
                 <property name="value">
-                 <double>70.000000000000000</double>
+                 <double>90.000000000000000</double>
                 </property>
                </widget>
               </item>
@@ -2020,7 +1892,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="ColorButton" name="faceColorButton">
+               <widget class="ColorButton" name="pushButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2028,14 +1900,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
-                </property>
-                <property name="color" stdset="0">
-                 <color>
-                  <red>255</red>
-                  <green>41</green>
-                  <blue>41</blue>
-                 </color>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
@@ -2085,7 +1950,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="ColorButton" name="edgeColorButton">
+               <widget class="ColorButton" name="pushButton_2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2093,19 +1958,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
-                </property>
-                <property name="color" stdset="0">
-                 <color>
-                  <red>223</red>
-                  <green>255</green>
-                  <blue>64</blue>
-                 </color>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="ColorButton" name="vertexColorButton">
+               <widget class="ColorButton" name="pushButton_3">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2113,19 +1971,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
-                </property>
-                <property name="color" stdset="0">
-                 <color>
-                  <red>199</red>
-                  <green>27</green>
-                  <blue>229</blue>
-                 </color>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
               <item row="4" column="1">
-               <widget class="ColorButton" name="backgroundColorButton">
+               <widget class="ColorButton" name="pushButton_4">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2133,19 +1984,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
-                </property>
-                <property name="color" stdset="0">
-                 <color>
-                  <red>0</red>
-                  <green>0</green>
-                  <blue>0</blue>
-                 </color>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
               <item row="5" column="1">
-               <widget class="ColorButton" name="selectColorButton">
+               <widget class="ColorButton" name="pushButton_5">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2153,19 +1997,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
-                </property>
-                <property name="color" stdset="0">
-                 <color>
-                  <red>17</red>
-                  <green>220</green>
-                  <blue>14</blue>
-                 </color>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
               <item row="6" column="1">
-               <widget class="ColorButton" name="hoverColorButton">
+               <widget class="ColorButton" name="pushButton_6">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -2173,7 +2010,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string/>
+                 <string>PushButton</string>
                 </property>
                </widget>
               </item>
@@ -2539,22 +2376,6 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>orbitButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>originInput</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>720</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>actionExit</sender>
    <signal>triggered()</signal>
    <receiver>ABC3DClass</receiver>
@@ -2567,246 +2388,6 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>539</x>
      <y>359</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>posInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>583</x>
-     <y>538</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1010</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>enableNonVertexSpinners(bool)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>801</x>
-     <y>523</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1070</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>vertexVisibilityBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>viewport</receiver>
-   <slot>setAlwaysShowVertices(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>805</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>694</x>
-     <y>512</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>freeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setCameraModeFree()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>607</x>
-     <y>404</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>orbitOriginChanged(Vec3f)</signal>
-   <receiver>originInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>649</x>
-     <y>460</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>720</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>subdivisionButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>subdivideSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1525</x>
-     <y>640</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>724</x>
-     <y>455</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>orbitButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setCameraModeOrbit()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>738</x>
-     <y>425</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>triangulationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>triangulateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1525</x>
-     <y>650</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>718</x>
-     <y>626</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cubeButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadCube()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1498</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>767</x>
-     <y>437</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>outModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateOut()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>896</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>716</x>
-     <y>490</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>icoSphereButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadIcoSphere()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1498</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>676</x>
-     <y>612</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>tesselationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>tessellateSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1525</x>
-     <y>645</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>696</x>
-     <y>533</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>flipButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>flipSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1525</x>
-     <y>655</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>674</x>
-     <y>577</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionScaleChanged(Vec3f)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>786</x>
-     <y>425</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1040</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pyramidButton_5</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>loadPyramid()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1498</x>
-     <y>695</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>719</x>
-     <y>471</y>
     </hint>
    </hints>
   </connection>
@@ -2827,86 +2408,6 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>additiveModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setAdditiveSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>812</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>801</x>
-     <y>390</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>edgeModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateEdge()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>896</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>718</x>
-     <y>613</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionScale(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>1040</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>727</x>
-     <y>473</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionRotChanged(Vec3f)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>594</x>
-     <y>498</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1070</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionPosChanged(Vec3f)</signal>
-   <receiver>posInput</receiver>
-   <slot>setValue(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>632</x>
-     <y>253</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1010</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>actionDuplicate</sender>
    <signal>triggered()</signal>
    <receiver>viewport</receiver>
@@ -2919,150 +2420,6 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>801</x>
      <y>399</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>axisModeTranslationButton</sender>
-   <signal>released()</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionTranslateAxis()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>866</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>722</x>
-     <y>550</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>classicModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setSingleSelection()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>812</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>801</x>
-     <y>339</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>gridVisibilityBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>viewport</receiver>
-   <slot>setAlwaysShowGrid(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>778</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>801</x>
-     <y>399</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>601</x>
-     <y>459</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1040</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rotInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionRot(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>1070</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>694</x>
-     <y>530</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>enableNonVertexSpinners(bool)</signal>
-   <receiver>scaleInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>582</x>
-     <y>504</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1040</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>viewport</sender>
-   <signal>primarySelectionChanged(bool)</signal>
-   <receiver>rotInput</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>801</x>
-     <y>505</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>1070</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>originInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setOrbitOrigin(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>720</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>730</x>
-     <y>462</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>posInput</sender>
-   <signal>valChanged(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>setPrimarySelectionPos(Vec3f)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1767</x>
-     <y>1010</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>708</x>
-     <y>435</y>
     </hint>
    </hints>
   </connection>
@@ -3147,22 +2504,6 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>selectToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>selectionInputModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>50</x>
-     <y>53</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>818</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>subdivideToolButton</sender>
    <signal>released()</signal>
    <receiver>viewport</receiver>
@@ -3191,22 +2532,6 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>669</x>
      <y>230</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>translateToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>transformModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>35</x>
-     <y>179</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>896</y>
     </hint>
    </hints>
   </connection>
@@ -3335,54 +2660,6 @@ color: white;</string>
     <hint type="destinationlabel">
      <x>525</x>
      <y>-2</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scaleToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>scaleModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>23</x>
-     <y>245</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1767</x>
-     <y>980</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>worldModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setGlobalScaleMode()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1602</x>
-     <y>962</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1104</x>
-     <y>666</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>localModeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>viewport</receiver>
-   <slot>setLocalScaleMode()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1749</x>
-     <y>962</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1103</x>
-     <y>711</y>
     </hint>
    </hints>
   </connection>
@@ -3643,50 +2920,18 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>mergeToolButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>mergeModes</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>45</x>
-     <y>744</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1453</x>
-     <y>731</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>mergeModeButton</sender>
+   <sender>collapseModeButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>viewport</receiver>
-   <slot>setActionMerge()</slot>
+   <slot>enableElementEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1476</x>
-     <y>684</y>
+     <x>1464</x>
+     <y>743</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1421</x>
-     <y>687</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>dissolveModeButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>viewport</receiver>
-   <slot>setActionDissolve()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1473</x>
-     <y>712</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1425</x>
-     <y>703</y>
+     <x>86</x>
+     <y>41</y>
     </hint>
    </hints>
   </connection>
@@ -3707,10 +2952,58 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
+   <sender>doubleSpinBox</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetVertexScale(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1676</x>
+     <y>845</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1324</x>
+     <y>835</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translateToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>transformModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>35</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>896</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mergeModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionMerge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1476</x>
+     <y>684</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1421</x>
+     <y>687</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>collapseModeButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>viewport</receiver>
-   <slot>enableElementEdge()</slot>
+   <slot>disableElementFace()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1464</x>
@@ -3739,50 +3032,178 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>collapseModeButton</sender>
-   <signal>toggled(bool)</signal>
+   <sender>localModeButton</sender>
+   <signal>clicked()</signal>
    <receiver>viewport</receiver>
-   <slot>disableElementFace()</slot>
+   <slot>setLocalScaleMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1464</x>
-     <y>743</y>
+     <x>1749</x>
+     <y>962</y>
     </hint>
     <hint type="destinationlabel">
-     <x>86</x>
-     <y>41</y>
+     <x>1103</x>
+     <y>711</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>collapseModeButton</sender>
-   <signal>toggled(bool)</signal>
+   <sender>scaleInput</sender>
+   <signal>valChanged(Vec3f)</signal>
    <receiver>viewport</receiver>
-   <slot>disableElementObject()</slot>
+   <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1464</x>
-     <y>743</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
     <hint type="destinationlabel">
-     <x>86</x>
-     <y>41</y>
+     <x>727</x>
+     <y>473</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>checkBox</sender>
-   <signal>toggled(bool)</signal>
+   <sender>freeButton</sender>
+   <signal>clicked()</signal>
    <receiver>viewport</receiver>
-   <slot>SetSurfaceVisibility(bool)</slot>
+   <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1633</x>
-     <y>773</y>
+     <x>1767</x>
+     <y>695</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1334</x>
-     <y>731</y>
+     <x>607</x>
+     <y>404</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>triangulationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>triangulateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1525</x>
+     <y>650</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>626</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>orbitButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>originInput</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>695</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cubeButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadCube()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1498</x>
+     <y>695</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>767</x>
+     <y>437</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_2</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetEdgeColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1578</x>
+     <y>990</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1350</x>
+     <y>984</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>vertexVisibilityBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setAlwaysShowVertices(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>805</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>694</x>
+     <y>512</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_4</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetBackgroundColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1591</x>
+     <y>1057</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1331</x>
+     <y>1057</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>originInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setOrbitOrigin(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1767</x>
+     <y>720</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>730</x>
+     <y>462</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tesselationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>tessellateSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1525</x>
+     <y>645</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>696</x>
+     <y>533</y>
     </hint>
    </hints>
   </connection>
@@ -3803,34 +3224,130 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>edgeRadiusSpinner</sender>
-   <signal>valueChanged(double)</signal>
+   <sender>rotInput</sender>
+   <signal>valChanged(Vec3f)</signal>
    <receiver>viewport</receiver>
-   <slot>SetEdgeRadius(double)</slot>
+   <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1654</x>
-     <y>825</y>
+     <x>1767</x>
+     <y>1070</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1310</x>
-     <y>824</y>
+     <x>694</x>
+     <y>530</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>doubleSpinBox</sender>
-   <signal>valueChanged(double)</signal>
-   <receiver>viewport</receiver>
-   <slot>SetVertexScale(double)</slot>
+   <sender>viewport</sender>
+   <signal>primarySelectionPosChanged(Vec3f)</signal>
+   <receiver>posInput</receiver>
+   <slot>setValue(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1676</x>
-     <y>845</y>
+     <x>632</x>
+     <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1324</x>
-     <y>835</y>
+     <x>1767</x>
+     <y>1010</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>collapseModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>disableElementObject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1464</x>
+     <y>743</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>86</x>
+     <y>41</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridVisibilityBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setAlwaysShowGrid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>778</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>399</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetFaceColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1583</x>
+     <y>968</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1206</x>
+     <y>976</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>scaleModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>23</x>
+     <y>245</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>980</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>posInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>583</x>
+     <y>538</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1010</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>edgeModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateEdge()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1767</x>
+     <y>896</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>718</x>
+     <y>613</y>
     </hint>
    </hints>
   </connection>
@@ -3851,39 +3368,183 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>faceColorButton</sender>
-   <signal>ColorSelected(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>SetFaceColor(Vec3f)</slot>
+   <sender>selectToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>selectionInputModes</receiver>
+   <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>968</y>
+     <x>50</x>
+     <y>53</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1206</x>
-     <y>976</y>
+     <x>1767</x>
+     <y>818</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>edgeColorButton</sender>
+   <sender>pyramidButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadPyramid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1498</x>
+     <y>695</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>719</x>
+     <y>471</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetSurfaceVisibility(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1633</x>
+     <y>773</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1334</x>
+     <y>731</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dissolveModeButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionDissolve()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1473</x>
+     <y>712</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1425</x>
+     <y>703</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_5</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
-   <slot>SetEdgeColor(Vec3f)</slot>
+   <slot>SetSelectColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1578</x>
-     <y>990</y>
+     <y>1084</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1350</x>
-     <y>984</y>
+     <x>1294</x>
+     <y>1037</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>vertexColorButton</sender>
+   <sender>flipButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>flipSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1525</x>
+     <y>655</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>674</x>
+     <y>577</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>additiveModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setAdditiveSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1767</x>
+     <y>812</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>801</x>
+     <y>390</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>edgeRadiusSpinner</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetEdgeRadius(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1654</x>
+     <y>825</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1310</x>
+     <y>824</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>801</x>
+     <y>523</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1070</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>enableNonVertexSpinners(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>582</x>
+     <y>504</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1040</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>outModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateOut()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>896</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>716</x>
+     <y>490</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetVertexColor(Vec3f)</slot>
@@ -3899,34 +3560,210 @@ color: white;</string>
    </hints>
   </connection>
   <connection>
-   <sender>backgroundColorButton</sender>
-   <signal>ColorSelected(Vec3f)</signal>
-   <receiver>viewport</receiver>
-   <slot>SetBackgroundColor(Vec3f)</slot>
+   <sender>viewport</sender>
+   <signal>primarySelectionScaleChanged(Vec3f)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setValue(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1591</x>
-     <y>1057</y>
+     <x>786</x>
+     <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1331</x>
-     <y>1057</y>
+     <x>1767</x>
+     <y>1040</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>selectColorButton</sender>
-   <signal>ColorSelected(Vec3f)</signal>
+   <sender>classicModeButton</sender>
+   <signal>clicked()</signal>
    <receiver>viewport</receiver>
-   <slot>SetSelectColor(Vec3f)</slot>
+   <slot>setSingleSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1578</x>
-     <y>1084</y>
+     <x>1602</x>
+     <y>812</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1294</x>
-     <y>1037</y>
+     <x>801</x>
+     <y>339</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionRotChanged(Vec3f)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>594</x>
+     <y>498</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1070</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>subdivisionButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>subdivideSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1525</x>
+     <y>640</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>724</x>
+     <y>455</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mergeToolButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mergeModes</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>45</x>
+     <y>744</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1453</x>
+     <y>731</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>axisModeTranslationButton</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionTranslateAxis()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1767</x>
+     <y>866</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>722</x>
+     <y>550</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>worldModeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setGlobalScaleMode()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>962</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1104</x>
+     <y>666</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>rotInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>801</x>
+     <y>505</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1070</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>posInput</sender>
+   <signal>valChanged(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>setPrimarySelectionPos(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1767</x>
+     <y>1010</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>708</x>
+     <y>435</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>primarySelectionChanged(bool)</signal>
+   <receiver>scaleInput</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>601</x>
+     <y>459</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>1040</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>orbitButton</sender>
+   <signal>clicked()</signal>
+   <receiver>viewport</receiver>
+   <slot>setCameraModeOrbit()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1602</x>
+     <y>695</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>738</x>
+     <y>425</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>orbitOriginChanged(Vec3f)</signal>
+   <receiver>originInput</receiver>
+   <slot>setValue(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>649</x>
+     <y>460</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1767</x>
+     <y>720</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>icoSphereButton_5</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>loadIcoSphere()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1498</x>
+     <y>695</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>676</x>
+     <y>612</y>
     </hint>
    </hints>
   </connection>
