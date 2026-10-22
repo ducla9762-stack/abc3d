@@ -34,9 +34,6 @@
    </property>
    <item row="1" column="1">
     <widget class="QDoubleSpinBox" name="ySpinner">
-     <property name="styleSheet">
-      <string notr="true">border: 1px solid white;</string>
-     </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
@@ -50,9 +47,6 @@
    </item>
    <item row="0" column="1">
     <widget class="QDoubleSpinBox" name="xSpinner">
-     <property name="styleSheet">
-      <string notr="true">border: 1px solid white;</string>
-     </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
@@ -69,9 +63,6 @@
    </item>
    <item row="2" column="1">
     <widget class="QDoubleSpinBox" name="zSpinner">
-     <property name="styleSheet">
-      <string notr="true">border: 1px solid white;</string>
-     </property>
      <property name="frame">
       <bool>true</bool>
      </property>

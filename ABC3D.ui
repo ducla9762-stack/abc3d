@@ -32,8 +32,8 @@
      <height>0</height>
     </size>
    </property>
-   <property name="styleSheet">
-    <string notr="true">QToolTip{background-color: #1c1c1c; color: white;}</string>
+   <property name="toolTip">
+    <string/>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
@@ -61,13 +61,13 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>66</width>
+        <width>58</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>66</width>
+        <width>58</width>
         <height>16777215</height>
        </size>
       </property>
@@ -100,7 +100,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>66</width>
+         <width>58</width>
          <height>1219</height>
         </rect>
        </property>
@@ -112,13 +112,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>66</width>
+         <width>58</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>66</width>
+         <width>58</width>
          <height>16777215</height>
         </size>
        </property>
@@ -149,14 +149,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="selectToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -166,7 +166,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows selection of vertices, edges, faces, and objects&lt;/p&gt;&lt;p&gt;Deselect by double-clicking or chaning the active element&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows selection of elements with classic and additive modes&lt;/p&gt;&lt;p&gt;Deselect by double-clicking or chaning the active element&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -183,8 +183,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -205,14 +205,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="cameraToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -222,7 +222,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Change modes and field of view, toggle grid &amp;amp; vertices, and orbit origin&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Brings up the panel to change between orbit and free modes, field of view, and toggling the grid and vertices&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="toolTipDuration">
            <number>-1</number>
@@ -239,8 +239,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -261,14 +261,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="translateToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -278,7 +278,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows translation with free, outward, and edge modes&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -292,8 +292,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -308,14 +308,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="scaleToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -339,8 +339,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -355,14 +355,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="rotateToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -386,8 +386,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -402,14 +402,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="shapeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -419,7 +419,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;Brings up the panel to add shapes to your scene&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -433,8 +433,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -449,14 +449,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="extrudeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -480,8 +480,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -496,14 +496,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="subdivideToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -519,7 +519,7 @@ QPushButton{background-color: #646464;}</string>
            </size>
           </property>
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;This brings up the panel to access subdivision, tesselation, triangulation, and edge-flip&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the panel to access subdivision, tesselation, triangulation, and edge-flip&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -533,8 +533,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -549,14 +549,14 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="bevelToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -583,8 +583,8 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="checkable">
@@ -599,18 +599,18 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="knifeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="toolTip">
-           <string>Knife Tool: click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. 'K' Key Shortcut</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Knife Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. &lt;/p&gt;&lt;p&gt;'K' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -624,37 +624,9 @@ QPushButton{background-color: #646464;}</string>
           </property>
           <property name="iconSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="autoExclusive">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="penToolButton">
-          <property name="minimumSize">
-           <size>
-            <width>64</width>
-            <height>64</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>64</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton:checked { background-color: red; }</string>
-          </property>
-          <property name="text">
-           <string>Pen</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -668,21 +640,34 @@ QPushButton{background-color: #646464;}</string>
          <widget class="QPushButton" name="mergeToolButton">
           <property name="minimumSize">
            <size>
-            <width>64</width>
-            <height>64</height>
+            <width>58</width>
+            <height>58</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>64</width>
-            <height>16777215</height>
+            <width>58</width>
+            <height>58</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Merge Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the page for merge, dissolve, and collapse&lt;br/&gt;'M' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QPushButton:checked { background-color: red; }</string>
           </property>
           <property name="text">
-           <string>Merge</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/merge.svg</normaloff>assets/icons/merge.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>58</width>
+            <height>58</height>
+           </size>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -716,7 +701,6 @@ QPushButton{background-color: #646464;}</string>
        <zorder>bevelToolButton</zorder>
        <zorder>cameraToolButton</zorder>
        <zorder>knifeToolButton</zorder>
-       <zorder>penToolButton</zorder>
        <zorder>verticalSpacer</zorder>
        <zorder>mergeToolButton</zorder>
       </widget>
@@ -942,6 +926,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="mergeModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to vertices&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Merge</string>
                 </property>
@@ -958,6 +945,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="dissolveModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Dissolve</string>
                 </property>
@@ -971,6 +961,9 @@ QPushButton:checked {background-color: red}</string>
               </item>
               <item>
                <widget class="QPushButton" name="collapseModeButton">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Restricted to edges&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="text">
                  <string>Collapse</string>
                 </property>
@@ -1040,14 +1033,7 @@ QPushButton:checked {background-color: red}</string>
                  <item>
                   <widget class="QPushButton" name="classicModeButton">
                    <property name="toolTip">
-                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;Allows the selection of only one element, unless you're holding CTRL&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Allows the selection of only one element, unless you're holding CTRL&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="styleSheet">
                     <string notr="true">QPushButton{ outline: 1px solid white; }
@@ -1070,14 +1056,7 @@ QPushButton:checked { background-color: red; }</string>
                  <item>
                   <widget class="QPushButton" name="additiveModeButton">
                    <property name="toolTip">
-                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Adds to your selection whenever you click another element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds to your selection whenever you click another element&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="styleSheet">
                     <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1130,7 +1109,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; &quot;&gt;&lt;span&gt;Restricted to vertices, edges, and faces&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1156,7 +1135,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; &quot;&gt;&lt;span&gt;Restricted to vertices&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1192,7 +1171,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Translate however you want along the x, y, and z axes&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; ;&quot;&gt;&lt;span&gt;Translate however you want along the x, y, and z axes&lt;br /&gt;Enabled for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1237,7 +1216,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Scale relative to the scene&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>World</string>
@@ -1263,7 +1242,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Scale relative to local axes&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
                    <property name="text">
                     <string>Local</string>
@@ -1376,7 +1355,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a pyramid with 5 vertices and 5 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">color: black;</string>
@@ -1460,7 +1439,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a torus using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a torus using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">color: black;</string>
@@ -1509,7 +1488,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a sphere using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a sphere using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">color: black;</string>
@@ -1551,7 +1530,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a sphere with 12 vertices and 19 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a sphere with 12 vertices and 19 faces&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">color: black;</string>
@@ -1618,7 +1597,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a cylinder using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a cylinder using the resolution slider to the left&lt;br /&gt;Minimum resolution is 3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">color: black;</string>
@@ -1674,7 +1653,7 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; color: black; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Creates a cube with 8 vertices and 6 faces &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; color: black; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Creates a cube with 8 vertices and 6 faces &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true"/>
@@ -1708,8 +1687,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;pre style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Cascadia Mono'; color:#000000;&quot;&gt;Splits an object into more faces and smooths&lt;/span&gt;&lt;/pre&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Cascadia Mono'; color:#ffffff;&quot;&gt;Splits an object into more faces and smooths&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#1c1c1c;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Restricted to objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">QTooltip: { color: black; }</string>
@@ -1729,8 +1708,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Tesselate&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Works for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Tesselate&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Works for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="styleSheet">
               <string notr="true">QTooltip: { color: black; }</string>
@@ -1750,8 +1729,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Splits the element into more triangular faces &lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to faces and objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Splits the element into more triangular faces &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Restricted to faces and objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Triangulate</string>
@@ -1768,8 +1747,8 @@ hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Flip-Edge&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;&lt;span style=&quot; color:#000000;&quot;&gt;Restricted to edges&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Flip-Edge&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Restricted to edges&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="text">
               <string>Flip Edge</string>
@@ -1795,14 +1774,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="1">
                <widget class="QPushButton" name="freeButton">
                 <property name="toolTip">
-                 <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c;&quot;&gt;Unrestricted looking in every direction&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Unrestricted looking in every direction&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1821,14 +1793,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="0">
                <widget class="QPushButton" name="orbitButton">
                 <property name="toolTip">
-                 <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-hr { height: 1px; border-width: 0; }
-li.unchecked::marker { content: &quot;\2610&quot;; }
-li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; color: white; background-color: #1c1c1c; &quot;&gt;Keeps the camera centered around the specified middle&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Keeps the camera centered around the specified middle&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QPushButton:checked { background-color: red; }</string>
@@ -1878,7 +1843,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="2" column="0">
                <widget class="QCheckBox" name="vertexVisibilityBox">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="text">
                  <string>Vertices</string>
@@ -1898,7 +1863,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
               <item row="1" column="0">
                <widget class="QCheckBox" name="gridVisibilityBox">
                 <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color: white; background-color: #1c1c1c; &quot;&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;color: white; background-color: #1c1c1c;&quot;&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles Grid Visibility&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'G' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="layoutDirection">
                  <enum>Qt::LayoutDirection::LeftToRight</enum>
