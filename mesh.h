@@ -416,6 +416,18 @@ public:
 
 	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
+	void getTransform(CompactTransform140& trans) const {
+		trans.translateX = pos.x;
+		trans.translateY = pos.y;
+		trans.translateZ = pos.z;
+		trans.scale = scale;
+		Matrix3f rot; 
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+		trans.rotCol1 = rot.Column(0);
+		trans.rotCol2 = rot.Column(1);
+		trans.rotCol3 = rot.Column(2);
+	}
+
 	/// <returns>Scale and rotation components of model transform.</returns>
 	Matrix3f getTransform3x3() const;
 	/// <param name="worldDir">Direction in world-space.</param>
@@ -426,10 +438,33 @@ public:
 		return (getTransform3x3() * pos) + this->pos;
 	}
 
-	Vec3f WorldPosToLocalPos(const Vec3f& pos) {
-		Matrix3f inv = getTransform3x3();
-		inv.Invert();
-		return inv * (pos - this->pos);
+	Vec3f WorldPosToLocalPos(const Vec3f& pos) const {
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		Vec3f local = pos - this->pos;
+
+		local.x = (
+			rot.cell[0] * local[0] +
+			rot.cell[1] * local[1] +
+			rot.cell[2] * local[2]
+		);
+
+		local.y = (
+			rot.cell[3] * local[0] +
+			rot.cell[4] * local[1] +
+			rot.cell[5] * local[2]
+		);
+
+		local.z = (
+			rot.cell[6] * local[0] +
+			rot.cell[7] * local[1] +
+			rot.cell[8] * local[2]
+		);
+
+		local /= scale;
+
+		return local;
 	}
 
 	/// <param name="faceId">A face of the mesh.</param>
@@ -476,12 +511,6 @@ public:
 
 	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
-
-	/// <returns>Number of faces in mesh</returns>
-	uint FaceCount() const{ return static_cast<uint>(faceEdges.size());}
-
-	/// <returns>Number of half-edges in a mesh</returns>
-	uint EdgeCount() const { return static_cast<uint>(edges.size());  }
 
 	/// <summary>
 	/// Checks: 
@@ -612,13 +641,70 @@ public:
 		uint degree = 0;
 
 		do {
-			HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
+			const HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
 			++degree;
 			currEdge = edges[edge.twin].next;
 		} while (currEdge != firstEdge);
 
 		return degree;
 	}
+
+	uint NearestEdge(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		Vec3f prev = vertPos[edges[first].orig];
+
+		uint nearestEdge = first;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			const HalfEdge& edge = edges[curr];
+			Vec3f next = vertPos[edge.dest];
+			Vec3f lineSeg = next - prev;
+			Vec3f relPos = pos - prev;
+			float t = relPos.Dot(lineSeg) / lineSeg.LengthSquared();
+			if (t >= 0.0f && t <= 1.0f) {
+				Vec3f rejection = relPos - (t * lineSeg);
+				float distSqrd = rejection.LengthSquared();
+				if (distSqrd < nearestDistSqrd) {
+					nearestDistSqrd = distSqrd;
+					nearestEdge = curr;
+				}
+			}
+			prev = next;
+			curr = edge.next;
+		} while (curr != first);
+
+		uint twin = edges[nearestEdge].twin;
+		if (twin < nearestEdge) { return twin; }
+
+		return nearestEdge;
+	}
+
+	uint NearestVertex(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+
+		uint nearestVert = MAX_UINT;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			const HalfEdge& edge = edges[curr];
+
+			Vec3f vert = vertPos[edge.orig];
+			float distSqrd = (pos - vert).LengthSquared();
+			if (distSqrd < nearestDistSqrd) {
+				nearestDistSqrd = distSqrd;
+				nearestVert = edge.orig;
+			}
+
+			curr = edge.next;
+		} while (curr != first);
+
+		return nearestVert;
+	}
+
+	uint FaceCount() const { return faceEdges.size(); }
 
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
@@ -705,6 +791,9 @@ public:
 
 	bool exportObj(const char* filePath) const;
 	bool exportStl(const char* filePath, bool isBinary = true) const;
+
+	const std::vector<Vec3f>& Vertices() const { return vertPos; }
+	uint EdgeCount() const { return edges.size(); }
 
 	/// <summary>
 	/// For obj files, we always convert the vertices into world space. 

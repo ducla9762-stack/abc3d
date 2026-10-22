@@ -43,11 +43,6 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
-    // Menu button for the camera panel - does the same thing as the toolbar
-    QAction* actionCamera = new QAction("Camera", ui.menuBar);
-    ui.menuBar->addAction(actionCamera);
-    QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
-
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
@@ -85,15 +80,104 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Emits signal for when to create shapes (with resolutions)
     QObject::connect(ui.torusButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadTorus(ui.torusSlider->value());
+            QDialog torusResolution(this, Qt::FramelessWindowHint);
+
+            QGridLayout* torusLayout = new QGridLayout();
+            QPushButton* create = new QPushButton("Create");
+            QPushButton* cancel = new QPushButton("Cancel");
+            QLabel* latitudeLabel = new QLabel("Set Latitude");
+            QDoubleSpinBox* latitude = new QDoubleSpinBox();
+            latitude->setMinimum(3);
+            latitude->setValue(40);
+            QLabel* longitudeLabel = new QLabel("Set Longitude");
+            QDoubleSpinBox* longitude = new QDoubleSpinBox();
+            longitude->setMinimum(3);
+            longitude->setValue(20);
+            QLabel* outsideRadiusLabel = new QLabel("Set Outer Radius");
+            QDoubleSpinBox* outsideRadius = new QDoubleSpinBox();
+            outsideRadius->setValue(1);
+            QLabel* insideRadiosLabel = new QLabel("Set Inner Radius");
+            QDoubleSpinBox* insideRadius = new QDoubleSpinBox();
+            insideRadius->setValue(.3);
+
+            connect(create, &QPushButton::released, &torusResolution, &QDialog::accept);
+            connect(cancel, &QPushButton::released, &torusResolution, &QDialog::reject);
+
+            torusLayout->addWidget(latitude, 0, 0);
+            torusLayout->addWidget(latitudeLabel, 0, 1);
+            torusLayout->addWidget(longitude, 1, 0);
+            torusLayout->addWidget(longitudeLabel, 1, 1);
+            torusLayout->addWidget(outsideRadius, 2, 0);
+            torusLayout->addWidget(outsideRadiusLabel, 2, 1);
+            torusLayout->addWidget(insideRadius, 3, 0);
+            torusLayout->addWidget(insideRadiosLabel, 3, 1);
+            torusLayout->addWidget(cancel, 4, 0);
+            torusLayout->addWidget(create, 4, 1);
+
+            torusResolution.setLayout(torusLayout);
+            
+            if (torusResolution.exec() == QDialog::Accepted) {
+                ui.viewport->loadTorus(latitude->value(), longitude->value());
+            }
         });
 
     QObject::connect(ui.cylinderButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadCylinder(ui.cylinderSlider->value());
+        QDialog cylinderResolution(this, Qt::FramelessWindowHint);
+
+        QGridLayout* cylinderLayout = new QGridLayout();
+        QPushButton* create = new QPushButton("Create");
+        QPushButton* cancel = new QPushButton("Cancel");
+        QLabel* resolutionLabel = new QLabel("Set Resolution");
+        QDoubleSpinBox* resolution = new QDoubleSpinBox();
+        resolution->setMinimum(3);
+        resolution->setValue(12);
+
+        connect(create, &QPushButton::released, &cylinderResolution, &QDialog::accept);
+        connect(cancel, &QPushButton::released, &cylinderResolution, &QDialog::reject);
+
+        cylinderLayout->addWidget(resolution, 0, 0);
+        cylinderLayout->addWidget(resolutionLabel, 0, 1);
+        cylinderLayout->addWidget(cancel, 1, 0);
+        cylinderLayout->addWidget(create, 1, 1);
+
+        cylinderResolution.setLayout(cylinderLayout);
+
+        if (cylinderResolution.exec() == QDialog::Accepted) {
+            ui.viewport->loadCylinder(resolution->value());
+        }
         });
 
     QObject::connect(ui.uvSphereButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadUvSphere(ui.uvSphereSlider->value());
+        QDialog uvResolution(this, Qt::FramelessWindowHint);
+
+        QGridLayout* uvLayout = new QGridLayout();
+        QPushButton* create = new QPushButton("Create");
+        QPushButton* cancel = new QPushButton("Cancel");
+        QLabel* latitudeLabel = new QLabel("Set Latitude");
+        QDoubleSpinBox* latitude = new QDoubleSpinBox();
+        latitude->setMinimum(2);
+        latitude->setValue(10);
+        QDoubleSpinBox* longitude = new QDoubleSpinBox();
+        QLabel* longitudeLabel = new QLabel("Set Longitude");
+        longitude->setMinimum(3);
+        longitude->setValue(10);
+
+
+        connect(create, &QPushButton::released, &uvResolution, &QDialog::accept);
+        connect(cancel, &QPushButton::released, &uvResolution, &QDialog::reject);
+
+        uvLayout->addWidget(latitude, 0, 0);
+        uvLayout->addWidget(latitudeLabel, 0, 1);
+        uvLayout->addWidget(longitude, 1, 0);
+        uvLayout->addWidget(longitudeLabel, 1, 1);
+        uvLayout->addWidget(cancel, 2, 0);
+        uvLayout->addWidget(create, 2, 1);
+
+        uvResolution.setLayout(uvLayout);
+
+        if (uvResolution.exec() == QDialog::Accepted) {
+            ui.viewport->loadUvSphere(latitude->value(), longitude->value());
+        }
         });
 
     // The main Move tool defaults to Free translation. Its toolbar button and
@@ -129,6 +213,12 @@ ABC3D::ABC3D(QWidget *parent)
         QString fileName = fileInfo.fileName();
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
+
+    ui.viewport->SetFaceColor(ui.faceColorButton->GetColorF());
+    ui.viewport->SetEdgeColor(ui.edgeColorButton->GetColorF());
+    ui.viewport->SetVertexColor(ui.vertexColorButton->GetColorF());
+    ui.viewport->SetBackgroundColor(ui.backgroundColorButton->GetColorF());
+    ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {

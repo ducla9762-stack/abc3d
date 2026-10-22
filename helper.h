@@ -26,11 +26,32 @@ typedef Vec4<uint> Vec4u;
 #define MAX_UINT std::numeric_limits<uint>::max()
 #define GIZMO_IDENTIFIER std::numeric_limits<uint>::max() - 1
 
+// for std140 packing rules
+struct CompactTransform140 {
+	Vec3f rotCol1;
+	float translateX;
+	Vec3f rotCol2;
+	float translateY;
+	Vec3f rotCol3;
+	float translateZ;
+	Vec3f scale;
+	float padding;
+};
+
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
 const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);
 const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
 const Vec3f ORIGIN = Vec3f(0.0f);
+
+// Compute distance of a point (pt) from a line (linePt + t * lineDir) 
+// using Lagrange's identity
+inline float DistToLine(const Vec3f& pt, const Vec3f& linePt, const Vec3f& lineDir) {
+	Vec3f relPt = pt - linePt;
+	float dot = relPt.Dot(lineDir);
+	float dSqrd = relPt.LengthSquared() - ((dot * dot) / lineDir.LengthSquared());
+	return std::sqrt(dSqrd);
+}
 
 /// <summary> Convert degrees to radians </summary>
 /// <param name="degrees"> An angle in degrees </param>

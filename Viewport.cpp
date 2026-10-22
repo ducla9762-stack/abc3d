@@ -99,17 +99,17 @@ void Viewport::initializeGL() {
 
 	if (!success) {
 		std::cout << "Failed to initialize renderer" << std::endl;
+		this->close();
 		return;
 	}
 
 	rendererInitialized = true;
 
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
-	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
-	updateGizmos();
+	renderer.SetScene(scene);
+	renderer.UpdateGeometry();
+	renderer.UpdateTransforms();
+	renderer.UpdateSelection(selectionManager);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -167,7 +167,7 @@ void Viewport::emitSelectionChanged() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Event Handlers -------------------------------------------------------------------------------
+// Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::mousePressEvent(QMouseEvent* event) {
@@ -177,8 +177,6 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		actionParams.stage = 0;
 		actionParams.ClearActionDirs();
 		actionParams.ClearElements();
-		renderer.UpdateRenderBuffers(scene);
-		update();
 		return;
 	}
 
@@ -204,7 +202,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
+	/*const float pixelRatio = static_cast<float>(devicePixelRatio());
 	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
 	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
 	const int rawX = static_cast<int>(pos.x * pixelRatio);
@@ -236,6 +234,8 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		draggedRotationAxis = getGizmoRotation() * localAxis;
 		draggedRotationAxis.Normalize();
 	}
+	*/
+	draggingGizmo = false;
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
@@ -245,9 +245,8 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 		mergeFirstVertex.reset();
 	}
 	selectionManager.clearSelection();
-	makeCurrent();
-	updateSelectionVisuals();
-	updateGizmos();
+	renderer.UpdateSelection(selectionManager);
+	//updateGizmos();
 	update();
 
 	emit primarySelectionChanged(false);
@@ -293,13 +292,14 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		initActionDirsToElementNormals(elementType, mesh);
 
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
 		update();
 		return;
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
-	Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
+	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
 
@@ -308,15 +308,15 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	if (!gizmoDragWasCaptured) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
-		if (!mouseAction.dragged && ids.x != 0) {
+		if (!mouseAction.dragged) {
 			if (actionParams.action == MERGE) {
-				handleMergeVertexClick(ids);
+				//handleMergeVertexClick(ids);
 			}
 			else if (actionParams.action == COLLAPSE) {
-				handleCollapseEdgeClick(ids);
+				//handleCollapseEdgeClick(ids);
 			}
 			else if (actionParams.action == DISSOLVE) {
-				handleDissolveEdgeClick(ids);
+				//handleDissolveEdgeClick(ids);
 			}
 			else {
 				handleSelection(ids);
@@ -325,8 +325,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 		// Print selection ids.
 		std::cout << "Object Id: " << ids.x << std::endl;
-		std::cout << "Component Id: " << ids.y << std::endl;
-		std::cout << "Sub-Component Id: " << ids.z << std::endl;
+		std::cout << "Element Id: " << ids.y << std::endl;
 	}
 
 	draggingGizmo = false;
@@ -370,7 +369,7 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 		translateActionElements();
 		mouseAction.EndMouseDragStep();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
 		update();
 		return;
 	}
@@ -391,7 +390,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 
 	// Later we'll want to not update render buffers for simple transforms like object level scale, rotate, and translate.
 	// We'll do this with a buffer containing objects' model transformations in the shader & renderer
-	bool updateRenderBuffers = true;
+	//bool updateRenderBuffers = true;
 
 	switch (actionParams.action) {
 	case TRANSLATE_OUT:
@@ -407,17 +406,17 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		actionPerformed = translateEdgeDrag();
 		if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 		break;
-	case TRANSLATE_AXIS:
-		actionPerformed = translateGizmoDrag();
-		break;
+	//case TRANSLATE_AXIS:
+		//actionPerformed = translateGizmoDrag();
+		//break;
 	case SCALE:
-		//actionPerformed = scaleDrag();
-		actionPerformed = scaleGizmoDrag();
+		actionPerformed = scaleDrag();
+		//actionPerformed = scaleGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 		break;
 	case ROTATE:
-		//actionPerformed = rotateDrag();
-		actionPerformed = rotateGizmoDrag();
+		actionPerformed = rotateDrag();
+		//actionPerformed = rotateGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionRotChanged(); }
 		break;
 	case EXTRUDE:
@@ -427,7 +426,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		actionPerformed = bevelDrag();
 		break;
 	default:
-		updateRenderBuffers = false;
+		//updateRenderBuffers = false;
 		break;
 	}
 
@@ -438,11 +437,8 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 		knifeRecompute(); // the path stays put on the screen, so what it hits changes
 	}
-	else if (actionPerformed && updateRenderBuffers) {
-		renderer.UpdateRenderBuffers(scene);
-	}
 
-	updateGizmos();
+	//updateGizmos();
 
 	// Update MouseAction struct
 	mouseAction.EndMouseDragStep();
@@ -461,7 +457,6 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	camChange *= SCALE;
 
 	// Update renderer and viewport
-	makeCurrent();
 	renderer.mouseWheel(camChange.x, camChange.y);
 	knifeRecompute();
 
@@ -483,18 +478,18 @@ void Viewport::resizeEvent(QResizeEvent* event) {
 
 void Viewport::leaveEvent(QEvent* event) {
 	event->accept();
-	makeCurrent();
-	const bool hoverChanged = renderer.UpdateHover(
-		Vec3u(0u), selectionManager.getActiveElement(), scene);
+	//makeCurrent();
+	//const bool hoverChanged = renderer.UpdateHover(
+		//Vec3u(0u), selectionManager.getActiveElement(), scene);
 	const bool gizmoChanged = hoveredGizmoAxis != MAX_UINT;
 	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	hoveredGizmoAxis = MAX_UINT;
 	if (gizmoChanged) {
-		updateGizmos();
+		//updateGizmos();
 	}
-	if (hoverChanged || gizmoChanged) {
-		update();
-	}
+	//if (hoverChanged || gizmoChanged) {
+		//update();
+	//}
 }
 
 void Viewport::contextMenuEvent(QContextMenuEvent* event) {
@@ -554,13 +549,13 @@ void Viewport::setAction(Action action) {
 	draggedGizmoAxis = MAX_UINT;
 	draggedRotationAxis = Vec3f(0.0f);
 	if (rendererInitialized) {
-		makeCurrent();
+		// makeCurrent();
 		if (action != MERGE) {
-			updateSelectionVisuals();
+			// updateSelectionVisuals();
 		}
-		updateGizmos();
+		// updateGizmos();
 	}
-	update();
+	//update();
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -589,10 +584,10 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		mergeFirstVertex = clicked;
 		selectionManager.clearSelection();
 		selectionManager.addSelection(clicked);
-		updateSelectionVisuals();
-		updateGizmos();
-		emitSelectionChanged();
-		update();
+		//updateSelectionVisuals();
+		//updateGizmos();
+		//emitSelectionChanged();
+		//update();
 		return;
 	}
 
@@ -615,10 +610,10 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
 	emitSelectionChanged();
 	update();
 }
@@ -647,12 +642,12 @@ void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
-	emitSelectionChanged();
-	update();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//emitSelectionChanged();
+	//update();
 }
 
 void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
@@ -679,15 +674,15 @@ void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
-	emitSelectionChanged();
-	update();
+	//makeCurrent();
+	//renderer.UpdateRenderBuffers(scene);
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//emitSelectionChanged();
+	//update();
 }
 
-void Viewport::handleSelection(const Vec3u& selectionIds) {
+void Viewport::handleSelection(const Vec2u& selectionIds) {
 	// Create a selection item to send to the selection manager.
 	SelectionItem item = createSelectionItem(selectionIds);
 
@@ -696,40 +691,20 @@ void Viewport::handleSelection(const Vec3u& selectionIds) {
 		// gizmo in sync when the last selected item is removed.
 		if (!selectionManager.getSelectedItems().empty()) {
 			selectionManager.clearSelection();
-			updateSelectionVisuals();
-			updateGizmos();
+			//updateSelectionVisuals();
+			renderer.UpdateSelection(selectionManager);
+			//updateGizmos();
 			emitSelectionChanged();
 		}
 		return;
 	}
 
-	// Store one half-edge for each logical edge.
-	// Render both half-edges as selected.
-	if (selectionManager.getActiveElement() == EDGE && item.meshId < scene.MeshCount()) {
-		const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
-		if (twinId != MAX_UINT && twinId < item.componentId) {
-			item.componentId = twinId;
-		}
-	}
-
-	// Edge translation is intentionally a single-vertex operation.  Ignore
-	// Ctrl/additive selection while this action is active and replace the
-	// current vertex with the one that was clicked.
-	if (actionParams.action == TRANSLATE_EDGE &&
-		selectionManager.getActiveElement() == VERTEX) {
-		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
-		if (selectedItems.size() != 1 || !(selectedItems.front() == item)) {
-			selectionManager.clearSelection();
-			selectionManager.addSelection(item);
-		}
-	}
-	else {
-		selectionManager.processSelection(item);
-	}
+	selectionManager.processSelection(item);
 
 	// Tell the renderer to update the selection visuals.
-	updateSelectionVisuals();
-	updateGizmos();
+	//updateSelectionVisuals();
+	//updateGizmos();
+	renderer.UpdateSelection(selectionManager);
 
 	emitSelectionChanged();
 }
@@ -741,117 +716,32 @@ Element Viewport::getActiveElement() {
 void Viewport::setActiveElement(Element element) {
 	selectionManager.setActiveElement(element);
 
-	if (!verticesAlwaysVisible) {
-		renderer.SetVertexPointsVisible(element == VERTEX);
+	if (!renderer.ShowVertices()) {
+		renderer.ShowVertices(element == VERTEX);
 	}
 
 	// Changing element mode clears the selection in SelectionManager. Push the
 	// empty selection to the renderer immediately so the old highlight vanishes.
-	makeCurrent();
-	updateSelectionVisuals();
-	renderer.UpdateHover(Vec3u(0u), element, scene);
+	//renderer.UpdateHover(Vec3u(0u), element, scene);
+	renderer.UpdateSelection(selectionManager);
 	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
-	draggedRotationAxis = Vec3f(0.0f);
-	updateGizmos();
+	//updateGizmos();
 	update();
 
 	emit primarySelectionChanged(false);
 }
 
-SelectionItem Viewport::createSelectionItem(const Vec3u& ids)
+SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
 {
-	switch (selectionManager.getActiveElement()) {
-	case OBJECT:
-		// Normal hit.
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER) {
-			return SelectionItem{
-				ids.x - 1,
-				MAX_UINT
-			};
-		}
-		// Vertex hit belonging to object.
-		else if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				MAX_UINT
-			};
-		}
-
-		break;
-
-	case VERTEX:
-		if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				ids.z
-			};
-		}
-
-		break;
-
-	case FACE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.x != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.y
-			};
-		}
-
-		break;
-
-	case EDGE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.z != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.z
-			};
-		}
-
-		break;
+	if (ids.y == MAX_UINT) { return { MAX_UINT, MAX_UINT }; }
+	if (selectionManager.getActiveElement() == OBJECT) {
+		return{ ids.x, ids.x };
 	}
-
-	return { MAX_UINT, MAX_UINT };
-}
-
-void Viewport::updateSelectionVisuals() {
-	// Get the selected items from the selection manager, these determine what gets operated on.
-	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
-
-	// Allocate a buffer for items that get rendered.
-	// Edges also have a twin, which should appear selected, but will not be operated on.
-	std::vector<SelectionItem> renderItems;
-	renderItems.reserve(selectedItems.size() * 2);
-
-	const Element activeElement = selectionManager.getActiveElement();
-
-	// Check all selected items.
-	for (const SelectionItem& item : selectedItems) {
-		// If the selection size is exceeded, don't do anything.
-		if (renderItems.size() >= MAX_SELECTION_ITEMS) {
-			break;
-		}
-
-		// Else, put the selection in the buffer.
-		renderItems.push_back(item);
-
-		// If the element is not an edge, don't continue on looking for the twin.
-		if (activeElement != EDGE || item.meshId >= scene.MeshCount()) {
-			continue;
-		}
-
-		// Get the twin of the edge, if valid add to the buffer.
-		const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
-		if (twinId != MAX_UINT && twinId != item.componentId &&
-			renderItems.size() < MAX_SELECTION_ITEMS) {
-			renderItems.push_back(SelectionItem{ item.meshId, twinId });
-		}
-	}
-
-	// Send the render buffer to the renderer for rendering (render render render).
-	renderer.UpdateSelection(renderItems, activeElement);
+	
+	return { ids.x, ids.y };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -893,6 +783,15 @@ bool Viewport::translateFreeDrag() {
 		}
 
 		transformed = true;
+	}
+
+	if (transformed) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			renderer.UpdateTransforms();
+		}
+		else {
+			renderer.UpdateGeometry();
+		}
 	}
 
 	return transformed;
@@ -1021,6 +920,8 @@ bool Viewport::translateOutDrag() {
 	// Translate
 	translateSelections();
 
+	renderer.UpdateGeometry();
+
 	return true;
 }
 
@@ -1130,6 +1031,8 @@ void Viewport::setupBevelDrag() {
 		break;
 	}
 
+	renderer.UpdateSelection(selectionManager);
+
 	return;
 }
 
@@ -1146,6 +1049,8 @@ bool Viewport::bevelDrag() {
 	factor = std::min(factor, 0.25f) / 0.25f;
 
 	beveler->AdjustBevel(factor);
+
+	renderer.UpdateGeometry();
 
 	return true;
 }
@@ -1179,10 +1084,13 @@ bool Viewport::extrudeDrag() {
 	// Extrude selected elements if this is the first move event
 	if (mouseAction.firstMoveEvent) {
 		extrudeSelectedElements();
+		renderer.UpdateSelection(selectionManager);
 	}
 
 	// Translated extruded faces
 	translateSelections();
+
+	renderer.UpdateGeometry();
 
 	return true;
 }
@@ -1209,7 +1117,7 @@ bool Viewport::scaleDrag() {
 		}
 	}
 
-	renderer.UpdateRenderBuffers(scene);
+	renderer.UpdateTransforms();
 
 	return true;
 }
@@ -1310,7 +1218,7 @@ bool Viewport::rotateDrag() {
 		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
 	}
 
-	renderer.UpdateRenderBuffers(scene);
+	renderer.UpdateTransforms();
 
 	return true;
 }
@@ -1340,58 +1248,14 @@ bool Viewport::rotateGizmoDrag() {
 		return false;
 	}
 
-	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// 10/16/26 - Update Gizmos.
+	//renderer.UpdateRenderBuffers(scene);
 
-	// A rotation ring moves along the screen-space tangent to its selected
-	// axis. Use the press-time axis so the tangent cannot switch as the mesh
-	// and gizmo rotate during the drag.
-	Vec2f screenTangent(
-		-draggedRotationAxis.Dot(up),
-		draggedRotationAxis.Dot(right));
-	if (screenTangent.LengthSquared() <= 1e-8f) {
-		// When the axis points directly at the camera, its projection has no
-		// stable tangent.
-		screenTangent = Vec2f(1.0f, 0.0f);
-	}
-	screenTangent.Normalize();
-
-	const float angle = 0.01f * mouseAction.mouseDragChange.Dot(screenTangent);
-	if (std::abs(angle) <= 1e-6f) {
-		return false;
-	}
-
-	// Left-multiply the current orientation with one rotation around the
-	// captured world-space axis. This is a pure axis-angle delta; no Euler
-	// component from another axis is used to drive the operation.
-	Matrix3f delta;
-	delta.SetRotation(draggedRotationAxis, angle);
-	bool rotated = false;
-	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId >= scene.MeshCount()) {
-			continue;
-		}
-
-		const Vec3f& eulerRotation = scene[item.meshId]->Rot();
-		Matrix3f currentRotation;
-		currentRotation.SetRotationZYX(
-			degreesToRadians(eulerRotation.x),
-			degreesToRadians(eulerRotation.y),
-			degreesToRadians(eulerRotation.z));
-
-		currentRotation = delta * currentRotation;
-		scene[item.meshId]->Rot(matrixToEulerAngle(currentRotation));
-		rotated = true;
-	}
-
-	if (rotated) {
-		renderer.UpdateRenderBuffers(scene);
-	}
-
-	if (rotated) {
+	/*if (rotated) {
 		emitPrimarySelectionRotChanged();
-	}
-	return rotated;
+	}*/
+	//return rotated;
+	return false;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -1563,7 +1427,7 @@ bool Viewport::scaleGizmoDrag() {
 		}
 	}
 
-	renderer.UpdateRenderBuffers(scene);
+	//renderer.UpdateRenderBuffers(scene);
 
 	if (scaled) {
 		emitPrimarySelectionScaleChanged();
@@ -1603,7 +1467,7 @@ void Viewport::updateGizmos() {
 
 		// If nothing selected, clear gizmos.
 		if (!translationAction || selectedItems.empty()) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
@@ -1641,7 +1505,7 @@ void Viewport::updateGizmos() {
 
 		// If no positions, clear gizmos.
 		if (positionCount == 0) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
@@ -1650,7 +1514,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
+		//renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
 	}
 	// Update scale gizmo.
 	else if (actionParams.action == SCALE) {
@@ -1664,7 +1528,7 @@ void Viewport::updateGizmos() {
 			(activeElement == EDGE || activeElement == FACE) && !localScale;
 		if (!scaleAction || activeElement == VERTEX || componentWorldScale ||
 			selectedItems.empty()) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
@@ -1700,7 +1564,7 @@ void Viewport::updateGizmos() {
 
 		// If no positions, clear gizmos.
 		if (positionCount == 0) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
@@ -1709,7 +1573,7 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale, gizmoRotation);
+		//renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale, gizmoRotation);
 	}
 	// Update rotate gizmo.
 	else if (actionParams.action == ROTATE) {
@@ -1719,7 +1583,7 @@ void Viewport::updateGizmos() {
 		// If nothing selected, or the active element is not objects, clear gizmos.
 		if (!rotateAction || selectionManager.getActiveElement() != OBJECT ||
 			selectedItems.empty()) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
@@ -1742,17 +1606,17 @@ void Viewport::updateGizmos() {
 
 		// If no positions, clear gizmos.
 		if (positionCount == 0) {
-			renderer.ClearGizmos();
+			//renderer.ClearGizmos();
 			return;
 		}
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation, gizmoRotation);
+		//renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation, gizmoRotation);
 	}
 	// Else, undefined gizmo, clear all gizmos.
 	else {
-		renderer.ClearGizmos();
+		//renderer.ClearGizmos();
 	}
 }
 
@@ -1762,37 +1626,38 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const int rawX = static_cast<int>(pos.x * pixelRatio);
-	const int rawY = static_cast<int>(pos.y * pixelRatio);
-	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
-	const Vec3u ids = renderer.SelectionIds(x, y);
-	const bool activeGizmo =
-		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
-		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const uint newHoveredAxis =
-		(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
-			((ids.y == 4 && ids.z == 3) || ids.z < 3))
-		? ids.z
-		: MAX_UINT;
+	//const float pixelRatio = static_cast<float>(devicePixelRatio());
+	//const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
+	//const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
+	//const int rawX = static_cast<int>(pos.x * pixelRatio);
+	//const int rawY = static_cast<int>(pos.y * pixelRatio);
+	//const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
+	//const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+	//const Vec3u ids = renderer.SelectionIds(x, y);
+	//const bool activeGizmo =
+		//(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
+		//(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
+		//(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
+	//const uint newHoveredAxis =
+		//(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
+			//((ids.y == 4 && ids.z == 3) || ids.z < 3))
+		//? ids.z
+		//: MAX_UINT;
 
-	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
-	hoveredSelectionIds = ids;
-	hoveredGizmoAxis = newHoveredAxis;
+	//const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
+	//hoveredSelectionIds = ids;
+	//hoveredGizmoAxis = newHoveredAxis;
 
-	const bool rendererChanged = renderer.UpdateHover(
-		ids, selectionManager.getActiveElement(), scene);
-	if (gizmoChanged) {
-		updateGizmos();
-	}
+	//const bool rendererChanged = renderer.UpdateHover(
+		//ids, selectionManager.getActiveElement(), scene);
+	//if (gizmoChanged) {
+		//updateGizmos();
+	//}
 	// Raw framebuffer IDs can change while the same logical object remains
 	// hovered (for example, crossing faces in OBJECT mode). Only repaint when
 	// the logical mesh hover or gizmo hover actually changes.
-	return gizmoChanged || rendererChanged;
+	//return gizmoChanged || rendererChanged;
+	return false;
 }
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
@@ -1837,8 +1702,8 @@ void Viewport::knifeRecompute() {
 
 	if (path.size() >= 2) {
 		KnifeCamera camera;
-		camera.viewProj = renderer.ViewProjection();
-		camera.position = renderer.GetCamera()->position();
+		//camera.viewProj = renderer.ViewProjection();
+		//camera.position = renderer.GetCamera()->position();
 
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
@@ -1849,7 +1714,7 @@ void Viewport::knifeRecompute() {
 	}
 
 	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
+	//renderer.UpdateRenderBuffers(scene);
 }
 
 void Viewport::knifeFinish() {
@@ -1863,9 +1728,9 @@ void Viewport::knifeFinish() {
 
 	if (rendererInitialized) {
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.UpdateRenderBuffers(scene);
+		//updateSelectionVisuals();
+		//updateGizmos();
 	}
 }
 
@@ -1877,12 +1742,12 @@ void Viewport::knifeConfirm() {
 	knifeRecompute();
 
 	// Same tool, next cut starts from the result
-	knifeBegin();
+	//knifeBegin();
 
-	makeCurrent();
-	updateSelectionVisuals();
-	updateGizmos();
-	update();
+	//makeCurrent();
+	//updateSelectionVisuals();
+	//updateGizmos();
+	//update();
 }
 
 bool Viewport::knifeCancel() {

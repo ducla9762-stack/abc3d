@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-#include "render.h"
+#include "renderer.h"
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
@@ -146,7 +146,7 @@ private:
 	QAction* menuActions[3];
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
-	ModelingRenderer renderer;
+	ABC3DRenderer renderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
@@ -262,17 +262,12 @@ private:
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-	void handleSelection(const Vec3u& selectionIds);
+	void handleSelection(const Vec2u& selectionIds);
+	SelectionItem createSelectionItem(const Vec2u& ids);
 	void handleMergeVertexClick(const Vec3u& selectionIds);
 	void handleCollapseEdgeClick(const Vec3u& selectionIds);
 	void handleDissolveEdgeClick(const Vec3u& selectionIds);
-	SelectionItem createSelectionItem(const Vec3u& ids);
 	void setActiveElement(Element element);
-
-	/// <summary>
-	/// Update the selection visuals for the renderer.
-	/// </summary>
-	void updateSelectionVisuals();
 
 // ---------------------------------------------------------------------------------------------
 // Misc. Helpers -------------------------------------------------------------------------------
@@ -284,7 +279,13 @@ private:
 	void loadMesh(const T& vertices, const U& faces) {
 		scene.NewMesh()->load(vertices, faces);
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		// 10/16/26 - Update to public API.
+		//renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		//renderer.ResetColorBuffer<true>();
+		renderer.UpdateSelection(selectionManager);
+		//renderer.UpdateUniformBuffer();
+		renderer.UpdateTransforms();
 		update();
 	}
 
@@ -342,6 +343,8 @@ public:
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
+	//void setActionTranslateEdge() { setAction(TRANSLATE_EDGE); }
+	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateEdge() {
 		// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
@@ -360,7 +363,6 @@ public slots:
 		setAction(TRANSLATE_EDGE);
 		if (reducedSelection) { emitSelectionChanged(); }
 	}
-	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
@@ -567,7 +569,13 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -581,7 +589,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -606,7 +621,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -620,7 +642,12 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		
+		//renderer.UpdateRenderBuffers(scene);
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+
 		update();
 	}
 
@@ -633,14 +660,17 @@ public slots:
 			if (selectionManager.itemCount() != 1) { return; }
 			Vec3f vertPos = scene[item.meshId]->WorldPosToLocalPos(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
+
+			// 10/16/26 - Updated to public API, in vertex case, update geometry (topology changes).
+			renderer.UpdateGeometry();
 		}
 		else {
 			scene[item.meshId]->Pos(pos);
+
+			// In mesh case, update transforms.
+			renderer.UpdateTransforms();
 		}
 
-		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateGizmos();
 		update();
 	}
 
@@ -650,9 +680,10 @@ public slots:
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Scale(scale);
-			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
-			updateGizmos();
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
 			update();
 		}
 	}
@@ -663,9 +694,11 @@ public slots:
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
 			scene[item.meshId]->Rot(rot);
-			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
-			updateGizmos();
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
+			//updateGizmos();
 			update();
 		}
 	}
@@ -678,17 +711,17 @@ public slots:
 		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 	}
-	void loadTorus(int resolution){
+	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
+		generateUnitTorus(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 	}
 	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(int resolution){
+	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, resolution, resolution);
+		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 	}
 
@@ -708,8 +741,10 @@ public slots:
 			*scene.NewMesh() = std::move(candidate);
 		}
 
-		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 		return report;
 	}
@@ -761,7 +796,10 @@ public slots:
 
 		//camPos = doc.camera;
 		//renderer.SetCamera(sphericalToCartesian(camPos));
-		renderer.SetGridVisible(doc.grid);
+
+		// 10/16/26 - Updated to public API.
+
+		renderer.ShowGrid(doc.grid);
 		//renderer.SetVertexPointsVisible(doc.points);
 
 		//setElementObject();
@@ -777,9 +815,12 @@ public slots:
 		emitSelectionChanged();
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.SetScene(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+		//updateSelectionVisuals();
+		//updateGizmos();
 		update();
 
 		return true;
@@ -790,16 +831,14 @@ public slots:
 	}
 
 	void setAlwaysShowVertices(bool show) {
-		verticesAlwaysVisible = show;
 		if(selectionManager.getActiveElement() != VERTEX){
-			renderer.SetVertexPointsVisible(verticesAlwaysVisible);
+			renderer.ShowVertices(show);
 			update();
 		}
 	}
 
 	void setAlwaysShowGrid(bool show) {
-		gridAlwaysVisible = show;
-		renderer.SetGridVisible(gridAlwaysVisible);
+		renderer.ShowGrid(show);
 		update();
 	}
 
@@ -848,9 +887,21 @@ public slots:
 
 		makeCurrent();
 		selectionManager.clearSelection();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+		//renderer.UpdateUniformBuffer();
+		//updateSelectionVisuals();
+		//updateGizmos();
+
+		// 10/16/26 - Changed to public API.
+		// Need to update geometry because the mesh list/IDs/vertex buffers have changed.
+		// Need to update mesh transforms (?)
+		// Clear old highlights
+
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -886,8 +937,10 @@ public slots:
 		SceneFile doc;
 
 		//doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
-		doc.grid = renderer.GridVisible();
-		doc.points = renderer.VertexPointsVisible();
+
+		// 10/16/26 - Updated to new public API
+		doc.grid = renderer.ShowGrid();
+		doc.points = renderer.ShowVertices();
 
 		//Object selection id just mesh id
 		//sub-object selection is not saved
@@ -943,30 +996,84 @@ public slots:
 	}
 
 	void setCameraModeOrbit() {
-		std::cout << renderer.getCameraPosition() << std::endl;
+		//std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
 
 	void setCameraModeFree() { 
-		std::cout << renderer.getCameraPosition() << std::endl;
+		//std::cout << renderer.getCameraPosition() << std::endl;
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
 
-	void SetFOV(double fov) { /*makeCurrent(); renderer.FOV(fov); update();*/ }
+	void SetFOV(double fov) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.FOV<true>(fov);
+			update();
+		}
+		else {
+			renderer.FOV<false>(fov);
+		}
+	}
 
-	void SetSurfaceVisibility(bool show) { /*renderer.ShowSurfaces(show); update();*/ }
+	void SetSurfaceVisibility(bool show) { renderer.ShowSurfaces(show); update(); }
 
-	void SetEdgeVisibility(bool show) {/* renderer.ShowEdges(show); update();*/ }
+	void SetEdgeVisibility(bool show) { renderer.ShowEdges(show); update(); }
 
-	void SetFaceColor(const Vec3f& clr) { /*makeCurrent(); renderer.FaceColor(clr); update();*/ }
+	void SetFaceColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent(); 
+			renderer.FaceColor<true>(clr); 
+			update();
+		}
+		else {
+			renderer.FaceColor<false>(clr);
+		}
+	}
 
-	void SetEdgeColor(const Vec3f& clr) { /*makeCurrent(); renderer.EdgeColor(clr); update();*/ }
+	void SetEdgeColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.EdgeColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.EdgeColor<false>(clr);
+		}
+	}
 
-	void SetVertexColor(const Vec3f& clr) { /*makeCurrent(); renderer.VertexColor(clr); update();*/ }
+	void SetVertexColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.VertexColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.VertexColor<false>(clr);
+		}
+	}
 
-	void SetBackgroundColor(const Vec3f& clr) { /*makeCurrent(); renderer.BackgroundColor(clr); update();*/ }
+	void SetBackgroundColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.BackgroundColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.BackgroundColor<false>(clr);
+		}
+	}
 
-	void SetSelectColor(const Vec3f& clr) { /*makeCurrent(); renderer.SelectColor(clr); update();*/ }
+	void SetSelectColor(const Vec3f& clr) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.SelectColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.SelectColor<false>(clr);
+		}
+	}
 
-	void SetEdgeRadius(double radius){}
+	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
 
-	void SetVertexScale(double scale){}
+	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
 };
