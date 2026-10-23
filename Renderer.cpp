@@ -482,7 +482,7 @@ void ABC3DRenderer::UpdateProjectionUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-	rndrs.gizmo.SetViewProjectionUniform(data, cam.fov, frame.height);
+	rndrs.gizmo.SetViewProjection(data, cam.fov, frame.height);
 }
 
 void ABC3DRenderer::UpdateViewUniforms() {
@@ -499,6 +499,6 @@ void ABC3DRenderer::UpdateViewUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-	rndrs.gizmo.SetViewProjectionUniform(data, cam.fov, frame.height);
+	rndrs.gizmo.SetViewProjection(data, cam.fov, frame.height);
 }
 

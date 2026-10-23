@@ -131,7 +131,7 @@ bool GizmoRenderer::Initialize() {
 	return true;
 }
 
-void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+void GizmoRenderer::SetViewProjection(float data[16], float fov, int viewportHeight) {
 	// Convert the camera FOV and viewport height into a scale that keeps gizmos
 	// approximately constant in screen size as the camera moves.
 	const float safeHeight = static_cast<float>(std::max(viewportHeight, 1));

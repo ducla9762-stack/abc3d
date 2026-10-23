@@ -115,7 +115,7 @@ public:
 	/// <param name="data"> Matrix </param>
 	/// <param name="fov"> Camera fov </param>
 	/// <param name="viewportHeight"></param>
-	void SetViewProjectionUniform(float data[16], float fov, int viewportHeight);
+	void SetViewProjection(float data[16], float fov, int viewportHeight);
 
 	/// <summary>
 	/// Update base positions of gizmos, color for axes, rotation.
