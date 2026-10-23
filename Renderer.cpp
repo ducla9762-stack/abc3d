@@ -56,12 +56,7 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 	rndrs.vert.Initialize(header.data());
 	rndrs.edge.Initialize(header.data());
 	rndrs.grid.Initialize();
-
-	// Initialize gizmo renderer
-	if (!gizmoRenderer.Initialize()) {
-		return false;
-	}
-	gizmoRenderer.Clear();
+	rndrs.gizmo.Initialize();
 
 	// The gizmo programs must exist before their camera uniforms are uploaded.
 	//UpdateViewUniforms();
@@ -157,7 +152,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 	// Picking uses a separate integer buffer.
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
-	gizmoRenderer.Draw();
+	rndrs.gizmo.Draw();
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
@@ -167,7 +162,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 	glClearBufferuiv(GL_COLOR, 0, clearGizmoId);
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
-	gizmoRenderer.DrawPick();
+	rndrs.gizmo.DrawPick();
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
@@ -487,8 +482,7 @@ void ABC3DRenderer::UpdateProjectionUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-
-	gizmoRenderer.SetViewProjectionUniform(data, cam.fov, frame.height);
+	rndrs.gizmo.SetViewProjectionUniform(data, cam.fov, frame.height);
 }
 
 void ABC3DRenderer::UpdateViewUniforms() {
@@ -505,7 +499,6 @@ void ABC3DRenderer::UpdateViewUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-
-	gizmoRenderer.SetViewProjectionUniform(data, cam.fov, frame.height);
+	rndrs.gizmo.SetViewProjectionUniform(data, cam.fov, frame.height);
 }
 

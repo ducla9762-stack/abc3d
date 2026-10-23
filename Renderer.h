@@ -355,6 +355,7 @@ class ABC3DRenderer {
 		GridRenderer grid;
 		VertexRenderer vert;
 		EdgeRenderer edge;
+		GizmoRenderer gizmo;
 	} rndrs;
 
 	enum TexBindings : int { POS = 0, NORM = 1, ID = 2 };
@@ -397,8 +398,6 @@ class ABC3DRenderer {
 		GLuint gizmoPickTex = 0;
 		GLuint gizmoPickDepth = 0;
 	} frame;
-
-	GizmoRenderer gizmoRenderer;
 
 	struct CameraSettings {
 		OrbitCamera orbit;
@@ -550,10 +549,10 @@ public:
 	void ClearHover() { hover.mesh = MAX_UINT; hover.element = MAX_UINT; update.hover = true; }
 
 	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& rotation) {
-		gizmoRenderer.UpdateGizmos(base, hoveredAxis, type, rotation);
+		rndrs.gizmo.UpdateGizmos(base, hoveredAxis, type, rotation);
 	}
 
-	void ClearGizmos() { gizmoRenderer.Clear(); }
+	void ClearGizmos() { rndrs.gizmo.Clear(); }
 
 	Vec3u GizmoSelectionIds(uint x, uint y) {
 		if (x >= frame.width || y >= frame.height || frame.gizmoPickFbo == 0) {
