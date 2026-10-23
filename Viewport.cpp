@@ -301,13 +301,13 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		// Also make sure the selection is valid (not background).
 		if (!mouseAction.dragged) {
 			if (actionParams.action == MERGE) {
-				//handleMergeVertexClick(ids);
+				handleMergeVertexClick(ids);
 			}
 			else if (actionParams.action == COLLAPSE) {
-				//handleCollapseEdgeClick(ids);
+				handleCollapseEdgeClick(ids);
 			}
 			else if (actionParams.action == DISSOLVE) {
-				//handleDissolveEdgeClick(ids);
+				handleDissolveEdgeClick(ids);
 			}
 			else {
 				handleSelection(ids);
@@ -574,16 +574,15 @@ void Viewport::setAction(Action action) {
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
-	// Vertex-point hits are encoded as (MAX_UINT, one-based mesh ID,
-	// zero-based vertex ID). Surface hits are intentionally ignored.
-	if (selectionIds.x != MAX_UINT || selectionIds.y == 0 ||
-		selectionIds.y == MAX_UINT || selectionIds.z == MAX_UINT) {
+
+void Viewport::handleMergeVertexClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local vertex ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.y - 1;
-	const uint vertexId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint vertexId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || vertexId >= scene[meshId]->VertexCount()) {
 		return;
 	}
@@ -596,9 +595,10 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		mergeFirstVertex = clicked;
 		selectionManager.clearSelection();
 		selectionManager.addSelection(clicked);
-		//updateSelectionVisuals();
-		//emitSelectionChanged();
-		//update();
+		renderer.UpdateSelection(selectionManager);
+		renderer.ClearHover();
+		emitSelectionChanged();
+		update();
 		return;
 	}
 
@@ -621,22 +621,22 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
 	selectionManager.clearSelection();
-	//makeCurrent();
-	//renderer.UpdateRenderBuffers(scene);
-	//updateSelectionVisuals();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	emitSelectionChanged();
 	update();
 }
 
-void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
-	// Surface edge hits are (one-based mesh ID, face ID, half-edge ID).
-	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
-		selectionIds.z == MAX_UINT) {
+void Viewport::handleCollapseEdgeClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local edge ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.x - 1;
-	const uint edgeId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
 		return;
 	}
@@ -652,22 +652,22 @@ void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	//makeCurrent();
-	//renderer.UpdateRenderBuffers(scene);
-	//updateSelectionVisuals();
-	//emitSelectionChanged();
-	//update();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	emitSelectionChanged();
+	update();
 }
 
-void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
-	// Surface edge hits are encoded as (one-based mesh ID, face ID, edge ID).
-	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
-		selectionIds.z == MAX_UINT) {
+void Viewport::handleDissolveEdgeClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local edge ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.x - 1;
-	const uint edgeId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
 		return;
 	}
@@ -683,11 +683,12 @@ void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
 
 	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	//makeCurrent();
-	//renderer.UpdateRenderBuffers(scene);
-	//updateSelectionVisuals();
-	//emitSelectionChanged();
-	//update();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	emitSelectionChanged();
+	update();
 }
 
 void Viewport::handleSelection(const Vec2u& selectionIds) {

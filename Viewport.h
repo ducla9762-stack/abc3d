@@ -262,9 +262,9 @@ private:
 
 	void handleSelection(const Vec2u& selectionIds);
 	SelectionItem createSelectionItem(const Vec2u& ids);
-	void handleMergeVertexClick(const Vec3u& selectionIds);
-	void handleCollapseEdgeClick(const Vec3u& selectionIds);
-	void handleDissolveEdgeClick(const Vec3u& selectionIds);
+	void handleMergeVertexClick(const Vec2u& selectionIds);
+	void handleCollapseEdgeClick(const Vec2u& selectionIds);
+	void handleDissolveEdgeClick(const Vec2u& selectionIds);
 	void setActiveElement(Element element);
 
 // ---------------------------------------------------------------------------------------------
