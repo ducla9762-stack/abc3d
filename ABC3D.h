@@ -5,6 +5,7 @@
 #include <QFileSystemModel>
 #include <QDesktopServices>
 #include <QTreeView>
+#include <QCursor>
 #include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"

@@ -182,6 +182,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Select Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows selection of elements with classic and additive modes&lt;/p&gt;&lt;p&gt;Deselect by double-clicking or chaning the active element&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -238,6 +241,9 @@ QPushButton { background-color: #646464; }</string>
             <width>32</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
           <property name="toolTip">
            <string extracomment="Select Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Camera Tool&lt;/span&gt;&lt;br/&gt;Brings up the panel to change between orbit and free modes, field of view, and toggling the grid and vertices&lt;br/&gt;'C' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -296,6 +302,9 @@ QPushButton { background-color: #646464; }</string>
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string extracomment="Move Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Move Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Allows translation with free, outward, and edge modes&lt;/p&gt;&lt;p&gt;'T' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -343,6 +352,9 @@ QPushButton { background-color: #646464; }</string>
             <width>32</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
           <property name="toolTip">
            <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected element&lt;br/&gt;Restricted to object, face, and edge elements&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -395,6 +407,9 @@ QPushButton { background-color: #646464; }</string>
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string extracomment="Rotate Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Rotate Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Turns an object&lt;br/&gt;Restricted to object-level&lt;/p&gt;&lt;p&gt;'R' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -443,6 +458,9 @@ QPushButton { background-color: #646464; }</string>
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string extracomment="Shape Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shape Tool&lt;/p&gt;&lt;p&gt;Brings up the panel to add shapes to your scene&lt;/p&gt;&lt;p&gt;'Q' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -490,6 +508,9 @@ QPushButton { background-color: #646464; }</string>
             <width>32</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
           <property name="toolTip">
            <string extracomment="Extrude Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Extrude Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Extends a shape, edge, or face&lt;/p&gt;&lt;p&gt;'X' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -545,6 +566,9 @@ QPushButton { background-color: #646464; }</string>
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Subdivision Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the panel to access subdivision, tesselation, triangulation, and edge-flip&lt;/p&gt;&lt;p&gt;'Z' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -593,6 +617,9 @@ QPushButton { background-color: #646464; }</string>
             <height>0</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string extracomment="Bevel Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Bevel Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Make an angled cut on an edge or corner&lt;/p&gt;&lt;p&gt;'V' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -638,6 +665,9 @@ QPushButton { background-color: #646464; }</string>
             <height>58</height>
            </size>
           </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Knife Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;click to draw a cut, Enter to confirm, Esc to cancel, X to cut through hidden faces. &lt;/p&gt;&lt;p&gt;'K' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
@@ -679,6 +709,9 @@ QPushButton { background-color: #646464; }</string>
             <width>58</width>
             <height>58</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
           <property name="toolTip">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Merge Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the page for merge, dissolve, and collapse&lt;br/&gt;'M' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -822,7 +855,7 @@ padding: 5px;</string>
 QTabBar:tab:selected{background: red; }</string>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <property name="styleSheet">
@@ -1874,7 +1907,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>276</width>
+                <width>271</width>
                 <height>598</height>
                </rect>
               </property>

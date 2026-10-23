@@ -214,6 +214,130 @@ ABC3D::ABC3D(QWidget *parent)
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
 
+
+    /* Creates & connects the right - click menus for all the tool buttons 
+    * Each tool button has a help action in the menu that brings up their respective document*/
+    QObject::connect(ui.selectToolButton, &QPushButton::customContextMenuRequested, ui.selectToolButton, [=]() {
+        QMenu selectMenu(this);
+        QAction* helpAction = selectMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Selection.html"));
+        });
+        selectMenu.exec(QCursor::pos());
+    });
+
+    QObject::connect(ui.cameraToolButton, &QPushButton::customContextMenuRequested, ui.cameraToolButton, [=]() {
+        QMenu cameraMenu(this);
+        QAction* helpAction = cameraMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Camera Movement.html"));
+            });
+        cameraMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.translateToolButton, &QPushButton::customContextMenuRequested, ui.translateToolButton, [=]() {
+        QMenu translateMenu(this);
+        QAction* helpAction = translateMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        translateMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.scaleToolButton, &QPushButton::customContextMenuRequested, ui.scaleToolButton, [=]() {
+        QMenu scaleMenu(this);
+        QAction* helpAction = scaleMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        scaleMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.rotateToolButton, &QPushButton::customContextMenuRequested, ui.rotateToolButton, [=]() {
+        QMenu rotateMenu(this);
+        QAction* helpAction = rotateMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        rotateMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.shapeToolButton, &QPushButton::customContextMenuRequested, ui.shapeToolButton, [=]() {
+        QMenu shapeMenu(this);
+        QAction* helpAction = shapeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Shapes.html"));
+            });
+        shapeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.extrudeToolButton, &QPushButton::customContextMenuRequested, ui.extrudeToolButton, [=]() {
+        QMenu extrudeMenu(this);
+        QAction* helpAction = extrudeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Extrusion.html"));
+            });
+        extrudeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.subdivideToolButton, &QPushButton::customContextMenuRequested, ui.subdivideToolButton, [=]() {
+        QMenu subdivideMenu(this);
+        QAction* helpAction = subdivideMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Subdivision.html"));
+            });
+        subdivideMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.bevelToolButton, &QPushButton::customContextMenuRequested, ui.bevelToolButton, [=]() {
+        QMenu bevelMenu(this);
+        QAction* helpAction = bevelMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Beveling.html"));
+            });
+        bevelMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.knifeToolButton, &QPushButton::customContextMenuRequested, ui.knifeToolButton, [=]() {
+        QMenu knifeMenu(this);
+        QAction* helpAction = knifeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Knife Tool.html"));
+            });
+        knifeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.mergeToolButton, &QPushButton::customContextMenuRequested, ui.mergeToolButton, [=]() {
+        QMenu mergeMenu(this);
+        QAction* helpAction = mergeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Merging.html"));
+            });
+        mergeMenu.exec(QCursor::pos());
+        });
+
     ui.viewport->SetFaceColor(ui.faceColorButton->GetColorF());
     ui.viewport->SetEdgeColor(ui.edgeColorButton->GetColorF());
     ui.viewport->SetVertexColor(ui.vertexColorButton->GetColorF());
