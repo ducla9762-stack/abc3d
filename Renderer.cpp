@@ -98,6 +98,9 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		UploadColorBuffer(); 
 	}
 
+	// Had to duplicate this line outside of the conditional to fix visual bugs on NVIDIA GPU.
+	glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+
 	if (update.renderBufs || update.uniformBuf || update.camera || update.rerenderGeom) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
@@ -126,6 +129,10 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 	}
 
+	// Had to duplicate this line outside of the conditional to fix visual bugs on NVIDIA GPU.
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+
+	// Had to move this line outside of the conditional to fix visual bugs on NVIDIA GPU.
 	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 	glClear(GL_COLOR_BUFFER_BIT);
