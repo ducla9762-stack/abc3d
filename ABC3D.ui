@@ -2683,6 +2683,7 @@ color: white;</string>
     <slot>SetVertexColor(Vec3f)</slot>
     <slot>SetBackgroundColor(Vec3f)</slot>
     <slot>SetSelectColor(Vec3f)</slot>
+    <slot>SetHoverColor(Vec3f)</slot>
     <slot>SetVertexScale(double)</slot>
     <slot>SetEdgeRadius(double)</slot>
     <slot>setOrbitOrigin(Vec3f)</slot>
@@ -3863,6 +3864,12 @@ color: white;</string>
      <y>1037</y>
     </hint>
    </hints>
+  </connection>
+  <connection>
+   <sender>hoverColorButton</sender>
+   <signal>ColorSelected(Vec3f)</signal>
+   <receiver>viewport</receiver>
+   <slot>SetHoverColor(Vec3f)</slot>
   </connection>
   <connection>
    <sender>flipButton</sender>

@@ -122,6 +122,7 @@
     <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="GizmoRenderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="camera.h" />
     <QtMoc Include="ColorButton.h" />
     <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="MeshKnife.h" />
     <ClInclude Include="mesh.h" />
@@ -155,6 +157,8 @@
     <None Include="assets\shaders\Arrow.vert" />
     <None Include="assets\shaders\ArrowBasic.vert" />
     <None Include="assets\shaders\ArrowColor.frag" />
+    <None Include="assets\shaders\GizmoColor.frag" />
+    <None Include="assets\shaders\GizmoPick.frag" />
     <None Include="assets\shaders\BlinnPhong.frag" />
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />

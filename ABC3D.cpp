@@ -343,6 +343,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetVertexColor(ui.vertexColorButton->GetColorF());
     ui.viewport->SetBackgroundColor(ui.backgroundColorButton->GetColorF());
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
+    ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
