@@ -1023,6 +1023,10 @@ bool Viewport::translateEdgeDrag() {
 		transformed = true;
 	}
 
+	if (transformed) {
+		renderer.UpdateGeometry();
+	}
+
 	return transformed;
 }
 
@@ -1133,10 +1137,14 @@ bool Viewport::scaleDrag() {
 	const Element activeElement = selectionManager.getActiveElement();
 
 	if (activeElement == EDGE || activeElement == FACE) {
-		return scaleSelectedComponents(factor, 0, true);
+		const bool scaled = scaleSelectedComponents(factor, 0, true);
+		if (scaled) {
+			renderer.UpdateGeometry();
+		}
+		return scaled;
 	}
 
-	if (activeElement != OBJECT) {
+	if (activeElement == VERTEX) {
 		return false;
 	}
 
