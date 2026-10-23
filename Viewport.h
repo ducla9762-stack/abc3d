@@ -376,7 +376,9 @@ public slots:
 		}
 		setAction(SCALE); }
 	void setActionRotate() { 
-		setActiveElement(OBJECT);
+		if (getActiveElement() != OBJECT) {
+			setActiveElement(OBJECT);
+		}
 		elementButtons[3]->setChecked(true);
 		setAction(ROTATE); 
 	}
