@@ -790,7 +790,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BaseColors::FACES, &colors.faces.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -800,7 +799,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BaseColors::EDGES, &colors.edges.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -810,7 +808,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BaseColors::VERTICES, &colors.verts.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -820,7 +817,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BaseColors::BACKGROUND, &colors.background.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -830,7 +826,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BlendColors::SELECT + 5, &blends.select.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -840,7 +835,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BlendColors::HOVER + 5, &blends.hover.x);
-			update.rerenderGeom = true;
 		}
 	}
 
@@ -850,7 +844,6 @@ public:
 		if constexpr (uploadUniform) {
 			prog.shade.Bind();
 			prog.shade.SetUniform3(BlendColors::BOTH + 5, &blends.both.x);
-			update.rerenderGeom = true;
 		}
 	}
 
