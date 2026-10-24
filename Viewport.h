@@ -317,6 +317,8 @@ private:
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
 		float dpr = devicePixelRatio();
 		Vec2f coords(std::round(logicalPos.x * dpr), std::round(logicalPos.y * dpr));
+		return renderer.SelectionIds(elm, uint(coords.x), uint(coords.y));
+	}
 
 // ---------------------------------------------------------------------------------------------
 // Hover Interactions --------------------------------------------------------------------------
