@@ -102,6 +102,15 @@ TEST(HalfEdgeMeshMerge, CollapsesAdjacentCubeEdge) {
 	EXPECT_TRUE(IsValid(mesh));
 }
 
+TEST(HalfEdgeMeshMerge, SkipsDeletedFaces) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_TRUE(mesh.MergeVertices(0, 4));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
 TEST(HalfEdgeMeshMerge, RejectsNonIncidentCubeVertices) {
 	HalfEdgeMesh mesh = Cube();
 
@@ -165,8 +174,8 @@ TEST(HalfEdgeMeshDissolve, DissolvesInteriorEdgeDirectly) {
 	HalfEdgeMesh mesh = Cube();
 
 	EXPECT_TRUE(mesh.DissolveEdge(0));
-	EXPECT_EQ(mesh.FaceCount(), 5u);
-	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
 	EXPECT_TRUE(IsValid(mesh));
 }
 
@@ -192,8 +201,9 @@ TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
 	HalfEdgeMesh mesh = Cube();
 
 	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_FALSE(mesh.DeleteFace(0));
 	EXPECT_EQ(mesh.VertexCount(), 8u);
-	EXPECT_EQ(mesh.FaceCount(), 5u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
 	EXPECT_EQ(mesh.EdgeCount(), 24u);
 	EXPECT_TRUE(IsValid(mesh));
 
@@ -207,16 +217,16 @@ TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
 	EXPECT_TRUE(hasBoundary);
 }
 
-TEST(HalfEdgeMeshDelete, DeletingFinalFaceClearsMesh) {
+TEST(HalfEdgeMeshDelete, DeletingAllFacesKeepsTombstones) {
 	HalfEdgeMesh mesh = Cube();
 
-	while (mesh.FaceCount() > 0) {
-		EXPECT_TRUE(mesh.DeleteFace(0));
+	for (uint faceId = 0; faceId < mesh.FaceCount(); ++faceId) {
+		EXPECT_TRUE(mesh.DeleteFace(faceId));
 	}
 
-	EXPECT_EQ(mesh.VertexCount(), 0u);
-	EXPECT_EQ(mesh.FaceCount(), 0u);
-	EXPECT_EQ(mesh.EdgeCount(), 0u);
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
 	EXPECT_TRUE(IsValid(mesh));
 }
 
