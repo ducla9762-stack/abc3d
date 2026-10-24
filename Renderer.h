@@ -85,6 +85,54 @@ const std::vector<Vec3u> TRI_CYLINDER_ELEMENTS = {
 	Vec3u(7, 15, 0), Vec3u(0, 15, 8)
 };
 
+// Currently only renders one icon but can modify this later if we need to render more at a time
+class IconRenderer {
+	GLuint tex;
+	GLuint vao;
+	GLSLProgram prog;
+	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2 };
+
+public:
+	bool Initialize(uint texBindPt, const uint8_t* icon, uint w, uint h) {
+		bool success = prog.BuildFiles("assets/shaders/Icon.vert", "assets/shaders/Icon.frag");
+
+		if (!success) {
+			std::cout << "Failed to compile icon shader program!" << std::endl;
+			return false;
+		}
+
+		glGenVertexArrays(1, &vao);
+		glGenTextures(1, &tex);
+		
+		glActiveTexture(GL_TEXTURE0 + texBindPt);
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, icon);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		prog.Bind();
+		prog.RegisterUniform(TEX, "tex");
+		prog.RegisterUniform(SCALE, "scale");
+		prog.RegisterUniform(POS, "pos");
+
+		//prog.SetUniform(TEX, texBindPt);
+		prog.SetUniform(SCALE, 0.05f); // icon covers 10% of screen. Will expose this param later.
+
+		return true;
+	}
+
+	void Draw(const Vec3f& pos) {
+		glBindVertexArray(vao);
+		prog.Bind();
+		prog.SetUniform(POS, pos.x, pos.y, pos.z);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
+
+};
+
 class VertexRenderer {
 	GLuint vao;
 	
@@ -161,7 +209,7 @@ public:
 		bool success = prog.BuildFiles("assets/shaders/VertexDraw.vert", "assets/shaders/VertexDraw.frag",
 			nullptr, nullptr, nullptr, header, &std::cout);
 
-		if (!success) { std::cout << "Failed to compile vertex shader program!" << std::endl; }
+		if (!success) { std::cout << "Failed to compile vertex shader program!" << std::endl; return false; }
 
 		prog.Bind();
 		prog.RegisterUniform(VIEW_PROJ, "viewProj");
@@ -279,7 +327,9 @@ public:
 		bool success = prog.BuildFiles("assets/shaders/EdgeDraw.vert", "assets/shaders/EdgeDraw.frag",
 			nullptr, nullptr, nullptr, header, &std::cout);
 
-		if (!success) { std::cout << "Failed to compile edge shader program!" << std::endl; }
+		std::cout << success << std::endl;
+
+		if (!success) { std::cout << "Failed to compile edge shader program!" << std::endl; return false; }
 
 		prog.Bind();
 		prog.RegisterUniform(RADIUS, "radius");
@@ -810,6 +860,16 @@ public:
 		UpdateViewUniforms();
 
 		return success;
+	}
+
+	Vec3f CanonicalVolumePos(const Vec3f& worldPos) {
+		Vec4f projPos = transform.proj * (transform.view * worldPos);
+		return projPos.GetNonHomogeneous();
+	}
+
+	Vec2f CanonicalVolumePos2(const Vec3f& worldPos) {
+		Vec4f projPos = transform.proj * (transform.view * worldPos);
+		return Vec2f(projPos.x / projPos.w, projPos.y / projPos.w);
 	}
 };
 

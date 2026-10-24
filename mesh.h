@@ -414,6 +414,13 @@ public:
 	/// <param name="add">The scale factor to add uniformly.</param>
 	void AddScale(const float& add) { this->scale += add; }
 
+	void BakeScale() {
+		for (Vec3f& pos : vertPos) {
+			pos *= scale;
+		}
+		scale.Set(1.0f);
+	}
+
 	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
 	void getTransform(CompactTransform140& trans) const {
@@ -967,11 +974,6 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 		edge.next = nextId;
 		next->prev = i;
 	}
-	
-	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
-	const Vec3f centroid = computeCentroid();
-	translateVertices(-centroid);
-	pos = centroid;
 
 	return true;
 }

@@ -143,15 +143,18 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
-	QAction* menuActions[3];
+	QAction* menuActions[5];
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
+	IconRenderer iconRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
+	bool showPivot = true;
+	Vec2f menuPos;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredGizmoAxis = MAX_UINT;
@@ -206,6 +209,14 @@ private:
 
 	void paintGL() override {
 		renderer.Draw(defaultFramebufferObject());
+		if (showPivot && selectionManager.meshCount() == 1) {
+			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			iconRenderer.Draw(pos);
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
 
@@ -303,6 +314,9 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
+	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
+		float dpr = devicePixelRatio();
+		Vec2f coords(std::round(logicalPos.x * dpr), std::round(logicalPos.y * dpr));
 
 // ---------------------------------------------------------------------------------------------
 // Hover Interactions --------------------------------------------------------------------------
@@ -1099,4 +1113,71 @@ public slots:
 	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
 
 	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
+
+private slots:
+	void rightClickDuplicate() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene.DuplicateMesh(ids.x);
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+			
+			update();
+		}
+	}
+
+	void rightClickDelete() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene.DeleteMesh(ids.x);
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
+		}
+	}
+
+	void rightClickOrbit() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			renderer.setOrbitOrigin(scene[ids.x]->Pos());
+			update();
+		}
+	}
+
+	void rightClickRecenter() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->RecenterOnCentroid();
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionPosChanged();
+			}
+		}
+	}
+
+	void rightClickBakeScale() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->BakeScale();
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionScaleChanged();
+			}
+		}
+	}
 };
