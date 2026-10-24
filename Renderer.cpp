@@ -150,23 +150,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	// Gizmos are a screen-space overlay, drawn after the deferred composition and the grid.
 	// Picking uses a separate integer buffer.
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	rndrs.gizmo.Draw();
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, frame.gizmoPickFbo);
-	glViewport(0, 0, frame.width, frame.height);
-	const uint clearGizmoId[3] = { 0, 0, 0 };
-	glClearBufferuiv(GL_COLOR, 0, clearGizmoId);
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	rndrs.gizmo.DrawPick();
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
-	glViewport(0, 0, frame.width, frame.height);
+	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
 
 	glDepthMask(GL_TRUE);
 

@@ -173,16 +173,6 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type,
 	}
 }
 
-void GizmoRenderer::Draw() {
-	// Visible pass: writes regular RGBA colors to the default framebuffer after
-	// the deferred scene and grid have already been composed.
-	UploadParts();
-	translation.Draw(false);
-	scale.Draw(false);
-	rotation.Draw(false);
-	free.Draw(false);
-}
-
 void GizmoRenderer::DrawPick() {
 	// Picking pass: writes gizmo IDs to the off-screen integer framebuffer. It
 	// has no visible color output and exists solely for cursor hit-testing.
@@ -191,6 +181,44 @@ void GizmoRenderer::DrawPick() {
 	scale.Draw(true);
 	rotation.Draw(true);
 	free.Draw(true);
+}
+
+void GizmoRenderer::Draw(GLuint defaultFramebuffer, GLuint pickFramebuffer, int width, int height) {
+	// Upload the active instance data once for both the visible and picking passes.
+	UploadParts();
+
+	// Visible pass: draw the gizmo over the already-composed deferred scene and
+	// grid. Gizmos are screen-space overlays, so they do not participate in
+	// scene depth testing or write to the depth buffer.
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+	glViewport(0, 0, width, height);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	translation.Draw(false);
+	scale.Draw(false);
+	rotation.Draw(false);
+	free.Draw(false);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+
+	// Picking pass: refresh the integer ID buffer used by viewport hover and
+	// drag hit-testing. This pass is never displayed onscreen.
+	glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
+	glViewport(0, 0, width, height);
+	const uint clearGizmoId[3] = { 0, 0, 0 };
+	glClearBufferuiv(GL_COLOR, 0, clearGizmoId);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	translation.Draw(true);
+	scale.Draw(true);
+	rotation.Draw(true);
+	free.Draw(true);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+	glViewport(0, 0, width, height);
 }
 
 void GizmoRenderer::Clear() {

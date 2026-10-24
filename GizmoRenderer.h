@@ -127,9 +127,13 @@ public:
 	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& rotation);
 
 	/// <summary>
-	/// Draw gizmos.
+	/// Draw the visible gizmo overlay and refresh its picking framebuffer.
 	/// </summary>
-	void Draw();
+	/// <param name="defaultFramebuffer"> The viewport's onscreen framebuffer. </param>
+	/// <param name="pickFramebuffer"> The off-screen integer picking framebuffer. </param>
+	/// <param name="width"> Picking framebuffer width. </param>
+	/// <param name="height"> Picking framebuffer height. </param>
+	void Draw(GLuint defaultFramebuffer, GLuint pickFramebuffer, int width, int height);
 
 	/// <summary>
 	/// Render gizmo IDs into the off-screen picking framebuffer for hover and drag hit-testing.
