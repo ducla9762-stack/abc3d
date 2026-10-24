@@ -803,24 +803,23 @@ QPushButton { background-color: #646464; }</string>
       <property name="styleSheet">
        <string notr="true">background-color: #1c1c1c;
 color: white;
-border: 1px solid transparent;
-padding: 5px;</string>
+border: 1px solid transparent;</string>
       </property>
       <layout class="QVBoxLayout" name="rightSidePanels">
        <property name="spacing">
         <number>0</number>
        </property>
        <property name="leftMargin">
-        <number>0</number>
+        <number>5</number>
        </property>
        <property name="topMargin">
-        <number>0</number>
+        <number>5</number>
        </property>
        <property name="rightMargin">
-        <number>0</number>
+        <number>5</number>
        </property>
        <property name="bottomMargin">
-        <number>0</number>
+        <number>5</number>
        </property>
        <item>
         <widget class="QTabWidget" name="topRightPanels">
@@ -1907,8 +1906,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>271</width>
-                <height>598</height>
+                <width>280</width>
+                <height>585</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1930,7 +1929,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                <item>
                 <widget class="QWidget" name="camModes" native="true">
                  <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent; padding: 2px;</string>
+                  <string notr="true">border: 1px solid transparent;</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_3">
                   <property name="leftMargin">
@@ -2008,8 +2007,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     </property>
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent; 
-border-bottom: 2px solid #646464;
-padding: 10px;</string>
+border-bottom: 2px solid #646464;</string>
                     </property>
                     <property name="text">
                      <string>Camera Mode</string>
@@ -2025,7 +2023,7 @@ padding: 10px;</string>
                <item>
                 <widget class="VectorInput" name="originInput" native="true">
                  <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent; padding: 10px;</string>
+                  <string notr="true">border: 1px solid transparent;</string>
                  </property>
                 </widget>
                </item>
@@ -2038,7 +2036,7 @@ padding: 10px;</string>
                   </size>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent; padding: 2px;</string>
+                  <string notr="true">border: 1px solid transparent;</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_4">
                   <item row="4" column="0">
@@ -2047,7 +2045,7 @@ padding: 10px;</string>
                      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span&gt;Toggles vertex visibility, no matter the selected element&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span&gt;'P' Key Shortcut&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                     </property>
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent; padding: 10px;
+                     <string notr="true">border: 1px solid transparent;
 QToolTip {
     background-color: #1c1c1c;
     color: white;
@@ -2062,7 +2060,7 @@ QToolTip {
                   <item row="3" column="1">
                    <widget class="QCheckBox" name="checkBox">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent; padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent; </string>
                     </property>
                     <property name="text">
                      <string>Surfaces</string>
@@ -2081,7 +2079,7 @@ QToolTip {
                      <enum>Qt::LayoutDirection::LeftToRight</enum>
                     </property>
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent; padding: 10px;
+                     <string notr="true">border: 1px solid transparent;
 QToolTip {
     background-color: #1c1c1c;
     color: white;
@@ -2100,8 +2098,7 @@ QToolTip {
                    <widget class="QLabel" name="label_10">
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent; 
-border-bottom: 2px solid #646464;
-padding: 10px;</string>
+border-bottom: 2px solid #646464;</string>
                     </property>
                     <property name="text">
                      <string>Show</string>
@@ -2114,7 +2111,7 @@ padding: 10px;</string>
                   <item row="4" column="1">
                    <widget class="QCheckBox" name="checkBox_2">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent; padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Edges</string>
@@ -2130,14 +2127,13 @@ padding: 10px;</string>
                <item>
                 <widget class="QWidget" name="widget_6" native="true">
                  <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent; padding: 2px;</string>
+                  <string notr="true">border: 1px solid transparent;</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_6">
                   <item row="1" column="0">
                    <widget class="QLabel" name="label_12">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Vertex Size</string>
@@ -2147,8 +2143,7 @@ padding: 10px;</string>
                   <item row="0" column="0">
                    <widget class="QLabel" name="label_11">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Edge Radius</string>
@@ -2158,8 +2153,7 @@ padding: 10px;</string>
                   <item row="1" column="1">
                    <widget class="QDoubleSpinBox" name="vertexScaleSpinner">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid #646464;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid #646464;</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -2184,8 +2178,7 @@ padding: 10px;</string>
                      </sizepolicy>
                     </property>
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid #646464;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid #646464;</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -2204,8 +2197,7 @@ padding: 10px;</string>
                   <item row="2" column="0">
                    <widget class="QLabel" name="label_5">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Field of View</string>
@@ -2224,8 +2216,7 @@ padding: 10px;</string>
                      </sizepolicy>
                     </property>
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid #646464;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid #646464;</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -2301,8 +2292,7 @@ padding: 2px;</string>
                    <widget class="QLabel" name="label_13">
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent;
-border-bottom: 2px solid #646464;
-padding: 10px;</string>
+border-bottom: 2px solid #646464;</string>
                     </property>
                     <property name="text">
                      <string>Colors</string>
@@ -2315,8 +2305,7 @@ padding: 10px;</string>
                   <item row="1" column="0">
                    <widget class="QLabel" name="label_14">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Surface</string>
@@ -2366,8 +2355,7 @@ padding: 10px;</string>
                   <item row="2" column="2">
                    <widget class="QLabel" name="label_17">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Background</string>
@@ -2377,8 +2365,7 @@ padding: 10px;</string>
                   <item row="1" column="2">
                    <widget class="QLabel" name="label_15">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Edge</string>
@@ -2388,8 +2375,7 @@ padding: 10px;</string>
                   <item row="2" column="0">
                    <widget class="QLabel" name="label_16">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Vertex</string>
@@ -2399,8 +2385,7 @@ padding: 10px;</string>
                   <item row="3" column="0">
                    <widget class="QLabel" name="label_18">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Selected</string>
@@ -2430,8 +2415,7 @@ padding: 10px;</string>
                   <item row="3" column="2">
                    <widget class="QLabel" name="label_19">
                     <property name="styleSheet">
-                     <string notr="true">border: 1px solid transparent;
-padding: 10px;</string>
+                     <string notr="true">border: 1px solid transparent;</string>
                     </property>
                     <property name="text">
                      <string>Hovered</string>
@@ -3870,6 +3854,16 @@ color: white;</string>
    <signal>ColorSelected(Vec3f)</signal>
    <receiver>viewport</receiver>
    <slot>SetHoverColor(Vec3f)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>flipButton</sender>
