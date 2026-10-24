@@ -628,9 +628,9 @@ public:
 	bool DissolveEdge(uint edgeId);
 
 	/// <summary>
-	/// Removes a face and rebuilds its boundary as an open mesh boundary.
+	/// Marks a face as deleted and marks its half-edges as boundary edges.
 	/// </summary>
-	/// <returns>True when the face was removed; false when the face ID or resulting topology is invalid.</returns>
+	/// <returns>True when the face was marked deleted; false when the face ID is invalid or already deleted.</returns>
 	bool DeleteFace(uint faceId);
 
 	/// <summary>

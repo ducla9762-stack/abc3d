@@ -113,7 +113,7 @@ class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
-signals:
+signals:	
 	void primarySelectionPosChanged(const Vec3f& pos);
 	void primarySelectionScaleChanged(const Vec3f& scale);
 	void primarySelectionRotChanged(const Vec3f& rot);
@@ -128,7 +128,10 @@ public:
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
 		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
 	};
+
 	Element getActiveElement();
+	std::vector<HalfEdgeMesh*> getMeshes();
+	int getMeshCount();
 
 private:
 

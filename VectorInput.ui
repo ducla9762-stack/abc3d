@@ -18,7 +18,7 @@
     <number>0</number>
    </property>
    <property name="topMargin">
-    <number>0</number>
+    <number>10</number>
    </property>
    <property name="rightMargin">
     <number>0</number>
@@ -30,10 +30,13 @@
     <number>6</number>
    </property>
    <property name="verticalSpacing">
-    <number>2</number>
+    <number>10</number>
    </property>
    <item row="1" column="1">
     <widget class="QDoubleSpinBox" name="ySpinner">
+     <property name="styleSheet">
+      <string notr="true">border: 1px solid #646464;</string>
+     </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
@@ -47,6 +50,9 @@
    </item>
    <item row="0" column="1">
     <widget class="QDoubleSpinBox" name="xSpinner">
+     <property name="styleSheet">
+      <string notr="true">border: 1px solid #646464;</string>
+     </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
@@ -63,6 +69,9 @@
    </item>
    <item row="2" column="1">
     <widget class="QDoubleSpinBox" name="zSpinner">
+     <property name="styleSheet">
+      <string notr="true">border: 1px solid #646464;</string>
+     </property>
      <property name="frame">
       <bool>true</bool>
      </property>
