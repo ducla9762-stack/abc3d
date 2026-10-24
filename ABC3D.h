@@ -122,6 +122,8 @@ private slots:
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
+    void meshAdded(HalfEdgeMesh mesh);
+    void meshRemoved(HalfEdgeMesh mesh);
 
 signals:
     void deleteKeyPressed();

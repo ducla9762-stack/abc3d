@@ -98,6 +98,9 @@
         <height>300</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">border: 0px solid transparent;</string>
+      </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
       </property>
@@ -119,7 +122,7 @@
          <x>0</x>
          <y>0</y>
          <width>68</width>
-         <height>1223</height>
+         <height>1225</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -802,8 +805,7 @@ QPushButton { background-color: #646464; }</string>
       </property>
       <property name="styleSheet">
        <string notr="true">background-color: #1c1c1c;
-color: white;
-border: 1px solid transparent;</string>
+color: white;</string>
       </property>
       <layout class="QVBoxLayout" name="rightSidePanels">
        <property name="spacing">
@@ -850,8 +852,12 @@ border: 1px solid transparent;</string>
           <enum>Qt::LayoutDirection::RightToLeft</enum>
          </property>
          <property name="styleSheet">
-          <string notr="true">QTabBar {background-color: #646464 }
-QTabBar:tab:selected{background: red; }</string>
+          <string notr="true">QTabBar::tab {background-color: #1c1c1c; }
+QTabBar:tab:selected{background: red; }
+QPushButton{
+border: 1px solid #646464;
+border-radius: 4px; }
+QTabWidget {border: 0px;}</string>
          </property>
          <property name="currentIndex">
           <number>1</number>
@@ -929,6 +935,12 @@ QTabBar:tab:selected{background: red; }</string>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
                   <widget class="QPushButton" name="importTutorialButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="toolTip">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Allows you to import tutorials you find elsewhere or make yourself&lt;/p&gt;&lt;p&gt;Supports .html, .markdown, .md, and .txt&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
@@ -939,6 +951,12 @@ QTabBar:tab:selected{background: red; }</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="loadTutorialButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="toolTip">
                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Shows you a list of our tutorial documents.&lt;br/&gt;These give you specific instructions to follow towards a goal&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                    </property>
@@ -980,7 +998,9 @@ QTabBar:tab:selected{background: red; }</string>
        <item>
         <widget class="QStackedWidget" name="bottomRightPanels">
          <property name="styleSheet">
-          <string notr="true">QPushButton{background-color:#646464; }
+          <string notr="true">QPushButton{background-color:#646464; 
+border: 1px solid #646464;
+border-radius: 4px; }
 QPushButton:checked {background-color: red}</string>
          </property>
          <widget class="QWidget" name="propertiesPanel">
@@ -997,9 +1017,30 @@ QPushButton:checked {background-color: red}</string>
     border: 0px solid transparent;
 }</string>
              </property>
-             <layout class="QVBoxLayout" name="verticalLayout_16">
-              <item>
+             <layout class="QVBoxLayout" name="_2">
+              <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
                <widget class="QLabel" name="label_9">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
@@ -1012,6 +1053,12 @@ padding: 10px;</string>
               </item>
               <item>
                <widget class="QPushButton" name="mergeModeButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1040,6 +1087,12 @@ padding: 10px;</string>
               </item>
               <item>
                <widget class="QPushButton" name="dissolveModeButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1065,6 +1118,12 @@ padding: 10px;</string>
               </item>
               <item>
                <widget class="QPushButton" name="collapseModeButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1106,7 +1165,7 @@ padding: 10px;</string>
               <property name="bottomMargin">
                <number>6</number>
               </property>
-              <item>
+              <item alignment="Qt::AlignmentFlag::AlignHCenter">
                <widget class="QLabel" name="selectionModeLabel">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1114,10 +1173,22 @@ padding: 10px;</string>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
-padding: 5px;</string>
+padding:10px;</string>
                 </property>
                 <property name="text">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Selection Mode&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -1150,6 +1221,12 @@ padding: 5px;</string>
                  </property>
                  <item>
                   <widget class="QPushButton" name="classicModeButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -1178,6 +1255,12 @@ padding: 5px;</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="additiveModeButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -1230,6 +1313,12 @@ padding: 5px;</string>
               </property>
               <item row="4" column="1">
                <widget class="QPushButton" name="edgeModeTranslationButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1263,6 +1352,12 @@ QPushButton { background-color: #646464; }</string>
               </item>
               <item row="4" column="0">
                <widget class="QPushButton" name="outModeTranslationButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1294,8 +1389,20 @@ QPushButton { background-color: #646464; }</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="0" colspan="2">
+              <item row="0" column="0" colspan="2" alignment="Qt::AlignmentFlag::AlignHCenter">
                <widget class="QLabel" name="transModeLabel">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
@@ -1311,6 +1418,12 @@ padding: 10px;</string>
               </item>
               <item row="1" column="0" colspan="2">
                <widget class="QPushButton" name="axisModeTranslationButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>28</height>
+                 </size>
+                </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -1351,12 +1464,24 @@ QPushButton { background-color: #646464; }</string>
            <item>
             <widget class="QWidget" name="scaleModes" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_7">
-              <item>
+              <item alignment="Qt::AlignmentFlag::AlignHCenter">
                <widget class="QLabel" name="label_4">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="styleSheet">
                  <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
-padding: 5px;</string>
+padding: 10px;</string>
                 </property>
                 <property name="text">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Scale Modes&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -1368,6 +1493,12 @@ padding: 5px;</string>
                 <layout class="QHBoxLayout" name="horizontalLayout_3">
                  <item>
                   <widget class="QPushButton" name="worldModeButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -1404,6 +1535,12 @@ QPushButton { background-color: #646464; }</string>
                  </item>
                  <item>
                   <widget class="QPushButton" name="localModeButton">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>28</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -1443,8 +1580,20 @@ li.checked::marker { content: &quot;\2612&quot;; }
              </layout>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QLabel" name="label">
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="styleSheet">
               <string notr="true">border: 1px solid transparent;
 border-bottom: 2px solid #646464;
@@ -1468,8 +1617,20 @@ padding: 10px;</string>
              </property>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QLabel" name="label_2">
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="styleSheet">
               <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
@@ -1486,8 +1647,20 @@ padding: 10px;</string>
            <item>
             <widget class="VectorInput" name="scaleInput" native="true"/>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QLabel" name="label_3">
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>200</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="styleSheet">
               <string notr="true">border: 1px solid transparent; 
 border-bottom: 2px solid #646464;
@@ -1784,11 +1957,17 @@ li.checked::marker { content: &quot;\2612&quot;; }
          </widget>
          <widget class="QWidget" name="subdivisionPanel">
           <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="subdivisionButton">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>200</width>
                <height>16777215</height>
               </size>
              </property>
@@ -1803,19 +1982,22 @@ li.checked::marker { content: &quot;\2612&quot;; }
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Cascadia Mono'; color:#ffffff;&quot;&gt;Splits an object into more faces and smooths&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; background-color:#1c1c1c;&quot;&gt;&lt;span style=&quot; color:#ffffff;&quot;&gt;Restricted to objects&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
              <property name="text">
               <string>Subdivide</string>
              </property>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="tesselationButton">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>200</width>
                <height>16777215</height>
               </size>
              </property>
@@ -1830,19 +2012,22 @@ li.checked::marker { content: &quot;\2612&quot;; }
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Tesselate&lt;/span&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span&gt;Works for every element&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
              <property name="text">
               <string>Tesselate</string>
              </property>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="triangulationButton">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>200</width>
                <height>16777215</height>
               </size>
              </property>
@@ -1865,11 +2050,17 @@ li.checked::marker { content: &quot;\2612&quot;; }
              </property>
             </widget>
            </item>
-           <item>
+           <item alignment="Qt::AlignmentFlag::AlignHCenter">
             <widget class="QPushButton" name="flipButton">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>28</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>150</width>
                <height>16777215</height>
               </size>
              </property>
@@ -1895,6 +2086,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
           </layout>
          </widget>
          <widget class="QWidget" name="cameraPanel">
+          <property name="styleSheet">
+           <string notr="true">border: 0px solid transparent;</string>
+          </property>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <widget class="QScrollArea" name="scrollArea">
@@ -1907,12 +2101,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                 <x>0</x>
                 <y>0</y>
                 <width>280</width>
-                <height>585</height>
+                <height>621</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
                <property name="spacing">
-                <number>2</number>
+                <number>10</number>
                </property>
                <property name="leftMargin">
                 <number>0</number>
@@ -1928,9 +2122,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
                </property>
                <item>
                 <widget class="QWidget" name="camModes" native="true">
-                 <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent;</string>
-                 </property>
                  <layout class="QGridLayout" name="gridLayout_3">
                   <property name="leftMargin">
                    <number>0</number>
@@ -1938,8 +2129,17 @@ li.checked::marker { content: &quot;\2612&quot;; }
                   <property name="rightMargin">
                    <number>0</number>
                   </property>
+                  <property name="spacing">
+                   <number>10</number>
+                  </property>
                   <item row="1" column="1">
                    <widget class="QPushButton" name="freeButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>28</height>
+                     </size>
+                    </property>
                     <property name="maximumSize">
                      <size>
                       <width>16777215</width>
@@ -1968,12 +2168,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>0</height>
+                      <height>28</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>16777215</width>
+                      <width>150</width>
                       <height>16777215</height>
                      </size>
                     </property>
@@ -1997,17 +2197,24 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     </property>
                    </widget>
                   </item>
-                  <item row="0" column="0" colspan="2">
+                  <item row="0" column="0" colspan="2" alignment="Qt::AlignmentFlag::AlignHCenter">
                    <widget class="QLabel" name="cameraModeLabel">
+                    <property name="minimumSize">
+                     <size>
+                      <width>200</width>
+                      <height>0</height>
+                     </size>
+                    </property>
                     <property name="maximumSize">
                      <size>
-                      <width>250</width>
+                      <width>200</width>
                       <height>16777215</height>
                      </size>
                     </property>
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent; 
-border-bottom: 2px solid #646464;</string>
+border-bottom: 2px solid #646464;
+padding: 10px;</string>
                     </property>
                     <property name="text">
                      <string>Camera Mode</string>
@@ -2035,10 +2242,10 @@ border-bottom: 2px solid #646464;</string>
                    <height>0</height>
                   </size>
                  </property>
-                 <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent;</string>
-                 </property>
                  <layout class="QGridLayout" name="gridLayout_4">
+                  <property name="spacing">
+                   <number>10</number>
+                  </property>
                   <item row="4" column="0">
                    <widget class="QCheckBox" name="vertexVisibilityBox">
                     <property name="toolTip">
@@ -2094,11 +2301,24 @@ QToolTip {
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="0" colspan="2">
+                  <item row="2" column="0" colspan="2" alignment="Qt::AlignmentFlag::AlignHCenter">
                    <widget class="QLabel" name="label_10">
+                    <property name="minimumSize">
+                     <size>
+                      <width>200</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>200</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent; 
-border-bottom: 2px solid #646464;</string>
+border-bottom: 2px solid #646464;
+padding: 10px;</string>
                     </property>
                     <property name="text">
                      <string>Show</string>
@@ -2126,10 +2346,10 @@ border-bottom: 2px solid #646464;</string>
                </item>
                <item>
                 <widget class="QWidget" name="widget_6" native="true">
-                 <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent;</string>
-                 </property>
                  <layout class="QGridLayout" name="gridLayout_6">
+                  <property name="spacing">
+                   <number>10</number>
+                  </property>
                   <item row="1" column="0">
                    <widget class="QLabel" name="label_12">
                     <property name="styleSheet">
@@ -2243,11 +2463,10 @@ border-bottom: 2px solid #646464;</string>
                    <height>0</height>
                   </size>
                  </property>
-                 <property name="styleSheet">
-                  <string notr="true">border: 1px solid transparent;
-padding: 2px;</string>
-                 </property>
                  <layout class="QGridLayout" name="gridLayout_7">
+                  <property name="spacing">
+                   <number>10</number>
+                  </property>
                   <item row="2" column="3">
                    <widget class="ColorButton" name="backgroundColorButton">
                     <property name="sizePolicy">
@@ -2288,8 +2507,20 @@ padding: 2px;</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="0" column="0" colspan="4">
+                  <item row="0" column="0" colspan="4" alignment="Qt::AlignmentFlag::AlignHCenter">
                    <widget class="QLabel" name="label_13">
+                    <property name="minimumSize">
+                     <size>
+                      <width>200</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>200</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="styleSheet">
                      <string notr="true">border: 1px solid transparent;
 border-bottom: 2px solid #646464;</string>

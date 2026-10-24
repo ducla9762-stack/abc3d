@@ -344,6 +344,12 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetBackgroundColor(ui.backgroundColorButton->GetColorF());
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
+
+    std::vector<HalfEdgeMesh*> startingMeshes = ui.viewport->getMeshes();
+    for (int i = 0; i < startingMeshes.size(); i++) {
+        std::string buttonName = std::to_string(i);
+        
+    }
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
@@ -500,6 +506,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.mergeModeButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.mergeToolButton->setChecked(true);
+        break;
     default:
         QMainWindow::keyPressEvent(event);
         return;
@@ -535,6 +542,14 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpStack->setCurrentIndex(0);
     QString file = helpFileModel->filePath(index);
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
+}
+
+void ABC3D::meshAdded(HalfEdgeMesh mesh) {
+
+}
+
+void ABC3D::meshRemoved(HalfEdgeMesh mesh) {
+
 }
 
 void ABC3D::elementChanged(Element element) {
