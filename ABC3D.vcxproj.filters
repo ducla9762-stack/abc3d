@@ -10,10 +10,12 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="GizmoRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
@@ -80,6 +82,8 @@
     <None Include="assets\shaders\Arrow.vert" />
     <None Include="assets\shaders\ArrowBasic.vert" />
     <None Include="assets\shaders\ArrowColor.frag" />
+    <None Include="assets\shaders\GizmoColor.frag" />
+    <None Include="assets\shaders\GizmoPick.frag" />
     <None Include="assets\shaders\BlinnPhong.frag" />
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />

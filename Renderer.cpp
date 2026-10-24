@@ -56,13 +56,7 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 	rndrs.vert.Initialize(header.data());
 	rndrs.edge.Initialize(header.data());
 	rndrs.grid.Initialize();
-
-	// Initialize gizmo renderer
-	//if (!gizmoRenderer.Initialize()) {
-		//return false;
-	//}
-	// Clear so we don't draw on startup.
-	//gizmoRenderer.Clear();
+	rndrs.gizmo.Initialize();
 
 	// The gizmo programs must exist before their camera uniforms are uploaded.
 	//UpdateViewUniforms();
@@ -98,6 +92,9 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		UploadColorBuffer(); 
 	}
 
+	// Had to duplicate this line outside of the conditional to fix visual bugs on NVIDIA GPU.
+	glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+
 	if (update.renderBufs || update.uniformBuf || update.camera || update.rerenderGeom) {
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
@@ -126,6 +123,10 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 	}
 
+	// Had to duplicate this line outside of the conditional to fix visual bugs on NVIDIA GPU.
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+
+	// Had to move this line outside of the conditional to fix visual bugs on NVIDIA GPU.
 	glBlitFramebuffer(0, 0, frame.width, frame.height, 0, 0, frame.width, frame.height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -147,6 +148,10 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glDisable(GL_BLEND);
 	}
 
+	// Gizmos are a screen-space overlay, drawn after the deferred composition and the grid.
+	// Picking uses a separate integer buffer.
+	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
+
 	glDepthMask(GL_TRUE);
 
 	update.ClearAll();
@@ -160,6 +165,9 @@ void ABC3DRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 	// Delete old framebuffer
 	glDeleteFramebuffers(1, &frame.fbo);
 	glDeleteRenderbuffers(1, &frame.depthBuf);
+	glDeleteFramebuffers(1, &frame.gizmoPickFbo);
+	glDeleteTextures(1, &frame.gizmoPickTex);
+	glDeleteRenderbuffers(1, &frame.gizmoPickDepth);
 
 	std::cout << "FB 1: " << glGetError() << std::endl;
 
@@ -207,6 +215,39 @@ void ABC3DRenderer::InitFramebuffer(GLuint defaultFrameBuffer) {
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "Framebuffer is invalid!" << std::endl;
 	}
+
+	// A small, independent integer target stores gizmo IDs for mouse hover and
+	// press. It is never sampled by the deferred shading pass.
+	glGenFramebuffers(1, &frame.gizmoPickFbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, frame.gizmoPickFbo);
+	glGenTextures(1, &frame.gizmoPickTex);
+	glBindTexture(GL_TEXTURE_2D, frame.gizmoPickTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, frame.width, frame.height, 0,
+		GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame.gizmoPickTex, 0);
+
+	glGenRenderbuffers(1, &frame.gizmoPickDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, frame.gizmoPickDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, frame.width, frame.height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, frame.gizmoPickDepth);
+	const GLenum gizmoDrawBuffer = GL_COLOR_ATTACHMENT0;
+	glDrawBuffers(1, &gizmoDrawBuffer);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "Gizmo pick framebuffer is invalid!" << std::endl;
+	}
+
+	// Creating the pick texture temporarily changes whichever texture unit was
+	// active (normally the deferred ID unit). Restore all deferred sampler
+	// bindings before the next shading pass.
+	glActiveTexture(GL_TEXTURE0 + TexBindings::POS);
+	glBindTexture(GL_TEXTURE_2D, tex.geom);
+	glActiveTexture(GL_TEXTURE0 + TexBindings::NORM);
+	glBindTexture(GL_TEXTURE_2D, tex.norm);
+	glActiveTexture(GL_TEXTURE0 + TexBindings::ID);
+	glBindTexture(GL_TEXTURE_2D, tex.id);
+	glActiveTexture(GL_TEXTURE0);
 
 	// Re-bind default framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer);
@@ -358,7 +399,6 @@ void ABC3DRenderer::UpdateSelection() {
 	for (uint i = 0; i < itemCount; ++i) {
 		const SelectionItem& item = items[i];
 		Element elmType = selecQuery->getActiveElement();
-		if (item.meshId == hover.mesh && (item.componentId == hover.element || elmType == OBJECT)) { continue; }
 		switch (elmType) {
 		case OBJECT:
 			SetObjectBlendColor(item.meshId, BlendColors::SELECT);
@@ -381,27 +421,28 @@ void ABC3DRenderer::UpdateSelection() {
 
 void ABC3DRenderer::UpdateHover() {
 	if (hover.mesh == MAX_UINT) { return; }
-	uint8_t blendClr = BlendColors::HOVER;
 
 	Element elmType = selecQuery->getActiveElement();
-	if (elmType == OBJECT) { if (selecQuery->hasSelectedMesh(hover.mesh)) { blendClr = BlendColors::BOTH; } }
-	else if (selecQuery->isSelected(hover.mesh, hover.element)) { blendClr = BlendColors::BOTH; }
+	const bool selected = elmType == OBJECT
+		? selecQuery->hasSelectedMesh(hover.mesh)
+		: selecQuery->isSelected(hover.mesh, hover.element);
+	if (selected) { return; }
 
 	switch (elmType) {
 	case OBJECT:
-		SetObjectBlendColor(hover.mesh, blendClr);
+		SetObjectBlendColor(hover.mesh, BlendColors::HOVER);
 		break;
 
 	case FACE:
-		SetFaceBlendColor(hover.mesh, hover.element, blendClr);
+		SetFaceBlendColor(hover.mesh, hover.element, BlendColors::HOVER);
 		break;
 
 	case EDGE:
-		SetEdgeBlendColor(hover.mesh, hover.element, blendClr);
+		SetEdgeBlendColor(hover.mesh, hover.element, BlendColors::HOVER);
 		break;
 
 	case VERTEX:
-		clrs[offset.meshVerts[hover.mesh] + hover.element] = blendClr;
+		clrs[offset.meshVerts[hover.mesh] + hover.element] = BlendColors::HOVER;
 		break;
 	}
 }
@@ -425,9 +466,7 @@ void ABC3DRenderer::UpdateProjectionUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-
-	//arrowRenderer.SetViewProjectionUniform(data, fov, height);
-	//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
+	rndrs.gizmo.SetViewProjection(data, cam.fov, frame.height);
 }
 
 void ABC3DRenderer::UpdateViewUniforms() {
@@ -444,8 +483,6 @@ void ABC3DRenderer::UpdateViewUniforms() {
 	rndrs.grid.SetTransform(data);
 	rndrs.edge.SetViewProjection(data);
 	rndrs.vert.SetViewProjection(data);
-
-	//arrowRenderer.SetViewProjectionUniform(data, fov, height);
-	//gizmoRenderer.SetViewProjectionUniform(data, fov, height);
+	rndrs.gizmo.SetViewProjection(data, cam.fov, frame.height);
 }
 

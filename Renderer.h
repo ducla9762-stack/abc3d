@@ -17,6 +17,7 @@
 #include "mesh.h"
 #include "camera.h"
 #include "renderBufferBuilder.h"
+#include "GizmoRenderer.h"
 
 #undef max
 
@@ -404,6 +405,7 @@ class ABC3DRenderer {
 		GridRenderer grid;
 		VertexRenderer vert;
 		EdgeRenderer edge;
+		GizmoRenderer gizmo;
 	} rndrs;
 
 	enum TexBindings : int { POS = 0, NORM = 1, ID = 2 };
@@ -442,6 +444,9 @@ class ABC3DRenderer {
 		int height = 0;
 		GLuint fbo = 0;
 		GLuint depthBuf = 0;
+		GLuint gizmoPickFbo = 0;
+		GLuint gizmoPickTex = 0;
+		GLuint gizmoPickDepth = 0;
 	} frame;
 
 	struct CameraSettings {
@@ -591,7 +596,24 @@ public:
 		update.hover = true;
 	}
 
-	void ClearHover() { hover.mesh = MAX_UINT; hover.element = MAX_UINT; }
+	void ClearHover() { hover.mesh = MAX_UINT; hover.element = MAX_UINT; update.hover = true; }
+
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& rotation) {
+		rndrs.gizmo.UpdateGizmos(base, hoveredAxis, type, rotation);
+	}
+
+	void ClearGizmos() { rndrs.gizmo.Clear(); }
+
+	Vec3u GizmoSelectionIds(uint x, uint y) {
+		if (x >= frame.width || y >= frame.height || frame.gizmoPickFbo == 0) {
+			return Vec3u(MAX_UINT);
+		}
+		Vec3u ids;
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, frame.gizmoPickFbo);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &ids.x);
+		return ids;
+	}
 
 	void SetScene(const Scene& scene) { this->scene = &scene; }
 

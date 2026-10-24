@@ -273,9 +273,9 @@ private:
 
 	void handleSelection(const Vec2u& selectionIds);
 	SelectionItem createSelectionItem(const Vec2u& ids);
-	void handleMergeVertexClick(const Vec3u& selectionIds);
-	void handleCollapseEdgeClick(const Vec3u& selectionIds);
-	void handleDissolveEdgeClick(const Vec3u& selectionIds);
+	void handleMergeVertexClick(const Vec2u& selectionIds);
+	void handleCollapseEdgeClick(const Vec2u& selectionIds);
+	void handleDissolveEdgeClick(const Vec2u& selectionIds);
 	void setActiveElement(Element element);
 
 // ---------------------------------------------------------------------------------------------
@@ -363,9 +363,9 @@ public slots:
 		}
 		setAction(TRANSLATE_OUT); 
 	}
-	void setActionTranslateAxis() { setAction(TRANSLATE_FREE); }
+	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 	void setActionTranslateEdge() {
-		/*// The constrained operation is vertex only.
+		// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
 			setActiveElement(VERTEX);
 			elementButtons[0]->setChecked(true);
@@ -380,7 +380,7 @@ public slots:
 			reducedSelection = true;
 		}
 		setAction(TRANSLATE_EDGE);
-		if (reducedSelection) { emitSelectionChanged(); } */
+		if (reducedSelection) { emitSelectionChanged(); }
 	}
 
 	void setActionExtrude() { setAction(EXTRUDE); }
@@ -392,7 +392,9 @@ public slots:
 		}
 		setAction(SCALE); }
 	void setActionRotate() { 
-		setActiveElement(OBJECT);
+		if (getActiveElement() != OBJECT) {
+			setActiveElement(OBJECT);
+		}
 		elementButtons[3]->setChecked(true);
 		setAction(ROTATE); 
 	}
@@ -726,7 +728,6 @@ public slots:
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
-			//updateGizmos();
 			update();
 		}
 	}
@@ -848,7 +849,6 @@ public slots:
 		renderer.UpdateTransforms();
 		renderer.UpdateSelection(selectionManager);
 		//updateSelectionVisuals();
-		//updateGizmos();
 		update();
 
 		return true;
@@ -876,7 +876,15 @@ public slots:
 		if (knifeSession) { return; } // the knife holds mesh ids
 		std::cout << "delete" << std::endl;
 		std::vector<SelectionItem> selectedItems = selectionManager.getSelectedItems();
-		if (selectionManager.getActiveElement() == FACE) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			// Scene::DeleteMesh swaps the last mesh into the removed slot, so
+			// delete selected object IDs from highest to lowest.
+			std::sort(selectedItems.begin(), selectedItems.end(),
+				[](const SelectionItem& left, const SelectionItem& right) {
+					return left.meshId > right.meshId;
+				});
+		}
+		else if (selectionManager.getActiveElement() == FACE) {
 			// Delete higher face IDs first so removing a face does not shift the
 			// IDs of selected faces that are still waiting to be deleted.
 			std::sort(selectedItems.begin(), selectedItems.end(),
@@ -916,11 +924,17 @@ public slots:
 
 		makeCurrent();
 		selectionManager.clearSelection();
+		hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		hoveredGizmoAxis = MAX_UINT;
+		draggingGizmo = false;
+		draggedGizmoAxis = MAX_UINT;
+		draggedRotationAxis = Vec3f(0.0f);
+		renderer.ClearHover();
+		updateGizmos();
 		//renderer.UpdateRenderBuffers(scene);
 		//renderer.ResetColorBuffer<true>();
 		//renderer.UpdateUniformBuffer();
 		//updateSelectionVisuals();
-		//updateGizmos();
 
 		// 10/16/26 - Changed to public API.
 		// Need to update geometry because the mesh list/IDs/vertex buffers have changed.
@@ -1109,6 +1123,17 @@ public slots:
 		}
 		else {
 			renderer.SelectColor<false>(clr);
+		}
+	}
+
+	void SetHoverColor(const Vec3f& clr) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.HoverColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.HoverColor<false>(clr);
 		}
 	}
 
