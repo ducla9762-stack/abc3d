@@ -91,10 +91,10 @@ class IconRenderer {
 	GLuint tex;
 	GLuint vao;
 	GLSLProgram prog;
-	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2 };
+	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, ASPECT_RATIO = 3 };
 
 public:
-	bool Initialize(uint texBindPt, const uint8_t* icon, uint w, uint h) {
+	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
 		bool success = prog.BuildFiles("assets/shaders/Icon.vert", "assets/shaders/Icon.frag");
 
 		if (!success) {
@@ -104,11 +104,17 @@ public:
 
 		glGenVertexArrays(1, &vao);
 		glGenTextures(1, &tex);
-		
-		glActiveTexture(GL_TEXTURE0 + texBindPt);
+
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(texBindPt));
 		glBindTexture(GL_TEXTURE_2D, tex);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, icon);
+		if (icon) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, icon);
+		}
+		else {
+			uint8_t red[4] = { 255, 0, 0, 255 };
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, red);
+		}
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -117,17 +123,21 @@ public:
 		prog.RegisterUniform(TEX, "tex");
 		prog.RegisterUniform(SCALE, "scale");
 		prog.RegisterUniform(POS, "pos");
+		prog.RegisterUniform(ASPECT_RATIO, "aspectR");
 
-		//prog.SetUniform(TEX, texBindPt);
-		prog.SetUniform(SCALE, 0.05f); // icon covers 10% of screen. Will expose this param later.
+		prog.SetUniform(TEX, texBindPt);
+
+		glActiveTexture(GL_TEXTURE0);
 
 		return true;
 	}
 
-	void Draw(const Vec3f& pos) {
+	void Draw(const Vec3f& pos, float scale, float aspectR) {
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
+		prog.SetUniform(SCALE, scale * 0.5f);
+		prog.SetUniform(ASPECT_RATIO, aspectR);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
 	}

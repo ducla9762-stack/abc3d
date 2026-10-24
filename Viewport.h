@@ -156,7 +156,8 @@ private:
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
-	bool showPivot = true;
+	bool showPivot = false;
+	float pivotScale = 0.05f;
 	Vec2f menuPos;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
@@ -212,11 +213,11 @@ private:
 
 	void paintGL() override {
 		renderer.Draw(defaultFramebufferObject());
-		if (showPivot && selectionManager.meshCount() == 1) {
+		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT) {
 			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
 			glDisable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
-			iconRenderer.Draw(pos);
+			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
@@ -1143,6 +1144,10 @@ public slots:
 	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
 
 	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
+
+	void setPivotVisibility(bool visible) { if (showPivot != visible) { showPivot = visible; update(); } }
+
+	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
 
 private slots:
 	void rightClickDuplicate() {

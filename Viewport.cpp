@@ -117,11 +117,13 @@ void Viewport::initializeGL() {
 
 	QImage pivotImg("assets/icons/pivot.png");
 	if (pivotImg.isNull()) { 
-		std::cout << "Couldn't load pivot icon" << std::endl; 
+		std::cout << "Couldn't load pivot icon. Using default instead." << std::endl;
 		iconRenderer.Initialize(7, nullptr, 0, 0);
 	}
 	else {
-		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height());
+		bool r = pivotImg.reinterpretAsFormat(QImage::Format::Format_RGBA8888);
+		pivotImg.flip();
+		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height(), GL_BGRA);
 	}
 }
 
