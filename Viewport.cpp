@@ -116,8 +116,13 @@ void Viewport::initializeGL() {
 	updateGizmos();
 
 	QImage pivotImg("assets/icons/pivot.png");
-	if (pivotImg.isNull()) { std::cout << "Couldn't load pivot icon" << std::endl; return; }
-	iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height());
+	if (pivotImg.isNull()) { 
+		std::cout << "Couldn't load pivot icon" << std::endl; 
+		iconRenderer.Initialize(7, nullptr, 0, 0);
+	}
+	else {
+		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height());
+	}
 }
 
 // ---------------------------------------------------------------------------------------------
