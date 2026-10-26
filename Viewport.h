@@ -124,6 +124,8 @@ signals:
 	void enableNonVertexSpinners(bool enable);
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
+	void meshAdded(int meshID);
+	void meshRemoved(int meshID);
 
 public:
 

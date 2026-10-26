@@ -54,7 +54,10 @@ ABC3D::ABC3D(QWidget *parent)
     //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
     // Connections based on key-presses
-    QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
+    QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
+        ui.viewport->deleteSelection();
+        //emit meshDeletedSignal();
+        });
     QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
@@ -346,9 +349,12 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
     std::vector<HalfEdgeMesh*> startingMeshes = ui.viewport->getMeshes();
+    std::vector<QPushButton*> sceneButtons(startingMeshes.size());
     for (int i = 0; i < startingMeshes.size(); i++) {
-        std::string buttonName = std::to_string(i);
-        
+        QString buttonName = QString::number(i);
+        QPushButton* sceneButton = new QPushButton(buttonName, this);
+        sceneButtons[i] = sceneButton;
+        ui.verticalLayout_10->addWidget(sceneButton);
     }
 }
 
@@ -401,6 +407,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_Delete:
         event->accept();
         emit deleteKeyPressed();
+        //emit meshDeletedSignal();
         break;
     // Toggle Grid
     case Qt::Key_G:
@@ -544,11 +551,11 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::meshAdded(HalfEdgeMesh mesh) {
-
+void ABC3D::meshAdded(int meshID) {
+    
 }
 
-void ABC3D::meshRemoved(HalfEdgeMesh mesh) {
+void ABC3D::meshRemoved(int meshID) {
 
 }
 

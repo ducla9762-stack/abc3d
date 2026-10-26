@@ -860,7 +860,7 @@ border-radius: 4px; }
 QTabWidget {border: 0px;}</string>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <property name="styleSheet">
@@ -987,11 +987,7 @@ QTabWidget {border: 0px;}</string>
           <attribute name="title">
            <string>Scene Hierarchy</string>
           </attribute>
-          <layout class="QVBoxLayout" name="verticalLayout_10">
-           <item>
-            <widget class="QTreeView" name="sceneTree"/>
-           </item>
-          </layout>
+          <layout class="QVBoxLayout" name="verticalLayout_10"/>
          </widget>
         </widget>
        </item>
