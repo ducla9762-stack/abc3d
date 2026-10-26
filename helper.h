@@ -44,6 +44,8 @@ const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);
 const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
 const Vec3f ORIGIN = Vec3f(0.0f);
 
+enum Axis : uint8_t { X = 0b001, Y = 0b010, Z = 0b100, X_NEG = 0b1001, Y_NEG = 0b1010, Z_NEG = 0b1100, NEG = 0b1000  };
+
 // Compute distance of a point (pt) from a line (linePt + t * lineDir) 
 // using Lagrange's identity
 inline float DistToLine(const Vec3f& pt, const Vec3f& linePt, const Vec3f& lineDir) {

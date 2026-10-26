@@ -53,17 +53,7 @@ Viewport::Viewport(QWidget *parent)
 
 	// Right Click Panel Actions
 
-	menuActions[0] = new QAction("Delete", this);
-	menuActions[1] = new QAction("Duplicate", this);
-	menuActions[2] = new QAction("Orbit Camera", this);
-	menuActions[3] = new QAction("Re-Center Pivot", this);
-	menuActions[4] = new QAction("Bake Scale", this);
-
-	QObject::connect(menuActions[0], &QAction::triggered, this, &Viewport::rightClickDelete);
-	QObject::connect(menuActions[1], &QAction::triggered, this, &Viewport::rightClickDuplicate);
-	QObject::connect(menuActions[2], &QAction::triggered, this, &Viewport::rightClickOrbit);
-	QObject::connect(menuActions[3], &QAction::triggered, this, &Viewport::rightClickRecenter);
-	QObject::connect(menuActions[4], &QAction::triggered, this, &Viewport::rightClickBakeScale);
+	menu = new ViewportMenu(this);
 
 	// Set Default Settings & Load Default Cube
 
@@ -509,13 +499,8 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 	event->accept();
 
-	QMenu menu(this);
-	for (int i = 0; i < 5; ++i) {
-		menu.addAction(menuActions[i]);
-	}
-
 	menuPos.Set(float(event->pos().x()), float(this->height() - event->pos().y()) - 1.0f);
-	menu.exec(event->globalPos());
+	menu->exec(event->globalPos());
 }
 
 // ---------------------------------------------------------------------------------------------

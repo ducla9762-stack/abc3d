@@ -148,6 +148,14 @@ public:
 
 private:
 
+	struct AABB {
+		Vec3f min;
+		Vec3f max;
+		AABB(const Vec3f& min, const Vec3f& max) : min(min), max(max) {}
+		AABB(const Vec3f& val) : min(val), max(val) {}
+		AABB() : min(std::numeric_limits<float>::infinity()), max(0.0f) {}
+	};
+
 	struct VertexAdjacentInfo {
 		uint edgeCount = 0;
 		uint quadCount = 0;
@@ -261,6 +269,25 @@ private:
 	/// </summary>
 	/// <returns>The area based centroid of the mesh.</returns>
 	Vec3f computeCentroid();
+
+	AABB ComputeBoundingBox() {
+		AABB box;
+
+		if (vertPos.empty()) { return box; }
+
+		for (uint i = 0; i < uint(vertPos.size()); ++i) {
+			if (vertEdge[i] == MAX_UINT) { continue; }
+			Vec3f& pos = vertPos[i];
+			if (pos.x < box.min.x) { box.min.x = pos.x; }
+			if (pos.x > box.max.x) { box.max.x = pos.x; }
+			if (pos.y < box.min.y) { box.min.y = pos.y; }
+			if (pos.y > box.max.y) { box.max.y = pos.y; }
+			if (pos.z < box.min.z) { box.min.z = pos.z; }
+			if (pos.z > box.max.z) { box.max.z = pos.z; }
+		}
+
+		return box;
+	}
 
 	/// <summary>
 	/// Translate all vertices by a translation factor.
@@ -379,6 +406,32 @@ public:
 		Vec3f centroid = computeCentroid();
 		for (Vec3f& pos : vertPos) { pos -= centroid; }
 		pos += centroid;
+	}
+
+	void RecenterOnBoundary(Axis boundary) {
+		AABB box = ComputeBoundingBox();
+		if (box.min.x == std::numeric_limits<float>::infinity()) { return; }
+
+		Vec3f origin(0.0f);
+
+		if (boundary & Axis::X) {
+			origin.y = (box.max.y + box.min.y) / 2.0f; 
+			origin.z = (box.max.z + box.min.z) / 2.0f;
+			origin.x = (boundary & Axis::NEG) ? box.min.x : box.max.x;
+		}
+		else if (boundary & Axis::Y) {
+			origin.x = (box.max.x + box.min.x) / 2.0f;
+			origin.z = (box.max.z + box.min.z) / 2.0f;
+			origin.y = (boundary & Axis::NEG) ? box.min.y : box.max.y;
+		}
+		else if (boundary & Axis::Z) {
+			origin.x = (box.max.x + box.min.x) / 2.0f;
+			origin.y = (box.max.y + box.min.y) / 2.0f;
+			origin.z = (boundary & Axis::NEG) ? box.min.z : box.max.z;
+		}
+
+		for (Vec3f& pos : vertPos) { pos -= origin; }
+		pos += origin;
 	}
 
 	/// <returns>Mesh's scale factor.</returns>

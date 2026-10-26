@@ -6,6 +6,7 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QMenu>
 #include <QPainter>
 #include <functional>
 #include <optional>
@@ -109,6 +110,8 @@ protected:
 	}
 };
 
+class ViewportMenu;
+
 class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
@@ -135,6 +138,8 @@ public:
 
 private:
 
+	friend class ViewportMenu;
+
 	struct ActionParams {
 		Action action = SELECT;
 		int stage = 0;
@@ -146,7 +151,7 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
-	QAction* menuActions[5];
+	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
@@ -1215,4 +1220,86 @@ private slots:
 			}
 		}
 	}
+
+	void rightClickCenterOnBoundary(Axis boundary) {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->RecenterOnBoundary(boundary);
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionPosChanged();
+			}
+		}
+	}
+
+	void rightClickCenterOnBoundaryX() { rightClickCenterOnBoundary(X); }
+	void rightClickCenterOnBoundaryXNeg() { rightClickCenterOnBoundary(X_NEG); }
+	void rightClickCenterOnBoundaryY() { rightClickCenterOnBoundary(Y); }
+	void rightClickCenterOnBoundaryYNeg() { rightClickCenterOnBoundary(Y_NEG); }
+	void rightClickCenterOnBoundaryZ() { rightClickCenterOnBoundary(Z); }
+	void rightClickCenterOnBoundaryZNeg() { rightClickCenterOnBoundary(Z_NEG); }
+};
+
+class ViewportMenu : public QMenu {
+	//QAction* actions[4];
+	//QMenu* menus[1];
+	friend class Viewport;
+
+public:
+	ViewportMenu(Viewport* viewport) : QMenu(viewport)
+	{
+		/*actions[0] = new QAction("Delete", viewport);
+		actions[1] = new QAction("Duplicate", viewport);
+		actions[2] = new QAction("Orbit Camera", viewport);
+		actions[3] = new QAction("Bake Scale", viewport);
+
+		QObject::connect(actions[0], &QAction::triggered, this, &Viewport::rightClickDelete);
+		QObject::connect(actions[1], &QAction::triggered, this, &Viewport::rightClickDuplicate);
+		QObject::connect(actions[2], &QAction::triggered, this, &Viewport::rightClickOrbit);
+		QObject::connect(actions[3], &QAction::triggered, this, &Viewport::rightClickRecenter);
+		QObject::connect(menuActions[4], &QAction::triggered, this, &Viewport::rightClickBakeScale);*/
+		QAction* action = QMenu::addAction("Delete");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickDelete);
+
+		action = QMenu::addAction("Duplicate");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickDuplicate);
+
+		action = QMenu::addAction("Orbit Camera");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickOrbit);
+
+		action = QMenu::addAction("Bake Scale");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickBakeScale);
+
+		QMenu* menu = QMenu::addMenu("Set Pivot");
+
+		action = menu->addAction("Center");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickRecenter);
+
+		QMenu* boundaryMenu = menu->addMenu("Boundary");
+
+		action = boundaryMenu->addAction("X");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryX);
+
+		action = boundaryMenu->addAction("-X");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryXNeg);
+
+		action = boundaryMenu->addAction("Y");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryY);
+
+		action = boundaryMenu->addAction("-Y");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryYNeg);
+
+		action = boundaryMenu->addAction("Z");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryZ);
+
+		action = boundaryMenu->addAction("-Z");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryZNeg);
+	}
+
 };
