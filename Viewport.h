@@ -1172,6 +1172,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DeleteMesh(ids.x);
+			selectionManager.clearSelection();
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1186,6 +1187,7 @@ private slots:
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			renderer.setOrbitOrigin(scene[ids.x]->Pos());
 			update();
+			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
 		}
 	}
 

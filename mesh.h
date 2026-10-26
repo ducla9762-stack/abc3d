@@ -405,7 +405,11 @@ public:
 	void RecenterOnCentroid() {
 		Vec3f centroid = computeCentroid();
 		for (Vec3f& pos : vertPos) { pos -= centroid; }
-		pos += centroid;
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * centroid);
 	}
 
 	void RecenterOnBoundary(Axis boundary) {
@@ -431,7 +435,11 @@ public:
 		}
 
 		for (Vec3f& pos : vertPos) { pos -= origin; }
-		pos += origin;
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * origin);
 	}
 
 	/// <returns>Mesh's scale factor.</returns>
