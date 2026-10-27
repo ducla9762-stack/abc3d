@@ -2952,6 +2952,8 @@ color: white;</string>
     <signal>viewportClicked()</signal>
     <signal>elementChanged(Element)</signal>
     <signal>primaryCamParamChanged(Vec3f)</signal>
+    <signal>meshAdded(int)</signal>
+    <signal>meshRemoved(int)</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -4572,6 +4574,38 @@ color: white;</string>
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>meshAdded(int)</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>meshAdded(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>768</x>
+     <y>633</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>888</x>
+     <y>622</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>meshRemoved(int)</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>meshRemoved(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>768</x>
+     <y>633</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>888</x>
+     <y>622</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showPropertiesPanel()</slot>
@@ -4583,5 +4617,7 @@ color: white;</string>
   <slot>exportObj()</slot>
   <slot>exportStl()</slot>
   <slot>elementChanged(Element)</slot>
+  <slot>meshAdded(int)</slot>
+  <slot>meshRemoved(int)</slot>
  </slots>
 </ui>

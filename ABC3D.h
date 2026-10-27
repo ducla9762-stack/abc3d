@@ -22,6 +22,8 @@ public:
 
     QFileSystemModel* tutorialFileModel = new QFileSystemModel;
     QFileSystemModel* helpFileModel = new QFileSystemModel;
+    std::vector<HalfEdgeMesh*> startingMeshes;
+    std::vector<QPushButton*> sceneButtons;
 
 private:
     Ui::ABC3DClass ui;

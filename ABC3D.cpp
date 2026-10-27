@@ -348,11 +348,10 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
-    std::vector<HalfEdgeMesh*> startingMeshes = ui.viewport->getMeshes();
-    std::vector<QPushButton*> sceneButtons(startingMeshes.size());
+    startingMeshes = ui.viewport->getMeshes();
+    sceneButtons.resize(startingMeshes.size());
     for (int i = 0; i < startingMeshes.size(); i++) {
-        QString buttonName = QString::number(i);
-        QPushButton* sceneButton = new QPushButton(buttonName, this);
+        QPushButton* sceneButton = new QPushButton(QString::number(i), this);
         sceneButtons[i] = sceneButton;
         ui.verticalLayout_10->addWidget(sceneButton);
     }
@@ -552,11 +551,12 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
 }
 
 void ABC3D::meshAdded(int meshID) {
-    
+    QPushButton* newButton = new QPushButton(QString::number(meshID), this);
+    ui.verticalLayout_10->addWidget(newButton);
 }
 
 void ABC3D::meshRemoved(int meshID) {
-
+    sceneButtons[meshID]->deleteLater();
 }
 
 void ABC3D::elementChanged(Element element) {
