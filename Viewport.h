@@ -154,6 +154,24 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
+	struct ReferenceImage {
+		uint id;
+		QString sourcePath;
+
+		Vec3f position;
+		Vec3f rotation;
+		Vec2f size;
+
+		float opacity = 1.0f;
+		bool visible = true;
+		bool locked = false;
+
+		bool isNull() {
+			return sourcePath.isEmpty();
+		}
+	};
+	ReferenceImage refImage;
+
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
@@ -166,7 +184,7 @@ private:
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
 	bool showPivot = false;
-	bool showReferenceImage = false;
+	//bool showReferenceImage = false;
 	float pivotScale = 0.05f;
 	Vec2f menuPos;
 
@@ -231,7 +249,7 @@ private:
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
-		if (showReferenceImage) {
+		if (!refImage.isNull()) {
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1184,7 +1202,12 @@ public slots:
 			GL_RGBA
 		);
 
-		showReferenceImage = true;
+		refImage.id = 0;
+		refImage.sourcePath = filepath;
+		refImage.position = Vec3f(0.0f);
+		refImage.rotation = Vec3f(0.0f);
+		refImage.size = Vec2f(1.0f);
+
 		update();
 	}
 
