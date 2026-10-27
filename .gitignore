@@ -44,16 +44,10 @@ CMakePresets.json
 # =========================
 
 .vs/
-*.vcxproj.user
-*.vcxproj.filters
 *.sln.docstates
 *.VC.db
 *.VC.opendb
-
-# If you ever generate solutions manually
-
-*.sln
-*.vcxproj
+*.vcxproj.user
 
 # =========================
 

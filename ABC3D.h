@@ -2,6 +2,11 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QFileDialog>
+#include <QFileSystemModel>
+#include <QDesktopServices>
+#include <QTreeView>
+#include <QCursor>
+#include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -15,6 +20,11 @@ public:
 
     bool firstShow = true;
 
+    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
+    QFileSystemModel* helpFileModel = new QFileSystemModel;
+    std::vector<HalfEdgeMesh*> startingMeshes;
+    std::vector<QPushButton*> sceneButtons;
+
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
@@ -25,14 +35,13 @@ private:
 
     void showEvent(QShowEvent* event) override;
 
-    /* Creates a start menu and checks what integer is returned by the exec function
-    */
+    /* Creates a start menu and checks what integer is returned by the exec function */
     void showStart() {
         StartMenu startMenu(this);
         int execResult = startMenu.exec();
         if (execResult == 4) { modelFileDialog(); }
         else if (execResult == 5) { sceneFileDialog(); }
-        //else if (execResult = 6) {} -- add once we have a website
+        else if (execResult == 6) { QDesktopServices::openUrl(QUrl("https://abc3d.me")); }
     }
 
 private slots:
@@ -114,6 +123,12 @@ private slots:
 
         ui.viewport->saveScene(projectFile.constData());
     }
+
+    void tutorialRowClicked(const QModelIndex& index);
+    void helpRowClicked(const QModelIndex& index);
+    void elementChanged(Element element);
+    void meshAdded(int meshID);
+    void meshRemoved(int meshID);
 
 signals:
     void deleteKeyPressed();

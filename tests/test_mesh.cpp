@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "mesh.h"
@@ -35,6 +36,12 @@ namespace {
 		EXPECT_EQ(mesh.FaceCount(), faces);
 		EXPECT_EQ(mesh.EdgeCount(), edges);
 	}
+
+	void ExpectVec3Near(const Vec3f& actual, const Vec3f& expected, float tolerance = 1e-5f) {
+		EXPECT_NEAR(actual.x, expected.x, tolerance);
+		EXPECT_NEAR(actual.y, expected.y, tolerance);
+		EXPECT_NEAR(actual.z, expected.z, tolerance);
+	}
 }
 
 // Test for the build wiring: abc3d_core links without FLTK or OpenGL.
@@ -65,6 +72,204 @@ TEST(MeshInvariants, PyramidStartsValid) {
 	EXPECT_EQ(mesh.VertexCount(), 5u);
 	EXPECT_EQ(mesh.FaceCount(), 5u);
 	EXPECT_EQ(mesh.EdgeCount(), 16u);
+}
+
+TEST(HalfEdgeMeshMerge, RejectsNonIncidentVertices) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f),
+			Vec3f(2.0f, 2.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	ASSERT_TRUE(IsValid(mesh));
+	EXPECT_FALSE(mesh.MergeVertices(3, 1));
+	EXPECT_EQ(mesh.VertexCount(), 4u);
+	ExpectVec3Near(mesh.GetVertexPosition(1), Vec3f(1.0f, 0.0f, 0.0f));
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, CollapsesAdjacentCubeEdge) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.MergeVertices(0, 4));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, SkipsDeletedFaces) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_TRUE(mesh.MergeVertices(0, 4));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, RejectsNonIncidentCubeVertices) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_FALSE(mesh.MergeVertices(0, 3));
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, RejectsSameVertexWithoutChangingMesh) {
+	HalfEdgeMesh mesh = Cube();
+	const uint vertexCount = mesh.VertexCount();
+	const uint edgeCount = mesh.EdgeCount();
+	const Vec3f original = mesh.GetVertexPosition(0);
+
+	EXPECT_FALSE(mesh.MergeVertices(0, 0));
+	EXPECT_EQ(mesh.VertexCount(), vertexCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	ExpectVec3Near(mesh.GetVertexPosition(0), original);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshMerge, RejectsCollapseOfLastFace) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	const uint vertexCount = mesh.VertexCount();
+	const uint faceCount = mesh.FaceCount();
+	const uint edgeCount = mesh.EdgeCount();
+
+	EXPECT_FALSE(mesh.MergeVertices(0, 1));
+	EXPECT_EQ(mesh.VertexCount(), vertexCount);
+	EXPECT_EQ(mesh.FaceCount(), faceCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshCollapse, CollapsesCubeEdgeToItsMidpoint) {
+	HalfEdgeMesh mesh = Cube();
+	const HalfEdgeMesh::HalfEdge edge = mesh.GetEdge(0);
+	const uint mergedVertex = edge.dest > edge.orig ? edge.dest - 1 : edge.dest;
+	const Vec3f midpoint = (mesh.GetVertexPosition(edge.orig) +
+		mesh.GetVertexPosition(edge.dest)) * 0.5f;
+
+	EXPECT_TRUE(mesh.CollapseEdge(0));
+	EXPECT_EQ(mesh.VertexCount(), 7u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 22u);
+	ExpectVec3Near(mesh.GetVertexPosition(mergedVertex), midpoint);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDissolve, DissolvesInteriorEdgeDirectly) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDissolve, RejectsBoundaryEdge) {
+	HalfEdgeMesh mesh;
+	mesh.load(
+		std::vector<Vec3f>{
+			Vec3f(0.0f, 0.0f, 0.0f),
+			Vec3f(1.0f, 0.0f, 0.0f),
+			Vec3f(0.0f, 1.0f, 0.0f)
+		},
+		std::vector<Vec4u>{ Vec4u(0, 1, 2, MAX_UINT) });
+
+	const uint faceCount = mesh.FaceCount();
+	const uint edgeCount = mesh.EdgeCount();
+	EXPECT_FALSE(mesh.DissolveEdge(0));
+	EXPECT_EQ(mesh.FaceCount(), faceCount);
+	EXPECT_EQ(mesh.EdgeCount(), edgeCount);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshDelete, RemovesFaceAndCreatesBoundary) {
+	HalfEdgeMesh mesh = Cube();
+
+	EXPECT_TRUE(mesh.DeleteFace(0));
+	EXPECT_FALSE(mesh.DeleteFace(0));
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+
+	bool hasBoundary = false;
+	for (uint edgeId = 0; edgeId < mesh.EdgeCount(); ++edgeId) {
+		if (mesh.GetEdge(edgeId).face == MAX_UINT) {
+			hasBoundary = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(hasBoundary);
+}
+
+TEST(HalfEdgeMeshDelete, DeletingAllFacesKeepsTombstones) {
+	HalfEdgeMesh mesh = Cube();
+
+	for (uint faceId = 0; faceId < mesh.FaceCount(); ++faceId) {
+		EXPECT_TRUE(mesh.DeleteFace(faceId));
+	}
+
+	EXPECT_EQ(mesh.VertexCount(), 8u);
+	EXPECT_EQ(mesh.FaceCount(), 6u);
+	EXPECT_EQ(mesh.EdgeCount(), 24u);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+// --- Component scaling ----------------------------------------------------
+// AI-Generated Tests of scaling faces and edges.
+
+TEST(HalfEdgeMeshScale, EdgeScalesAroundItsMidpoint) {
+	HalfEdgeMesh mesh = Cube();
+	const HalfEdgeMesh::HalfEdge edge = mesh.GetEdge(0);
+	const Vec3f center = mesh.GetEdgeCenter(0);
+	const Vec3f origBefore = mesh.GetVertexPosition(edge.orig);
+	const Vec3f destBefore = mesh.GetVertexPosition(edge.dest);
+	const Vec3f factors(2.0f, 0.5f, 3.0f);
+
+	mesh.ScaleEdge(0, factors);
+
+	ExpectVec3Near(mesh.GetVertexPosition(edge.orig), center + (origBefore - center) * factors);
+	ExpectVec3Near(mesh.GetVertexPosition(edge.dest), center + (destBefore - center) * factors);
+	EXPECT_TRUE(IsValid(mesh));
+}
+
+TEST(HalfEdgeMeshScale, FaceScalesOnlyItsSharedBoundaryVertices) {
+	HalfEdgeMesh mesh = Cube();
+	std::vector<Vec3f> before;
+	before.reserve(mesh.VertexCount());
+	for (uint vertexId = 0; vertexId < mesh.VertexCount(); ++vertexId) {
+		before.push_back(mesh.GetVertexPosition(vertexId));
+	}
+
+	std::vector<uint> faceVertices;
+	mesh.GetFaceVertices(0, faceVertices);
+	const std::unordered_set<uint> scaledVertices(faceVertices.begin(), faceVertices.end());
+	const Vec3f center = mesh.faceCentroid(0);
+
+	mesh.ScaleFace(0, Vec3f(2.0f));
+
+	for (uint vertexId = 0; vertexId < mesh.VertexCount(); ++vertexId) {
+		const Vec3f expected = scaledVertices.count(vertexId)
+			? center + (before[vertexId] - center) * 2.0f
+			: before[vertexId];
+		ExpectVec3Near(mesh.GetVertexPosition(vertexId), expected);
+	}
+	EXPECT_TRUE(IsValid(mesh));
 }
 
 // --- Extrude ---------------------------------------------------------------

@@ -485,6 +485,8 @@ public:
 		mesh.edges[edge.next].face = twin.face;
 
 		mesh.faceEdges[edge.face] = MAX_UINT;
+		edge.dest = MAX_UINT;
+		twin.dest = MAX_UINT;
 	}
 
 	void CreateExtrudeEdgeJunction(const VMesh& vMesh) {
@@ -667,7 +669,7 @@ public:
 				mesh.InsertPrev(currEdge, vFaceTwin);
 
 				vFaceEdge.face = bevel.faceId;
-				vFaceEdge.prev = firstNewEdge + WrapInc(i, bevel.degree - 1, firstNewEdge);
+				vFaceEdge.prev = firstNewEdge + WrapInc(i, bevel.degree - 1);
 				vFaceEdge.next = vFaceEdgeId - 1;
 
 				vertices.push_back(edge.orig);

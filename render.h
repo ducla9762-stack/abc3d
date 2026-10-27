@@ -89,7 +89,9 @@ public:
 
 #pragma endregion
 
-class GizmoRenderer {
+// Compatibility renderer for the retired legacy pipeline. The active renderer
+// uses the dedicated GizmoRenderer in GizmoRenderer.h.
+class LegacyGizmoRenderer {
 public:
 	enum class Type { Translation, Scale, Rotation };
 
@@ -275,7 +277,7 @@ class ModelingRenderer : public Renderer {
 
 	//ArrowRenderer arrowRenderer;
 	//MaceRenderer maceRenderer;
-	GizmoRenderer gizmoRenderer;
+	LegacyGizmoRenderer gizmoRenderer;
 
 public:
 
@@ -303,14 +305,27 @@ public:
 
 	CameraType GetActiveCamType() const { return camType; }
 
+	Vec3f getCameraPosition() { 
+		if (camType == ORBIT) { return orbitCamera.position(); } 
+		else				  { return freeCamera.position(); }
+		updateCamera = true;
+	}
+	
 	void setCameraPosition(const Vec3f& pos) {
 		if (camType == ORBIT)	{ orbitCamera.setPosition(pos); }
 		else					{ freeCamera.setPosition(pos); }
 		updateCamera = true;
 	}
 
+	void updateCameraPostion(int fov) {
+		Vec3f newFov = getCameraPosition() + fov;
+		setCameraPosition(newFov);
+	}
+
 	void setOrbitOrigin(const Vec3f& origin) { orbitCamera.setOrigin(origin); updateCamera = true; }
 	const Camera* GetCamera() const { return camType == ORBIT ? (Camera*) &orbitCamera : (Camera*) &freeCamera; }
+	/// <returns>World -> clip transform for the current camera and window size, computed fresh.</returns>
+	Matrix4f ViewProjection() const { return projection * GetCamera()->transform(); }
 
 	void toggleCamType() {
 		if (camType == ORBIT) {
@@ -344,7 +359,7 @@ public:
 		this->scene = &scene; updateRenderBuffers = true;
 	}
 
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, LegacyGizmoRenderer::Type type, const Matrix3f& gizmoRotation);
 
 	void ClearGizmos();
 

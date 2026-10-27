@@ -40,6 +40,7 @@ public:
 	OrbitCamera() { }
 
 	void setOrigin(const Vec3f& origin) { this->origin = origin; }
+	Vec3f getOrigin() const { return origin; }
 	void setSphericalPosition(const Vec3f& pos) {
 		spherical = pos;
 		cartesian = sphericalToCartesian(pos);
@@ -112,11 +113,13 @@ public:
 	}
 
 	void mouseWheel(float dx, float dy) override {
-		Vec3f f, u, r;
-		directions(f, u, r);
+		Vec3f f = forward();
+
+		Vec3f r = WORLD_Y.Cross(f);
+		r.Normalize();
 
 		pos += r * dx;
-		pos += u * dy;
+		pos += f * -dy;
 	}
 };
 

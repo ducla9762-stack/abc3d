@@ -119,8 +119,10 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
-    <ClCompile Include="render.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="GizmoRenderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
@@ -135,12 +137,15 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
+    <QtMoc Include="ColorButton.h" />
     <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
+    <ClInclude Include="MeshKnife.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
-    <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />
@@ -152,6 +157,8 @@
     <None Include="assets\shaders\Arrow.vert" />
     <None Include="assets\shaders\ArrowBasic.vert" />
     <None Include="assets\shaders\ArrowColor.frag" />
+    <None Include="assets\shaders\GizmoColor.frag" />
+    <None Include="assets\shaders\GizmoPick.frag" />
     <None Include="assets\shaders\BlinnPhong.frag" />
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />
