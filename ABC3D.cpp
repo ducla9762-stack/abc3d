@@ -56,8 +56,8 @@ ABC3D::ABC3D(QWidget *parent)
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
         ui.viewport->deleteSelection();
-        //emit meshDeletedSignal();
         });
+
     QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
     QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
 
@@ -348,9 +348,8 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
-    startingMeshes = ui.viewport->getMeshes();
-    sceneButtons.resize(startingMeshes.size());
-    for (int i = 0; i < startingMeshes.size(); i++) {
+    sceneButtons.resize(ui.viewport->getMeshCount());
+    for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
         QPushButton* sceneButton = new QPushButton(QString::number(i), this);
         sceneButtons[i] = sceneButton;
         ui.verticalLayout_10->addWidget(sceneButton);
@@ -406,7 +405,6 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_Delete:
         event->accept();
         emit deleteKeyPressed();
-        //emit meshDeletedSignal();
         break;
     // Toggle Grid
     case Qt::Key_G:
@@ -553,10 +551,19 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
 void ABC3D::meshAdded(int meshID) {
     QPushButton* newButton = new QPushButton(QString::number(meshID), this);
     ui.verticalLayout_10->addWidget(newButton);
+    sceneButtons.resize(ui.viewport->getMeshCount());
 }
 
 void ABC3D::meshRemoved(int meshID) {
-    sceneButtons[meshID]->deleteLater();
+    QLayoutItem* item = ui.verticalLayout_10->takeAt(meshID);
+    if (QWidget* widget = item->widget()) {
+        ui.verticalLayout_10->removeWidget(widget);
+        delete widget; // Destroys the button
+    }
+    delete item; // Destroys the layout item container
+
+    sceneButtons[meshID] = sceneButtons[ui.viewport->getMeshCount() - 1];
+    sceneButtons.resize(ui.viewport->getMeshCount());
 }
 
 void ABC3D::elementChanged(Element element) {

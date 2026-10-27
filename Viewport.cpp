@@ -1837,10 +1837,6 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 	painter.drawText(QPointF(12.0, 20.0), hint);
 }
 
-std::vector<HalfEdgeMesh*> Viewport::getMeshes() {
-	return scene.Meshes();
-}
-
 int Viewport::getMeshCount() {
 	return scene.MeshCount();
 }

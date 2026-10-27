@@ -135,7 +135,6 @@ public:
 	};
 
 	Element getActiveElement();
-	std::vector<HalfEdgeMesh*> getMeshes();
 	int getMeshCount();
 
 private:
@@ -180,6 +179,12 @@ private:
 
 	bool localScale = true;
 	std::optional<SelectionItem> mergeFirstVertex;
+
+	void deleteMeshHelper(int meshID) {
+		std::cout << meshID  + " mesh" << std::endl;
+		emit meshRemoved(meshID);
+		scene.DeleteMesh(meshID);
+	}
 
 	// AI-generated code:
 	// Edge translation chooses an adjacent edge from the first drag direction.
@@ -298,6 +303,7 @@ private:
 	template<typename T, typename U>
 	void loadMesh(const T& vertices, const U& faces) {
 		scene.NewMesh()->load(vertices, faces);
+		emit meshAdded(scene.MeshCount() - 1);
 		makeCurrent();
 		// 10/16/26 - Update to public API.
 		//renderer.UpdateRenderBuffers(scene);
@@ -779,6 +785,7 @@ public slots:
 
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
+			emit meshAdded(scene.MeshCount() - 1);
 		}
 
 		renderer.UpdateGeometry();
@@ -829,9 +836,21 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
+		if(scene.MeshCount() == 0) {}
+		else if (scene.MeshCount() == 1) {
+			emit meshRemoved(0);
+		}
+		else {
+			for (int i = 0; i < scene.MeshCount() - 1; i++) {
+				std::cout << std::to_string(i) + " i" << std::endl;
+				emit meshRemoved(i);
+			}
+		}
+
 		scene.Clear();
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
+			emit meshAdded(scene.MeshCount() - 1);
 		}
 
 		//camPos = doc.camera;
@@ -863,10 +882,6 @@ public slots:
 		update();
 
 		return true;
-	}
-
-	void setCameraPosition(const Vec3f& camPos) {
-
 	}
 
 	void setAlwaysShowVertices(bool show) {
@@ -914,7 +929,7 @@ public slots:
 
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
-				scene.DeleteMesh(item.meshId);
+				deleteMeshHelper(item.meshId);
 				break;
 
 			case VERTEX:
@@ -1173,7 +1188,7 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			scene.DeleteMesh(ids.x);
+			deleteMeshHelper(ids.x);
 			selectionManager.clearSelection();
 
 			renderer.UpdateGeometry();
