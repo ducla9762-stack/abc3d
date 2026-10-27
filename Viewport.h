@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QMenu>
+#include <QImage>
 #include <QPainter>
 #include <functional>
 #include <optional>
@@ -237,7 +238,7 @@ private:
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.Draw(Vec3f(0.0f), 1.0f, float(width()) / float(height()), 0.5f);
+			imageRenderer.Draw(Vec3f(0.0f), 1.0f, 0.5f);
 			glDisable(GL_BLEND);
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
@@ -1168,7 +1169,24 @@ public slots:
 
 	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
 
-	void loadReferenceImage() { showReferenceImage = true; update(); } 
+	void loadReferenceImage(const QString& filepath) {
+		QImage image(filepath);
+		if (image.isNull()) { return; }
+
+		image = image.convertToFormat(QImage::Format_RGBA8888);
+		image.flip();
+
+		makeCurrent();
+		imageRenderer.UpdateTexture(
+			image.constBits(),
+			static_cast<uint>(image.width()),
+			static_cast<uint>(image.height()),
+			GL_RGBA
+		);
+
+		showReferenceImage = true;
+		update();
+	}
 
 private slots:
 	void rightClickDuplicate() {

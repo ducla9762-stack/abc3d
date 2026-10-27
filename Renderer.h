@@ -148,11 +148,15 @@ public:
 class ImageRenderer {
 	GLuint tex;
 	GLuint vao;
+	int textureUnit = 0;
+	float imageAspect = 1.0f;
 	GLSLProgram prog;
-	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, ASPECT_RATIO = 3, MVP = 4, OPACITY = 5 };
+	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, IMAGE_ASPECT = 3, MVP = 4, OPACITY = 5 };
 
 public:
 	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
+		textureUnit = texBindPt;
+		imageAspect = h > 0 ? float(w) / float(h) : 1.0f;
 		bool success = prog.BuildFiles("assets/shaders/Image.vert", "assets/shaders/Image.frag");
 
 		if (!success) {
@@ -181,7 +185,7 @@ public:
 		prog.RegisterUniform(TEX, "tex");
 		prog.RegisterUniform(SCALE, "scale");
 		prog.RegisterUniform(POS, "pos");
-		prog.RegisterUniform(ASPECT_RATIO, "aspectR");
+		prog.RegisterUniform(IMAGE_ASPECT, "imageAspect");
 		prog.RegisterUniform(MVP, "mvp");
 		prog.RegisterUniform(OPACITY, "opacity");
 
@@ -192,12 +196,22 @@ public:
 		return true;
 	}
 
-	void Draw(const Vec3f& pos, float scale, float aspectR, float opacity = 1.0f) {
+	void UpdateTexture(const uint8_t* image, uint w, uint h, GLenum format = GL_RGBA) {
+		imageAspect = h > 0 ? float(w) / float(h) : 1.0f;
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
+		glBindTexture(GL_TEXTURE_2D, tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, image);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glActiveTexture(GL_TEXTURE0);
+	}
+
+	void Draw(const Vec3f& pos, float scale, float opacity = 1.0f) {
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
 		prog.SetUniform(SCALE, scale * 0.5f);
-		prog.SetUniform(ASPECT_RATIO, aspectR);
+		prog.SetUniform(IMAGE_ASPECT, imageAspect);
 		prog.SetUniform(OPACITY, opacity);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);

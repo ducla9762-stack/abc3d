@@ -46,8 +46,8 @@ ABC3D::ABC3D(QWidget *parent)
     QObject::connect(
         ui.actionImage,
         &QAction::triggered,
-        ui.viewport,
-        &Viewport::loadReferenceImage
+        this,
+        &ABC3D::imageFileDialog
     );
 
     // Menu button for standard mode, selected by default

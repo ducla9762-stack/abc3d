@@ -51,6 +51,24 @@ private slots:
     void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
     void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
 
+    void imageFileDialog() {
+        QString file = QFileDialog::getOpenFileName(
+            this,
+            "Import Image",
+            "assets/images/",
+            "Images (*.png *.jpg *.jpeg)"
+        );
+
+        const bool supportedImage =
+            file.endsWith(".png", Qt::CaseInsensitive) ||
+            file.endsWith(".jpg", Qt::CaseInsensitive) ||
+            file.endsWith(".jpeg", Qt::CaseInsensitive);
+
+        if (!file.isEmpty() && supportedImage) {
+            ui.viewport->loadReferenceImage(file);
+        }
+    }
+
     void modelFileDialog() {
         QStringList files = QFileDialog::getOpenFileNames(
                                 this,
