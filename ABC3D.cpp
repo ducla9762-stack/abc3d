@@ -43,6 +43,16 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
+    QAction* actionImage = new QAction("Image", ui.menuImport);
+    ui.menuImport->addAction(actionImage);
+
+    QObject::connect(
+        actionImage,
+        &QAction::triggered,
+        ui.viewport,
+        &Viewport::loadReferenceImage
+    );
+
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);

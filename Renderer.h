@@ -144,6 +144,70 @@ public:
 
 };
 
+// Currently only renders one image but can modify this later if we need to render more at a time
+class ImageRenderer {
+	GLuint tex;
+	GLuint vao;
+	GLSLProgram prog;
+	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, ASPECT_RATIO = 3, MVP = 4 };
+
+public:
+	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
+		bool success = prog.BuildFiles("assets/shaders/Image.vert", "assets/shaders/Image.frag");
+
+		if (!success) {
+			std::cout << "Failed to compile image shader program!" << std::endl;
+			return false;
+		}
+
+		glGenVertexArrays(1, &vao);
+		glGenTextures(1, &tex);
+
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(texBindPt));
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		if (icon) {
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, icon);
+		}
+		else {
+			uint8_t red[4] = { 255, 0, 0, 255 };
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, red);
+		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		prog.Bind();
+		prog.RegisterUniform(TEX, "tex");
+		prog.RegisterUniform(SCALE, "scale");
+		prog.RegisterUniform(POS, "pos");
+		prog.RegisterUniform(ASPECT_RATIO, "aspectR");
+		prog.RegisterUniform(MVP, "mvp");
+
+		prog.SetUniform(TEX, texBindPt);
+
+		glActiveTexture(GL_TEXTURE0);
+
+		return true;
+	}
+
+	void Draw(const Vec3f& pos, float scale, float aspectR) {
+		glBindVertexArray(vao);
+		prog.Bind();
+		prog.SetUniform(POS, pos.x, pos.y, pos.z);
+		prog.SetUniform(SCALE, scale * 0.5f);
+		prog.SetUniform(ASPECT_RATIO, aspectR);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+	}
+
+	void SetTransform(float data[16]) {
+		prog.Bind();
+		prog.SetUniformMatrix4(MVP, data);
+	}
+
+};
+
 class VertexRenderer {
 	GLuint vao;
 	
@@ -885,6 +949,11 @@ public:
 		UpdateViewUniforms();
 
 		return success;
+	}
+
+	void GetViewProjection(float data[16]) const {
+		Matrix4f viewProjection = transform.proj * transform.view;
+		viewProjection.Get(data);
 	}
 
 	Vec3f CanonicalVolumePos(const Vec3f& worldPos) {

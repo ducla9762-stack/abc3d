@@ -40,10 +40,10 @@
     <QtUic Include="StartMenu.ui" />
     <QtUic Include="VectorInput.ui" />
     <ClInclude Include="helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -88,6 +88,17 @@
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />
     <None Include="assets\shaders\Grid.vert" />
+    <None Include="assets\shaders\BasicLightPass.frag" />
+    <None Include="assets\shaders\BasicLightPass.vert" />
+    <None Include="assets\shaders\Cube.vert" />
+    <None Include="assets\shaders\EdgeDraw.frag" />
+    <None Include="assets\shaders\EdgeDraw.vert" />
+    <None Include="assets\shaders\GeomPass.frag" />
+    <None Include="assets\shaders\GeomPass.vert" />
+    <None Include="assets\shaders\Icon.frag" />
+    <None Include="assets\shaders\Icon.vert" />
+    <None Include="assets\shaders\Image.frag" />
+    <None Include="assets\shaders\Image.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />
     <None Include="assets\shaders\Mesh.frag" />
@@ -96,6 +107,9 @@
     <None Include="assets\shaders\RotationRing.frag" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+    <None Include="assets\shaders\Mace.vert" />
+    <None Include="assets\shaders\VertexDraw.frag" />
+    <None Include="assets\shaders\VertexDraw.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />
   </ItemGroup>

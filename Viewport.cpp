@@ -115,6 +115,17 @@ void Viewport::initializeGL() {
 		pivotImg.flip();
 		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height(), GL_BGRA);
 	}
+
+	QImage testRefImg("assets/images/Maxwell.png");
+	if (testRefImg.isNull()) {
+		std::cout << "Couldn't load test reference image." << std::endl;
+		imageRenderer.Initialize(8, nullptr, 0, 0);
+	}
+	else {
+		bool r = testRefImg.reinterpretAsFormat(QImage::Format::Format_RGBA8888);
+		testRefImg.flip();
+		imageRenderer.Initialize(8, testRefImg.constBits(), testRefImg.width(), testRefImg.height(), GL_BGRA);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -77,6 +77,7 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 	UpdateProjectionUniforms();
 	glViewport(0, 0, frame.width, frame.height);
 	InitFramebuffer(defaultFrameBuffer);
+
 	update.rerenderGeom = true;
 }
 
@@ -97,7 +98,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	if (update.renderBufs || update.uniformBuf || update.camera || update.rerenderGeom) {
 
-		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+		//glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 		float clearClr[3] = { 1.0f, 1.0f, 1.0f };

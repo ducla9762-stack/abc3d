@@ -158,12 +158,14 @@ private:
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
 	IconRenderer iconRenderer;
+	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
 	bool showPivot = false;
+	bool showReferenceImage = false;
 	float pivotScale = 0.05f;
 	Vec2f menuPos;
 
@@ -225,6 +227,16 @@ private:
 			glDisable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
 			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+		}
+		if (showReferenceImage) {
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			float viewProjection[16];
+			renderer.GetViewProjection(viewProjection);
+			imageRenderer.SetTransform(viewProjection);
+			imageRenderer.Draw(Vec3f(0.0f), 1.0f, float(width()) / float(height()));
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
@@ -1155,6 +1167,8 @@ public slots:
 	void setPivotVisibility(bool visible) { if (showPivot != visible) { showPivot = visible; update(); } }
 
 	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
+
+	void loadReferenceImage() { showReferenceImage = true; update(); } 
 
 private slots:
 	void rightClickDuplicate() {

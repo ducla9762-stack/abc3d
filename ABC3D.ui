@@ -2832,6 +2832,7 @@ color: white;</string>
      <addaction name="actionModel"/>
      <addaction name="actionScene"/>
      <addaction name="actionLesson"/>
+     <addaction name="actionImage"/>
     </widget>
     <widget class="QMenu" name="menuExport">
      <property name="title">
@@ -2934,6 +2935,11 @@ color: white;</string>
   <action name="actionSaveAs">
    <property name="text">
     <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionImage">
+   <property name="text">
+    <string>Image</string>
    </property>
   </action>
  </widget>
