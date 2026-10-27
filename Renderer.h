@@ -149,7 +149,7 @@ class ImageRenderer {
 	GLuint tex;
 	GLuint vao;
 	GLSLProgram prog;
-	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, ASPECT_RATIO = 3, MVP = 4 };
+	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, ASPECT_RATIO = 3, MVP = 4, OPACITY = 5 };
 
 public:
 	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
@@ -183,6 +183,7 @@ public:
 		prog.RegisterUniform(POS, "pos");
 		prog.RegisterUniform(ASPECT_RATIO, "aspectR");
 		prog.RegisterUniform(MVP, "mvp");
+		prog.RegisterUniform(OPACITY, "opacity");
 
 		prog.SetUniform(TEX, texBindPt);
 
@@ -191,12 +192,13 @@ public:
 		return true;
 	}
 
-	void Draw(const Vec3f& pos, float scale, float aspectR) {
+	void Draw(const Vec3f& pos, float scale, float aspectR, float opacity = 1.0f) {
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
 		prog.SetUniform(SCALE, scale * 0.5f);
 		prog.SetUniform(ASPECT_RATIO, aspectR);
+		prog.SetUniform(OPACITY, opacity);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
 	}

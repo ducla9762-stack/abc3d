@@ -231,14 +231,14 @@ private:
 			glEnable(GL_DEPTH_TEST);
 		}
 		if (showReferenceImage) {
-			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.Draw(Vec3f(0.0f), 1.0f, float(width()) / float(height()));
+			imageRenderer.Draw(Vec3f(0.0f), 1.0f, float(width()) / float(height()), 0.5f);
 			glDisable(GL_BLEND);
-			glEnable(GL_DEPTH_TEST);
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
