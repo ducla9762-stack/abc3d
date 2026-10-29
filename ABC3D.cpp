@@ -548,6 +548,30 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
+void ABC3D::meshCountChanged(uint meshCount) {
+    uint btnCount = uint(sceneButtons.size());
+
+    if (meshCount < btnCount) {
+        uint diff = btnCount - meshCount;
+        for (uint i = 0; i < diff; ++i) {
+            QPushButton* button = sceneButtons.back();
+            sceneButtons.pop_back();
+            button->deleteLater(); // will be removed from layout and de-allocated by qt safely
+        }
+        // You will need to update all names (ids shifted)
+    }
+    else if (meshCount != btnCount) {
+        const uint diff = meshCount - btnCount;
+        for (uint i = btnCount; i < btnCount + diff; ++i) {
+            sceneButtons.push_back(new QPushButton(QString::number(i), this)); // instead of this, parent should be the button container
+            ui.verticalLayout_10->addWidget(sceneButtons.back());
+            // Uncomment the next line when viewport has the setSelection method
+            //QObject::connect(sceneButtons.back(), QPushButton::released, this, [this, i](){ this->ui.viewport->setSelection(i); });
+        }
+        // You will need to update names from btnCount to sceneButtons.size() - 1
+    }
+}
+
 void ABC3D::meshAdded(int meshID) {
     QPushButton* newButton = new QPushButton(QString::number(meshID), this);
     ui.verticalLayout_10->addWidget(newButton);

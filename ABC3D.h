@@ -125,6 +125,7 @@ private slots:
     void elementChanged(Element element);
     void meshAdded(int meshID);
     void meshRemoved(int meshID);
+    void meshCountChanged(uint meshCount);
 
 signals:
     void deleteKeyPressed();
