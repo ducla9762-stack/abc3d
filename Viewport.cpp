@@ -116,16 +116,10 @@ void Viewport::initializeGL() {
 		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height(), GL_BGRA);
 	}
 
-	QImage testRefImg("assets/images/Maxwell.png");
-	if (testRefImg.isNull()) {
-		std::cout << "Couldn't load test reference image." << std::endl;
-		imageRenderer.Initialize(8, nullptr, 0, 0);
+	if (!imageRenderer.Initialize(8)) {
+		std::cout << "Failed to initialize image renderer" << std::endl;
 	}
-	else {
-		bool r = testRefImg.reinterpretAsFormat(QImage::Format::Format_RGBA8888);
-		testRefImg.flip();
-		imageRenderer.Initialize(8, testRefImg.constBits(), testRefImg.width(), testRefImg.height(), GL_BGRA);
-	}
+
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -310,9 +304,14 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
-	if (!gizmoDragWasCaptured && !mouseAction.dragged && !refImage.isNull() && refImage.visible &&
-		imageRenderer.PickAt(pos, static_cast<float>(devicePixelRatio()), refImage.id)) {
-		std::cout << "Reference image clicked" << std::endl;
+	if (!gizmoDragWasCaptured && !mouseAction.dragged) {
+		for (auto image = referenceImages.rbegin(); image != referenceImages.rend(); ++image) {
+			if (image->isNull() || !image->visible) continue;
+			if (imageRenderer.PickAt(pos, static_cast<float>(devicePixelRatio()), image->id)) {
+				std::cout << "Reference image clicked, id: " << image->id << std::endl;
+				break;
+			}
+		}
 	}
 
 	// An axis click is a gizmo interaction, not a mesh selection. The axis

@@ -155,7 +155,8 @@ private:
 	};
 
 	struct ReferenceImage {
-		uint id;
+		uint id = 0;
+		uint textureIndex = MAX_UINT;
 		QString sourcePath;
 
 		Vec3f position;
@@ -166,11 +167,12 @@ private:
 		bool visible = true;
 		bool locked = false;
 
-		bool isNull() {
+		bool isNull() const {
 			return sourcePath.isEmpty();
 		}
 	};
-	ReferenceImage refImage;
+	std::vector<ReferenceImage> referenceImages;
+	uint nextReferenceImageId = 0;
 
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
@@ -249,16 +251,25 @@ private:
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
-		if (!refImage.isNull()) {
+		if (!referenceImages.empty()) {
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
+			const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+			const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.Draw(
-				Vec3f(0.0f), 1.0f, 0.5f, defaultFramebufferObject(),
-				std::max(1, static_cast<int>(width() * devicePixelRatio())),
-				std::max(1, static_cast<int>(height() * devicePixelRatio())),
-				refImage.id
-			);
+			imageRenderer.BeginPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (ReferenceImage& image : referenceImages) {
+				if (image.isNull() || !image.visible) continue;
+				imageRenderer.DrawPick(image.position, 1.0f, image.id, image.textureIndex);
+			}
+			imageRenderer.EndPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (ReferenceImage& image : referenceImages) {
+				if (image.isNull() || !image.visible) continue;
+				imageRenderer.Draw(
+					image.position, 1.0f, image.opacity, image.textureIndex,
+					defaultFramebufferObject(), pixelWidth, pixelHeight
+				);
+			}
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
@@ -1196,18 +1207,21 @@ public slots:
 		image.flip();
 
 		makeCurrent();
-		imageRenderer.UpdateTexture(
+
+		ReferenceImage reference;
+		reference.id = nextReferenceImageId++;
+		reference.sourcePath = filepath;
+		reference.position = Vec3f(static_cast<float>(reference.id), 0.0f, 0.0f);
+		reference.rotation = Vec3f(0.0f);
+		reference.size = Vec2f(1.0f);
+		reference.textureIndex = imageRenderer.AddTexture(
 			image.constBits(),
 			static_cast<uint>(image.width()),
 			static_cast<uint>(image.height()),
 			GL_RGBA
 		);
 
-		refImage.id = 0;
-		refImage.sourcePath = filepath;
-		refImage.position = Vec3f(0.0f);
-		refImage.rotation = Vec3f(0.0f);
-		refImage.size = Vec2f(1.0f);
+		referenceImages.push_back(std::move(reference));
 
 		update();
 	}

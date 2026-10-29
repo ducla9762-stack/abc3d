@@ -144,14 +144,17 @@ public:
 
 };
 
-// Currently only renders one image but can modify this later if we need to render more at a time
+// Owns the shared image shaders, quad geometry, image textures, and image pick pass.
 class ImageRenderer {
-	GLuint tex;
 	GLuint vao;
 	int textureUnit = 0;
-	float imageAspect = 1.0f;
 	GLSLProgram prog;
 	GLSLProgram pickProg;
+	struct TextureData {
+		GLuint handle = 0;
+		float aspect = 1.0f;
+	};
+	std::vector<TextureData> textures;
 	GLuint pickFbo = 0;
 	GLuint pickTex = 0;
 	GLuint pickDepth = 0;
@@ -198,9 +201,8 @@ class ImageRenderer {
 	}
 
 public:
-	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
+	bool Initialize(int texBindPt) {
 		textureUnit = texBindPt;
-		imageAspect = h > 0 ? float(w) / float(h) : 1.0f;
 		bool success = prog.BuildFiles("assets/shaders/Image.vert", "assets/shaders/Image.frag");
 
 		if (!success) {
@@ -215,21 +217,6 @@ public:
 		}
 
 		glGenVertexArrays(1, &vao);
-		glGenTextures(1, &tex);
-
-		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(texBindPt));
-		glBindTexture(GL_TEXTURE_2D, tex);
-
-		if (icon) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, icon);
-		}
-		else {
-			uint8_t red[4] = { 255, 0, 0, 255 };
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, red);
-		}
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		prog.Bind();
 		prog.RegisterUniform(TEX, "tex");
@@ -253,29 +240,36 @@ public:
 		return true;
 	}
 
-	void UpdateTexture(const uint8_t* image, uint w, uint h, GLenum format = GL_RGBA) {
-		imageAspect = h > 0 ? float(w) / float(h) : 1.0f;
+	uint AddTexture(const uint8_t* image, uint w, uint h, GLenum format = GL_RGBA) {
+		TextureData texture;
+		texture.aspect = h > 0 ? float(w) / float(h) : 1.0f;
+		glGenTextures(1, &texture.handle);
 		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
-		glBindTexture(GL_TEXTURE_2D, tex);
+		glBindTexture(GL_TEXTURE_2D, texture.handle);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, image);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glActiveTexture(GL_TEXTURE0);
+		textures.push_back(texture);
+		return static_cast<uint>(textures.size() - 1);
 	}
 
-	void DrawVisible(const Vec3f& pos, float scale, float opacity) {
+	void DrawVisible(const Vec3f& pos, float scale, float opacity, uint textureIndex) {
+		if (textureIndex >= textures.size()) return;
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
+		glBindTexture(GL_TEXTURE_2D, textures[textureIndex].handle);
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
 		prog.SetUniform(SCALE, scale * 0.5f);
-		prog.SetUniform(IMAGE_ASPECT, imageAspect);
+		prog.SetUniform(IMAGE_ASPECT, textures[textureIndex].aspect);
 		prog.SetUniform(OPACITY, opacity);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
-	void DrawPickPass(const Vec3f& pos, float scale, uint imageId,
-		GLuint depthSourceFbo, int width, int height) {
+	void BeginPickPass(GLuint depthSourceFbo, int width, int height) {
 		if (width <= 0 || height <= 0) return;
 
 		ResizePickBuffer(width, height);
@@ -297,34 +291,37 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);
+	}
 
+	void DrawPick(const Vec3f& pos, float scale, uint imageId, uint textureIndex) {
+		if (pickFbo == 0 || textureIndex >= textures.size()) return;
 		glBindVertexArray(vao);
 		pickProg.Bind();
 		pickProg.SetUniform(PICK_POS, pos.x, pos.y, pos.z);
 		pickProg.SetUniform(PICK_SCALE, scale * 0.5f);
-		pickProg.SetUniform(PICK_IMAGE_ASPECT, imageAspect);
+		pickProg.SetUniform(PICK_IMAGE_ASPECT, textures[textureIndex].aspect);
 		pickProg.SetUniform(PICK_ID, imageId);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, depthSourceFbo);
-		glViewport(0, 0, pickWidth, pickHeight);
 	}
 
-	void Draw(const Vec3f& pos, float scale, float opacity,
-		GLuint defaultFramebuffer, int width, int height, uint imageId) {
-		// The pick pass is rendered first so the copied depth buffer contains the
-		// scene depth, before the visible image can write to it.
-		DrawPickPass(pos, scale, imageId, defaultFramebuffer, width, height);
+	void EndPickPass(GLuint defaultFramebuffer, int width, int height) {
+		glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+	}
 
-		// Visible pass: draw the image over the already-composed scene, using the
-		// same transform and geometry as the picking pass.
+	void Draw(const Vec3f& pos, float scale, float opacity, uint textureIndex,
+		GLuint defaultFramebuffer, int width, int height) {
+		if (width <= 0 || height <= 0 || textureIndex >= textures.size()) return;
+
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
 		glViewport(0, 0, width, height);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		DrawVisible(pos, scale, opacity);
+		glDepthMask(GL_FALSE);
+		DrawVisible(pos, scale, opacity, textureIndex);
+		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
