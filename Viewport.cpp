@@ -310,6 +310,10 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
+	if (!gizmoDragWasCaptured && !mouseAction.dragged && !refImage.isNull() && refImage.visible &&
+		imageRenderer.PickAt(pos, static_cast<float>(devicePixelRatio()), refImage.id)) {
+		std::cout << "Reference image clicked" << std::endl;
+	}
 
 	// An axis click is a gizmo interaction, not a mesh selection. The axis
 	// was captured on press and must remain captured even if the cursor moved.

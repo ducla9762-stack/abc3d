@@ -173,6 +173,7 @@
     <None Include="assets\shaders\Icon.frag" />
     <None Include="assets\shaders\Icon.vert" />
     <None Include="assets\shaders\Image.frag" />
+    <None Include="assets\shaders\ImagePick.frag" />
     <None Include="assets\shaders\Image.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />

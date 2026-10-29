@@ -151,7 +151,51 @@ class ImageRenderer {
 	int textureUnit = 0;
 	float imageAspect = 1.0f;
 	GLSLProgram prog;
+	GLSLProgram pickProg;
+	GLuint pickFbo = 0;
+	GLuint pickTex = 0;
+	GLuint pickDepth = 0;
+	GLuint pickRestoreFbo = 0;
+	int pickWidth = 0;
+	int pickHeight = 0;
 	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, IMAGE_ASPECT = 3, MVP = 4, OPACITY = 5 };
+	enum PickUniform : int { PICK_SCALE = 0, PICK_POS = 1, PICK_IMAGE_ASPECT = 2, PICK_MVP = 3, PICK_ID = 4 };
+
+	void ResizePickBuffer(int width, int height) {
+		if (width <= 0 || height <= 0) return;
+		if (pickFbo != 0 && pickWidth == width && pickHeight == height) return;
+
+		glDeleteFramebuffers(1, &pickFbo);
+		glDeleteTextures(1, &pickTex);
+		glDeleteRenderbuffers(1, &pickDepth);
+
+		pickWidth = width;
+		pickHeight = height;
+
+		glGenFramebuffers(1, &pickFbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, pickFbo);
+
+		glGenTextures(1, &pickTex);
+		glBindTexture(GL_TEXTURE_2D, pickTex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0,
+			GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D, pickTex, 0);
+
+		glGenRenderbuffers(1, &pickDepth);
+		glBindRenderbuffer(GL_RENDERBUFFER, pickDepth);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+			GL_RENDERBUFFER, pickDepth);
+
+		const GLenum drawBuffer = GL_COLOR_ATTACHMENT0;
+		glDrawBuffers(1, &drawBuffer);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			std::cout << "Reference image pick framebuffer is invalid!" << std::endl;
+		}
+	}
 
 public:
 	bool Initialize(int texBindPt, const uint8_t* icon, uint w, uint h, GLenum format = GL_RGBA) {
@@ -161,6 +205,12 @@ public:
 
 		if (!success) {
 			std::cout << "Failed to compile image shader program!" << std::endl;
+			return false;
+		}
+
+		success = pickProg.BuildFiles("assets/shaders/Image.vert", "assets/shaders/ImagePick.frag");
+		if (!success) {
+			std::cout << "Failed to compile image picking shader program!" << std::endl;
 			return false;
 		}
 
@@ -191,6 +241,13 @@ public:
 
 		prog.SetUniform(TEX, texBindPt);
 
+		pickProg.Bind();
+		pickProg.RegisterUniform(PICK_SCALE, "scale");
+		pickProg.RegisterUniform(PICK_POS, "pos");
+		pickProg.RegisterUniform(PICK_IMAGE_ASPECT, "imageAspect");
+		pickProg.RegisterUniform(PICK_MVP, "mvp");
+		pickProg.RegisterUniform(PICK_ID, "imageId");
+
 		glActiveTexture(GL_TEXTURE0);
 
 		return true;
@@ -206,7 +263,7 @@ public:
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	void Draw(const Vec3f& pos, float scale, float opacity = 1.0f) {
+	void DrawVisible(const Vec3f& pos, float scale, float opacity) {
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
@@ -217,9 +274,89 @@ public:
 		glBindVertexArray(0);
 	}
 
+	void DrawPickPass(const Vec3f& pos, float scale, uint imageId,
+		GLuint depthSourceFbo, int width, int height) {
+		if (width <= 0 || height <= 0) return;
+
+		ResizePickBuffer(width, height);
+		if (pickFbo == 0) return;
+
+		pickRestoreFbo = depthSourceFbo;
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, depthSourceFbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pickFbo);
+		glBlitFramebuffer(
+			0, 0, pickWidth, pickHeight,
+			0, 0, pickWidth, pickHeight,
+			GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, pickFbo);
+		glViewport(0, 0, pickWidth, pickHeight);
+		const GLuint clearIds[4] = { 0, 0, 0, 0 };
+		glClearBufferuiv(GL_COLOR, 0, clearIds);
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+
+		glBindVertexArray(vao);
+		pickProg.Bind();
+		pickProg.SetUniform(PICK_POS, pos.x, pos.y, pos.z);
+		pickProg.SetUniform(PICK_SCALE, scale * 0.5f);
+		pickProg.SetUniform(PICK_IMAGE_ASPECT, imageAspect);
+		pickProg.SetUniform(PICK_ID, imageId);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glBindVertexArray(0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, depthSourceFbo);
+		glViewport(0, 0, pickWidth, pickHeight);
+	}
+
+	void Draw(const Vec3f& pos, float scale, float opacity,
+		GLuint defaultFramebuffer, int width, int height, uint imageId) {
+		// The pick pass is rendered first so the copied depth buffer contains the
+		// scene depth, before the visible image can write to it.
+		DrawPickPass(pos, scale, imageId, defaultFramebuffer, width, height);
+
+		// Visible pass: draw the image over the already-composed scene, using the
+		// same transform and geometry as the picking pass.
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		DrawVisible(pos, scale, opacity);
+		glDisable(GL_BLEND);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+	}
+
+	bool PickAt(const Vec2f& logicalPos, float dpr, uint imageId) const {
+		if (pickFbo == 0 ||
+			logicalPos.x < 0.0f || logicalPos.y < 0.0f) {
+			return false;
+		}
+
+		int x = static_cast<int>(logicalPos.x * dpr);
+		int y = static_cast<int>(logicalPos.y * dpr);
+		if (x < 0) x = 0;
+		if (y < 0) y = 0;
+		if (x >= pickWidth) x = pickWidth - 1;
+		if (y >= pickHeight) y = pickHeight - 1;
+
+		Vec3u ids(MAX_UINT, MAX_UINT, MAX_UINT);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, pickFbo);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &ids.x);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, pickRestoreFbo);
+		return ids.x == REFERENCE_IMAGE_IDENTIFIER && ids.y == imageId;
+	}
+
 	void SetTransform(float data[16]) {
 		prog.Bind();
 		prog.SetUniformMatrix4(MVP, data);
+		pickProg.Bind();
+		pickProg.SetUniformMatrix4(PICK_MVP, data);
 	}
 
 };

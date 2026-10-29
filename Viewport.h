@@ -250,14 +250,15 @@ private:
 			glEnable(GL_DEPTH_TEST);
 		}
 		if (!refImage.isNull()) {
-			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.Draw(Vec3f(0.0f), 1.0f, 0.5f);
-			glDisable(GL_BLEND);
+			imageRenderer.Draw(
+				Vec3f(0.0f), 1.0f, 0.5f, defaultFramebufferObject(),
+				std::max(1, static_cast<int>(width() * devicePixelRatio())),
+				std::max(1, static_cast<int>(height() * devicePixelRatio())),
+				refImage.id
+			);
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}

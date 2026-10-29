@@ -82,7 +82,7 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 }
 
 void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
-	// Fixes the viewport not drawing on the first frame.
+	// Fixes the viewport not drawing on the first frame.`
 	glDisable(GL_BLEND);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
