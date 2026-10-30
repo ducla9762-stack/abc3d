@@ -6,6 +6,7 @@
 #include <QDesktopServices>
 #include <QTreeView>
 #include <QCursor>
+#include <QButtonGroup>
 #include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
@@ -20,13 +21,14 @@ public:
 
     bool firstShow = true;
 
-    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
-    QFileSystemModel* helpFileModel = new QFileSystemModel;
-    std::vector<QPushButton*> sceneButtons;
-
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
+    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
+    QFileSystemModel* helpFileModel = new QFileSystemModel;
+    std::vector<QPushButton*> sceneButtons;
+    std::vector<string> names;
+    QButtonGroup* sceneGroup = new QButtonGroup(this);
 
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
@@ -123,8 +125,6 @@ private slots:
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
-    void meshAdded(int meshID);
-    void meshRemoved(int meshID);
     void meshCountChanged(uint meshCount);
 
 signals:

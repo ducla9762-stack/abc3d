@@ -58,7 +58,7 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-
+	emit meshCountChanged(scene.MeshCount());
 	selectionManager.setActiveElement(OBJECT);
 	setMouseTracking(true);
 
@@ -743,6 +743,14 @@ void Viewport::setActiveElement(Element element) {
 	update();
 
 	emit primarySelectionChanged(false);
+}
+
+void Viewport::setSelection(int meshID) {
+	selectionManager.clearSelection();
+	selectionManager.selectMesh(meshID);
+	renderer.UpdateSelection(selectionManager);
+	//updateGizmos();
+	update();
 }
 
 SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
@@ -1839,4 +1847,8 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 
 int Viewport::getMeshCount() {
 	return scene.MeshCount();
+}
+
+std::vector<string> Viewport::getNames() {
+	return scene.Names();
 }

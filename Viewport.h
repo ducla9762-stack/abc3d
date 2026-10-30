@@ -124,8 +124,7 @@ signals:
 	void enableNonVertexSpinners(bool enable);
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
-	void meshAdded(int meshID);
-	void meshRemoved(int meshID);
+	void meshCountChanged(uint meshCount);
 
 public:
 
@@ -136,6 +135,8 @@ public:
 
 	Element getActiveElement();
 	int getMeshCount();
+	std::vector<string> getNames();
+	void setSelection(int meshID);
 
 private:
 
@@ -179,12 +180,6 @@ private:
 
 	bool localScale = true;
 	std::optional<SelectionItem> mergeFirstVertex;
-
-	void deleteMeshHelper(int meshID) {
-		std::cout << meshID  + " mesh" << std::endl;
-		emit meshRemoved(meshID);
-		scene.DeleteMesh(meshID);
-	}
 
 	// AI-generated code:
 	// Edge translation chooses an adjacent edge from the first drag direction.
@@ -303,7 +298,6 @@ private:
 	template<typename T, typename U>
 	void loadMesh(const T& vertices, const U& faces) {
 		scene.NewMesh()->load(vertices, faces);
-		emit meshAdded(scene.MeshCount() - 1);
 		makeCurrent();
 		// 10/16/26 - Update to public API.
 		//renderer.UpdateRenderBuffers(scene);
@@ -749,26 +743,43 @@ public slots:
 		}
 	}
 
-	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
-	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
+	void loadCube() {
+		loadMesh(CUBE_VERTICES, CUBE_FACES);
+		emit meshCountChanged(scene.MeshCount());
+	}
+	void loadPyramid() {
+		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES);
+		emit meshCountChanged(scene.MeshCount());
+	}
 	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount());
 	}
 	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitTorus(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount());
 	}
-	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
+	void loadIcoSphere() { 
+		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
+
+		emit meshCountChanged(scene.MeshCount());
+	}
+
 	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount());
 	}
 
 	/// <summary>
@@ -785,7 +796,7 @@ public slots:
 
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshAdded(scene.MeshCount() - 1);
+			emit meshCountChanged(scene.MeshCount());
 		}
 
 		renderer.UpdateGeometry();
@@ -836,21 +847,12 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
-		if(scene.MeshCount() == 0) {}
-		else if (scene.MeshCount() == 1) {
-			emit meshRemoved(0);
-		}
-		else {
-			for (int i = 0; i < scene.MeshCount() - 1; i++) {
-				std::cout << std::to_string(i) + " i" << std::endl;
-				emit meshRemoved(i);
-			}
-		}
+		emit meshCountChanged(scene.MeshCount());
 
 		scene.Clear();
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshAdded(scene.MeshCount() - 1);
+			emit meshCountChanged(scene.MeshCount());
 		}
 
 		//camPos = doc.camera;
@@ -929,7 +931,8 @@ public slots:
 
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
-				deleteMeshHelper(item.meshId);
+				scene.DeleteMesh(item.meshId);
+				emit meshCountChanged(scene.MeshCount());
 				break;
 
 			case VERTEX:
@@ -1048,6 +1051,7 @@ public slots:
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
 			scene.DuplicateMesh(item.meshId);
+			emit meshCountChanged(scene.MeshCount());
 		}
 	}
 
@@ -1176,6 +1180,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DuplicateMesh(ids.x);
+			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1188,7 +1193,7 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			deleteMeshHelper(ids.x);
+			emit meshCountChanged(scene.MeshCount());
 			selectionManager.clearSelection();
 
 			renderer.UpdateGeometry();
