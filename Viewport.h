@@ -125,6 +125,7 @@ signals:
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
 	void meshCountChanged(uint meshCount);
+	void selectionChanged();
 
 public:
 

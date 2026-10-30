@@ -127,6 +127,8 @@ private slots:
     void elementChanged(Element element);
     void meshCountChanged(uint meshCount);
 
+    void selectionChanged(int index);
+
 signals:
     void deleteKeyPressed();
     void ctrlKeyPressed();

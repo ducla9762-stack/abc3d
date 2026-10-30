@@ -348,6 +348,15 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
+    for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
+        QPushButton* initButton = new QPushButton(QString::number(i), this);
+        initButton->setStyleSheet("QPushButton:checked { background-color: red; }");
+        initButton->setCheckable(true);
+        sceneGroup->addButton(initButton);
+        sceneButtons.push_back(initButton);
+        ui.verticalLayout_10->addWidget(sceneButtons.back());
+        QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { this->ui.viewport->setSelection(i); });
+    }
     names = ui.viewport->getNames();
 }
 
@@ -567,6 +576,20 @@ void ABC3D::meshCountChanged(uint meshCount) {
         }
         // You will need to update names from btnCount to sceneButtons.size() - 1
     }
+}
+
+/// <summary>
+/// Slot for when the selection is changed in the viewport
+/// Sent -1 as the index if the selection is cleared/nothing is selected
+/// </summary>
+/// <param name="index"> index of the button to select, corresponding to the mesh that was selected </param>
+void ABC3D::selectionChanged(int index) {
+    if (index == -1) {
+        for (QPushButton* button : sceneButtons) {
+            button->setChecked(false);
+        }
+    }
+    sceneButtons[index]->setChecked(true);
 }
 
 void ABC3D::elementChanged(Element element) {

@@ -58,7 +58,6 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
-	emit meshCountChanged(scene.MeshCount());
 	selectionManager.setActiveElement(OBJECT);
 	setMouseTracking(true);
 
@@ -744,6 +743,8 @@ void Viewport::setActiveElement(Element element) {
 
 	emit primarySelectionChanged(false);
 }
+
+
 
 void Viewport::setSelection(int meshID) {
 	selectionManager.clearSelection();

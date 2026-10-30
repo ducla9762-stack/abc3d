@@ -2952,6 +2952,7 @@ color: white;</string>
     <signal>elementChanged(Element)</signal>
     <signal>primaryCamParamChanged(Vec3f)</signal>
     <signal>meshCountChanged(uint)</signal>
+    <signal>selectionChanged()</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -4600,5 +4601,6 @@ color: white;</string>
   <slot>exportStl()</slot>
   <slot>elementChanged(Element)</slot>
   <slot>meshCountChanged(uint)</slot>
+  <slot>selectionChanged(int)</slot>
  </slots>
 </ui>
