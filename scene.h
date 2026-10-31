@@ -12,6 +12,7 @@
 /// </summary>
 class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
+	std::vector<string> names;
 
 public:
 	/// <summary>
@@ -61,6 +62,12 @@ public:
 	/// </summary>
 	/// <returns> Address of list of meshes in scene. </returns>
 	const std::vector<HalfEdgeMesh*>& Meshes() const;
+
+	/// <summary>
+	/// Returns the list of names in the scene
+	/// </summary>
+	/// <returns> List of strings in the scene </returns>
+	const std::vector<string> Names() const;
 
 	/// <summary>
 	/// Returns the mutable list of meshes in scene.
