@@ -235,13 +235,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const int rawX = static_cast<int>(pos.x * pixelRatio);
-	const int rawY = static_cast<int>(pos.y * pixelRatio);
-	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
 	const Vec3u ids = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
@@ -324,19 +320,18 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
-	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), pixel.x, pixel.y);
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
 	if (!gizmoDragWasCaptured && !mouseAction.dragged) {
 		if (selectionManager.getActiveElement() == OBJECT) {
-			for (auto image = scene.ReferenceImages().rbegin(); image != scene.ReferenceImages().rend(); ++image) {
-				if (image->isNull() || !image->visible || image->locked) continue;
-				auto texture = referenceTextureIndices.find(image->id);
-				if (texture != referenceTextureIndices.end() &&
-					imageRenderer.PickAt(pos, static_cast<float>(devicePixelRatio()), image->id)) {
-					handleSelection(SelectionItem::ReferenceImage(image->id));
-					return;
-				}
+			const uint imageId = imageRenderer.ImageIdAt(pixel.x, pixel.y);
+			const ReferenceImage* image = scene.FindReferenceImage(imageId);
+			if (image && image->visible && !image->locked &&
+				referenceTextureIndices.find(imageId) != referenceTextureIndices.end()) {
+				handleSelection(SelectionItem::ReferenceImage(imageId));
+				return;
 			}
 		}
 	}
@@ -1818,11 +1813,9 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const uint x = static_cast<uint>(std::clamp(static_cast<int>(pos.x * pixelRatio), 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(static_cast<int>(pos.y * pixelRatio), 0, pixelHeight - 1));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
 
 	const Vec3u gizmoIds = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =

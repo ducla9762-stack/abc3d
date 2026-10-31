@@ -170,7 +170,6 @@ private:
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
 	bool showPivot = false;
-	//bool showReferenceImage = false;
 	float pivotScale = 0.05f;
 	Vec2f menuPos;
 
@@ -226,8 +225,6 @@ private:
 	void initializeGL() override;
 
 	void paintGL() override {
-		// Render the scene without the gizmo first. Reference images are drawn
-		// below the gizmo, then the gizmo is composited as the final overlay.
 		renderer.Draw(defaultFramebufferObject());
 		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
 			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
@@ -360,10 +357,18 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
+	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) const {
+		const float dpr = static_cast<float>(devicePixelRatio());
+		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
+		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
+		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
+		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+	}
+
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
-		float dpr = devicePixelRatio();
-		Vec2f coords(std::round(logicalPos.x * dpr), std::round(logicalPos.y * dpr));
-		return renderer.SelectionIds(elm, uint(coords.x), uint(coords.y));
+		const Vec2u pixel = physicalPixelFromLogical(logicalPos);
+		return renderer.SelectionIds(elm, pixel.x, pixel.y);
 	}
 
 // ---------------------------------------------------------------------------------------------
@@ -754,6 +759,7 @@ public slots:
 			renderer.UpdateTransforms();
 		}
 
+		updateGizmos();
 		update();
 	}
 
@@ -774,6 +780,7 @@ public slots:
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
+			updateGizmos();
 			update();
 		}
 	}
@@ -795,6 +802,7 @@ public slots:
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
+			updateGizmos();
 			update();
 		}
 	}
