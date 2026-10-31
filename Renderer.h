@@ -161,16 +161,32 @@ class ImageRenderer {
 	GLuint pickRestoreFbo = 0;
 	int pickWidth = 0;
 	int pickHeight = 0;
-	enum Uniform : int { TEX = 0, SCALE = 1, POS = 2, IMAGE_ASPECT = 3, MVP = 4, OPACITY = 5 };
-	enum PickUniform : int { PICK_SCALE = 0, PICK_POS = 1, PICK_IMAGE_ASPECT = 2, PICK_MVP = 3, PICK_ID = 4 };
+	enum Uniform : int {
+		TEX = 0, SCALE = 1, POS = 2, ROTATION = 3, IMAGE_ASPECT = 4,
+		MVP = 5, OPACITY = 6, SELECTION_COLOR = 7, SELECTED = 8
+	};
+	enum PickUniform : int { PICK_SCALE = 0, PICK_POS = 1, PICK_ROTATION = 2, PICK_IMAGE_ASPECT = 3, PICK_MVP = 4, PICK_ID = 5 };
 
 	void ResizePickBuffer(int width, int height) {
 		if (width <= 0 || height <= 0) return;
 		if (pickFbo != 0 && pickWidth == width && pickHeight == height) return;
 
+		// The deferred renderer uses texture unit 0 for its position texture.
+		// Keep the caller's texture state intact while creating the image-pick
+		// texture; otherwise the pick texture can replace a deferred texture
+		// binding and make all subsequent mesh shading invalid.
+		GLint previousActiveTexture = GL_TEXTURE0;
+		GLint previousTexture2D = 0;
+		glGetIntegerv(GL_ACTIVE_TEXTURE, &previousActiveTexture);
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &previousTexture2D);
+		const GLuint oldPickTex = pickTex;
+
 		glDeleteFramebuffers(1, &pickFbo);
 		glDeleteTextures(1, &pickTex);
 		glDeleteRenderbuffers(1, &pickDepth);
+		if (static_cast<GLuint>(previousTexture2D) == oldPickTex) {
+			previousTexture2D = 0;
+		}
 
 		pickWidth = width;
 		pickHeight = height;
@@ -198,6 +214,9 @@ class ImageRenderer {
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 			std::cout << "Reference image pick framebuffer is invalid!" << std::endl;
 		}
+
+		glActiveTexture(static_cast<GLenum>(previousActiveTexture));
+		glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previousTexture2D));
 	}
 
 public:
@@ -222,15 +241,19 @@ public:
 		prog.RegisterUniform(TEX, "tex");
 		prog.RegisterUniform(SCALE, "scale");
 		prog.RegisterUniform(POS, "pos");
+		prog.RegisterUniform(ROTATION, "rotation");
 		prog.RegisterUniform(IMAGE_ASPECT, "imageAspect");
 		prog.RegisterUniform(MVP, "mvp");
 		prog.RegisterUniform(OPACITY, "opacity");
+		prog.RegisterUniform(SELECTION_COLOR, "selectionColor");
+		prog.RegisterUniform(SELECTED, "selected");
 
 		prog.SetUniform(TEX, texBindPt);
 
 		pickProg.Bind();
 		pickProg.RegisterUniform(PICK_SCALE, "scale");
 		pickProg.RegisterUniform(PICK_POS, "pos");
+		pickProg.RegisterUniform(PICK_ROTATION, "rotation");
 		pickProg.RegisterUniform(PICK_IMAGE_ASPECT, "imageAspect");
 		pickProg.RegisterUniform(PICK_MVP, "mvp");
 		pickProg.RegisterUniform(PICK_ID, "imageId");
@@ -254,16 +277,20 @@ public:
 		return static_cast<uint>(textures.size() - 1);
 	}
 
-	void DrawVisible(const Vec3f& pos, float scale, float opacity, uint textureIndex) {
+	void DrawVisible(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, float opacity,
+		bool selected, const Vec3f& selectionColor, uint textureIndex) {
 		if (textureIndex >= textures.size()) return;
 		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
 		glBindTexture(GL_TEXTURE_2D, textures[textureIndex].handle);
 		glBindVertexArray(vao);
 		prog.Bind();
 		prog.SetUniform(POS, pos.x, pos.y, pos.z);
-		prog.SetUniform(SCALE, scale * 0.5f);
+		prog.SetUniform(SCALE, scale.x, scale.y, scale.z);
+		prog.SetUniform(ROTATION, rotation.x, rotation.y, rotation.z);
 		prog.SetUniform(IMAGE_ASPECT, textures[textureIndex].aspect);
 		prog.SetUniform(OPACITY, opacity);
+		prog.SetUniform3(SELECTION_COLOR, &selectionColor.x);
+		prog.SetUniform(SELECTED, selected ? 1 : 0);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glBindVertexArray(0);
 		glActiveTexture(GL_TEXTURE0);
@@ -293,12 +320,13 @@ public:
 		glDisable(GL_BLEND);
 	}
 
-	void DrawPick(const Vec3f& pos, float scale, uint imageId, uint textureIndex) {
+	void DrawPick(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, uint imageId, uint textureIndex) {
 		if (pickFbo == 0 || textureIndex >= textures.size()) return;
 		glBindVertexArray(vao);
 		pickProg.Bind();
 		pickProg.SetUniform(PICK_POS, pos.x, pos.y, pos.z);
-		pickProg.SetUniform(PICK_SCALE, scale * 0.5f);
+		pickProg.SetUniform(PICK_SCALE, scale.x, scale.y, scale.z);
+		pickProg.SetUniform(PICK_ROTATION, rotation.x, rotation.y, rotation.z);
 		pickProg.SetUniform(PICK_IMAGE_ASPECT, textures[textureIndex].aspect);
 		pickProg.SetUniform(PICK_ID, imageId);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -310,7 +338,8 @@ public:
 		glViewport(0, 0, width, height);
 	}
 
-	void Draw(const Vec3f& pos, float scale, float opacity, uint textureIndex,
+	void Draw(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, float opacity, bool selected,
+		const Vec3f& selectionColor, uint textureIndex,
 		GLuint defaultFramebuffer, int width, int height) {
 		if (width <= 0 || height <= 0 || textureIndex >= textures.size()) return;
 
@@ -320,7 +349,7 @@ public:
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glDepthMask(GL_FALSE);
-		DrawVisible(pos, scale, opacity, textureIndex);
+		DrawVisible(pos, rotation, scale, opacity, selected, selectionColor, textureIndex);
 		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);
 
@@ -772,6 +801,7 @@ public:
 	bool Initialize(GLuint defaultFrameBuffer);
 	void Resize(int width, int height, GLuint defaultFrameBuffer);
 	void Draw(GLuint defaultFramebuffer);
+	void DrawGizmos(GLuint defaultFramebuffer);
 
 private:
 // ---------------------------------------------------------------------------------------------
@@ -857,6 +887,7 @@ public:
 	bool ShowSurfaces() { return show.surfaces; }
 
 	bool Initialized() { return initialized; }
+	const Vec3f& SelectionColor() const { return blends.select; }
 
 	void mouseDrag(const Vec2f& drag) {
 		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }

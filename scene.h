@@ -2,6 +2,7 @@
 #define _ABC3D_SCENE_H_
 
 #include <vector>
+#include <string>
 
 #include "mesh.h"
 #include "helper.h"
@@ -10,9 +11,26 @@
 /// A Scene is a collection of meshes to be displayed.
 /// The scene also keeps track of which of those meshes are currently selected for operations.
 /// </summary>
+struct ReferenceImage {
+	uint id = 0;
+	std::string sourcePath;
+
+	Vec3f position = Vec3f(0.0f);
+	Vec3f rotation = Vec3f(0.0f);
+	Vec3f scale = Vec3f(1.0f);
+
+	float opacity = 1.0f;
+	bool visible = true;
+	bool locked = false;
+
+	bool isNull() const { return sourcePath.empty(); }
+};
+
 class Scene {
 	std::vector<HalfEdgeMesh*> meshes;
 	std::vector<string> names;
+	std::vector<ReferenceImage> referenceImages;
+	uint nextReferenceImageId = 0;
 
 public:
 	/// <summary>
@@ -42,6 +60,15 @@ public:
 	/// </summary>
 	/// <returns> Pointer to new mesh. </returns>
 	HalfEdgeMesh* NewMesh();
+
+	ReferenceImage* NewReferenceImage(const std::string& sourcePath);
+	ReferenceImage* AddReferenceImage(const ReferenceImage& image);
+	void DeleteReferenceImage(uint id);
+	ReferenceImage* FindReferenceImage(uint id);
+	const ReferenceImage* FindReferenceImage(uint id) const;
+	const std::vector<ReferenceImage>& ReferenceImages() const;
+	std::vector<ReferenceImage>& ReferenceImages();
+	uint ReferenceImageCount() const;
 
 	/// <summary>
 	/// Returns the mutable mesh at index.

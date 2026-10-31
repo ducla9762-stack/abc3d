@@ -155,13 +155,13 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glDisable(GL_BLEND);
 	}
 
-	// Gizmos are a screen-space overlay, drawn after the deferred composition and the grid.
-	// Picking uses a separate integer buffer.
-	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
-
 	glDepthMask(GL_TRUE);
 
 	update.ClearAll();
+}
+
+void ABC3DRenderer::DrawGizmos(GLuint defaultFramebuffer) {
+	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -405,6 +405,9 @@ void ABC3DRenderer::UpdateSelection() {
 
 	for (uint i = 0; i < itemCount; ++i) {
 		const SelectionItem& item = items[i];
+		// Reference images are drawn and highlighted by ImageRenderer, they do
+		// not have entries in the mesh color buffer.
+		if (item.isReferenceImage()) { continue; }
 		Element elmType = selecQuery->getActiveElement();
 		switch (elmType) {
 		case OBJECT:
