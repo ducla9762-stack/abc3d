@@ -43,15 +43,22 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
+    QObject::connect(
+        ui.actionImage,
+        &QAction::triggered,
+        this,
+        &ABC3D::imageFileDialog
+    );
+
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
-    //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
+    QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
     ui.menuBar->addAction(actionSimpleMode);
-    //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+    QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {

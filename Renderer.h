@@ -144,6 +144,351 @@ public:
 
 };
 
+// Owns the shared image shaders, quad geometry, image textures, and image pick pass.
+class ImageRenderer {
+	GLuint vao;
+	int textureUnit = 0;
+	GLSLProgram prog;
+	GLSLProgram pickProg;
+
+	// All reference images textures.
+	struct TextureData {
+		GLuint handle = 0;
+		float aspect = 1.0f;
+	};
+	std::vector<TextureData> textures;
+
+	// Buffers for the pick pass.
+	GLuint pickFbo = 0;
+	GLuint pickTex = 0;
+	GLuint pickDepth = 0;
+	GLuint pickRestoreFbo = 0;
+	int pickWidth = 0;
+	int pickHeight = 0;
+
+	// Uniforms for visual and pick pass respectively.
+	enum Uniform : int {
+		TEX = 0, SCALE = 1, POS = 2, ROTATION = 3, IMAGE_ASPECT = 4,
+		MVP = 5, OPACITY = 6, SELECTION_COLOR = 7, SELECTED = 8
+	};
+	enum PickUniform : int { PICK_SCALE = 0, PICK_POS = 1, PICK_ROTATION = 2, PICK_IMAGE_ASPECT = 3, PICK_MVP = 4, PICK_ID = 5 };
+
+	/// <summary>
+	/// Create or resize buffer for reference image picking.
+	/// </summary>
+	/// <param name="width"> Width of pick buffer. </param>
+	/// <param name="height"> Height of pick buffer. </param>
+	void ResizePickBuffer(int width, int height) {
+		// Check for valid sizes, and if change occurred.
+		if (width <= 0 || height <= 0) return;
+		if (pickFbo != 0 && pickWidth == width && pickHeight == height) return;
+
+		GLint previousActiveTexture = GL_TEXTURE0;
+		GLint previousTexture2D = 0;
+		glGetIntegerv(GL_ACTIVE_TEXTURE, &previousActiveTexture);
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &previousTexture2D);
+		const GLuint oldPickTex = pickTex;
+
+		// Delete old buffers.
+		glDeleteFramebuffers(1, &pickFbo);
+		glDeleteTextures(1, &pickTex);
+		glDeleteRenderbuffers(1, &pickDepth);
+		if (static_cast<GLuint>(previousTexture2D) == oldPickTex) {
+			previousTexture2D = 0;
+		}
+
+		// Create new buffers.
+		pickWidth = width;
+		pickHeight = height;
+
+		glGenFramebuffers(1, &pickFbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, pickFbo);
+
+		glGenTextures(1, &pickTex);
+		glBindTexture(GL_TEXTURE_2D, pickTex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0,
+			GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D, pickTex, 0);
+
+		glGenRenderbuffers(1, &pickDepth);
+		glBindRenderbuffer(GL_RENDERBUFFER, pickDepth);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+			GL_RENDERBUFFER, pickDepth);
+
+		const GLenum drawBuffer = GL_COLOR_ATTACHMENT0;
+		glDrawBuffers(1, &drawBuffer);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+			std::cout << "Reference image pick framebuffer is invalid!" << std::endl;
+		}
+
+		glActiveTexture(static_cast<GLenum>(previousActiveTexture));
+		glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previousTexture2D));
+	}
+
+public:
+	/// <summary>
+	/// Initialize image renderer and use texBindPt for the texture unit.
+	/// </summary>
+	/// <param name="texBindPt"></param>
+	/// <returns></returns>
+	bool Initialize(int texBindPt) {
+		textureUnit = texBindPt;
+
+		// Compile and error check shaders.
+		bool success = prog.BuildFiles("assets/shaders/Image.vert", "assets/shaders/Image.frag");
+
+		if (!success) {
+			std::cout << "Failed to compile image shader program!" << std::endl;
+			return false;
+		}
+
+		success = pickProg.BuildFiles("assets/shaders/Image.vert", "assets/shaders/ImagePick.frag");
+		if (!success) {
+			std::cout << "Failed to compile image picking shader program!" << std::endl;
+			return false;
+		}
+
+		glGenVertexArrays(1, &vao);
+
+		// Set visual uniforms.
+		prog.Bind();
+		prog.RegisterUniform(TEX, "tex");
+		prog.RegisterUniform(SCALE, "scale");
+		prog.RegisterUniform(POS, "pos");
+		prog.RegisterUniform(ROTATION, "rotation");
+		prog.RegisterUniform(IMAGE_ASPECT, "imageAspect");
+		prog.RegisterUniform(MVP, "mvp");
+		prog.RegisterUniform(OPACITY, "opacity");
+		prog.RegisterUniform(SELECTION_COLOR, "selectionColor");
+		prog.RegisterUniform(SELECTED, "selected");
+
+		prog.SetUniform(TEX, texBindPt);
+
+		// Set pick uniforms.
+		pickProg.Bind();
+		pickProg.RegisterUniform(PICK_SCALE, "scale");
+		pickProg.RegisterUniform(PICK_POS, "pos");
+		pickProg.RegisterUniform(PICK_ROTATION, "rotation");
+		pickProg.RegisterUniform(PICK_IMAGE_ASPECT, "imageAspect");
+		pickProg.RegisterUniform(PICK_MVP, "mvp");
+		pickProg.RegisterUniform(PICK_ID, "imageId");
+
+		glActiveTexture(GL_TEXTURE0);
+
+		return true;
+	}
+
+	/// <summary>
+	/// Add a reference image to the texture vector.
+	/// </summary>
+	/// <param name="image"> Pointer to image data. </param>
+	/// <param name="w"> Width of image. </param>
+	/// <param name="h"> Height of image. </param>
+	/// <param name="format"></param>
+	/// <returns> Index in texture vector. </returns>
+	uint AddTexture(const uint8_t* image, uint w, uint h, GLenum format = GL_RGBA) {
+		// Create entry and set fields.
+		TextureData texture;
+		texture.aspect = h > 0 ? float(w) / float(h) : 1.0f;
+
+		// Create OpenGL texture.
+		glGenTextures(1, &texture.handle);
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
+
+		// Bind texture.
+		glBindTexture(GL_TEXTURE_2D, texture.handle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, format, GL_UNSIGNED_BYTE, image);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// Unbind texture.
+		glActiveTexture(GL_TEXTURE0);
+
+		// Add texture to vector, return index.
+		textures.push_back(texture);
+		return static_cast<uint>(textures.size() - 1);
+	}
+
+	/// <summary>
+	/// Draw the visible pass.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="rotation"></param>
+	/// <param name="scale"></param>
+	/// <param name="opacity"></param>
+	/// <param name="selected"></param>
+	/// <param name="selectionColor"></param>
+	/// <param name="textureIndex"></param>
+	void DrawVisible(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, float opacity,
+		bool selected, const Vec3f& selectionColor, uint textureIndex) {
+		// Check for invalid texture.
+		if (textureIndex >= textures.size()) return;
+
+		// Bind texture at textureIndex.
+		glActiveTexture(GLenum(GL_TEXTURE0) + GLenum(textureUnit));
+		glBindTexture(GL_TEXTURE_2D, textures[textureIndex].handle);
+		glBindVertexArray(vao);
+
+		// Set uniforms.
+		prog.Bind();
+		prog.SetUniform(POS, pos.x, pos.y, pos.z);
+		prog.SetUniform(SCALE, scale.x, scale.y, scale.z);
+		prog.SetUniform(ROTATION, rotation.x, rotation.y, rotation.z);
+		prog.SetUniform(IMAGE_ASPECT, textures[textureIndex].aspect);
+		prog.SetUniform(OPACITY, opacity);
+		prog.SetUniform3(SELECTION_COLOR, &selectionColor.x);
+		prog.SetUniform(SELECTED, selected ? 1 : 0);
+
+		// Draw quad.
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		// Unbind.
+		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
+	}
+
+	/// <summary>
+	/// Setup pick pass, multiple draws for the pick pass can be called so only do setup once.
+	/// </summary>
+	/// <param name="depthSourceFbo"></param>
+	/// <param name="width"></param>
+	/// <param name="height"></param>
+	void BeginPickPass(GLuint depthSourceFbo, int width, int height) {
+		// Check for valid size.
+		if (width <= 0 || height <= 0) return;
+
+		// Update pick buffer size.
+		ResizePickBuffer(width, height);
+		if (pickFbo == 0) return;
+		
+		// Check depth buffer to see if reference image is occluded and hence not pickable.
+		pickRestoreFbo = depthSourceFbo;
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, depthSourceFbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pickFbo);
+		glBlitFramebuffer(
+			0, 0, pickWidth, pickHeight,
+			0, 0, pickWidth, pickHeight,
+			GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, pickFbo);
+		glViewport(0, 0, pickWidth, pickHeight);
+		const GLuint clearIds[4] = { 0, 0, 0, 0 };
+		glClearBufferuiv(GL_COLOR, 0, clearIds);
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+	}
+
+	/// <summary>
+	/// Draw pick for texture at textureIndex.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="rotation"></param>
+	/// <param name="scale"></param>
+	/// <param name="imageId"> Image ID from scene. </param>
+	/// <param name="textureIndex"> Index for texture in the texture vector. </param>
+	void DrawPick(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, uint imageId, uint textureIndex) {
+		// Check valid texture and buffer.
+		if (pickFbo == 0 || textureIndex >= textures.size()) return;
+
+		glBindVertexArray(vao);
+
+		// Set pick uniforms.
+		pickProg.Bind();
+		pickProg.SetUniform(PICK_POS, pos.x, pos.y, pos.z);
+		pickProg.SetUniform(PICK_SCALE, scale.x, scale.y, scale.z);
+		pickProg.SetUniform(PICK_ROTATION, rotation.x, rotation.y, rotation.z);
+		pickProg.SetUniform(PICK_IMAGE_ASPECT, textures[textureIndex].aspect);
+		pickProg.SetUniform(PICK_ID, imageId);
+
+		// Draw pick quad.
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		// Unbind.
+		glBindVertexArray(0);
+	}
+
+	/// <summary>
+	/// Conclude pick pass.
+	/// </summary>
+	/// <param name="defaultFramebuffer"></param>
+	/// <param name="width"></param>
+	/// <param name="height"></param>
+	void EndPickPass(GLuint defaultFramebuffer, int width, int height) {
+		glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+	}
+
+	/// <summary>
+	/// Draw visible texture.
+	/// </summary>
+	/// <param name="pos"></param>
+	/// <param name="rotation"></param>
+	/// <param name="scale"></param>
+	/// <param name="opacity"></param>
+	/// <param name="selected"></param>
+	/// <param name="selectionColor"></param>
+	/// <param name="textureIndex"></param>
+	/// <param name="defaultFramebuffer"></param>
+	/// <param name="width"></param>
+	/// <param name="height"></param>
+	void Draw(const Vec3f& pos, const Vec3f& rotation, const Vec3f& scale, float opacity, bool selected,
+		const Vec3f& selectionColor, uint textureIndex,
+		GLuint defaultFramebuffer, int width, int height) {
+		// Check valid size and texture.
+		if (width <= 0 || height <= 0 || textureIndex >= textures.size()) return;
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
+		DrawVisible(pos, rotation, scale, opacity, selected, selectionColor, textureIndex);
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
+		glViewport(0, 0, width, height);
+	}
+
+	/// <summary>
+	/// Get the image at x,y.
+	/// </summary>
+	/// <param name="x"></param>
+	/// <param name="y"></param>
+	/// <returns> Image ID at x,y. </returns>
+	uint ImageIdAt(uint x, uint y) const {
+		if (pickFbo == 0 || x >= static_cast<uint>(pickWidth) || y >= static_cast<uint>(pickHeight)) {
+			return MAX_UINT;
+		}
+
+		Vec3u ids(MAX_UINT, MAX_UINT, MAX_UINT);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, pickFbo);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &ids.x);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, pickRestoreFbo);
+		return ids.x == REFERENCE_IMAGE_IDENTIFIER ? ids.y : MAX_UINT;
+	}
+
+	/// <summary>
+	/// Upload model view projection matrix from camera.
+	/// </summary>
+	/// <param name="data"> MVP Matrix. </param>
+	void SetTransform(float data[16]) {
+		prog.Bind();
+		prog.SetUniformMatrix4(MVP, data);
+		pickProg.Bind();
+		pickProg.SetUniformMatrix4(PICK_MVP, data);
+	}
+
+};
+
 class VertexRenderer {
 	GLuint vao;
 	
@@ -558,6 +903,7 @@ public:
 	bool Initialize(GLuint defaultFrameBuffer);
 	void Resize(int width, int height, GLuint defaultFrameBuffer);
 	void Draw(GLuint defaultFramebuffer);
+	void DrawGizmos(GLuint defaultFramebuffer);
 
 private:
 // ---------------------------------------------------------------------------------------------
@@ -643,6 +989,7 @@ public:
 	bool ShowSurfaces() { return show.surfaces; }
 
 	bool Initialized() { return initialized; }
+	const Vec3f& SelectionColor() const { return blends.select; }
 
 	void mouseDrag(const Vec2f& drag) {
 		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }
@@ -885,6 +1232,11 @@ public:
 		UpdateViewUniforms();
 
 		return success;
+	}
+
+	void GetViewProjection(float data[16]) const {
+		Matrix4f viewProjection = transform.proj * transform.view;
+		viewProjection.Get(data);
 	}
 
 	Vec3f CanonicalVolumePos(const Vec3f& worldPos) {
