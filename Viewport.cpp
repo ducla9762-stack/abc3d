@@ -114,6 +114,11 @@ void Viewport::initializeGL() {
 		pivotImg.flip();
 		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height(), GL_BGRA);
 	}
+
+	if (!imageRenderer.Initialize(8)) {
+		std::cout << "Failed to initialize image renderer" << std::endl;
+	}
+
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -131,7 +136,15 @@ void Viewport::emitPrimarySelectionPosChanged() {
 	}
 	else if (selectionManager.getActiveElement() == OBJECT) {
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
-		Vec3f pos = scene[item.meshId]->Pos();
+		Vec3f pos(0.0f);
+		if (item.isReferenceImage()) {
+			const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image) { return; }
+			pos = image->position;
+		}
+		else {
+			pos = scene[item.meshId]->Pos();
+		}
 		emit primarySelectionPosChanged(pos);
 	}
 }
@@ -140,7 +153,15 @@ void Viewport::emitPrimarySelectionScaleChanged() {
 	if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
 
 	const SelectionItem& item = selectionManager.getSelectedItems()[0];
-	Vec3f scale = scene[item.meshId]->Scale();
+	Vec3f scale(1.0f);
+	if (item.isReferenceImage()) {
+		const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		scale = image->scale;
+	}
+	else {
+		scale = scene[item.meshId]->Scale();
+	}
 	emit primarySelectionScaleChanged(scale);
 }
 
@@ -148,7 +169,15 @@ void Viewport::emitPrimarySelectionRotChanged() {
 	if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
 
 	const SelectionItem& item = selectionManager.getSelectedItems()[0];
-	Vec3f rot = scene[item.meshId]->Rot();
+	Vec3f rot(0.0f);
+	if (item.isReferenceImage()) {
+		const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		rot = image->rotation;
+	}
+	else {
+		rot = scene[item.meshId]->Rot();
+	}
 	emit primarySelectionRotChanged(rot);
 }
 
@@ -206,13 +235,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const int rawX = static_cast<int>(pos.x * pixelRatio);
-	const int rawY = static_cast<int>(pos.y * pixelRatio);
-	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
 	const Vec3u ids = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
@@ -295,9 +320,21 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
-	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), pixel.x, pixel.y);
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
+	if (!gizmoDragWasCaptured && !mouseAction.dragged) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			const uint imageId = imageRenderer.ImageIdAt(pixel.x, pixel.y);
+			const ReferenceImage* image = scene.FindReferenceImage(imageId);
+			if (image && image->visible && !image->locked &&
+				referenceTextureIndices.find(imageId) != referenceTextureIndices.end()) {
+				handleSelection(SelectionItem::ReferenceImage(imageId));
+				return;
+			}
+		}
+	}
 
 	// An axis click is a gizmo interaction, not a mesh selection. The axis
 	// was captured on press and must remain captured even if the cursor moved.
@@ -691,10 +728,13 @@ void Viewport::handleDissolveEdgeClick(const Vec2u& selectionIds) {
 }
 
 void Viewport::handleSelection(const Vec2u& selectionIds) {
-	// Create a selection item to send to the selection manager.
-	SelectionItem item = createSelectionItem(selectionIds);
+	handleSelection(createSelectionItem(selectionIds));
+}
 
-	if (item.meshId == MAX_UINT) {
+void Viewport::handleSelection(const SelectionItem& item) {
+	// Mesh and reference-image picks use the same selection manager path.
+
+	if (!item.isValid()) {
 		// Clicking the background is a deselection. Keep the renderer and
 		// gizmo in sync when the last selected item is removed.
 		if (!selectionManager.getSelectedItems().empty()) {
@@ -702,6 +742,7 @@ void Viewport::handleSelection(const Vec2u& selectionIds) {
 			renderer.UpdateSelection(selectionManager);
 			updateGizmos();
 			emitSelectionChanged();
+			update();
 		}
 		return;
 	}
@@ -713,6 +754,7 @@ void Viewport::handleSelection(const Vec2u& selectionIds) {
 	updateGizmos();
 
 	emitSelectionChanged();
+	update();
 }
 
 Element Viewport::getActiveElement() {
@@ -781,6 +823,14 @@ bool Viewport::translateFreeDrag() {
 	bool transformed = false;
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (image && !image->locked) {
+				image->position += translation;
+				transformed = true;
+			}
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -1140,7 +1190,16 @@ bool Viewport::scaleDrag() {
 	}
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId < scene.MeshCount()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (image && !image->locked) {
+				image->scale += Vec3f(factor);
+				image->scale.x = std::max(0.001f, image->scale.x);
+				image->scale.y = std::max(0.001f, image->scale.y);
+				image->scale.z = std::max(0.001f, image->scale.z);
+			}
+		}
+		else if (item.meshId < scene.MeshCount()) {
 			scene[item.meshId]->AddScale(factor);
 		}
 	}
@@ -1233,6 +1292,17 @@ bool Viewport::rotateDrag() {
 	dir /= length;
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image || image->locked) { continue; }
+			Matrix3f original;
+			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
+			Matrix3f delta;
+			delta.SetRotation(dir, length * 0.01f);
+			delta *= original;
+			image->rotation = matrixToEulerAngle(delta);
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) { continue; }
 
 		Vec3f eulerRot = scene[item.meshId]->Rot();
@@ -1295,6 +1365,17 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image || image->locked) { continue; }
+			Matrix3f original;
+			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
+			Matrix3f delta;
+			delta.SetRotation(draggedRotationAxis, angle);
+			delta *= original;
+			image->rotation = matrixToEulerAngle(delta);
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) continue;
 		const Vec3f euler = scene[item.meshId]->Rot();
 		Matrix3f original;
@@ -1367,8 +1448,17 @@ bool Viewport::translateGizmoDrag() {
 	const Vec3f worldTranslation = axis * (0.01f * change.Dot(axisScreen));
 
 	bool transformed = false;
-	std::unordered_set<uint> transformedObjects;
+	std::unordered_set<uint64_t> transformedObjects;
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			const uint64_t key = packUints(static_cast<uint>(SelectionTargetType::ReferenceImage), item.componentId);
+			if (image && !image->locked && transformedObjects.insert(key).second) {
+				image->position += worldTranslation;
+				transformed = true;
+			}
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -1376,7 +1466,7 @@ bool Viewport::translateGizmoDrag() {
 		HalfEdgeMesh* mesh = scene[item.meshId];
 		switch (selectionManager.getActiveElement()) {
 		case OBJECT:
-			if (transformedObjects.insert(item.meshId).second) {
+			if (transformedObjects.insert(packUints(static_cast<uint>(SelectionTargetType::Mesh), item.meshId)).second) {
 				mesh->TranslatePos(worldTranslation);
 				transformed = true;
 			}
@@ -1470,6 +1560,15 @@ bool Viewport::scaleGizmoDrag() {
 	// Else we are scaling meshes.
 	else {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image && !image->locked && draggedGizmoAxis < 3) {
+					const float newScale = std::max(0.001f, image->scale[draggedGizmoAxis] + factor);
+					image->scale[draggedGizmoAxis] = newScale;
+					scaled = true;
+				}
+				continue;
+			}
 			if (item.meshId < scene.MeshCount()) {
 				HalfEdgeMesh* mesh = scene[item.meshId];
 				const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
@@ -1493,6 +1592,15 @@ Matrix3f Viewport::getGizmoRotation() const {
 	rotation.SetIdentity();
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image) { continue; }
+			rotation.SetRotationZYX(
+				degreesToRadians(image->rotation.x),
+				degreesToRadians(image->rotation.y),
+				degreesToRadians(image->rotation.z));
+			break;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -1529,6 +1637,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1591,6 +1707,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1647,6 +1771,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1681,11 +1813,9 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const uint x = static_cast<uint>(std::clamp(static_cast<int>(pos.x * pixelRatio), 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(static_cast<int>(pos.y * pixelRatio), 0, pixelHeight - 1));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
 
 	const Vec3u gizmoIds = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =

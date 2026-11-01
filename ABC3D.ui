@@ -3065,6 +3065,7 @@
 					<addaction name="actionModel"/>
 					<addaction name="actionScene"/>
 					<addaction name="actionLesson"/>
+					<addaction name="actionImage"/>
 				</widget>
 				<widget class="QMenu" name="menuExport">
 					<property name="title">
@@ -3126,6 +3127,11 @@
 		<action name="actionLesson">
 			<property name="text">
 				<string>Lesson</string>
+			</property>
+		</action>
+		<action name="actionImage">
+			<property name="text">
+				<string>Image</string>
 			</property>
 		</action>
 		<action name="actionDelete">

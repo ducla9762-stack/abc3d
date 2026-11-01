@@ -25,6 +25,7 @@ typedef Vec4<uint> Vec4u;
 
 #define MAX_UINT std::numeric_limits<uint>::max()
 #define GIZMO_IDENTIFIER std::numeric_limits<uint>::max() - 1
+#define REFERENCE_IMAGE_IDENTIFIER std::numeric_limits<uint>::max() - 2
 
 // for std140 packing rules
 struct CompactTransform140 {
