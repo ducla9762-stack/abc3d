@@ -1298,7 +1298,7 @@ bool Viewport::rotateDrag() {
 			Matrix3f original;
 			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
 			Matrix3f delta;
-			delta.SetRotation(dir, length * 0.01f);
+			delta.SetRotation(dir, -length * 0.01f);
 			delta *= original;
 			image->rotation = matrixToEulerAngle(delta);
 			continue;
@@ -1371,7 +1371,7 @@ bool Viewport::rotateGizmoDrag() {
 			Matrix3f original;
 			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
 			Matrix3f delta;
-			delta.SetRotation(draggedRotationAxis, angle);
+			delta.SetRotation(draggedRotationAxis, -angle);
 			delta *= original;
 			image->rotation = matrixToEulerAngle(delta);
 			continue;
