@@ -1983,3 +1983,7 @@ int Viewport::getMeshCount() {
 std::vector<string> Viewport::getNames() {
 	return scene.Names();
 }
+
+void Viewport::setName(int index) {
+	scene.Names()[index];
+}

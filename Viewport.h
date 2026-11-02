@@ -125,7 +125,7 @@ signals:
 	void enableNonVertexSpinners(bool enable);
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
-	void meshCountChanged(uint meshCount);
+	void meshCountChanged(uint meshCount, QString name);
 	void selectionChanged();
 
 public:
@@ -138,6 +138,7 @@ public:
 	Element getActiveElement();
 	int getMeshCount();
 	std::vector<string> getNames();
+	void setName(int index);
 	void setSelection(int meshID);
 
 private:
@@ -839,11 +840,11 @@ public slots:
 
 	void loadCube() {
 		loadMesh(CUBE_VERTICES, CUBE_FACES);
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cube"));
 	}
 	void loadPyramid() {
 		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES);
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Pyramid"));
 	}
 	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
@@ -851,7 +852,7 @@ public slots:
 		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
 
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cylinder"));
 	}
 	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
@@ -859,12 +860,12 @@ public slots:
 		generateUnitTorus(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Torus"));
 	}
 	void loadIcoSphere() { 
 		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
 
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Ico Sphere"));
 	}
 
 	void loadUvSphere(int latitude, int longitude){
@@ -873,7 +874,7 @@ public slots:
 		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
 
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("UV Sphere"));
 	}
 
 	/// <summary>
@@ -890,7 +891,7 @@ public slots:
 
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshCountChanged(scene.MeshCount());
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 		}
 
 		renderer.UpdateGeometry();
@@ -941,12 +942,12 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
-		emit meshCountChanged(scene.MeshCount());
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 
 		scene.Clear();
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshCountChanged(scene.MeshCount());
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 		}
 
 		makeCurrent();
@@ -1059,7 +1060,7 @@ public slots:
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				scene.DeleteMesh(item.meshId);
-				emit meshCountChanged(scene.MeshCount());
+				emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 				break;
 
 			case VERTEX:
@@ -1193,7 +1194,7 @@ public slots:
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
 			scene.DuplicateMesh(item.meshId);
-			emit meshCountChanged(scene.MeshCount());
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 		}
 	}
 
@@ -1343,7 +1344,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DuplicateMesh(ids.x);
-			emit meshCountChanged(scene.MeshCount());
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1356,7 +1357,7 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			emit meshCountChanged(scene.MeshCount());
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 			selectionManager.clearSelection();
 
 			renderer.UpdateGeometry();

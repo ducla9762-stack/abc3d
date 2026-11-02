@@ -364,7 +364,6 @@ ABC3D::ABC3D(QWidget *parent)
         ui.verticalLayout_10->addWidget(sceneButtons.back());
         QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { this->ui.viewport->setSelection(i); });
     }
-    names = ui.viewport->getNames();
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
@@ -559,7 +558,7 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::meshCountChanged(uint meshCount) {
+void ABC3D::meshCountChanged(uint meshCount, QString name) {
     uint btnCount = uint(sceneButtons.size());
 
     if (meshCount < btnCount) {
@@ -571,9 +570,9 @@ void ABC3D::meshCountChanged(uint meshCount) {
         }
         // You will need to update all names (ids shifted)
     }
-    else if (meshCount != btnCount) {
+    else if (meshCount != btnCount && name != "") {
         for (uint i = btnCount; i < meshCount; ++i) {
-            QPushButton* button = new QPushButton(QString::number(i), this); // instead of this, parent should be the button container
+            QPushButton* button = new QPushButton(name, this); // instead of this, parent should be the button container
             button->setStyleSheet("QPushButton:checked { background-color: red; }");
             button->setCheckable(true);
             sceneGroup->addButton(button);
@@ -581,7 +580,10 @@ void ABC3D::meshCountChanged(uint meshCount) {
             ui.verticalLayout_10->addWidget(sceneButtons.back());
             QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i](){ this->ui.viewport->setSelection(i); });
         }
-        // You will need to update names from btnCount to sceneButtons.size() - 1
+
+        for (uint i = btnCount; i < sceneButtons.size() - 1; i++) {
+            sceneButtons[i]->setText(QString::fromStdString(ui.viewport->getNames()[i]));
+        }
     }
 }
 
