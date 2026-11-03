@@ -77,10 +77,17 @@ void ABC3DRenderer::Resize(int width, int height, GLuint defaultFrameBuffer) {
 	UpdateProjectionUniforms();
 	glViewport(0, 0, frame.width, frame.height);
 	InitFramebuffer(defaultFrameBuffer);
+
 	update.rerenderGeom = true;
 }
 
 void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
+	// Fixes the viewport not drawing on the first frame.`
+	glDisable(GL_BLEND);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
 
 	if (update.renderBufs) { UpdateRenderBuffers(); }
 	if (update.uniformBuf) { UpdateUniformBuffer(); }
@@ -97,7 +104,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 
 	if (update.renderBufs || update.uniformBuf || update.camera || update.rerenderGeom) {
 
-		glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
+		//glBindFramebuffer(GL_FRAMEBUFFER, frame.fbo);
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 		float clearClr[3] = { 1.0f, 1.0f, 1.0f };
@@ -148,13 +155,13 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 		glDisable(GL_BLEND);
 	}
 
-	// Gizmos are a screen-space overlay, drawn after the deferred composition and the grid.
-	// Picking uses a separate integer buffer.
-	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
-
 	glDepthMask(GL_TRUE);
 
 	update.ClearAll();
+}
+
+void ABC3DRenderer::DrawGizmos(GLuint defaultFramebuffer) {
+	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -398,6 +405,9 @@ void ABC3DRenderer::UpdateSelection() {
 
 	for (uint i = 0; i < itemCount; ++i) {
 		const SelectionItem& item = items[i];
+		// Reference images are drawn and highlighted by ImageRenderer, they do
+		// not have entries in the mesh color buffer.
+		if (item.isReferenceImage()) { continue; }
 		Element elmType = selecQuery->getActiveElement();
 		switch (elmType) {
 		case OBJECT:

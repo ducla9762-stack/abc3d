@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QMenu>
+#include <QImage>
 #include <QPainter>
 #include <functional>
 #include <optional>
@@ -124,8 +125,8 @@ signals:
 	void enableNonVertexSpinners(bool enable);
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
-	void meshAdded(int meshID);
-	void meshRemoved(int meshID);
+	void meshCountChanged(uint meshCount, QString name);
+	void selectionChanged();
 
 public:
 
@@ -136,6 +137,9 @@ public:
 
 	Element getActiveElement();
 	int getMeshCount();
+	std::vector<string> getNames();
+	void setName(int index);
+	void setSelection(int meshID);
 
 private:
 
@@ -152,11 +156,15 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
+	// OpenGL texture indices are renderer resources, not scene state.
+	std::unordered_map<uint, uint> referenceTextureIndices;
+
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
 	IconRenderer iconRenderer;
+	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
@@ -179,12 +187,6 @@ private:
 
 	bool localScale = true;
 	std::optional<SelectionItem> mergeFirstVertex;
-
-	void deleteMeshHelper(int meshID) {
-		std::cout << meshID  + " mesh" << std::endl;
-		emit meshRemoved(meshID);
-		scene.DeleteMesh(meshID);
-	}
 
 	// AI-generated code:
 	// Edge translation chooses an adjacent edge from the first drag direction.
@@ -225,7 +227,8 @@ private:
 
 	void paintGL() override {
 		renderer.Draw(defaultFramebufferObject());
-		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT) {
+		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
+			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
 			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
 			glDisable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
@@ -233,6 +236,30 @@ private:
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
+		if (scene.ReferenceImageCount() != 0) {
+			float viewProjection[16];
+			renderer.GetViewProjection(viewProjection);
+			const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+			const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+			imageRenderer.SetTransform(viewProjection);
+			imageRenderer.BeginPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (const ReferenceImage& image : scene.ReferenceImages()) {
+				auto texture = referenceTextureIndices.find(image.id);
+				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
+				imageRenderer.DrawPick(image.position, image.rotation, image.scale, image.id, texture->second);
+			}
+			imageRenderer.EndPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (const ReferenceImage& image : scene.ReferenceImages()) {
+				auto texture = referenceTextureIndices.find(image.id);
+				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
+				imageRenderer.Draw(
+					image.position, image.rotation, image.scale, image.opacity,
+					selectionManager.hasSelectedReferenceImage(image.id), renderer.SelectionColor(), texture->second,
+					defaultFramebufferObject(), pixelWidth, pixelHeight
+				);
+			}
+		}
+		renderer.DrawGizmos(defaultFramebufferObject());
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
 
@@ -288,6 +315,7 @@ private:
 // ---------------------------------------------------------------------------------------------
 
 	void handleSelection(const Vec2u& selectionIds);
+	void handleSelection(const SelectionItem& item);
 	SelectionItem createSelectionItem(const Vec2u& ids);
 	void handleMergeVertexClick(const Vec2u& selectionIds);
 	void handleCollapseEdgeClick(const Vec2u& selectionIds);
@@ -303,7 +331,6 @@ private:
 	template<typename T, typename U>
 	void loadMesh(const T& vertices, const U& faces) {
 		scene.NewMesh()->load(vertices, faces);
-		emit meshAdded(scene.MeshCount() - 1);
 		makeCurrent();
 		// 10/16/26 - Update to public API.
 		//renderer.UpdateRenderBuffers(scene);
@@ -331,10 +358,18 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
+	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) const {
+		const float dpr = static_cast<float>(devicePixelRatio());
+		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
+		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
+		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
+		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+	}
+
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
-		float dpr = devicePixelRatio();
-		Vec2f coords(std::round(logicalPos.x * dpr), std::round(logicalPos.y * dpr));
-		return renderer.SelectionIds(elm, uint(coords.x), uint(coords.y));
+		const Vec2u pixel = physicalPixelFromLogical(logicalPos);
+		return renderer.SelectionIds(elm, pixel.x, pixel.y);
 	}
 
 // ---------------------------------------------------------------------------------------------
@@ -712,12 +747,20 @@ public slots:
 			renderer.UpdateGeometry();
 		}
 		else {
-			scene[item.meshId]->Pos(pos);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->position = pos;
+			}
+			else {
+				scene[item.meshId]->Pos(pos);
+			}
 
 			// In mesh case, update transforms.
 			renderer.UpdateTransforms();
 		}
 
+		updateGizmos();
 		update();
 	}
 
@@ -726,11 +769,19 @@ public slots:
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
-			scene[item.meshId]->Scale(scale);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->scale = scale;
+			}
+			else {
+				scene[item.meshId]->Scale(scale);
+			}
 
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
+			updateGizmos();
 			update();
 		}
 	}
@@ -740,35 +791,90 @@ public slots:
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
-			scene[item.meshId]->Rot(rot);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->rotation = rot;
+			}
+			else {
+				scene[item.meshId]->Rot(rot);
+			}
 
 			// 10/16/26 - Updated to public API. Update transforms only.
 			renderer.UpdateTransforms();
 
+			updateGizmos();
 			update();
 		}
 	}
 
-	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
-	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
+	void setPrimaryReferenceImageOpacity(double opacity) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image || image->locked) { return; }
+		image->opacity = std::clamp(static_cast<float>(opacity), 0.0f, 1.0f);
+		update();
+	}
+
+	void setPrimaryReferenceImageVisibility(bool visible) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		image->visible = visible;
+		update();
+	}
+
+	void setPrimaryReferenceImageLocked(bool locked) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		image->locked = locked;
+		update();
+	}
+
+	void loadCube() {
+		loadMesh(CUBE_VERTICES, CUBE_FACES);
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cube"));
+	}
+	void loadPyramid() {
+		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES);
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Pyramid"));
+	}
 	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitCylinder(vertices, faces, resolution);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cylinder"));
 	}
 	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitTorus(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Torus"));
 	}
-	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
+	void loadIcoSphere() { 
+		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
+
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Ico Sphere"));
+	}
+
 	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces);
+
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("UV Sphere"));
 	}
 
 	/// <summary>
@@ -785,7 +891,7 @@ public slots:
 
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshAdded(scene.MeshCount() - 1);
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 		}
 
 		renderer.UpdateGeometry();
@@ -836,21 +942,35 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
-		if(scene.MeshCount() == 0) {}
-		else if (scene.MeshCount() == 1) {
-			emit meshRemoved(0);
-		}
-		else {
-			for (int i = 0; i < scene.MeshCount() - 1; i++) {
-				std::cout << std::to_string(i) + " i" << std::endl;
-				emit meshRemoved(i);
-			}
-		}
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 
 		scene.Clear();
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
-			emit meshAdded(scene.MeshCount() - 1);
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
+		}
+
+		makeCurrent();
+		referenceTextureIndices.clear();
+		for (const SceneFileReferenceImage& saved : doc.referenceImages) {
+			QImage image(QString::fromStdString(saved.path));
+			if (image.isNull()) { continue; }
+			image = image.convertToFormat(QImage::Format_RGBA8888);
+			image.flip();
+
+			ReferenceImage reference;
+			reference.id = saved.id;
+			reference.sourcePath = saved.path;
+			reference.position = saved.pos;
+			reference.rotation = saved.rot;
+			reference.scale = saved.scale;
+			reference.opacity = saved.opacity;
+			reference.visible = saved.visible;
+			reference.locked = saved.locked;
+			ReferenceImage* added = scene.AddReferenceImage(reference);
+			referenceTextureIndices[added->id] = imageRenderer.AddTexture(
+				image.constBits(), static_cast<uint>(image.width()),
+				static_cast<uint>(image.height()), GL_RGBA);
 		}
 
 		//camPos = doc.camera;
@@ -868,6 +988,11 @@ public slots:
 			auto remapped = idMap.find(savedId);
 			if (remapped != idMap.end()) {
 				selectionManager.selectMesh(remapped->second);
+			}
+		}
+		for (uint imageId : doc.imageSelection) {
+			if (scene.FindReferenceImage(imageId) != nullptr) {
+				selectionManager.selectReferenceImage(imageId);
 			}
 		}
 
@@ -923,13 +1048,19 @@ public slots:
 		}
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				referenceTextureIndices.erase(item.componentId);
+				scene.DeleteReferenceImage(item.componentId);
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
 
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
-				deleteMeshHelper(item.meshId);
+				scene.DeleteMesh(item.meshId);
+				emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 				break;
 
 			case VERTEX:
@@ -1014,8 +1145,10 @@ public slots:
 		//Object selection id just mesh id
 		//sub-object selection is not saved
 		if (selectionManager.getActiveElement() == OBJECT) {
-			for (const SelectionItem& item : selectionManager.getSelectedItems())
-				doc.selection.push_back(item.meshId);
+			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+				if (item.isReferenceImage()) doc.imageSelection.push_back(item.componentId);
+				else doc.selection.push_back(item.meshId);
+			}
 		}
 
 		for (uint id = 0; id < scene.MeshCount(); ++id) {
@@ -1039,6 +1172,19 @@ public slots:
 			doc.objects.push_back(std::move(obj));
 		}
 
+		for (const ReferenceImage& image : scene.ReferenceImages()) {
+			SceneFileReferenceImage saved;
+			saved.id = image.id;
+			saved.path = image.sourcePath;
+			saved.pos = image.position;
+			saved.rot = image.rotation;
+			saved.scale = image.scale;
+			saved.opacity = image.opacity;
+			saved.visible = image.visible;
+			saved.locked = image.locked;
+			doc.referenceImages.push_back(std::move(saved));
+		}
+
 		return WriteSceneFile(filepath, doc);
 	}
 
@@ -1048,6 +1194,7 @@ public slots:
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
 			scene.DuplicateMesh(item.meshId);
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 		}
 	}
 
@@ -1171,11 +1318,33 @@ public slots:
 
 	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
 
+	void loadReferenceImage(const QString& filepath) {
+		QImage image(filepath);
+		if (image.isNull()) { return; }
+
+		image = image.convertToFormat(QImage::Format_RGBA8888);
+		image.flip();
+
+		makeCurrent();
+
+		ReferenceImage* reference = scene.NewReferenceImage(filepath.toStdString());
+		reference->position = Vec3f(0.0f);
+		referenceTextureIndices[reference->id] = imageRenderer.AddTexture(
+			image.constBits(),
+			static_cast<uint>(image.width()),
+			static_cast<uint>(image.height()),
+			GL_RGBA
+		);
+
+		update();
+	}
+
 private slots:
 	void rightClickDuplicate() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DuplicateMesh(ids.x);
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1188,7 +1357,7 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			deleteMeshHelper(ids.x);
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 			selectionManager.clearSelection();
 
 			renderer.UpdateGeometry();

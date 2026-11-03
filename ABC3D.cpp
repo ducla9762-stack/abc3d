@@ -43,15 +43,22 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
+    QObject::connect(
+        ui.actionImage,
+        &QAction::triggered,
+        this,
+        &ABC3D::imageFileDialog
+    );
+
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
     ui.menuBar->addAction(actionStandardMode);
-    //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
+    QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
     ui.menuBar->addAction(actionSimpleMode);
-    //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+    QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
@@ -348,11 +355,14 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
-    sceneButtons.resize(ui.viewport->getMeshCount());
     for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
-        QPushButton* sceneButton = new QPushButton(QString::number(i), this);
-        sceneButtons[i] = sceneButton;
-        ui.verticalLayout_10->addWidget(sceneButton);
+        QPushButton* initButton = new QPushButton(QString::number(i), this);
+        initButton->setStyleSheet("QPushButton:checked { background-color: red; }");
+        initButton->setCheckable(true);
+        sceneGroup->addButton(initButton);
+        sceneButtons.push_back(initButton);
+        ui.verticalLayout_10->addWidget(sceneButtons.back());
+        QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { this->ui.viewport->setSelection(i); });
     }
 }
 
@@ -548,7 +558,7 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::meshCountChanged(uint meshCount) {
+void ABC3D::meshCountChanged(uint meshCount, QString name) {
     uint btnCount = uint(sceneButtons.size());
 
     if (meshCount < btnCount) {
@@ -560,33 +570,35 @@ void ABC3D::meshCountChanged(uint meshCount) {
         }
         // You will need to update all names (ids shifted)
     }
-    else if (meshCount != btnCount) {
+    else if (meshCount != btnCount && name != "") {
         for (uint i = btnCount; i < meshCount; ++i) {
-            sceneButtons.push_back(new QPushButton(QString::number(i), this)); // instead of this, parent should be the button container
+            QPushButton* button = new QPushButton(name, this); // instead of this, parent should be the button container
+            button->setStyleSheet("QPushButton:checked { background-color: red; }");
+            button->setCheckable(true);
+            sceneGroup->addButton(button);
+            sceneButtons.push_back(button); 
             ui.verticalLayout_10->addWidget(sceneButtons.back());
-            // Uncomment the next line when viewport has the setSelection method
-            //QObject::connect(sceneButtons.back(), QPushButton::released, this, [this, i](){ this->ui.viewport->setSelection(i); });
+            QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i](){ this->ui.viewport->setSelection(i); });
         }
-        // You will need to update names from btnCount to sceneButtons.size() - 1
+
+        for (uint i = btnCount; i < sceneButtons.size() - 1; i++) {
+            sceneButtons[i]->setText(QString::fromStdString(ui.viewport->getNames()[i]));
+        }
     }
 }
 
-void ABC3D::meshAdded(int meshID) {
-    QPushButton* newButton = new QPushButton(QString::number(meshID), this);
-    ui.verticalLayout_10->addWidget(newButton);
-    sceneButtons.resize(ui.viewport->getMeshCount());
-}
-
-void ABC3D::meshRemoved(int meshID) {
-    QLayoutItem* item = ui.verticalLayout_10->takeAt(meshID);
-    if (QWidget* widget = item->widget()) {
-        ui.verticalLayout_10->removeWidget(widget);
-        delete widget; // Destroys the button
+/// <summary>
+/// Slot for when the selection is changed in the viewport
+/// Sent -1 as the index if the selection is cleared/nothing is selected
+/// </summary>
+/// <param name="index"> index of the button to select, corresponding to the mesh that was selected </param>
+void ABC3D::selectionChanged(int index) {
+    if (index == -1) {
+        for (QPushButton* button : sceneButtons) {
+            button->setChecked(false);
+        }
     }
-    delete item; // Destroys the layout item container
-
-    sceneButtons[meshID] = sceneButtons[ui.viewport->getMeshCount() - 1];
-    sceneButtons.resize(ui.viewport->getMeshCount());
+    sceneButtons[index]->setChecked(true);
 }
 
 void ABC3D::elementChanged(Element element) {
