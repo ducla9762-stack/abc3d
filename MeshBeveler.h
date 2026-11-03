@@ -602,7 +602,7 @@ public:
 		std::vector<uint> edges;
 		edges.reserve((mesh.edges.size() / 2) + 1);
 		for (uint i = 0; i < mesh.edges.size(); ++i) {
-			if (mesh.edges[i].twin > i) { edges.push_back(i); }
+			if (mesh.edges[i].twin > i && mesh.edges[i].dest != MAX_UINT) { edges.push_back(i); }
 		}
 		StartEdgeBevel(edges);
 	}
