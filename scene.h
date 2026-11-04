@@ -94,7 +94,9 @@ public:
 	/// Returns the list of names in the scene
 	/// </summary>
 	/// <returns> List of strings in the scene </returns>
-	const std::vector<string> Names() const;
+	std::vector<string> Names() const;
+
+	void setName(int index, std::string name);
 
 	/// <summary>
 	/// Returns the mutable list of meshes in scene.

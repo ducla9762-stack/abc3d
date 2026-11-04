@@ -138,7 +138,7 @@ public:
 	Element getActiveElement();
 	int getMeshCount();
 	std::vector<string> getNames();
-	void setName(int index);
+	void setName(int index, std::string name);
 	void setSelection(int meshID);
 
 private:
@@ -1060,6 +1060,7 @@ public slots:
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				scene.DeleteMesh(item.meshId);
+				scene.Names()[item.meshId].erase();
 				emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 				break;
 
@@ -1194,7 +1195,13 @@ public slots:
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
 			scene.DuplicateMesh(item.meshId);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(scene.Names()[item.meshId] + " Copy"));
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
 		}
 	}
 
@@ -1344,7 +1351,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DuplicateMesh(ids.x);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(scene.Names()[ids.x] + " Copy"));
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);

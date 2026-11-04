@@ -19,21 +19,22 @@ void Scene::Clear() {
 	}
 	
 	meshes.clear();
+	names.clear();
 	referenceImages.clear();
 	nextReferenceImageId = 0;
 }
 
 void Scene::DeleteMesh(uint id) {
 	delete meshes.at(id);
-	names[id].erase();
 	std::swap(meshes[id], meshes.back());
+	std::swap(names[id], names.back());
 	meshes.pop_back();
 }
 
 void Scene::DuplicateMesh(uint id) {
 	HalfEdgeMesh& newMesh = *NewMesh();
 	newMesh = *meshes.at(id);
-	names.push_back(names[id] + std::to_string(id));
+	names.back() = names[id] + std::to_string(id);
 }
 
 HalfEdgeMesh* Scene::NewMesh() {
@@ -85,7 +86,11 @@ const HalfEdgeMesh* Scene::operator[](uint index) const { return meshes.at(index
 
 const std::vector<HalfEdgeMesh*>& Scene::Meshes() const { return meshes; }
 
-const std::vector<string> Scene::Names() const { return names; }
+std::vector<string> Scene::Names() const { return names; }
+
+void Scene::setName(int index, std::string name) {
+	names[index] = name;
+}
 
 std::vector<HalfEdgeMesh*>& Scene::Meshes() { return meshes; }
 

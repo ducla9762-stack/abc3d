@@ -355,29 +355,33 @@ ABC3D::ABC3D(QWidget *parent)
     ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
     ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
 
+    ui.sceneTree->header()->hide();
+    ui.sceneTree->setDragEnabled(true);
+    ui.sceneTree->setAcceptDrops(true);
+    ui.sceneTree->setDropIndicatorShown(true);
+    ui.sceneTree->setDragDropMode(QTreeView::InternalMove);
+
     sceneModel = new QStandardItemModel(this);
     sceneModel->setColumnCount(1);
     sceneModel->setHorizontalHeaderLabels(QStringList());
     sceneModel->setVerticalHeaderLabels(QStringList());
 
     ui.sceneTree->setModel(sceneModel);
-    ui.sceneTree->header()->hide();
-
-    sceneGroup = new QButtonGroup(this);
     sceneGroup->setExclusive(true);
-
     ui.sceneTree->setModel(sceneModel);
+
     for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
         createSceneButton(i, "Cube");
     }
 }
 
 void ABC3D::createSceneButton(uint i, QString name) {
+    ui.viewport->setName(i, name.toStdString());
     sceneModel->insertRow(i);
     sceneModelIndex = sceneModel->index(i, 0);
     sceneModel->setData(sceneModelIndex, name);
 
-    QPushButton* initButton = new QPushButton(name);
+    QPushButton* initButton = new QPushButton(QString::fromStdString(ui.viewport->getNames()[i]));
     initButton->setStyleSheet("QPushButton:checked { background-color: red; }");
     initButton->setCheckable(true);
     sceneGroup->addButton(initButton);
@@ -396,7 +400,9 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
             break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
-        if (ctrl) { ui.viewport->duplicateSelection(); }
+        if (ctrl) { 
+            ui.viewport->duplicateSelection();
+        }
         break;
     // Escape - Cancels the knife cut, or leaves the knife. Otherwise closes program
     case Qt::Key_Escape:
@@ -582,29 +588,31 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
 void ABC3D::meshCountChanged(uint meshCount, QString name) {
     uint btnCount = uint(sceneButtons.size());
 
+    // Removes scene buttons if the number of meshes is less than the number of buttons
     if (meshCount < btnCount) {
         // iterate btnCount - meshCount times
         for (uint i = meshCount; i < btnCount; ++i) {
             QPushButton* button = sceneButtons.back();
             sceneButtons.pop_back();
+            sceneGroup->removeButton(button);
             button->deleteLater(); // will be removed from layout and de-allocated by qt safely
-            sceneModel->removeRow(i);
-        }
-        
-        std::vector<string> names = ui.viewport->getNames();
-        for (int i = 0; i < btnCount - 1; i++) {
-            //ui.viewport->setName(i) = names[i + 1];
+            sceneModel->removeRow(sceneModel->rowCount() - 1);
         }
 
         // You will need to update all names (ids shifted)
-    }
-    else if (meshCount != btnCount && name != "") {
-        for (uint i = btnCount; i < meshCount; ++i) {
-            createSceneButton(i, name);
+        std::vector<string> names = ui.viewport->getNames();
+        for (uint i = 0; i < meshCount; ++i) {
+            QString updatedName = QString::fromStdString(names[i]);
+            sceneButtons[i]->setText(updatedName);
+            sceneModel->setData(sceneModel->index(i, 0), updatedName);
         }
+    }
 
-        for (uint i = btnCount; i < sceneButtons.size() - 1; i++) {
-            sceneButtons[i]->setText(QString::fromStdString(ui.viewport->getNames()[i]));
+    // Creates scene buttons if there's a mismatch between mesh and button count
+    else if (meshCount != btnCount && !name.isEmpty()) {
+        for (uint i = btnCount; i < meshCount; ++i) {
+            ui.viewport->setName(i, name.toStdString());
+            createSceneButton(i, name);
         }
     }
 }
