@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QDesktopServices>
+#include <QStandardItemModel>
 #include <QTreeView>
 #include <QCursor>
 #include <QButtonGroup>
@@ -27,8 +28,9 @@ private:
     QFileSystemModel* tutorialFileModel = new QFileSystemModel;
     QFileSystemModel* helpFileModel = new QFileSystemModel;
     std::vector<QPushButton*> sceneButtons;
-    std::vector<string> names;
     QButtonGroup* sceneGroup = new QButtonGroup(this);
+    QStandardItemModel* sceneModel;
+    QModelIndex sceneModelIndex;
 
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
@@ -147,7 +149,7 @@ private slots:
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
     void meshCountChanged(uint meshCount, QString name);
-
+    void createSceneButton(uint index, QString name);
     void selectionChanged(int index);
 
 signals:

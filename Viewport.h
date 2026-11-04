@@ -1344,7 +1344,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			scene.DuplicateMesh(ids.x);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
