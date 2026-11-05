@@ -26,15 +26,17 @@ void Scene::Clear() {
 
 void Scene::DeleteMesh(uint id) {
 	delete meshes.at(id);
+	names[id].erase();
 	std::swap(meshes[id], meshes.back());
 	std::swap(names[id], names.back());
 	meshes.pop_back();
+	names.pop_back();
 }
 
 void Scene::DuplicateMesh(uint id, std::string name) {
 	HalfEdgeMesh& newMesh = *NewMesh(name);
 	newMesh = *meshes.at(id);
-	names.back() = names[id] + std::to_string(id);
+	names.back() = names[id];
 }
 
 HalfEdgeMesh* Scene::NewMesh(std::string name) {

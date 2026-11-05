@@ -382,7 +382,7 @@ ABC3D::ABC3D(QWidget *parent)
 }
 
 void ABC3D::createSceneButton(uint i, QString name) {
-    ui.viewport->setName(i, name.toStdString());
+    //ui.viewport->setName(i, name.toStdString());
     sceneModel->insertRow(i);
     sceneModelIndex = sceneModel->index(i, 0);
     sceneModel->setData(sceneModelIndex, name);
@@ -629,7 +629,7 @@ void ABC3D::meshCountChanged(uint meshCount) {
     // Creates scene buttons if there's a mismatch between mesh and button count
     else if (meshCount != btnCount) {
         for (uint i = btnCount; i < meshCount; ++i) {
-            ui.viewport->setName(i, ui.viewport->getNames()[i]);
+            //ui.viewport->setName(i, ui.viewport->getNames()[i]);
             createSceneButton(i, QString::fromStdString(ui.viewport->getNames()[i]));
         }
     }

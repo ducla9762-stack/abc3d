@@ -370,6 +370,7 @@ private:
 	}
 
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
+		makeCurrent();
 		const Vec2u pixel = physicalPixelFromLogical(logicalPos);
 		return renderer.SelectionIds(elm, pixel.x, pixel.y);
 	}
@@ -1190,7 +1191,7 @@ public slots:
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
-			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId] + " Copy");
+			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId]);
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
@@ -1345,8 +1346,9 @@ public slots:
 private slots:
 	void rightClickDuplicate() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		qDebug() << "pickedMeshiD =" << ids.x << " scene Mesh Count = " << scene.MeshCount();
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			scene.DuplicateMesh(ids.x, scene.Names()[ids.x] + " Copy");
+			scene.DuplicateMesh(ids.x, scene.Names()[ids.x]);
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
