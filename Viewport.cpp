@@ -598,7 +598,10 @@ void Viewport::setAction(Action action) {
 		disableElementFace();
 		disableElementObject();
 	}
-	if (action == KNIFE) { knifeBegin(); }
+	if (action == KNIFE) {
+		enableAllElements();
+		knifeBegin();
+	}
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;

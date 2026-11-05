@@ -11,7 +11,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
-    ui.topRightPanels->setCurrentIndex(1);
+    ui.topRightPanels->setCurrentIndex(2);
     
     // Makes the model and tree used to view all the help documents
     QString helpPath = "assets/help documents";
@@ -639,11 +639,11 @@ void ABC3D::meshCountChanged(uint meshCount, QString name) {
 void ABC3D::selectionChanged(int index) {
     std::cout << " selection Changed" << std::endl;
     if (index == -1) {
+        sceneGroup->setExclusive(false);
         for (int i = 0; i < sceneButtons.size(); i++) {
-            sceneGroup->setExclusive(false);
             sceneButtons[i]->setChecked(false);
-            sceneGroup->setExclusive(true);
         }
+        sceneGroup->setExclusive(true);
     }
     else {
         sceneButtons[index]->setChecked(true);

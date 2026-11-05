@@ -442,11 +442,13 @@ public slots:
 		if (getActiveElement() == VERTEX) {
 			setActiveElement(OBJECT);
 			elementButtons[3]->setChecked(true);
+			emit selectionChanged(-1);
 		}
 		setAction(SCALE); }
 	void setActionRotate() { 
 		if (getActiveElement() != OBJECT) {
 			setActiveElement(OBJECT);
+			emit selectionChanged(-1);
 		}
 		elementButtons[3]->setChecked(true);
 		setAction(ROTATE); 
@@ -1367,8 +1369,8 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			deleteSelection();
 			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
-			selectionManager.clearSelection();
 			emit selectionChanged(-1);
 
 			renderer.UpdateGeometry();
