@@ -1248,6 +1248,8 @@ public:
 		Vec4f projPos = transform.proj * (transform.view * worldPos);
 		return Vec2f(projPos.x / projPos.w, projPos.y / projPos.w);
 	}
+
+	Matrix4f ViewProjection() { return transform.view * transform.proj; }
 };
 
 #endif
