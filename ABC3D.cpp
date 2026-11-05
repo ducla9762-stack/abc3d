@@ -394,11 +394,16 @@ void ABC3D::createSceneButton(uint i, QString name) {
     sceneButtons.push_back(initButton);
     QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { 
         if (sceneGroup->exclusive()) {
+            for (int i = 0; i < sceneButtons.size(); i++) {
+                sceneButtons[i]->setChecked(false);
+            }
             this->ui.viewport->setSelection(i);
         }
+
         else {
             this->ui.viewport->addSelection(i);
         }
+        sceneButtons[i]->setChecked(true);
     });
     
     ui.sceneTree->setIndexWidget(sceneModelIndex, initButton);
@@ -598,7 +603,7 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
-void ABC3D::meshCountChanged(uint meshCount, QString name) {
+void ABC3D::meshCountChanged(uint meshCount) {
     uint btnCount = uint(sceneButtons.size());
 
     // Removes scene buttons if the number of meshes is less than the number of buttons
@@ -614,19 +619,18 @@ void ABC3D::meshCountChanged(uint meshCount, QString name) {
         }
 
         // You will need to update all names (ids shifted)
-        std::vector<string> names = ui.viewport->getNames();
         for (uint i = 0; i < meshCount; ++i) {
-            QString updatedName = QString::fromStdString(names[i]);
+            QString updatedName = QString::fromStdString(ui.viewport->getNames()[i]);
             sceneButtons[i]->setText(updatedName);
             sceneModel->setData(sceneModel->index(i, 0), updatedName);
         }
     }
 
     // Creates scene buttons if there's a mismatch between mesh and button count
-    else if (meshCount != btnCount && !name.isEmpty()) {
+    else if (meshCount != btnCount) {
         for (uint i = btnCount; i < meshCount; ++i) {
-            ui.viewport->setName(i, name.toStdString());
-            createSceneButton(i, name);
+            ui.viewport->setName(i, ui.viewport->getNames()[i]);
+            createSceneButton(i, QString::fromStdString(ui.viewport->getNames()[i]));
         }
     }
 }

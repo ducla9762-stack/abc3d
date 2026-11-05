@@ -125,7 +125,7 @@ signals:
 	void enableNonVertexSpinners(bool enable);
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
-	void meshCountChanged(uint meshCount, QString name);
+	void meshCountChanged(uint meshCount);
 	void selectionChanged(int index);
 
 public:
@@ -137,7 +137,7 @@ public:
 
 	Element getActiveElement();
 	int getMeshCount();
-	std::vector<string> getNames();
+	const std::vector<string>& getNames() const;
 	void setName(int index, std::string name);
 	void setSelection(int meshID);
 	void addSelection(int meshID);
@@ -330,8 +330,9 @@ private:
 	void setAction(Action action);
 
 	template<typename T, typename U>
-	void loadMesh(const T& vertices, const U& faces) {
-		scene.NewMesh()->load(vertices, faces);
+	void loadMesh(const T& vertices, const U& faces, std::string name) {
+		scene.NewMesh(name)->load(vertices, faces);
+		emit meshCountChanged(scene.MeshCount());
 		makeCurrent();
 		// 10/16/26 - Update to public API.
 		//renderer.UpdateRenderBuffers(scene);
@@ -842,42 +843,32 @@ public slots:
 	}
 
 	void loadCube() {
-		loadMesh(CUBE_VERTICES, CUBE_FACES);
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cube"));
+		loadMesh(CUBE_VERTICES, CUBE_FACES, "Cube");
 	}
 	void loadPyramid() {
-		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES);
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Pyramid"));
+		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES, "Pyramid");
 	}
 	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitCylinder(vertices, faces, resolution);
-		loadMesh(vertices, faces);
-
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Cylinder"));
+		loadMesh(vertices, faces, "Cylinder");
 	}
 	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitTorus(vertices, faces, latitude, longitude);
-		loadMesh(vertices, faces);
-
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Torus"));
+		loadMesh(vertices, faces, "Torus");
 	}
 	void loadIcoSphere() { 
-		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES);
-
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Ico Sphere"));
+		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES, "Ico Sphere");
 	}
 
 	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, latitude, longitude);
-		loadMesh(vertices, faces);
-
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("UV Sphere"));
+		loadMesh(vertices, faces, "UV Sphere");
 	}
 
 	/// <summary>
@@ -893,8 +884,8 @@ public slots:
 		if (!report.ok()) { return report; }
 
 		for (HalfEdgeMesh& candidate : candidates) {
-			*scene.NewMesh() = std::move(candidate);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
+			*scene.NewMesh("Object") = std::move(candidate);
+			emit meshCountChanged(scene.MeshCount());
 		}
 
 		renderer.UpdateGeometry();
@@ -945,14 +936,14 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+		//emit meshCountChanged(scene.MeshCount());
 		
 
 		scene.Clear();
 		emit selectionChanged(-1);
 		for (HalfEdgeMesh& candidate : candidates) {
-			*scene.NewMesh() = std::move(candidate);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
+			*scene.NewMesh("Object") = std::move(candidate);
+			emit meshCountChanged(scene.MeshCount());
 		}
 
 		makeCurrent();
@@ -1066,8 +1057,7 @@ public slots:
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				scene.DeleteMesh(item.meshId);
-				scene.Names()[item.meshId].erase();
-				emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+				emit meshCountChanged(scene.MeshCount());
 				break;
 
 			case VERTEX:
@@ -1200,8 +1190,8 @@ public slots:
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
-			scene.DuplicateMesh(item.meshId);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(scene.Names()[item.meshId] + " Copy"));
+			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId] + " Copy");
+			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1356,8 +1346,8 @@ private slots:
 	void rightClickDuplicate() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			scene.DuplicateMesh(ids.x);
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(scene.Names()[ids.x] + " Copy"));
+			scene.DuplicateMesh(ids.x, scene.Names()[ids.x] + " Copy");
+			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
@@ -1370,7 +1360,7 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			deleteSelection();
-			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+			emit meshCountChanged(scene.MeshCount());
 			emit selectionChanged(-1);
 
 			renderer.UpdateGeometry();
