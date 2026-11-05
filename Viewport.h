@@ -228,15 +228,6 @@ private:
 
 	void paintGL() override {
 		renderer.Draw(defaultFramebufferObject());
-		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
-			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
-			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
-			glDisable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND);
-			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
-			glDisable(GL_BLEND);
-			glEnable(GL_DEPTH_TEST);
-		}
 		if (scene.ReferenceImageCount() != 0) {
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
@@ -261,6 +252,15 @@ private:
 			}
 		}
 		renderer.DrawGizmos(defaultFramebufferObject());
+		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
+			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
+			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
 
