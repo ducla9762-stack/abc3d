@@ -57,7 +57,7 @@ Viewport::Viewport(QWidget *parent)
 
 	// Set Default Settings & Load Default Cube
 
-	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
 	selectionManager.setActiveElement(OBJECT);
 	setMouseTracking(true);
 
@@ -1997,7 +1997,7 @@ int Viewport::getMeshCount() {
 	return scene.MeshCount();
 }
 
-std::vector<string> Viewport::getNames() {
+const std::vector<string>& Viewport::getNames() const {
 	return scene.Names();
 }
 

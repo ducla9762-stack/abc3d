@@ -148,7 +148,7 @@ private slots:
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
-    void meshCountChanged(uint meshCount, QString name);
+    void meshCountChanged(uint meshCount);
     void createSceneButton(uint index, QString name);
     void selectionChanged(int index);
 

@@ -52,14 +52,14 @@ public:
 	/// Duplicate the mesh at id from the mesh list.
 	/// </summary>
 	/// <param name="id"> ID of mesh to be duplicated. </param>
-	void DuplicateMesh(uint id);
+	void DuplicateMesh(uint id, std::string name);
 
 	/// <summary>
 	/// Add a new mesh to the mesh list.
 	/// Push back a new mesh to the list, set it's corresponding selection boolean to false by default.
 	/// </summary>
 	/// <returns> Pointer to new mesh. </returns>
-	HalfEdgeMesh* NewMesh();
+	HalfEdgeMesh* NewMesh(std::string name);
 
 	ReferenceImage* NewReferenceImage(const std::string& sourcePath);
 	ReferenceImage* AddReferenceImage(const ReferenceImage& image);
@@ -94,7 +94,7 @@ public:
 	/// Returns the list of names in the scene
 	/// </summary>
 	/// <returns> List of strings in the scene </returns>
-	std::vector<string> Names() const;
+	const std::vector<string>& Names() const;
 
 	void setName(int index, std::string name);
 

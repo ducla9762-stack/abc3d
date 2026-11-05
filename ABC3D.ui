@@ -887,7 +887,7 @@
 										</string>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <property name="styleSheet">
@@ -1872,8 +1872,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>152</width>
-                <height>222</height>
+                <width>286</width>
+                <height>595</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -2363,8 +2363,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>233</width>
-                <height>454</height>
+                <width>288</width>
+                <height>597</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -3177,7 +3177,7 @@
     <signal>viewportClicked()</signal>
     <signal>elementChanged(Element)</signal>
     <signal>primaryCamParamChanged(Vec3f)</signal>
-    <signal>meshCountChanged(uint, QString)</signal>
+    <signal>meshCountChanged(uint)</signal>
     <signal>selectionChanged(int)</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
@@ -4801,9 +4801,9 @@
   </connection>
   <connection>
    <sender>viewport</sender>
-   <signal>meshCountChanged(uint, QString)</signal>
+   <signal>selectionChanged(int)</signal>
    <receiver>ABC3DClass</receiver>
-   <slot>meshCountChanged(uint, QString)</slot>
+   <slot>selectionChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>768</x>
@@ -4817,9 +4817,9 @@
   </connection>
   <connection>
    <sender>viewport</sender>
-   <signal>selectionChanged(int)</signal>
+   <signal>meshCountChanged(uint)</signal>
    <receiver>ABC3DClass</receiver>
-   <slot>selectionChanged(int)</slot>
+   <slot>meshCountChanged(uint)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>768</x>
@@ -4842,7 +4842,7 @@
   <slot>exportObj()</slot>
   <slot>exportStl()</slot>
   <slot>elementChanged(Element)</slot>
-  <slot>meshCountChanged(uint, QString)</slot>
+  <slot>meshCountChanged(uint)</slot>
   <slot>selectionChanged(int)</slot>
  </slots>
 </ui>

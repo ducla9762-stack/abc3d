@@ -31,15 +31,15 @@ void Scene::DeleteMesh(uint id) {
 	meshes.pop_back();
 }
 
-void Scene::DuplicateMesh(uint id) {
-	HalfEdgeMesh& newMesh = *NewMesh();
+void Scene::DuplicateMesh(uint id, std::string name) {
+	HalfEdgeMesh& newMesh = *NewMesh(name);
 	newMesh = *meshes.at(id);
 	names.back() = names[id] + std::to_string(id);
 }
 
-HalfEdgeMesh* Scene::NewMesh() {
+HalfEdgeMesh* Scene::NewMesh(std::string name) {
 	meshes.push_back(new HalfEdgeMesh());
-	names.push_back("Object " + std::to_string(meshes.size() - 1));
+	names.push_back(name);
 	return meshes.back();
 }
 
@@ -86,7 +86,7 @@ const HalfEdgeMesh* Scene::operator[](uint index) const { return meshes.at(index
 
 const std::vector<HalfEdgeMesh*>& Scene::Meshes() const { return meshes; }
 
-std::vector<string> Scene::Names() const { return names; }
+const std::vector<string>& Scene::Names() const { return names; }
 
 void Scene::setName(int index, std::string name) {
 	names[index] = name;
