@@ -412,6 +412,15 @@ public:
 		pos += rot * (scale * centroid);
 	}
 
+	void RecenterOn(const Vec3f& pivot) {
+		for (Vec3f& pos : vertPos) { pos -= pivot; }
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * pivot);
+	}
+
 	void RecenterOnBoundary(Axis boundary) {
 		AABB box = ComputeBoundingBox();
 		if (box.min.x == std::numeric_limits<float>::infinity()) { return; }
@@ -510,24 +519,25 @@ public:
 		Matrix3f rot;
 		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
 
-		Vec3f local = pos - this->pos;
+		Vec3f translated = pos - this->pos;
+		Vec3f local;
 
 		local.x = (
-			rot.cell[0] * local[0] +
-			rot.cell[1] * local[1] +
-			rot.cell[2] * local[2]
+			rot.cell[0] * translated[0] +
+			rot.cell[1] * translated[1] +
+			rot.cell[2] * translated[2]
 		);
 
 		local.y = (
-			rot.cell[3] * local[0] +
-			rot.cell[4] * local[1] +
-			rot.cell[5] * local[2]
+			rot.cell[3] * translated[0] +
+			rot.cell[4] * translated[1] +
+			rot.cell[5] * translated[2]
 		);
 
 		local.z = (
-			rot.cell[6] * local[0] +
-			rot.cell[7] * local[1] +
-			rot.cell[8] * local[2]
+			rot.cell[6] * translated[0] +
+			rot.cell[7] * translated[1] +
+			rot.cell[8] * translated[2]
 		);
 
 		local /= scale;

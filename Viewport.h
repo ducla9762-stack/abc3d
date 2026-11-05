@@ -1438,6 +1438,44 @@ private slots:
 		}
 	}
 
+	void rightClickCenterOnCursor() {
+		Vec2u pixel = physicalPixelFromLogical(menuPos);
+		Vec2u ids; Vec3f pos;
+		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids, &pos);
+		if (!hit || ids.x >= scene.MeshCount()) { return; }
+
+		scene[ids.x]->RecenterOn(scene[ids.x]->WorldPosToLocalPos(pos));
+
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		renderer.UpdateTransforms();
+
+		update();
+
+		if (selectionManager.hasSelectedMesh(ids.x)) {
+			emitPrimarySelectionPosChanged();
+		}
+	}
+
+	void rightClickCenterOnFace() {
+		Vec2u pixel = physicalPixelFromLogical(menuPos);
+		Vec2u ids;
+		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
+		if (!hit || ids.x >= scene.MeshCount()) { return; }
+
+		scene[ids.x]->RecenterOn(scene[ids.x]->faceCentroid(ids.y));
+
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		renderer.UpdateTransforms();
+
+		update();
+
+		if (selectionManager.hasSelectedMesh(ids.x)) {
+			emitPrimarySelectionPosChanged();
+		}
+	}
+
 	void rightClickCenterOnBoundaryX() { rightClickCenterOnBoundary(X); }
 	void rightClickCenterOnBoundaryXNeg() { rightClickCenterOnBoundary(X_NEG); }
 	void rightClickCenterOnBoundaryY() { rightClickCenterOnBoundary(Y); }
@@ -1480,6 +1518,14 @@ public:
 
 		action = menu->addAction("Center");
 		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickRecenter);
+
+		QMenu* facePivMenu = menu->addMenu("Face (if applicable)");
+
+		action = facePivMenu->addAction("Center");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnFace);
+
+		action = facePivMenu->addAction("Cursor");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnCursor);
 
 		QMenu* boundaryMenu = menu->addMenu("Boundary");
 

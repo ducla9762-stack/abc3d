@@ -1086,6 +1086,28 @@ public:
 		return worldPos;
 	}
 
+	bool QueryFace(uint x, uint y, Vec2u* faceId, Vec3f* pos = nullptr) {
+		if (x >= frame.width || y >= frame.height) { return false; }
+
+		// read back ids
+		Vec3u ids;
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, frame.fbo);
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &ids.x);
+
+		if (ids.z != 1) { return false; }
+
+		faceId->Set(ids.x, ids.y - offset.meshFaces[ids.x]);
+
+		if (pos) {
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &pos->x);
+			*pos = ViewToWorldSpace(*pos);
+		}
+
+		return true;
+	}
+
 	Vec2u SelectionIds(Element element, uint x, uint y) {
 		if (x >= frame.width || y >= frame.height) {
 			return Vec2u(MAX_UINT);
@@ -1122,7 +1144,6 @@ public:
 
 			return Vec2u(ids.x, mesh.NearestEdge(ids.y - offset.meshFaces[ids.x], pos));
 		}
-
 		case VERTEX: {
 			if (ids.z == 2) { return Vec2u(ids.x, MAX_UINT); }
 			if (ids.z == 3) { return Vec2u(ids.x, ids.y - offset.meshVerts[ids.x]); }
