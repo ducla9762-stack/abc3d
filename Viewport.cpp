@@ -266,6 +266,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 		mergeFirstVertex.reset();
 	}
 	selectionManager.clearSelection();
+	emit selectionChanged(-1);
 	renderer.UpdateSelection(selectionManager);
 	updateGizmos();
 	update();
@@ -309,6 +310,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		
 		uint mesh = selectionManager.getSelectedItems()[0].meshId;
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 
 		initActionDirsToElementNormals(elementType, mesh);
 
@@ -552,6 +554,7 @@ void Viewport::setAction(Action action) {
 			mergeFirstVertex.reset();
 		}
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 		enableAllElements();
 	}
 
@@ -739,6 +742,7 @@ void Viewport::handleSelection(const SelectionItem& item) {
 		// gizmo in sync when the last selected item is removed.
 		if (!selectionManager.getSelectedItems().empty()) {
 			selectionManager.clearSelection();
+			emit selectionChanged(-1);
 			renderer.UpdateSelection(selectionManager);
 			updateGizmos();
 			emitSelectionChanged();
@@ -751,6 +755,9 @@ void Viewport::handleSelection(const SelectionItem& item) {
 
 	// Tell the renderer to update the selection visuals.
 	renderer.UpdateSelection(selectionManager);
+	for (SelectionItem item : selectionManager.getSelectedItems()) {
+		emit selectionChanged(item.meshId);
+	}
 	updateGizmos();
 
 	emitSelectionChanged();
@@ -792,7 +799,14 @@ void Viewport::setSelection(int meshID) {
 	selectionManager.clearSelection();
 	selectionManager.selectMesh(meshID);
 	renderer.UpdateSelection(selectionManager);
-	//updateGizmos();
+	updateGizmos();
+	update();
+}
+
+void Viewport::addSelection(int meshID) {
+	selectionManager.selectMesh(meshID);
+	renderer.UpdateSelection(selectionManager);
+	updateGizmos();
 	update();
 }
 

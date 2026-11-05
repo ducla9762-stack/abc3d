@@ -65,8 +65,14 @@ ABC3D::ABC3D(QWidget *parent)
         ui.viewport->deleteSelection();
         });
 
-    QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
-    QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
+    QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, [=]() {
+        ui.viewport->setAdditiveSelection();
+        sceneGroup->setExclusive(false);
+    });
+    QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, [=]() {
+        ui.viewport->setSingleSelection();
+        sceneGroup->setExclusive(true);
+    });
 
     QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
     QObject::connect(ui.mergeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionMerge);
@@ -386,7 +392,14 @@ void ABC3D::createSceneButton(uint i, QString name) {
     initButton->setCheckable(true);
     sceneGroup->addButton(initButton);
     sceneButtons.push_back(initButton);
-    QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { this->ui.viewport->setSelection(i); });
+    QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { 
+        if (sceneGroup->exclusive()) {
+            this->ui.viewport->setSelection(i);
+        }
+        else {
+            this->ui.viewport->addSelection(i);
+        }
+    });
     
     ui.sceneTree->setIndexWidget(sceneModelIndex, initButton);
 }
@@ -597,6 +610,7 @@ void ABC3D::meshCountChanged(uint meshCount, QString name) {
             sceneGroup->removeButton(button);
             button->deleteLater(); // will be removed from layout and de-allocated by qt safely
             sceneModel->removeRow(sceneModel->rowCount() - 1);
+            selectionChanged(-1);
         }
 
         // You will need to update all names (ids shifted)
@@ -623,10 +637,16 @@ void ABC3D::meshCountChanged(uint meshCount, QString name) {
 /// </summary>
 /// <param name="index"> index of the button to select, corresponding to the mesh that was selected </param>
 void ABC3D::selectionChanged(int index) {
+    std::cout << " selection Changed" << std::endl;
     if (index == -1) {
-        for (QPushButton* button : sceneButtons) {
-            button->setChecked(false);
+        for (int i = 0; i < sceneButtons.size(); i++) {
+            sceneGroup->setExclusive(false);
+            sceneButtons[i]->setChecked(false);
+            sceneGroup->setExclusive(true);
         }
+    }
+    else {
+        sceneButtons[index]->setChecked(true);
     }
     return;
 }

@@ -3178,7 +3178,7 @@
     <signal>elementChanged(Element)</signal>
     <signal>primaryCamParamChanged(Vec3f)</signal>
     <signal>meshCountChanged(uint, QString)</signal>
-    <signal>selectionChanged()</signal>
+    <signal>selectionChanged(int)</signal>
     <slot>setActionSelect()</slot>
     <slot>setActionTranslateOut()</slot>
     <slot>setActionTranslateFree()</slot>
@@ -4804,6 +4804,22 @@
    <signal>meshCountChanged(uint, QString)</signal>
    <receiver>ABC3DClass</receiver>
    <slot>meshCountChanged(uint, QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>768</x>
+     <y>633</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>888</x>
+     <y>622</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewport</sender>
+   <signal>selectionChanged(int)</signal>
+   <receiver>ABC3DClass</receiver>
+   <slot>selectionChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>768</x>

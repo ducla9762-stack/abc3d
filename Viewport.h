@@ -126,7 +126,7 @@ signals:
 	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
 	void meshCountChanged(uint meshCount, QString name);
-	void selectionChanged();
+	void selectionChanged(int index);
 
 public:
 
@@ -140,6 +140,7 @@ public:
 	std::vector<string> getNames();
 	void setName(int index, std::string name);
 	void setSelection(int meshID);
+	void addSelection(int meshID);
 
 private:
 
@@ -942,9 +943,11 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
-		emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
+		emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
+		
 
 		scene.Clear();
+		emit selectionChanged(-1);
 		for (HalfEdgeMesh& candidate : candidates) {
 			*scene.NewMesh() = std::move(candidate);
 			emit meshCountChanged(scene.MeshCount(), QString::fromStdString("Object"));
@@ -983,6 +986,7 @@ public slots:
 
 		//setElementObject();
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 
 		for (uint savedId : doc.selection) {
 			auto remapped = idMap.find(savedId);
@@ -1356,7 +1360,6 @@ private slots:
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
 			renderer.UpdateTransforms();
-			
 			update();
 		}
 	}
@@ -1366,11 +1369,11 @@ private slots:
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
 			emit meshCountChanged(scene.MeshCount(), QString::fromStdString(""));
 			selectionManager.clearSelection();
+			emit selectionChanged(-1);
 
 			renderer.UpdateGeometry();
 			renderer.UpdateSelection(selectionManager);
 			renderer.UpdateTransforms();
-
 			update();
 		}
 	}
