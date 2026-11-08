@@ -47,7 +47,6 @@ CMakePresets.json
 *.sln.docstates
 *.VC.db
 *.VC.opendb
-*.vcxproj.user
 
 # =========================
 

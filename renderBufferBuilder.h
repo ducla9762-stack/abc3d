@@ -13,48 +13,58 @@
 #include "helper.h"
 #include "mesh.h"
 
-#undef max
-
 using std::string;
 using std::ifstream;
 using std::ostream;
 
 typedef unsigned uint;
 
-struct VertexAttributes {
-	Vec3f pos;
-	Vec3f norm;
-	Vec2u ids;
-};
-
 class RenderBufferBuilder {
 
-	std::vector<Vec3f> vertPos;
-	std::vector<Vec2u> vertIds;
-	std::vector<Vec3f> edges;
-	std::vector<Vec2u> edgeIds;
+	std::vector<Vec3f> pos;
+	std::vector<Vec3f> norm;
+	std::vector<Vec2u> ids;
+	std::vector<float> edgeDist;
+	std::vector<Vec3u> edgeIds;
 
-	std::vector<VertexAttributes> attributes;
-
-	void AddTriangles(	const std::vector<Vec3u>& triVertices, const std::vector<Vec3f>& vertices, 
-						const Vec3f& normal, const Vec2u& ids) 
+	void AddTriangles(	const std::vector<Vec3u>& triVertices, const std::vector<Vec3u>& triEdges, const std::vector<Vec3f>& vertices, 
+						const Matrix3f& transform, const Vec3f& normal, const Vec3f& objPos, const Vec2u& ids) 
 	{
 		for (int i = 0; i < triVertices.size(); ++i) {
-			const Vec3u& tri = triVertices[i];
+			const Vec3u triangle = triVertices[i];
 
-			for (int j = 0; j < 3; ++j) {
-				VertexAttributes& attr = attributes.emplace_back();
-				attr.pos = vertices[tri[j]];
-				attr.norm = normal;
-				attr.ids = ids;
-			}
+			Vec3f vert[3];
+			vert[0] = (transform * vertices[triangle[0]]) + objPos;
+			vert[1] = (transform * vertices[triangle[1]]) + objPos;
+			vert[2] = (transform * vertices[triangle[2]]) + objPos;
+
+			this->pos.insert(this->pos.end(), vert, vert + 3);
+
+			Vec3f seg[3];
+			seg[0] = vert[1] - vert[0];
+			seg[1] = vert[2] - vert[1];
+			seg[2] = vert[0] - vert[2];
+
+			float dist[3];
+			dist[0] = (seg[0] - vectorProj(seg[0], seg[1])).Length();
+			dist[1] = (seg[1] - vectorProj(seg[1], seg[2])).Length();
+			dist[2] = (seg[2] - vectorProj(seg[2], seg[0])).Length();
+			
+			this->edgeDist.insert(this->edgeDist.end(), dist, dist + 3);
+
+			this->norm.insert(this->norm.end(), 3, normal);
+			this->ids.insert(this->ids.end(), 3, ids);
+
+			Vec3u triEdgeIds(triEdges[i][1], triEdges[i][2], triEdges[i][0]);
+			this->edgeIds.insert(this->edgeIds.end(), 3, triEdgeIds);
 		}
 	}
 
 public:
 
-	void AddMeshToAttributes(const HalfEdgeMesh& mesh, uint objId, uint offset) {
+	void AddMesh(const HalfEdgeMesh& mesh, uint objId) {
 		uint faceCount = mesh.faceEdges.size();
+		Matrix3f transform = mesh.getTransform3x3();
 
 		std::vector<Vec3u> triVertices; triVertices.reserve(50);
 		std::vector<Vec3u> triEdges; triEdges.reserve(50);
@@ -71,62 +81,43 @@ public:
 			//std::cout << "Triangulated Face " << i << std::endl;
 			Vec3f normal = mesh.NewellNormal(i);
 
+			Vec3f inverseScale = Vec3f(1.0f) / mesh.Scale();
+			Matrix3f rot;
+			rot.SetRotationZYX(degreesToRadians(mesh.eulerRot.x), degreesToRadians(mesh.eulerRot.y), degreesToRadians(mesh.eulerRot.z));
+			normal = rot * (normal * inverseScale);
+
 			//normal = mesh.
-			ids[1] = i + offset;
+			ids[1] = i;
 
 			//std::cout << "Begin Adding Triangles For Face: " << i << std::endl;
-			AddTriangles(triVertices, mesh.vertPos, normal, ids);
+			AddTriangles(triVertices, triEdges, mesh.vertPos, transform, normal, mesh.pos, ids);
 			//std::cout << "Added Triangles For Face: " << i << std::endl;
 		}
 	}
 
-	void AddMeshToVertexList(const HalfEdgeMesh& mesh, uint objId, uint offset) {
-		vertPos.insert(vertPos.end(), mesh.vertPos.begin(), mesh.vertPos.end());
-
-		uint end = mesh.vertPos.size() + offset;
-		for (uint i = offset; i < end; ++i) {
-			vertIds.push_back({ objId, i });
-		}
-	}
-
-	uint AddMeshToEdgeList(const HalfEdgeMesh& mesh, uint objId, uint offset, std::vector<uint>& idMap) {
-		uint id = 0;
-		for (uint i = 0; i < uint(mesh.edges.size()); ++i) {
-			const HalfEdgeMesh::HalfEdge& edge = mesh.edges[i];
-			if (edge.twin > i && mesh.edges[i].dest != MAX_UINT) {
-				edgeIds.push_back({ objId, id + offset });
-				edges.push_back(mesh.vertPos[edge.orig]);
-				edges.push_back(mesh.vertPos[edge.dest]);
-				idMap.push_back(id);
-				++id;
-			}
-			else {
-				idMap.push_back(MAX_UINT);
-			}
-		}
-		
-		return id;
-	}
-
 	void Clear() {
 		// Clear data but keep memory allocated
-		attributes.clear();
-		vertPos.clear();
-		vertIds.clear();
-		edges.clear();
+		pos.clear();
+		norm.clear();
+		ids.clear();
+		edgeDist.clear();
 		edgeIds.clear();
 	}
 
 	void Deallocate() {
 		// Deallocate memory
-		std::vector<VertexAttributes>().swap(attributes);
+		std::vector<Vec3f>().swap(pos);
+		std::vector<Vec3f>().swap(norm);
+		std::vector<Vec2u>().swap(ids);
+		std::vector<float>().swap(edgeDist);
+		std::vector<Vec3u>().swap(edgeIds);
 	}
 
-	const std::vector<VertexAttributes>& Attributes() const { return attributes; }
-	const std::vector<Vec3f>& VertexPositions() const { return vertPos; }
-	const std::vector<Vec2u>& VertexIds() const { return vertIds; }
-	const std::vector<Vec3f>& Edges() const { return edges; }
-	const std::vector<Vec2u>& EdgeIds() const { return edgeIds; }
+	const std::vector<Vec3f>& PosBuffer() { return pos; }
+	const std::vector<Vec3f>& NormBuffer() { return norm; }
+	const std::vector<Vec2u>& IdBuffer() { return ids; }
+	const std::vector<float>& EdgeDistBuffer() { return edgeDist; }
+	const std::vector<Vec3u>& EdgeIdBuffer() { return edgeIds; }
 };
 
 #endif

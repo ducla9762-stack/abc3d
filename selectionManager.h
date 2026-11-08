@@ -1,17 +1,11 @@
 #ifndef _ABC3D_SELECTION_MANAGER_H_
 #define _ABC3D_SELECTION_MANAGER_H_
 
-#include <unordered_map>
 #include "helper.h"
 
 #undef max
 
 enum Element { OBJECT, FACE, EDGE, VERTEX };
-
-enum class SelectionTargetType : uint8_t {
-	Mesh,
-	ReferenceImage
-};
 
 // The maximum number of selected elements that is uploaded to the GPU.
 constexpr uint MAX_SELECTION_ITEMS = 64;
@@ -19,35 +13,21 @@ constexpr uint MAX_SELECTION_ITEMS = 64;
 struct SelectionItem {
 	uint meshId;
 	uint componentId;
-	SelectionTargetType targetType = SelectionTargetType::Mesh;
-
-	static SelectionItem ReferenceImage(uint imageId) {
-		return { MAX_UINT, imageId, SelectionTargetType::ReferenceImage };
-	}
-
-	bool isReferenceImage() const { return targetType == SelectionTargetType::ReferenceImage; }
-	bool isValid() const { return isReferenceImage() ? componentId != MAX_UINT : meshId != MAX_UINT; }
-	uint objectId() const { return isReferenceImage() ? componentId : meshId; }
 
 	bool operator==(const SelectionItem& other) const {
-		return meshId == other.meshId && componentId == other.componentId && targetType == other.targetType;
+		return (meshId == other.meshId && componentId == other.componentId);
 	}
 };
 
 template<>
 struct std::hash<SelectionItem> {
-	size_t operator()(const SelectionItem& item) const noexcept {
-		size_t value = std::hash<uint64_t>{}(packUints(item.meshId, item.componentId));
-		combineHash(value, std::hash<uint8_t>{}(static_cast<uint8_t>(item.targetType)));
-		return value;
-	}
+	size_t operator()(const SelectionItem& item) const noexcept { return std::hash<uint64_t>{}(packUints(item.meshId, item.componentId)); }
 };
 
 class SelectionManager {
 private:
 	Element activeElement;
 	std::unordered_map<uint, uint> meshMap;
-	std::unordered_map<uint64_t, uint> objectMap;
 	std::unordered_map<SelectionItem, uint> itemMap;
 	std::vector<SelectionItem> selectedItems;
 
@@ -64,17 +44,9 @@ private:
 		itemMap.erase(item);
 		selectedItems.pop_back();
 
-		const uint64_t objectKey = packUints(static_cast<uint>(item.targetType), item.objectId());
-		uint objectItemCount = --objectMap[objectKey];
-		if (objectItemCount == 0) {
-			objectMap.erase(objectKey);
-		}
-
-		if (!item.isReferenceImage()) {
-			uint meshItemCount = --meshMap[item.meshId];
-			if (meshItemCount == 0) {
-				meshMap.erase(item.meshId);
-			}
+		uint meshItemCount = --meshMap[item.meshId];
+		if (meshItemCount == 0) {
+			meshMap.erase(item.meshId);
 		}
 	}
 
@@ -84,15 +56,12 @@ private:
 
 		itemMap[item] = selectedItems.size();
 		selectedItems.push_back(item);
-		++objectMap[packUints(static_cast<uint>(item.targetType), item.objectId())];
 
-		if (!item.isReferenceImage()) {
-			if (meshMap.count(item.meshId)) {
-				++meshMap[item.meshId];
-			}
-			else {
-				meshMap[item.meshId] = 1;
-			}
+		if (meshMap.count(item.meshId)) {
+			++meshMap[item.meshId];
+		}
+		else {
+			meshMap[item.meshId] = 1;
 		}
 	}
 
@@ -107,7 +76,7 @@ public:
 	/// Returns the current element type that is selectable.
 	/// </summary>
 	/// <returns> The currently active element type. </returns>
-	Element getActiveElement() const { return activeElement; }
+	Element getActiveElement() { return activeElement; }
 
 	/// <summary>
 	/// Sets the active element type and clears previous selections.
@@ -133,7 +102,6 @@ public:
 	void clearSelection() {
 		itemMap.clear();
 		meshMap.clear();
-		objectMap.clear();
 		selectedItems.clear();
 	}
 
@@ -146,15 +114,8 @@ public:
 	}
 
 	bool selectMesh(uint meshId) {
-		if (activeElement != OBJECT || objectMap.count(packUints(static_cast<uint>(SelectionTargetType::Mesh), meshId))) { return false; }
+		if (activeElement != OBJECT || meshMap.count(meshId)) { return false; }
 		addItem({ meshId, MAX_UINT });
-		return true;
-	}
-
-	bool selectReferenceImage(uint imageId) {
-		if (activeElement != OBJECT || objectMap.count(packUints(static_cast<uint>(SelectionTargetType::ReferenceImage), imageId))) { return false; }
-		addItem(SelectionItem::ReferenceImage(imageId));
-		return true;
 	}
 
 	/// <summary>
@@ -162,16 +123,13 @@ public:
 	/// </summary>
 	/// <param name="item"> A selection item at a point. </param>
 	/// <param name="additive"> If the selection is additive or single. </param>
-	bool processSelection(const SelectionItem& item) {
-		if (!item.isValid() || (item.isReferenceImage() && activeElement != OBJECT)) {
-			return false;
-		}
+	void processSelection(const SelectionItem& item) {
 		const bool effectiveAdditive = isAdditive();
 
 		// if item contained
 		if (itemMap.count(item) && (effectiveAdditive || selectedItems.size() == 1)) {
 			deleteItem(item);
-			return false;
+			return;
 		}
 		
 		if (!effectiveAdditive) {
@@ -179,11 +137,10 @@ public:
 		}
 		
 		addItem(item);
-		return true;
 	}
 
 	void addSelection(const SelectionItem& item) {
-		if (item.isValid() && !(item.isReferenceImage() && activeElement != OBJECT) && !itemMap.count(item)) { addItem(item); }
+		if(!itemMap.count(item)){ addItem(item); }
 	}
 
 	uint itemCount() { return (uint) selectedItems.size(); }
@@ -195,23 +152,12 @@ public:
 		return 0;
 	}
 
-	// Kept for compatibility with the viewport API: this is the number of
-	// distinct selected scene objects, not only mesh objects.
-	uint meshCount() const { return static_cast<uint>(objectMap.size()); }
-	uint objectCount() const { return static_cast<uint>(objectMap.size()); }
+	uint meshCount() { return (uint) meshMap.size(); }
 
 	/// <param name="meshId"> Id of the mesh being queried </param>
 	/// <returns> True if contained false otherwise. </returns>
-	bool hasSelectedMesh(uint meshId) const {
+	bool hasSelectedMesh(uint meshId) {
 		return meshMap.count(meshId);
-	}
-
-	bool hasSelectedReferenceImage(uint imageId) const {
-		return objectMap.count(packUints(static_cast<uint>(SelectionTargetType::ReferenceImage), imageId));
-	}
-
-	bool isSelected(uint meshId, uint elementId) const {
-		return itemMap.count({ meshId, elementId });
 	}
 };
 
