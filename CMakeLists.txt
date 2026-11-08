@@ -59,6 +59,7 @@ add_library(abc3d_core STATIC
     mesh.h
     MeshBeveler.h
     MeshKnife.h
+    MeshLoopCut.h
     helper.h
     shapes.h
     scene.h
