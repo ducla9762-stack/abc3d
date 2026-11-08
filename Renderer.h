@@ -890,7 +890,8 @@ class ABC3DRenderer {
 
 	std::vector<CompactTransform140> transformBuf;
 	std::vector<uint> clrs;
-	std::vector<std::vector<uint>> edgeIdMap;
+	std::vector<std::vector<uint>> edgeIdMap;   // per mesh: half-edge id -> drawn (compact) edge id, or MAX_UINT
+	std::vector<std::vector<uint>> edgeIdUnmap; // per mesh: drawn (compact) edge id -> half-edge id
 
 	const Scene* scene;
 	const SelectionManager* selecQuery;
@@ -1131,7 +1132,14 @@ public:
 
 		case EDGE: {
 			if (ids.z == 3) { return Vec2u(ids.x, MAX_UINT); }
-			if (ids.z == 2) { return Vec2u(ids.x, ids.y - offset.meshEdges[ids.x]); }
+			if (ids.z == 2) {
+				// The edge pass writes compact edge numbers; turn them back into half-edge ids
+				const uint compact = ids.y - offset.meshEdges[ids.x];
+				if (ids.x < edgeIdUnmap.size() && compact < edgeIdUnmap[ids.x].size()) {
+					return Vec2u(ids.x, edgeIdUnmap[ids.x][compact]);
+				}
+				return Vec2u(ids.x, MAX_UINT);
+			}
 
 			// read back pos tex and find closest edge in face
 			Vec3f pos;
