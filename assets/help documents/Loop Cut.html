@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+
+    <h1>Loop Cut</h1>
+    <p>
+        Splits a strip of faces with new edges that run alongside the edge you pick.
+    </p>
+    <ul>
+        <li>Hover an edge to preview the cut. Click to cut.</li>
+        <li><b>+</b> / <b>-</b> changes how many evenly spaced cuts are made.</li>
+        <li><b>Esc</b> leaves the tool.</li>
+        <li>Shortcut: <b>L</b></li>
+    </ul>
+    <p>
+        The strip leaves each face through the edge halfway around it, so it runs through quads (and other
+        faces with an even number of sides). It stops at an open boundary, at a face with an odd number of
+        sides such as a triangle, or when it comes back to where it started. Faces where it stops get the new
+        vertex on their side but are not split.
+    </p>
+
+</body>
+</html>
