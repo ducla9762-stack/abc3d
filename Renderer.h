@@ -1270,7 +1270,9 @@ public:
 		return Vec2f(projPos.x / projPos.w, projPos.y / projPos.w);
 	}
 
-	Matrix4f ViewProjection() { return transform.view * transform.proj; }
+	/// <returns>World -> clip transform (projection * view). Built from the live camera, so it is current
+	/// even before the next Draw() refreshes the cached view matrix.</returns>
+	Matrix4f ViewProjection() const { return transform.proj * GetCamera()->transform(); }
 };
 
 #endif
