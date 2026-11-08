@@ -6,6 +6,8 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QMenu>
+#include <QImage>
 #include <QPainter>
 #include <functional>
 #include <optional>
@@ -13,7 +15,7 @@
 
 #include <algorithm>
 
-#include "render.h"
+#include "renderer.h"
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
@@ -109,18 +111,22 @@ protected:
 	}
 };
 
+class ViewportMenu;
+
 class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
-signals:
+signals:	
 	void primarySelectionPosChanged(const Vec3f& pos);
 	void primarySelectionScaleChanged(const Vec3f& scale);
 	void primarySelectionRotChanged(const Vec3f& rot);
 	void primarySelectionChanged(bool primarySelection);
 	void enableNonVertexSpinners(bool enable);
-	void orbitOriginChanged(const Vec3f& origin);
+	void primaryCamParamChanged(const Vec3f& param);
 	void elementChanged(Element element);
+	void meshCountChanged(uint meshCount);
+	void selectionChanged(int index);
 
 public:
 
@@ -128,9 +134,17 @@ public:
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
 		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
 	};
+
 	Element getActiveElement();
+	int getMeshCount();
+	const std::vector<string>& getNames() const;
+	void setName(int index, std::string name);
+	void setSelection(int meshID);
+	void addSelection(int meshID);
 
 private:
+
+	friend class ViewportMenu;
 
 	struct ActionParams {
 		Action action = SELECT;
@@ -143,17 +157,23 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
-	QAction* menuActions[3];
+	// OpenGL texture indices are renderer resources, not scene state.
+	std::unordered_map<uint, uint> referenceTextureIndices;
+
+	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
-	ModelingRenderer renderer;
+	ABC3DRenderer renderer;
+	IconRenderer iconRenderer;
+	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
-	bool gridAlwaysVisible = false;
-	bool rendererInitialized = false;
+	bool showPivot = false;
+	float pivotScale = 0.05f;
+	Vec2f menuPos;
 
 	// AI-generated code: Cursor hover state for arrows and active elements.
 	uint hoveredGizmoAxis = MAX_UINT;
@@ -208,6 +228,39 @@ private:
 
 	void paintGL() override {
 		renderer.Draw(defaultFramebufferObject());
+		if (scene.ReferenceImageCount() != 0) {
+			float viewProjection[16];
+			renderer.GetViewProjection(viewProjection);
+			const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+			const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+			imageRenderer.SetTransform(viewProjection);
+			imageRenderer.BeginPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (const ReferenceImage& image : scene.ReferenceImages()) {
+				auto texture = referenceTextureIndices.find(image.id);
+				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
+				imageRenderer.DrawPick(image.position, image.rotation, image.scale, image.id, texture->second);
+			}
+			imageRenderer.EndPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			for (const ReferenceImage& image : scene.ReferenceImages()) {
+				auto texture = referenceTextureIndices.find(image.id);
+				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
+				imageRenderer.Draw(
+					image.position, image.rotation, image.scale, image.opacity,
+					selectionManager.hasSelectedReferenceImage(image.id), renderer.SelectionColor(), texture->second,
+					defaultFramebufferObject(), pixelWidth, pixelHeight
+				);
+			}
+		}
+		renderer.DrawGizmos(defaultFramebufferObject());
+		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
+			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
+			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
 
@@ -262,17 +315,13 @@ private:
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-	void handleSelection(const Vec3u& selectionIds);
-	void handleMergeVertexClick(const Vec3u& selectionIds);
-	void handleCollapseEdgeClick(const Vec3u& selectionIds);
-	void handleDissolveEdgeClick(const Vec3u& selectionIds);
-	SelectionItem createSelectionItem(const Vec3u& ids);
+	void handleSelection(const Vec2u& selectionIds);
+	void handleSelection(const SelectionItem& item);
+	SelectionItem createSelectionItem(const Vec2u& ids);
+	void handleMergeVertexClick(const Vec2u& selectionIds);
+	void handleCollapseEdgeClick(const Vec2u& selectionIds);
+	void handleDissolveEdgeClick(const Vec2u& selectionIds);
 	void setActiveElement(Element element);
-
-	/// <summary>
-	/// Update the selection visuals for the renderer.
-	/// </summary>
-	void updateSelectionVisuals();
 
 // ---------------------------------------------------------------------------------------------
 // Misc. Helpers -------------------------------------------------------------------------------
@@ -281,10 +330,17 @@ private:
 	void setAction(Action action);
 
 	template<typename T, typename U>
-	void loadMesh(const T& vertices, const U& faces) {
-		scene.NewMesh()->load(vertices, faces);
+	void loadMesh(const T& vertices, const U& faces, std::string name) {
+		scene.NewMesh(name)->load(vertices, faces);
+		emit meshCountChanged(scene.MeshCount());
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		// 10/16/26 - Update to public API.
+		//renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		//renderer.ResetColorBuffer<true>();
+		renderer.UpdateSelection(selectionManager);
+		//renderer.UpdateUniformBuffer();
+		renderer.UpdateTransforms();
 		update();
 	}
 
@@ -304,6 +360,20 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
+	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) const {
+		const float dpr = static_cast<float>(devicePixelRatio());
+		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
+		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
+		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
+		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+	}
+
+	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
+		makeCurrent();
+		const Vec2u pixel = physicalPixelFromLogical(logicalPos);
+		return renderer.SelectionIds(elm, pixel.x, pixel.y);
+	}
 
 // ---------------------------------------------------------------------------------------------
 // Hover Interactions --------------------------------------------------------------------------
@@ -341,7 +411,14 @@ public:
 
 public slots:
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
-	void setActionTranslateOut() { setAction(TRANSLATE_OUT); }
+	void setActionTranslateOut() {
+		if (getActiveElement() == OBJECT) {
+			setActiveElement(FACE);
+			elementButtons[2]->setChecked(true);
+		}
+		setAction(TRANSLATE_OUT); 
+	}
+	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 	void setActionTranslateEdge() {
 		// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
@@ -360,12 +437,24 @@ public slots:
 		setAction(TRANSLATE_EDGE);
 		if (reducedSelection) { emitSelectionChanged(); }
 	}
-	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
-	void setActionScale() { setAction(SCALE); }
-	void setActionRotate() { setAction(ROTATE); }
+	void setActionScale() { 
+		if (getActiveElement() == VERTEX) {
+			setActiveElement(OBJECT);
+			elementButtons[3]->setChecked(true);
+			emit selectionChanged(-1);
+		}
+		setAction(SCALE); }
+	void setActionRotate() { 
+		if (getActiveElement() != OBJECT) {
+			setActiveElement(OBJECT);
+			emit selectionChanged(-1);
+		}
+		elementButtons[3]->setChecked(true);
+		setAction(ROTATE); 
+	}
 	void setActionSelect() { setAction(SELECT); }
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
@@ -498,7 +587,7 @@ public slots:
 
 	void setLocalScaleMode() {
 		localScale = true;
-		if (rendererInitialized) {
+		if (renderer.Initialized()) {
 			makeCurrent();
 			updateGizmos();
 		}
@@ -506,7 +595,7 @@ public slots:
 	}
 	void setGlobalScaleMode() {
 		localScale = false;
-		if (rendererInitialized) {
+		if (renderer.Initialized()) {
 			makeCurrent();
 			updateGizmos();
 		}
@@ -567,7 +656,13 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -581,7 +676,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -606,7 +708,14 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		/*renderer.UpdateRenderBuffers(scene);
+		renderer.ResetColorBuffer<true>();*/
+
+		// 10/16/26 - Update to public API
+		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -620,7 +729,12 @@ public slots:
 		}
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		
+		//renderer.UpdateRenderBuffers(scene);
+
+		// 10/16/26 - Update to public API.
+		renderer.UpdateGeometry();
+
 		update();
 	}
 
@@ -633,13 +747,24 @@ public slots:
 			if (selectionManager.itemCount() != 1) { return; }
 			Vec3f vertPos = scene[item.meshId]->WorldPosToLocalPos(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
+
+			// 10/16/26 - Updated to public API, in vertex case, update geometry (topology changes).
+			renderer.UpdateGeometry();
 		}
 		else {
-			scene[item.meshId]->Pos(pos);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->position = pos;
+			}
+			else {
+				scene[item.meshId]->Pos(pos);
+			}
+
+			// In mesh case, update transforms.
+			renderer.UpdateTransforms();
 		}
 
-		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
 		updateGizmos();
 		update();
 	}
@@ -649,9 +774,18 @@ public slots:
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
-			scene[item.meshId]->Scale(scale);
-			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->scale = scale;
+			}
+			else {
+				scene[item.meshId]->Scale(scale);
+			}
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
 			updateGizmos();
 			update();
 		}
@@ -662,34 +796,80 @@ public slots:
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
-			scene[item.meshId]->Rot(rot);
-			makeCurrent();
-			renderer.UpdateRenderBuffers(scene);
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { return; }
+				image->rotation = rot;
+			}
+			else {
+				scene[item.meshId]->Rot(rot);
+			}
+
+			// 10/16/26 - Updated to public API. Update transforms only.
+			renderer.UpdateTransforms();
+
 			updateGizmos();
 			update();
 		}
 	}
 
-	void loadCube() { loadMesh(CUBE_VERTICES, CUBE_FACES); }
-	void loadPyramid() { loadMesh(PYRAMID_VERTICES, PYRAMID_FACES); }
+	void setPrimaryReferenceImageOpacity(double opacity) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image || image->locked) { return; }
+		image->opacity = std::clamp(static_cast<float>(opacity), 0.0f, 1.0f);
+		update();
+	}
+
+	void setPrimaryReferenceImageVisibility(bool visible) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		image->visible = visible;
+		update();
+	}
+
+	void setPrimaryReferenceImageLocked(bool locked) {
+		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		const SelectionItem& item = selectionManager.getSelectedItems()[0];
+		if (!item.isReferenceImage()) { return; }
+		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		image->locked = locked;
+		update();
+	}
+
+	void loadCube() {
+		loadMesh(CUBE_VERTICES, CUBE_FACES, "Cube");
+	}
+	void loadPyramid() {
+		loadMesh(PYRAMID_VERTICES, PYRAMID_FACES, "Pyramid");
+	}
 	void loadCylinder(int resolution){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
 		generateUnitCylinder(vertices, faces, resolution);
-		loadMesh(vertices, faces);
+		loadMesh(vertices, faces, "Cylinder");
 	}
-	void loadTorus(int resolution){
+	void loadTorus(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUnitTorus(vertices, faces, 2 * resolution, resolution);
-		loadMesh(vertices, faces);
+		generateUnitTorus(vertices, faces, latitude, longitude);
+		loadMesh(vertices, faces, "Torus");
 	}
-	void loadIcoSphere() { loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES); }
-	void loadUvSphere(int resolution){
+	void loadIcoSphere() { 
+		loadMesh(ICOSPHERE_VERTICES, ICOSPHERE_FACES, "Ico Sphere");
+	}
+
+	void loadUvSphere(int latitude, int longitude){
 		std::vector<Vec3f> vertices;
 		std::vector<Vec4u> faces;
-		generateUVSphere(vertices, faces, resolution, resolution);
-		loadMesh(vertices, faces);
+		generateUVSphere(vertices, faces, latitude, longitude);
+		loadMesh(vertices, faces, "UV Sphere");
 	}
 
 	/// <summary>
@@ -705,11 +885,14 @@ public slots:
 		if (!report.ok()) { return report; }
 
 		for (HalfEdgeMesh& candidate : candidates) {
-			*scene.NewMesh() = std::move(candidate);
+			*scene.NewMesh("Object") = std::move(candidate);
+			emit meshCountChanged(scene.MeshCount());
 		}
 
-		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 		return report;
 	}
@@ -754,18 +937,50 @@ public slots:
 			idMap[obj.id] = static_cast<uint>(candidates.size() - 1);
 		}
 
+		//emit meshCountChanged(scene.MeshCount());
+		
+
 		scene.Clear();
+		emit selectionChanged(-1);
 		for (HalfEdgeMesh& candidate : candidates) {
-			*scene.NewMesh() = std::move(candidate);
+			*scene.NewMesh("Object") = std::move(candidate);
+			emit meshCountChanged(scene.MeshCount());
+		}
+
+		makeCurrent();
+		referenceTextureIndices.clear();
+		for (const SceneFileReferenceImage& saved : doc.referenceImages) {
+			QImage image(QString::fromStdString(saved.path));
+			if (image.isNull()) { continue; }
+			image = image.convertToFormat(QImage::Format_RGBA8888);
+			image.flip();
+
+			ReferenceImage reference;
+			reference.id = saved.id;
+			reference.sourcePath = saved.path;
+			reference.position = saved.pos;
+			reference.rotation = saved.rot;
+			reference.scale = saved.scale;
+			reference.opacity = saved.opacity;
+			reference.visible = saved.visible;
+			reference.locked = saved.locked;
+			ReferenceImage* added = scene.AddReferenceImage(reference);
+			referenceTextureIndices[added->id] = imageRenderer.AddTexture(
+				image.constBits(), static_cast<uint>(image.width()),
+				static_cast<uint>(image.height()), GL_RGBA);
 		}
 
 		//camPos = doc.camera;
 		//renderer.SetCamera(sphericalToCartesian(camPos));
-		renderer.SetGridVisible(doc.grid);
+
+		// 10/16/26 - Updated to public API.
+
+		renderer.ShowGrid(doc.grid);
 		//renderer.SetVertexPointsVisible(doc.points);
 
 		//setElementObject();
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 
 		for (uint savedId : doc.selection) {
 			auto remapped = idMap.find(savedId);
@@ -773,33 +988,35 @@ public slots:
 				selectionManager.selectMesh(remapped->second);
 			}
 		}
+		for (uint imageId : doc.imageSelection) {
+			if (scene.FindReferenceImage(imageId) != nullptr) {
+				selectionManager.selectReferenceImage(imageId);
+			}
+		}
 
 		emitSelectionChanged();
 
 		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
-		updateGizmos();
+		//renderer.SetScene(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+		//updateSelectionVisuals();
 		update();
 
 		return true;
 	}
 
-	void setCameraPosition(const Vec3f& camPos) {
-
-	}
-
 	void setAlwaysShowVertices(bool show) {
-		verticesAlwaysVisible = show;
 		if(selectionManager.getActiveElement() != VERTEX){
-			renderer.SetVertexPointsVisible(verticesAlwaysVisible);
+			verticesAlwaysVisible = show;
+			renderer.ShowVertices(show);
 			update();
 		}
 	}
 
 	void setAlwaysShowGrid(bool show) {
-		gridAlwaysVisible = show;
-		renderer.SetGridVisible(gridAlwaysVisible);
+		renderer.ShowGrid(show);
 		update();
 	}
 
@@ -808,7 +1025,15 @@ public slots:
 		if (knifeSession) { return; } // the knife holds mesh ids
 		std::cout << "delete" << std::endl;
 		std::vector<SelectionItem> selectedItems = selectionManager.getSelectedItems();
-		if (selectionManager.getActiveElement() == FACE) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			// Scene::DeleteMesh swaps the last mesh into the removed slot, so
+			// delete selected object IDs from highest to lowest.
+			std::sort(selectedItems.begin(), selectedItems.end(),
+				[](const SelectionItem& left, const SelectionItem& right) {
+					return left.meshId > right.meshId;
+				});
+		}
+		else if (selectionManager.getActiveElement() == FACE) {
 			// Delete higher face IDs first so removing a face does not shift the
 			// IDs of selected faces that are still waiting to be deleted.
 			std::sort(selectedItems.begin(), selectedItems.end(),
@@ -821,6 +1046,11 @@ public slots:
 		}
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				referenceTextureIndices.erase(item.componentId);
+				scene.DeleteReferenceImage(item.componentId);
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -828,6 +1058,7 @@ public slots:
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
 				scene.DeleteMesh(item.meshId);
+				emit meshCountChanged(scene.MeshCount());
 				break;
 
 			case VERTEX:
@@ -848,9 +1079,27 @@ public slots:
 
 		makeCurrent();
 		selectionManager.clearSelection();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
+		hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		hoveredGizmoAxis = MAX_UINT;
+		draggingGizmo = false;
+		draggedGizmoAxis = MAX_UINT;
+		draggedRotationAxis = Vec3f(0.0f);
+		renderer.ClearHover();
 		updateGizmos();
+		//renderer.UpdateRenderBuffers(scene);
+		//renderer.ResetColorBuffer<true>();
+		//renderer.UpdateUniformBuffer();
+		//updateSelectionVisuals();
+
+		// 10/16/26 - Changed to public API.
+		// Need to update geometry because the mesh list/IDs/vertex buffers have changed.
+		// Need to update mesh transforms (?)
+		// Clear old highlights
+
+		renderer.UpdateGeometry();
+		renderer.UpdateTransforms();
+		renderer.UpdateSelection(selectionManager);
+
 		update();
 	}
 
@@ -886,14 +1135,18 @@ public slots:
 		SceneFile doc;
 
 		//doc.camera = camPos; //camTarget is set to ORIGIN and fov fixed at 90.   
-		doc.grid = renderer.GridVisible();
-		doc.points = renderer.VertexPointsVisible();
+
+		// 10/16/26 - Updated to new public API
+		doc.grid = renderer.ShowGrid();
+		doc.points = renderer.ShowVertices();
 
 		//Object selection id just mesh id
 		//sub-object selection is not saved
 		if (selectionManager.getActiveElement() == OBJECT) {
-			for (const SelectionItem& item : selectionManager.getSelectedItems())
-				doc.selection.push_back(item.meshId);
+			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+				if (item.isReferenceImage()) doc.imageSelection.push_back(item.componentId);
+				else doc.selection.push_back(item.meshId);
+			}
 		}
 
 		for (uint id = 0; id < scene.MeshCount(); ++id) {
@@ -917,6 +1170,19 @@ public slots:
 			doc.objects.push_back(std::move(obj));
 		}
 
+		for (const ReferenceImage& image : scene.ReferenceImages()) {
+			SceneFileReferenceImage saved;
+			saved.id = image.id;
+			saved.path = image.sourcePath;
+			saved.pos = image.position;
+			saved.rot = image.rotation;
+			saved.scale = image.scale;
+			saved.opacity = image.opacity;
+			saved.visible = image.visible;
+			saved.locked = image.locked;
+			doc.referenceImages.push_back(std::move(saved));
+		}
+
 		return WriteSceneFile(filepath, doc);
 	}
 
@@ -925,12 +1191,25 @@ public slots:
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
-			scene.DuplicateMesh(item.meshId);
+			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId]);
+			emit meshCountChanged(scene.MeshCount());
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
 		}
 	}
 
 	void setOrbitOrigin(const Vec3f& origin) {
 		renderer.setOrbitOrigin(origin);
+		emit primaryCamParamChanged(origin);
+		update();
+	}
+
+	void setPrimaryCamParam(const Vec3f& param) {
+		renderer.setPrimaryCamParam(param);
 		update();
 	}
 
@@ -939,16 +1218,326 @@ public slots:
 		Vec3f origin = scene[selectionManager.getSelectedItems()[0].meshId]->Pos();
 		setOrbitOrigin(origin);
 
-		emit orbitOriginChanged(origin);
+		emit primaryCamParamChanged(origin);
 	}
 
 	void setCameraModeOrbit() {
-		std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); }
+		//std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(ORBIT); knifeRecompute(); update(); 
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
 
 	void setCameraModeFree() { 
-		std::cout << renderer.getCameraPosition() << std::endl;
-		renderer.setCameraMode(FREE); knifeRecompute(); update(); }
+		//std::cout << renderer.getCameraPosition() << std::endl;
+		renderer.setCameraMode(FREE); knifeRecompute(); update(); 
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
 
-	void updateCameraFOV(int fov) { renderer.updateCameraPostion(fov); update(); }
+	void SetFOV(double fov) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.FOV<true>(fov);
+			update();
+		}
+		else {
+			renderer.FOV<false>(fov);
+		}
+	}
+
+	void SetSurfaceVisibility(bool show) { renderer.ShowSurfaces(show); update(); }
+
+	void SetEdgeVisibility(bool show) { renderer.ShowEdges(show); update(); }
+
+	void SetFaceColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent(); 
+			renderer.FaceColor<true>(clr); 
+			update();
+		}
+		else {
+			renderer.FaceColor<false>(clr);
+		}
+	}
+
+	void SetEdgeColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.EdgeColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.EdgeColor<false>(clr);
+		}
+	}
+
+	void SetVertexColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.VertexColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.VertexColor<false>(clr);
+		}
+	}
+
+	void SetBackgroundColor(const Vec3f& clr) { 
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.BackgroundColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.BackgroundColor<false>(clr);
+		}
+	}
+
+	void SetSelectColor(const Vec3f& clr) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.SelectColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.SelectColor<false>(clr);
+		}
+	}
+
+	void SetHoverColor(const Vec3f& clr) {
+		if (renderer.Initialized()) {
+			makeCurrent();
+			renderer.HoverColor<true>(clr);
+			update();
+		}
+		else {
+			renderer.HoverColor<false>(clr);
+		}
+	}
+
+	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
+
+	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
+
+	void setPivotVisibility(bool visible) { if (showPivot != visible) { showPivot = visible; update(); } }
+
+	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
+
+	void loadReferenceImage(const QString& filepath) {
+		QImage image(filepath);
+		if (image.isNull()) { return; }
+
+		image = image.convertToFormat(QImage::Format_RGBA8888);
+		image.flip();
+
+		makeCurrent();
+
+		ReferenceImage* reference = scene.NewReferenceImage(filepath.toStdString());
+		reference->position = Vec3f(0.0f);
+		referenceTextureIndices[reference->id] = imageRenderer.AddTexture(
+			image.constBits(),
+			static_cast<uint>(image.width()),
+			static_cast<uint>(image.height()),
+			GL_RGBA
+		);
+
+		update();
+	}
+
+private slots:
+	void rightClickDuplicate() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		qDebug() << "pickedMeshiD =" << ids.x << " scene Mesh Count = " << scene.MeshCount();
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene.DuplicateMesh(ids.x, scene.Names()[ids.x]);
+			emit meshCountChanged(scene.MeshCount());
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+			update();
+		}
+	}
+
+	void rightClickDelete() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			deleteSelection();
+			emit meshCountChanged(scene.MeshCount());
+			emit selectionChanged(-1);
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+			update();
+		}
+	}
+
+	void rightClickOrbit() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			renderer.setOrbitOrigin(scene[ids.x]->Pos());
+			update();
+			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+		}
+	}
+
+	void rightClickRecenter() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->RecenterOnCentroid();
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionPosChanged();
+			}
+		}
+	}
+
+	void rightClickBakeScale() {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->BakeScale();
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionScaleChanged();
+			}
+		}
+	}
+
+	void rightClickCenterOnBoundary(Axis boundary) {
+		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			scene[ids.x]->RecenterOnBoundary(boundary);
+
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
+			renderer.UpdateTransforms();
+
+			update();
+
+			if (selectionManager.hasSelectedMesh(ids.x)) {
+				emitPrimarySelectionPosChanged();
+			}
+		}
+	}
+
+	void rightClickCenterOnCursor() {
+		Vec2u pixel = physicalPixelFromLogical(menuPos);
+		Vec2u ids; Vec3f pos;
+		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids, &pos);
+		if (!hit || ids.x >= scene.MeshCount()) { return; }
+
+		scene[ids.x]->RecenterOn(scene[ids.x]->WorldPosToLocalPos(pos));
+
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		renderer.UpdateTransforms();
+
+		update();
+
+		if (selectionManager.hasSelectedMesh(ids.x)) {
+			emitPrimarySelectionPosChanged();
+		}
+	}
+
+	void rightClickCenterOnFace() {
+		Vec2u pixel = physicalPixelFromLogical(menuPos);
+		Vec2u ids;
+		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
+		if (!hit || ids.x >= scene.MeshCount()) { return; }
+
+		scene[ids.x]->RecenterOn(scene[ids.x]->faceCentroid(ids.y));
+
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		renderer.UpdateTransforms();
+
+		update();
+
+		if (selectionManager.hasSelectedMesh(ids.x)) {
+			emitPrimarySelectionPosChanged();
+		}
+	}
+
+	void rightClickCenterOnBoundaryX() { rightClickCenterOnBoundary(X); }
+	void rightClickCenterOnBoundaryXNeg() { rightClickCenterOnBoundary(X_NEG); }
+	void rightClickCenterOnBoundaryY() { rightClickCenterOnBoundary(Y); }
+	void rightClickCenterOnBoundaryYNeg() { rightClickCenterOnBoundary(Y_NEG); }
+	void rightClickCenterOnBoundaryZ() { rightClickCenterOnBoundary(Z); }
+	void rightClickCenterOnBoundaryZNeg() { rightClickCenterOnBoundary(Z_NEG); }
+};
+
+class ViewportMenu : public QMenu {
+	//QAction* actions[4];
+	//QMenu* menus[1];
+	friend class Viewport;
+
+public:
+	ViewportMenu(Viewport* viewport) : QMenu(viewport)
+	{
+		/*actions[0] = new QAction("Delete", viewport);
+		actions[1] = new QAction("Duplicate", viewport);
+		actions[2] = new QAction("Orbit Camera", viewport);
+		actions[3] = new QAction("Bake Scale", viewport);
+
+		QObject::connect(actions[0], &QAction::triggered, this, &Viewport::rightClickDelete);
+		QObject::connect(actions[1], &QAction::triggered, this, &Viewport::rightClickDuplicate);
+		QObject::connect(actions[2], &QAction::triggered, this, &Viewport::rightClickOrbit);
+		QObject::connect(actions[3], &QAction::triggered, this, &Viewport::rightClickRecenter);
+		QObject::connect(menuActions[4], &QAction::triggered, this, &Viewport::rightClickBakeScale);*/
+		QAction* action = QMenu::addAction("Delete");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickDelete);
+
+		action = QMenu::addAction("Duplicate");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickDuplicate);
+
+		action = QMenu::addAction("Orbit Camera");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickOrbit);
+
+		action = QMenu::addAction("Bake Scale");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickBakeScale);
+
+		QMenu* menu = QMenu::addMenu("Set Pivot");
+
+		action = menu->addAction("Center");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickRecenter);
+
+		QMenu* facePivMenu = menu->addMenu("Face (if applicable)");
+
+		action = facePivMenu->addAction("Center");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnFace);
+
+		action = facePivMenu->addAction("Cursor");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnCursor);
+
+		QMenu* boundaryMenu = menu->addMenu("Boundary");
+
+		action = boundaryMenu->addAction("X");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryX);
+
+		action = boundaryMenu->addAction("-X");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryXNeg);
+
+		action = boundaryMenu->addAction("Y");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryY);
+
+		action = boundaryMenu->addAction("-Y");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryYNeg);
+
+		action = boundaryMenu->addAction("Z");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryZ);
+
+		action = boundaryMenu->addAction("-Z");
+		QObject::connect(action, &QAction::triggered, viewport, &Viewport::rightClickCenterOnBoundaryZNeg);
+	}
+
 };

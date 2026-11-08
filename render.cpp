@@ -413,7 +413,7 @@ void ModelingRenderer::UpdateRenderBuffers() {
 }
 
 // Public facing gizmo API.
-void ModelingRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation) {
+void ModelingRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, LegacyGizmoRenderer::Type type, const Matrix3f& gizmoRotation) {
 	gizmoRenderer.UpdateGizmos(base, hoveredAxis, type, gizmoRotation);
 }
 // Public facing gizmo API.
@@ -687,7 +687,7 @@ const std::vector<Vec3u> ArrowRenderer::TRIANGLES = {
 #pragma endregion
 
 #pragma region Gizmo Renderer
-bool GizmoRenderer::Gizmo::initialize(const char* vsPath, const char* fsPath, const std::vector<Vec3f>& vertices, const std::vector<Vec3u>& faces) {
+bool LegacyGizmoRenderer::Gizmo::initialize(const char* vsPath, const char* fsPath, const std::vector<Vec3f>& vertices, const std::vector<Vec3u>& faces) {
 	// Build shader program
 
 	bool success = program.BuildFiles(vsPath, fsPath);
@@ -736,7 +736,7 @@ bool GizmoRenderer::Gizmo::initialize(const char* vsPath, const char* fsPath, co
 	return true;
 }
 
-void GizmoRenderer::Gizmo::draw() {
+void LegacyGizmoRenderer::Gizmo::draw() {
 	if (instanceCount == 0) {
 		return;
 	}
@@ -750,7 +750,7 @@ void GizmoRenderer::Gizmo::draw() {
 
 // AI-generated code: Keeps the mace gizmo at a constant screen size.
 // Adapted to work with scale maces.
-void GizmoRenderer::Gizmo::setViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+void LegacyGizmoRenderer::Gizmo::setViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	program.Bind();
 	program.SetUniformMatrix4("viewProj", data);
 
@@ -762,29 +762,29 @@ void GizmoRenderer::Gizmo::setViewProjectionUniform(float data[16], float fov, i
 	program.SetUniform("screenScale", screenScale);
 }
 
-void GizmoRenderer::Gizmo::setGizmoRotationUniform(const Matrix3f& rotation) {
+void LegacyGizmoRenderer::Gizmo::setGizmoRotationUniform(const Matrix3f& rotation) {
 	// AI-generated: Uploads the selected element orientation for directional gizmos.
 	program.Bind();
 	program.SetUniformMatrix3("gizmoRotation", rotation.cell);
 }
 
-void GizmoRenderer::Gizmo::setRotationRingMode(float tolerance, bool selectionOnly) {
+void LegacyGizmoRenderer::Gizmo::setRotationRingMode(float tolerance, bool selectionOnly) {
 	program.Bind();
 	program.SetUniform("ringSelectionTolerance", tolerance);
 	program.SetUniform("selectionOnly", selectionOnly ? 1 : 0);
 }
 
-void GizmoRenderer::Gizmo::setGizmos(const std::vector<GizmoInstanceSettings>& gizmos, GLenum usage) {
+void LegacyGizmoRenderer::Gizmo::setGizmos(const std::vector<GizmoInstanceSettings>& gizmos, GLenum usage) {
 	glBindBuffer(GL_ARRAY_BUFFER, instancedVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GizmoInstanceSettings) * gizmos.size(), gizmos.data(), usage);
 	instanceCount = gizmos.size();
 }
 
-void GizmoRenderer::Gizmo::clear() {
+void LegacyGizmoRenderer::Gizmo::clear() {
 	instanceCount = 0;
 }
 
-void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& gizmoRotation) {
+void LegacyGizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type, const Matrix3f& gizmoRotation) {
 	// AI-generated: Keeps every gizmo shader aligned to the selected element.
 	translation.setGizmoRotationUniform(gizmoRotation);
 	scale.setGizmoRotationUniform(gizmoRotation);
@@ -862,7 +862,7 @@ void GizmoRenderer::UpdateGizmos(const Vec3f& base, uint hoveredAxis, Type type,
 	}
 }
 
-bool GizmoRenderer::Initialize() {
+bool LegacyGizmoRenderer::Initialize() {
 	if (!translation.initialize("assets/shaders/Arrow.vert", "assets/shaders/ArrowColor.frag", ARROW_VERTICES, ARROW_TRIANGLES)) {
 		std::cout << "Error initializing translation gizmo shaders!" << std::endl;
 		return false;
@@ -891,14 +891,14 @@ bool GizmoRenderer::Initialize() {
 	return true;
 }
 
-void GizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& hoops, const std::vector<GizmoInstanceSettings>& cubes) {
+void LegacyGizmoRenderer::SetGizmoInstanceSettings(const std::vector<GizmoInstanceSettings>& arrows, const std::vector<GizmoInstanceSettings>& maces, const std::vector<GizmoInstanceSettings>& hoops, const std::vector<GizmoInstanceSettings>& cubes) {
 	this->arrows = arrows;
 	this->maces = maces;
 	this->hoops = hoops;
 	this->cube = cubes;
 }
 
-void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
+void LegacyGizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int viewportHeight) {
 	translation.setViewProjectionUniform(data, fov, viewportHeight);
 	scale.setViewProjectionUniform(data, fov, viewportHeight);
 	rotationSelection.setViewProjectionUniform(data, fov, viewportHeight);
@@ -906,7 +906,7 @@ void GizmoRenderer::SetViewProjectionUniform(float data[16], float fov, int view
 	free.setViewProjectionUniform(data, fov, viewportHeight);
 }
 
-void GizmoRenderer::Draw() {
+void LegacyGizmoRenderer::Draw() {
 	translation.setGizmos(arrows);
 	translation.draw();
 	scale.setGizmos(maces);
@@ -928,7 +928,7 @@ void GizmoRenderer::Draw() {
 	free.draw();
 }
 
-void GizmoRenderer::Clear() {
+void LegacyGizmoRenderer::Clear() {
 	arrows.clear();
 	maces.clear();
 	hoops.clear();

@@ -89,7 +89,9 @@ public:
 
 #pragma endregion
 
-class GizmoRenderer {
+// Compatibility renderer for the retired legacy pipeline. The active renderer
+// uses the dedicated GizmoRenderer in GizmoRenderer.h.
+class LegacyGizmoRenderer {
 public:
 	enum class Type { Translation, Scale, Rotation };
 
@@ -275,7 +277,7 @@ class ModelingRenderer : public Renderer {
 
 	//ArrowRenderer arrowRenderer;
 	//MaceRenderer maceRenderer;
-	GizmoRenderer gizmoRenderer;
+	LegacyGizmoRenderer gizmoRenderer;
 
 public:
 
@@ -357,7 +359,7 @@ public:
 		this->scene = &scene; updateRenderBuffers = true;
 	}
 
-	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, GizmoRenderer::Type type, const Matrix3f& gizmoRotation);
+	void UpdateGizmos(const Vec3f& base, uint hoveredAxis, LegacyGizmoRenderer::Type type, const Matrix3f& gizmoRotation);
 
 	void ClearGizmos();
 
