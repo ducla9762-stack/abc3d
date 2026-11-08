@@ -1919,8 +1919,8 @@ void Viewport::knifeRecompute() {
 
 	if (path.size() >= 2) {
 		KnifeCamera camera;
-		//camera.viewProj = renderer.ViewProjection();
-		//camera.position = renderer.GetCamera()->position();
+		camera.viewProj = renderer.ViewProjection();
+		camera.position = renderer.GetCamera()->position();
 
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
@@ -1930,8 +1930,9 @@ void Viewport::knifeRecompute() {
 		}
 	}
 
-	makeCurrent();
-	//renderer.UpdateRenderBuffers(scene);
+	// The cut (or the restore) changes topology and element ids
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
 }
 
 void Viewport::knifeFinish() {
@@ -1944,8 +1945,9 @@ void Viewport::knifeFinish() {
 	knifeOccluders = KnifeOccluders();
 
 	if (renderer.Initialized()) {
-		makeCurrent();
-		//updateSelectionVisuals();
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		updateGizmos();
 	}
 }
 
@@ -1957,11 +1959,11 @@ void Viewport::knifeConfirm() {
 	knifeRecompute();
 
 	// Same tool, next cut starts from the result
-	//knifeBegin();
+	knifeBegin();
 
-	//makeCurrent();
-	//updateSelectionVisuals();
-	//update();
+	renderer.UpdateSelection(selectionManager);
+	updateGizmos();
+	update();
 }
 
 bool Viewport::knifeCancel() {
