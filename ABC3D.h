@@ -4,10 +4,7 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QDesktopServices>
-#include <QStandardItemModel>
 #include <QTreeView>
-#include <QCursor>
-#include <QButtonGroup>
 #include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
@@ -22,15 +19,12 @@ public:
 
     bool firstShow = true;
 
+    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
+    QFileSystemModel* helpFileModel = new QFileSystemModel;
+
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
-    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
-    QFileSystemModel* helpFileModel = new QFileSystemModel;
-    std::vector<QPushButton*> sceneButtons;
-    QButtonGroup* sceneGroup = new QButtonGroup(this);
-    QStandardItemModel* sceneModel;
-    QModelIndex sceneModelIndex;
 
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
@@ -50,27 +44,6 @@ private:
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
-
-    void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
-    void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
-
-    void imageFileDialog() {
-        QString file = QFileDialog::getOpenFileName(
-            this,
-            "Import Image",
-            "assets/images/",
-            "Images (*.png *.jpg *.jpeg)"
-        );
-
-        const bool supportedImage =
-            file.endsWith(".png", Qt::CaseInsensitive) ||
-            file.endsWith(".jpg", Qt::CaseInsensitive) ||
-            file.endsWith(".jpeg", Qt::CaseInsensitive);
-
-        if (!file.isEmpty() && supportedImage) {
-            ui.viewport->loadReferenceImage(file);
-        }
-    }
 
     void modelFileDialog() {
         QStringList files = QFileDialog::getOpenFileNames(
@@ -148,9 +121,6 @@ private slots:
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
-    void meshCountChanged(uint meshCount);
-    void createSceneButton(uint index, QString name);
-    void selectionChanged(int index);
 
 signals:
     void deleteKeyPressed();

@@ -8,7 +8,7 @@
 #include "helper.h"
 
 //Add 1 when the layout changes in a way that the older reader would misread
-constexpr int SCENE_FILE_VERSION = 2;
+constexpr int SCENE_FILE_VERSION = 1; 
 
 /// <summary>
 /// One saved object, its transform, local-space .obj text for its geometry
@@ -24,17 +24,6 @@ struct SceneFileObject {
 	std::string objText; 
 };
 
-struct SceneFileReferenceImage {
-	uint id = 0;
-	std::string path;
-	Vec3f pos = Vec3f(0.0f);
-	Vec3f rot = Vec3f(0.0f);
-	Vec3f scale = Vec3f(1.0f);
-	float opacity = 1.0f;
-	bool visible = true;
-	bool locked = false;
-};
-
 /// <summary>
 /// Everything an ABC3D scene file might carry (materials, lights, UV's, hierarchy are absent)
 /// When they exist, the version number will go up
@@ -44,9 +33,7 @@ struct SceneFile {
 	bool grid = true; 
 	bool points = true; 
 	std::vector<uint> selection; 
-	std::vector<uint> imageSelection;
 	std::vector<SceneFileObject> objects; 
-	std::vector<SceneFileReferenceImage> referenceImages;
 	std::vector<std::string> specs; //any metadata that we might want to include in the future
 };
 

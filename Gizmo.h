@@ -4,7 +4,7 @@
 #include <vector>
 #include "helper.h"
 
-constexpr float GIZMO_HALF_SQR_2 = 0.7071068f;
+constexpr float HALF_SQR_2 = 0.7071068f;
 
 /// <summary>
 /// Specifications for how the gizmo should draw.
@@ -123,13 +123,13 @@ static const std::vector<GizmoInstanceSettings> DEFAULT_FREE_CUBE_SETTINGS = { {
 
 const std::vector<Vec3f> ARROW_VERTICES = {
 	// Cylinder Base
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
 	// Cylinder Top
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
 	// Pyramid Base
 	Vec3f(2.0, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),
 	Vec3f(2.0f, 0.0f, 2.0f),
@@ -159,13 +159,13 @@ const std::vector<Vec3u> ARROW_TRIANGLES = {
 
 const std::vector<Vec3f> MACE_VERTICES = {
 	// Cylinder Base
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
 	// Cylinder Top
-	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
-	Vec3f(-GIZMO_HALF_SQR_2, 0.0f, -GIZMO_HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
-	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(GIZMO_HALF_SQR_2, 0.0f, GIZMO_HALF_SQR_2),
+	Vec3f(1.0f, 0.0f, 0.0f), Vec3f(HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(0.0f, 0.0f, -1.0f),
+	Vec3f(-HALF_SQR_2, 0.0f, -HALF_SQR_2), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(-HALF_SQR_2, 0.0f, HALF_SQR_2),
+	Vec3f(0.0f, 0.0f, 1.0f), Vec3f(HALF_SQR_2, 0.0f, HALF_SQR_2),
 
 	// Cube bottom
 	Vec3f(2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, -2.0f), Vec3f(-2.0f, 0.0f, 2.0f),

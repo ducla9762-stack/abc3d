@@ -27,11 +27,8 @@ bool WriteSceneFile(const std::string& filePath, const SceneFile& doc) {
 	
 	for (uint id : doc.selection) 
 		file << " " << id; 
-	file << "\n";
-	file << "image_selection";
-	for (uint id : doc.imageSelection)
-		file << " " << id;
-	file << "\n[end]\n";
+
+	file << "\n[end]\n"; 
 
 	for (const SceneFileObject& obj : doc.objects) {
 		//The \" escapes are just quotation marks around the name, so a name with
@@ -44,17 +41,6 @@ bool WriteSceneFile(const std::string& filePath, const SceneFile& doc) {
 		file << "geometry obj\n"; 
 		file << obj.objText; //appendObj already newline terminates every line
 		file << "[end]\n"; 
-	}
-
-	for (const SceneFileReferenceImage& image : doc.referenceImages) {
-		file << "[reference_image id=" << image.id << " path=\"" << image.path << "\"]\n";
-		WriteVec(file, "pos", image.pos);
-		WriteVec(file, "rot", image.rot);
-		WriteVec(file, "scale", image.scale);
-		file << "opacity " << image.opacity << "\n";
-		file << "visible " << (image.visible ? 1 : 0) << "\n";
-		file << "locked " << (image.locked ? 1 : 0) << "\n";
-		file << "[end]\n";
 	}
 
 	file << "[specs]\n"; 
@@ -76,20 +62,6 @@ static void ParseObjectHeader(const std::string& line, SceneFileObject& obj){
 
 	if (close != std::string::npos)
 		obj.name = line.substr(open + 1, close - open - 1); 
-}
-
-static void ParseImageHeader(const std::string& line, SceneFileReferenceImage& image) {
-	const size_t idPos = line.find("id=");
-	if (idPos != std::string::npos)
-		image.id = static_cast<uint>(std::strtoul(line.c_str() + idPos + 3, nullptr, 10));
-
-	const size_t pathPos = line.find("path=\"");
-	if (pathPos != std::string::npos) {
-		const size_t open = pathPos + 6;
-		const size_t close = line.find('"', open);
-		if (close != std::string::npos)
-			image.path = line.substr(open, close - open);
-	}
 }
 
 bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
@@ -115,10 +87,9 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 		return false;
 
 	SceneFile parsed; 
-	enum Section {NONE, SCENE, OBJECT, REFERENCE_IMAGE, SPECS};
+	enum Section {NONE, SCENE, OBJECT, SPECS};
 	Section section = NONE; 
 	SceneFileObject current; 
-	SceneFileReferenceImage currentImage;
 
 	while (std::getline(file, line)) {
 		//For cross platform case (if they save file, open in linux, and save again)
@@ -133,10 +104,6 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 				parsed.objects.push_back(std::move(current)); 
 				current = SceneFileObject(); 
 			}
-			else if (section == REFERENCE_IMAGE) {
-				parsed.referenceImages.push_back(std::move(currentImage));
-				currentImage = SceneFileReferenceImage();
-			}
 			section = NONE; 
 			continue; 
 		}
@@ -144,12 +111,6 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 		if (line == "[scene]") {
 			section = SCENE; 
 			continue; 
-		}
-
-		if (line.rfind("[reference_image", 0) == 0) {
-			section = REFERENCE_IMAGE;
-			ParseImageHeader(line, currentImage);
-			continue;
 		}
 
 		if (line == "[specs]") {
@@ -189,12 +150,6 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 					parsed.selection.push_back(id); 
 			}
 
-			else if (key == "image_selection") {
-				uint id;
-				while (in >> id)
-					parsed.imageSelection.push_back(id);
-			}
-
 			else {
 				//Deliberately ignored, NOT an error. An unknown key means a newer ABC3D
 				//wrote a field this build has never heard of. Skipping it is exactly how
@@ -216,23 +171,6 @@ bool ReadSceneFile(const std::string& filePath, SceneFile& doc) {
 			else {
 				current.objText += line; 
 				current.objText += "\n"; 
-			}
-		}
-
-		else if (section == REFERENCE_IMAGE) {
-			if (key == "pos")
-				in >> currentImage.pos.x >> currentImage.pos.y >> currentImage.pos.z;
-			else if (key == "rot")
-				in >> currentImage.rot.x >> currentImage.rot.y >> currentImage.rot.z;
-			else if (key == "scale")
-				in >> currentImage.scale.x >> currentImage.scale.y >> currentImage.scale.z;
-			else if (key == "opacity")
-				in >> currentImage.opacity;
-			else if (key == "visible") {
-				int value = 1; in >> value; currentImage.visible = value != 0;
-			}
-			else if (key == "locked") {
-				int value = 0; in >> value; currentImage.locked = value != 0;
 			}
 		}
 
