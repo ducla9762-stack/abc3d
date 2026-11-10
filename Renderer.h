@@ -1030,7 +1030,7 @@ public:
 			return cam.orbit.getOrigin();
 		}
 		else {
-			cam.free.position();
+			return cam.free.position();
 		}
 	}
 
