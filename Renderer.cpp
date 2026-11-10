@@ -290,6 +290,20 @@ void ABC3DRenderer::UpdateRenderBuffers() {
 		currOffset += edgeCount;
 	}
 
+	// Drawn edges are numbered compactly (one per edge). Picking reads those numbers back, but the rest of
+	// the app names edges by half-edge id, so keep the way back too.
+	if (edgeIdUnmap.size() < edgeIdMap.size()) { edgeIdUnmap.resize(edgeIdMap.size()); }
+	for (uint i = 0; i < uint(edgeIdMap.size()); ++i) {
+		std::vector<uint>& unmap = edgeIdUnmap[i];
+		unmap.clear();
+		for (uint halfEdge = 0; halfEdge < uint(edgeIdMap[i].size()); ++halfEdge) {
+			const uint compact = edgeIdMap[i][halfEdge];
+			if (compact == MAX_UINT) { continue; }
+			if (compact >= unmap.size()) { unmap.resize(compact + 1, MAX_UINT); }
+			unmap[compact] = halfEdge;
+		}
+	}
+
 	count.edges = currOffset - offset.edges;
 	rndrs.edge.SetEdges(bufBuilder.EdgeIds(), bufBuilder.Edges(), GL_DYNAMIC_DRAW);
 

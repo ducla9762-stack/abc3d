@@ -23,6 +23,7 @@
 #include "sceneFile.h"
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
+#include "MeshLoopCut.h"
 
 inline bool initGlew = true;
 
@@ -132,7 +133,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT
 	};
 
 	Element getActiveElement();
@@ -221,6 +222,21 @@ private:
 	OverlayWidget* knifeOverlay = nullptr;
 
 // ---------------------------------------------------------------------------------------------
+// Loop Cut ------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+	// Hovering an edge previews the cut through its strip of faces. Clicking cuts it.
+	uint loopCutCount = 1;
+	Vec2u loopCutHover = Vec2u(MAX_UINT, MAX_UINT);           // mesh, half-edge under the cursor
+	std::vector<std::pair<Vec3f, Vec3f>> loopCutSegments;     // preview edges, world space
+	std::vector<Vec3f> loopCutPoints;                         // preview vertices, world space
+
+	void loopCutUpdatePreview(const Vec2u& selectionIds);
+	void loopCutClearPreview();
+	void handleLoopCutClick(const Vec2u& selectionIds);
+	void drawLoopCutOverlay(QPainter& painter);
+
+// ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
@@ -261,7 +277,7 @@ private:
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
-		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE || actionParams.action == LOOPCUT); knifeOverlay->update(); }
 	}
 
 	void resizeGL(int w, int h) override { 
@@ -370,6 +386,7 @@ private:
 	}
 
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
+		makeCurrent();
 		const Vec2u pixel = physicalPixelFromLogical(logicalPos);
 		return renderer.SelectionIds(elm, pixel.x, pixel.y);
 	}
@@ -477,6 +494,17 @@ public slots:
 		emit elementChanged(EDGE);
 		setAction(DISSOLVE);
 	}
+	void setActionLoopCut() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(LOOPCUT);
+	}
+
+	/// <returns>True while the loop cut tool is the active tool.</returns>
+	bool loopCutActive() const { return actionParams.action == LOOPCUT; }
+	/// <summary>Changes how many parallel cuts the loop cut makes (at least 1).</summary>
+	void changeLoopCutCount(int delta);
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
@@ -498,7 +526,7 @@ public slots:
 	// Vertex Element
 	void setElementVertex() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -535,7 +563,7 @@ public slots:
 	// Face Element
 	void setElementFace() {
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -554,7 +582,7 @@ public slots:
 	// Object Element
 	void setElementObject() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(OBJECT); 
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
@@ -1190,7 +1218,7 @@ public slots:
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
-			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId] + " Copy");
+			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId]);
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
@@ -1345,8 +1373,9 @@ public slots:
 private slots:
 	void rightClickDuplicate() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
+		qDebug() << "pickedMeshiD =" << ids.x << " scene Mesh Count = " << scene.MeshCount();
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			scene.DuplicateMesh(ids.x, scene.Names()[ids.x] + " Copy");
+			scene.DuplicateMesh(ids.x, scene.Names()[ids.x]);
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
