@@ -411,7 +411,6 @@ ABC3D::ABC3D(QWidget *parent)
 
     ui.sceneTree->setModel(sceneModel);
     sceneGroup->setExclusive(true);
-    ui.sceneTree->setModel(sceneModel);
 
     for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
         createSceneButton(i, "Cube");
