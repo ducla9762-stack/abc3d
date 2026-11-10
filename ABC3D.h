@@ -8,6 +8,7 @@
 #include <QTreeView>
 #include <QCursor>
 #include <QButtonGroup>
+#include <QActionGroup>
 #include <QSaveFile>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
@@ -51,8 +52,8 @@ private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
-    void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
-    void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
+    void showStandardMode() { ui.viewport->setSimpleMode(false); }
+    void showSimpleMode() { ui.viewport->setSimpleMode(true); }
 
     void imageFileDialog() {
         QString file = QFileDialog::getOpenFileName(

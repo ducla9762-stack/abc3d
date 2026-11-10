@@ -52,13 +52,21 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
+    actionStandardMode->setCheckable(true);
+    actionStandardMode->setChecked(true);
     ui.menuBar->addAction(actionStandardMode);
     QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
+    actionSimpleMode->setCheckable(true);
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+
+    QActionGroup* rendererModes = new QActionGroup(this);
+    rendererModes->setExclusive(true);
+    rendererModes->addAction(actionStandardMode);
+    rendererModes->addAction(actionSimpleMode);
 
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {

@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "renderer.h"
+#include "SimpleModeRenderer.h"
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
@@ -164,6 +165,8 @@ private:
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
+	SimpleModeRenderer simpleModeRenderer;
+	bool simpleMode = false;
 	IconRenderer iconRenderer;
 	ImageRenderer imageRenderer;
 	Scene scene;
@@ -226,32 +229,32 @@ private:
 
 	void initializeGL() override;
 
-	void paintGL() override {
-		renderer.Draw(defaultFramebufferObject());
+	void drawViewport(GLuint targetFramebuffer) {
+		renderer.Draw(targetFramebuffer);
 		if (scene.ReferenceImageCount() != 0) {
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
 			const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
 			const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.BeginPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			imageRenderer.BeginPickPass(targetFramebuffer, pixelWidth, pixelHeight);
 			for (const ReferenceImage& image : scene.ReferenceImages()) {
 				auto texture = referenceTextureIndices.find(image.id);
 				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
 				imageRenderer.DrawPick(image.position, image.rotation, image.scale, image.id, texture->second);
 			}
-			imageRenderer.EndPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			imageRenderer.EndPickPass(targetFramebuffer, pixelWidth, pixelHeight);
 			for (const ReferenceImage& image : scene.ReferenceImages()) {
 				auto texture = referenceTextureIndices.find(image.id);
 				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
 				imageRenderer.Draw(
 					image.position, image.rotation, image.scale, image.opacity,
 					selectionManager.hasSelectedReferenceImage(image.id), renderer.SelectionColor(), texture->second,
-					defaultFramebufferObject(), pixelWidth, pixelHeight
+					targetFramebuffer, pixelWidth, pixelHeight
 				);
 			}
 		}
-		renderer.DrawGizmos(defaultFramebufferObject());
+		renderer.DrawGizmos(targetFramebuffer);
 		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
 			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
 			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
@@ -260,6 +263,18 @@ private:
 			iconRenderer.Draw(pos, pivotScale, float(width()) / float(height()));
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
+		}
+	}
+
+	void paintGL() override {
+		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+		if (simpleMode) {
+			simpleModeRenderer.Draw(defaultFramebufferObject(), pixelWidth, pixelHeight,
+				[this](GLuint framebuffer) { drawViewport(framebuffer); });
+		}
+		else {
+			drawViewport(defaultFramebufferObject());
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 	}
@@ -366,7 +381,8 @@ private:
 		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
 		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
 		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
-		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+		const Vec2u pixel(static_cast<uint>(x), static_cast<uint>(y));
+		return simpleMode ? simpleModeRenderer.MapPixelToSource(pixel) : pixel;
 	}
 
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
@@ -410,6 +426,11 @@ public:
 	~Viewport();
 
 public slots:
+	void setSimpleMode(bool enabled) {
+		if (simpleMode == enabled) return;
+		simpleMode = enabled;
+		update();
+	}
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() {
 		if (getActiveElement() == OBJECT) {
