@@ -122,6 +122,7 @@ public:
 
 class HalfEdgeMeshBeveler;
 class HalfEdgeMeshKnife; 
+class HalfEdgeMeshLoopCutter; 
 
 class HalfEdgeMesh {
 
@@ -165,6 +166,7 @@ private:
 	friend class RenderBufferBuilder;
 	friend class HalfEdgeMeshBeveler;
 	friend class HalfEdgeMeshKnife; 
+	friend class HalfEdgeMeshLoopCutter; 
 
 	/// <summary>
 	/// Adds a new face.

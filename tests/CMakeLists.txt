@@ -4,6 +4,7 @@ add_executable(abc3d_tests
     test_io.cpp
     test_math.cpp
     test_knife.cpp
+    test_loopcut.cpp
     #test_selection.cpp
 )
 
