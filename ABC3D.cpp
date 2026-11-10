@@ -60,6 +60,31 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
+    // Search Bar for documents
+    QToolBar* searchToolbar = addToolBar("Search");
+    searchToolbar->setMovable(false);
+
+    QLineEdit* searchBar = new QLineEdit();    
+    searchBar->setPlaceholderText("Search Help Documents");
+    searchBar->setFixedHeight(30);
+    searchBar->setFixedWidth(200);
+    searchBar->setContentsMargins(5, 0, 5, 0);
+    ui.verticalLayout_13->addWidget(searchBar);
+
+    QStringList searchList;
+    searchList << "Beveling" << "Camera Movement" << "Controls" << "Elements" << "Extrusion" 
+        << "Knife Tool" << "Loop Cutting" << "Merging" << "Refinement" << "Scene" 
+        << "Selection" << "Shapes" << "Simple Mode" << "Translation";
+    QCompleter* searchCompleter = new QCompleter(searchList, this);
+
+    searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    searchCompleter->setFilterMode(Qt::MatchContains);
+    searchBar->setCompleter(searchCompleter);
+
+    QObject::connect(searchBar, &QLineEdit::editingFinished, this, [=]() {
+        updateSearchBar(searchBar->text());
+        });
+
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
         ui.viewport->deleteSelection();
