@@ -10,6 +10,10 @@
 #include <QButtonGroup>
 #include <QActionGroup>
 #include <QSaveFile>
+#include <QLineEdit>
+#include <QWidgetAction>
+#include <QToolBar>
+#include <QCompleter>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -54,6 +58,16 @@ private slots:
 
     void showStandardMode() { ui.viewport->setSimpleMode(false); }
     void showSimpleMode() { ui.viewport->setSimpleMode(true); }
+
+    void updateSearchBar(QString text) {
+        QModelIndex helpPath = helpFileModel->index("assets/help documents");
+        for (int i = 0; i < helpFileModel->rowCount(helpPath); i++) {
+            QModelIndex index = helpFileModel->index(i, 0, helpPath);
+            if (helpFileModel->fileName(index).toUpper().startsWith(text.toUpper())) {
+                helpRowClicked(index);
+            }
+        }
+    }
 
     void imageFileDialog() {
         QString file = QFileDialog::getOpenFileName(
