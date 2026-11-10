@@ -573,6 +573,28 @@ public:
 
 	void GetFaceEdges(uint faceId, std::vector<uint>& edges) const;
 
+	void GetFaceLogicalEdges(uint faceId, std::vector<uint>& edges) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		if (first == MAX_UINT) { return; }
+
+		do {
+			uint twin = this->edges[curr].twin;
+			if (curr < twin) {
+				edges.push_back(curr);
+			}
+			else {
+				edges.push_back(twin);
+			}
+			edges.push_back(curr);
+			curr = this->edges[curr].next;
+		} while (curr != first);
+	}
+
+	bool FaceIsNull(uint faceId) const { return faceEdges[faceId] == MAX_UINT; }
+	bool EdgeIsNull(uint edgeId) const { return edges[edgeId].dest == MAX_UINT; }
+	bool VertexIsNull(uint id) const { return vertEdge[id] == MAX_UINT; }
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <param name="vertices">
 	/// Will contain the first 4 vertices of the face. 

@@ -58,7 +58,7 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
-	selectionManager.setActiveElement(OBJECT);
+	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 
 	knifeOverlay = new OverlayWidget(this);
@@ -784,7 +784,7 @@ Element Viewport::getActiveElement() {
 }
 
 void Viewport::setActiveElement(Element element) {
-	selectionManager.setActiveElement(element);
+	selectionManager.setActiveElement(element, scene);
 
 	if (element == VERTEX) {
 		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }
