@@ -263,6 +263,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
 	if (actionParams.action == MERGE) {
@@ -278,6 +279,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked

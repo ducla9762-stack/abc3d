@@ -30,6 +30,7 @@ public:
 
 	virtual void mouseDrag(const Vec2f& drag) = 0;
 	virtual void mouseWheel(float dx, float dy) = 0;
+	virtual void keyPress(uint8_t axis) = 0;
 };
 
 class OrbitCamera : public Camera {
@@ -82,6 +83,10 @@ public:
 
 		cartesian = sphericalToCartesian(spherical);
 	}
+
+	void keyPress(uint8_t axis) override {
+		// orbit: change radius with w & s (spherical.z), A&D change first angle (spherical.x)
+	}
 };
 
 class FreeCamera : public Camera {
@@ -122,6 +127,10 @@ public:
 
 		pos += r * dx;
 		pos += f * -dy;
+	}
+
+	void keyPress(uint8_t axis) override {
+		// Free: get direction from camera, move along directions
 	}
 };
 
