@@ -43,7 +43,7 @@ class InsetBuilder {
 public:
 	InsetBuilder(HalfEdgeMesh& mesh) : mesh(mesh) {}
 
-	void FullInset(uint face, std::vector<uint>& newFaces) {
+	void FullInset(uint face, std::vector<uint>& newVerts) {
 		Polygon polygon;
 
 		Vec3f normal = mesh.GetFaceNormal(face);
@@ -55,25 +55,28 @@ public:
 		mesh.ForEachVertexInFace(face, LoadPolygonFunc(polygon, u, v, first));
 
 		std::shared_ptr<StraightSkeleton> skel = CGAL::create_interior_straight_skeleton_2(polygon.begin(), polygon.end());
+
+		bool found = false;
 		
-		auto sEdge = skel->border_halfedges_begin();
-		for (uint i = 0; i < polygon.size(); ++i) {
-			if (CGAL::compare_xy(polygon[0], sEdge->vertex()->point()) != CGAL::EQUAL) {
-				sEdge = sEdge->prev();
+		auto sEdge = skel->halfedges_begin();
+		while (sEdge != skel->halfedges_end()) {
+			if (!sEdge->is_bisector() && !sEdge->is_border() && CGAL::compare_xy(polygon[1], sEdge->vertex()->point()) == CGAL::EQUAL) {
+				found = true;
 				break;
 			}
+			++sEdge;
 		}
 
+		assert(found);
 		std::unordered_map<int, uint> vertMap;
 
 		uint edge = mesh.faceEdges[face];
 		for (uint i = 0; i < polygon.size(); ++i) {
-			sEdge->opposite()->reset_id(edge);
-			sEdge->reset_id(mesh.edges[edge].twin);
+			sEdge->reset_id(edge);
 
-			vertMap[sEdge->vertex()->id()] = mesh.edges[edge].orig;
+			vertMap[sEdge->vertex()->id()] = mesh.edges[edge].dest;
 
-			sEdge->prev();
+			sEdge = sEdge->next()->opposite()->next();
 			edge = mesh.edges[edge].next;
 		}
 
@@ -88,6 +91,7 @@ public:
 		for (auto it = skel->vertices_begin(); it != skel->vertices_end(); ++it) {
 			if (!it->is_contour()) { 
 				vertMap[it->id()] = newVert; 
+				newVerts.push_back(newVert);
 				++newVert; 
 				const Vec2_CGAL& uv = it->point();
 				Vec2f pos(float(uv.x()), float(uv.y()));
@@ -96,26 +100,25 @@ public:
 			}
 		}
 
-		//uint newVertCnt = size_t(newVert) - mesh.vertPos.size();
-		//mesh.vertPos.insert(mesh.vertPos.end(), newVertCnt, Vec3f(0.0f));
-		//mesh.vertEdge.insert(mesh.vertEdge.end(), newVertCnt, MAX_UINT);
-
 		uint faceOffset = uint(mesh.faceEdges.size());
+		mesh.faceEdges.insert(mesh.faceEdges.end(), skel->size_of_faces() - 1, MAX_UINT);
 		auto faceIt = skel->faces_begin();
-		mesh.faceEdges[face] = faceIt->halfedge()->id();
 
 		while (faceIt != skel->faces_end()) {
-			++faceIt; mesh.faceEdges.push_back(faceIt->halfedge()->id());
+			if (faceIt->id() == 0) { mesh.faceEdges[face] = faceIt->halfedge()->id(); }
+			else { mesh.faceEdges[faceIt->id() + faceOffset - 1] = faceIt->halfedge()->id(); }
+			++faceIt;
 		}
 
 		for (auto it = skel->halfedges_begin(); it != skel->halfedges_end(); ++it) {
+			if (it->is_border()) { continue; }
 			HalfEdgeMesh::HalfEdge& edge = mesh.edges[it->id()];
 			if (it->is_bisector()) {
 				edge.dest = vertMap[it->vertex()->id()];
 				edge.orig = vertMap[it->prev()->vertex()->id()];
-				edge.twin = vertMap[it->opposite()->id()];
+				edge.twin = it->opposite()->id();
 			}
-			edge.face = it->face()->id() == 0 ? face : it->face()->id() + faceOffset;
+			edge.face = it->face()->id() == 0 ? face : (it->face()->id() + faceOffset - 1);
 			edge.next = it->next()->id();
 			edge.prev = it->prev()->id();
 		}

@@ -126,6 +126,7 @@
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
+    <ClCompile Include="StraightSkeleton.h" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <QtMoc Include="StartMenu.h" />
