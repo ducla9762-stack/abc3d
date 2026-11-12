@@ -12,8 +12,9 @@
 #include <functional>
 #include <optional>
 #include <unordered_map>
-
 #include <algorithm>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
 
 #include "renderer.h"
 #include "helper.h"

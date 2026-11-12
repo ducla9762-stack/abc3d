@@ -24,7 +24,9 @@ public:
 	}
 
 	virtual Vec3f right() const { Vec3f r = WORLD_Y.Cross(forward()); r.Normalize(); return r; }
+	virtual Vec3f right(Vec3f& f) const { f = forward(); Vec3f r = WORLD_Y.Cross(f); r.Normalize(); return r; }
 	virtual Vec3f up() const { Vec3f f, u, r; directions(f, u, r); return u; }
+	virtual Vec3f up(Vec3f& f, Vec3f& r) const { Vec3f u; directions(f, u, r); return u; }
 
 	virtual void mouseDrag(const Vec2f& drag) = 0;
 	virtual void mouseWheel(float dx, float dy) = 0;
