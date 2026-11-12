@@ -16,6 +16,12 @@
 
 #include "helper.h"
 
+#if __has_include(<CGAL/straight_skeleton_2.h>)
+
+#define CGAL_AVAILABLE
+
+#endif
+
 #undef min
 #undef max
 
@@ -121,6 +127,7 @@ public:
 };
 
 class HalfEdgeMeshBeveler;
+class InsetBuilder;
 class HalfEdgeMeshKnife; 
 class HalfEdgeMeshLoopCutter; 
 
@@ -167,6 +174,10 @@ private:
 	friend class HalfEdgeMeshBeveler;
 	friend class HalfEdgeMeshKnife; 
 	friend class HalfEdgeMeshLoopCutter; 
+
+#ifdef CGAL_AVAILABLE
+	friend class InsetBuilder;
+#endif
 
 	/// <summary>
 	/// Adds a new face.
@@ -545,6 +556,19 @@ public:
 		local /= scale;
 
 		return local;
+	}
+
+	template <typename Callback, bool CCW = true>
+	void ForEachVertexInFace(uint faceId, Callback func) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+
+		do {
+			const HalfEdgeMesh::HalfEdge& edge = edges[curr];
+			func(vertPos[edge.orig]);
+			if constexpr (CCW) { curr = edge.next; }
+			else { curr = edge.prev; }
+		} while (curr != first);
 	}
 
 	/// <param name="faceId">A face of the mesh.</param>

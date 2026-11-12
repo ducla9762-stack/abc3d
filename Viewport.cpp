@@ -58,6 +58,11 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
+	
+	InsetBuilder ss(*scene[0]);
+	std::vector<uint> newVerts;
+	ss.FullInset(0, newVerts);
+
 	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 

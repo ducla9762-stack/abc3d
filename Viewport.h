@@ -24,6 +24,7 @@
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
+#include "StraightSkeleton.h"
 
 inline bool initGlew = true;
 
