@@ -1,6 +1,20 @@
 #include "SimpleModeRenderer.h"
 
 #include <algorithm>
+#include <cmath>
+
+namespace {
+	Matrix4f OrthographicProjection(float halfHeight, float aspect, float nearPlane, float farPlane) {
+		const float halfWidth = halfHeight * aspect;
+		Matrix4f projection;
+		projection.SetIdentity();
+		projection.cell[0] = 1.0f / halfWidth;
+		projection.cell[5] = 1.0f / halfHeight;
+		projection.cell[10] = -2.0f / (farPlane - nearPlane);
+		projection.cell[14] = -(farPlane + nearPlane) / (farPlane - nearPlane);
+		return projection;
+	}
+}
 
 bool SimpleModeRenderer::EnsureFramebuffer(int newWidth, int newHeight) {
 	if (newWidth <= 0 || newHeight <= 0) return false;
@@ -56,31 +70,73 @@ bool SimpleModeRenderer::EnsureFramebuffer(int newWidth, int newHeight) {
 	return complete;
 }
 
+void SimpleModeRenderer::UpdateCameras(const CameraView& perspective, const Vec3f& target) {
+	cameras[0] = perspective;
+
+	const float aspect = static_cast<float>(width) / static_cast<float>(height);
+	const Vec3f perspectivePosition = perspective.view.GetInverse().GetTranslation();
+	const float perspectiveDistance = std::max((perspectivePosition - target).Length(), 1.0f);
+	const float halfHeight = std::max(
+		5.0f,
+		perspectiveDistance * std::tan(degreesToRadians(perspective.gizmoFov) * 0.5f)
+	);
+	const float cameraDistance = std::max(1000.0f, halfHeight * 4.0f);
+	const float farPlane = cameraDistance * 2.0f;
+	const Matrix4f orthographic = OrthographicProjection(halfHeight, aspect, 0.1f, farPlane);
+	const float orthographicGizmoFov = radiansToDegrees(2.0f * std::atan(halfHeight));
+
+	const Vec3f positions[3] = {
+		target + WORLD_X * cameraDistance,
+		target + WORLD_Y * cameraDistance,
+		target + WORLD_Z * cameraDistance
+	};
+	const Vec3f upVectors[3] = { WORLD_Y, -WORLD_Z, WORLD_Y };
+
+	for (uint i = 0; i < 3; ++i) {
+		cameras[i + 1].view.SetView(positions[i], target, upVectors[i]);
+		cameras[i + 1].projection = orthographic;
+		cameras[i + 1].gizmoFov = orthographicGizmoFov;
+	}
+}
+
+uint SimpleModeRenderer::CameraIndexAt(const Vec2u& pixel) const {
+	const uint splitX = static_cast<uint>(width / 2);
+	const uint splitY = static_cast<uint>(height / 2);
+	const bool right = pixel.x >= splitX;
+	const bool top = pixel.y >= splitY;
+
+	// Top-left: X, top-right: perspective, bottom-left: Y, bottom-right: Z.
+	if (top) return right ? 0u : 1u;
+	return right ? 3u : 2u;
+}
+
 void SimpleModeRenderer::Draw(GLuint defaultFramebuffer, int newWidth, int newHeight,
-	const std::function<void(GLuint)>& drawRegularViewport) {
+	const CameraView& perspective, const Vec3f& target, const DrawView& drawView) {
 	if (!EnsureFramebuffer(newWidth, newHeight)) {
-		drawRegularViewport(defaultFramebuffer);
+		cameras[0] = perspective;
+		activeCamera = 0;
+		drawView(defaultFramebuffer, perspective);
 		return;
 	}
 
-	// Produce the exact standard-mode frame first, including reference images,
-	// gizmos, and other overlays, then present that frame in each quadrant.
-	drawRegularViewport(framebuffer);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	UpdateCameras(perspective, target);
 
 	const int splitX = width / 2;
 	const int splitY = height / 2;
 	const int destinations[4][4] = {
-		{ 0,      0,      splitX, splitY },
-		{ splitX, 0,      width,  splitY },
-		{ 0,      splitY, splitX, height },
-		{ splitX, splitY, width,  height }
+		{ splitX, splitY, width,  height }, // perspective
+		{ 0,      splitY, splitX, height }, // X axis
+		{ 0,      0,      splitX, splitY }, // Y axis
+		{ splitX, 0,      width,  splitY }  // Z axis
 	};
 
-	for (const auto& destination : destinations) {
+	for (uint i = 0; i < cameras.size(); ++i) {
+		drawView(framebuffer, cameras[i]);
+
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebuffer);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		const auto& destination = destinations[i];
 		if (destination[0] == destination[2] || destination[1] == destination[3]) continue;
 		glBlitFramebuffer(
 			0, 0, width, height,
@@ -91,6 +147,14 @@ void SimpleModeRenderer::Draw(GLuint defaultFramebuffer, int newWidth, int newHe
 
 	glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebuffer);
 	glViewport(0, 0, width, height);
+}
+
+void SimpleModeRenderer::PreparePicking(const Vec2u& displayPixel, int newWidth, int newHeight,
+	const CameraView& perspective, const Vec3f& target, const DrawView& drawView) {
+	if (!EnsureFramebuffer(newWidth, newHeight)) return;
+	UpdateCameras(perspective, target);
+	activeCamera = CameraIndexAt(displayPixel);
+	drawView(framebuffer, cameras[activeCamera]);
 }
 
 Vec2u SimpleModeRenderer::MapPixelToSource(const Vec2u& pixel) const {

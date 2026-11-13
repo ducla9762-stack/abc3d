@@ -229,6 +229,20 @@ private:
 
 	void initializeGL() override;
 
+	SimpleModeRenderer::CameraView perspectiveCameraView() {
+		SimpleModeRenderer::CameraView camera;
+		camera.view = renderer.GetCamera()->transform();
+		camera.projection.SetPerspective(
+			degreesToRadians(renderer.FOV()),
+			static_cast<float>(std::max(1, static_cast<int>(width() * devicePixelRatio()))) /
+				static_cast<float>(std::max(1, static_cast<int>(height() * devicePixelRatio()))),
+			0.1f,
+			1000.0f
+		);
+		camera.gizmoFov = renderer.FOV();
+		return camera;
+	}
+
 	void drawViewport(GLuint targetFramebuffer) {
 		renderer.Draw(targetFramebuffer);
 		if (scene.ReferenceImageCount() != 0) {
@@ -266,14 +280,27 @@ private:
 		}
 	}
 
+	void drawCameraView(GLuint targetFramebuffer, const SimpleModeRenderer::CameraView& camera) {
+		renderer.SetViewProjection(camera.view, camera.projection, camera.gizmoFov);
+		drawViewport(targetFramebuffer);
+	}
+
 	void paintGL() override {
 		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
 		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
 		if (simpleMode) {
-			simpleModeRenderer.Draw(defaultFramebufferObject(), pixelWidth, pixelHeight,
-				[this](GLuint framebuffer) { drawViewport(framebuffer); });
+			simpleModeRenderer.Draw(
+				defaultFramebufferObject(), pixelWidth, pixelHeight,
+				perspectiveCameraView(), renderer.GetCameraTarget(),
+				[this](GLuint framebuffer, const SimpleModeRenderer::CameraView& camera) {
+					drawCameraView(framebuffer, camera);
+				}
+			);
+			const SimpleModeRenderer::CameraView& activeCamera = simpleModeRenderer.ActiveCamera();
+			renderer.SetViewProjection(activeCamera.view, activeCamera.projection, activeCamera.gizmoFov);
 		}
 		else {
+			renderer.RestoreCameraViewProjection();
 			drawViewport(defaultFramebufferObject());
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
@@ -375,14 +402,30 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
-	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) const {
+	Vec2u displayPixelFromLogical(const Vec2f& logicalPos) const {
 		const float dpr = static_cast<float>(devicePixelRatio());
 		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
 		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
 		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
 		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
-		const Vec2u pixel(static_cast<uint>(x), static_cast<uint>(y));
-		return simpleMode ? simpleModeRenderer.MapPixelToSource(pixel) : pixel;
+		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+	}
+
+	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) {
+		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+		const Vec2u pixel = displayPixelFromLogical(logicalPos);
+		if (!simpleMode) return pixel;
+
+		makeCurrent();
+		simpleModeRenderer.PreparePicking(
+			pixel, pixelWidth, pixelHeight,
+			perspectiveCameraView(), renderer.GetCameraTarget(),
+			[this](GLuint framebuffer, const SimpleModeRenderer::CameraView& camera) {
+				drawCameraView(framebuffer, camera);
+			}
+		);
+		return simpleModeRenderer.MapPixelToSource(pixel);
 	}
 
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {

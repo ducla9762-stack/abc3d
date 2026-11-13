@@ -468,7 +468,9 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// If no action performed and no gizmo was captured, move the camera. A
 	// captured gizmo must keep ownership of the drag even when its projected
 	// axis is degenerate from the current camera angle.
-	if (!actionPerformed && !draggingGizmo) {
+	const bool perspectiveNavigation = !simpleMode ||
+		simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos));
+	if (!actionPerformed && !draggingGizmo && perspectiveNavigation) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 		if (renderer.GetActiveCamType() == CameraType::FREE) {
 			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
@@ -487,6 +489,10 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 void Viewport::wheelEvent(QWheelEvent* event) {
 	// Accept event and get change in wheel
 	event->accept();
+	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+	if (simpleMode && !simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos))) {
+		return;
+	}
 	QPoint change = event->angleDelta();
 
 	// Convert change in wheel to change in camera
@@ -831,7 +837,7 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	renderer.GetActiveViewDirections(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -1026,7 +1032,7 @@ bool Viewport::translateEdgeDrag() {
 
 	if (mouseAction.firstMoveEvent) {
 		Vec3f forward, up, right;
-		renderer.GetCamera()->directions(forward, up, right);
+		renderer.GetActiveViewDirections(forward, up, right);
 
 		// Mouse positions are converted to a bottom-left origin in the Qt event
 		// handlers. Camera::directions() uses the opposite-handed basis from the
@@ -1299,7 +1305,7 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	renderer.GetActiveViewDirections(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -1364,7 +1370,7 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	renderer.GetActiveViewDirections(forward, up, right);
 	Vec3f screenTangent = draggedRotationAxis.Cross(forward);
 	if (screenTangent.LengthSquared() <= 1e-8f) {
 		screenTangent = draggedRotationAxis.Cross(up);
@@ -1433,7 +1439,7 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1536,7 +1542,7 @@ bool Viewport::scaleGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {

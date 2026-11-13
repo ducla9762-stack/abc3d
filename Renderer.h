@@ -883,6 +883,7 @@ class ABC3DRenderer {
 	} blends;
 
 	bool initialized = false;
+	bool customViewProjection = false;
 	uint meshVertDrawCount;
 	uint maxObjectCount = 64; //hard coded for now
 
@@ -904,6 +905,8 @@ public:
 	void Resize(int width, int height, GLuint defaultFrameBuffer);
 	void Draw(GLuint defaultFramebuffer);
 	void DrawGizmos(GLuint defaultFramebuffer);
+	void SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov);
+	void RestoreCameraViewProjection();
 
 private:
 // ---------------------------------------------------------------------------------------------
@@ -1034,6 +1037,16 @@ public:
 	}
 
 	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
+	Vec3f GetCameraTarget() const { return cam.type == ORBIT ? cam.orbit.getOrigin() : cam.free.target(); }
+	void GetActiveViewDirections(Vec3f& forward, Vec3f& up, Vec3f& right) const {
+		const Matrix4f cameraTransform = transform.view.GetInverse();
+		right = Vec3f(cameraTransform.Column(0));
+		up = Vec3f(cameraTransform.Column(1));
+		forward = -Vec3f(cameraTransform.Column(2));
+		right.Normalize();
+		up.Normalize();
+		forward.Normalize();
+	}
 
 	void toggleCamType() {
 		if (cam.type == ORBIT) {
