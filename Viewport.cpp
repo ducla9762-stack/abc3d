@@ -62,7 +62,10 @@ Viewport::Viewport(QWidget *parent)
 	setMouseTracking(true);
 
 	knifeOverlay = new OverlayWidget(this);
-	knifeOverlay->draw = [this](QPainter& painter) { drawKnifeOverlay(painter); };
+	knifeOverlay->draw = [this](QPainter& painter) {
+		if (actionParams.action == LOOPCUT) { drawLoopCutOverlay(painter); }
+		else { drawKnifeOverlay(painter); }
+	};
 	knifeOverlay->hide();
 }
 
@@ -353,6 +356,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			else if (actionParams.action == DISSOLVE) {
 				handleDissolveEdgeClick(ids);
 			}
+			else if (actionParams.action == LOOPCUT) {
+				handleLoopCutClick(ids);
+			}
 			else {
 				handleSelection(ids);
 			}
@@ -412,6 +418,9 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 
 	// Update hover visuals.
 	const bool hoverChanged = updateHoverVisual(pos);
+	if (actionParams.action == LOOPCUT && hoverChanged) {
+		loopCutUpdatePreview(Vec2u(hoveredSelectionIds.x, hoveredSelectionIds.y));
+	}
 	if (hoverChanged) { update(); }
 
 	return;
@@ -531,6 +540,7 @@ void Viewport::leaveEvent(QEvent* event) {
 	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	hoveredGizmoAxis = MAX_UINT;
 	renderer.ClearHover();
+	loopCutClearPreview();
 	if (gizmoChanged) updateGizmos();
 	update();
 }
@@ -553,9 +563,11 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 void Viewport::setAction(Action action) {
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+	if (actionParams.action == LOOPCUT && action != LOOPCUT) { loopCutClearPreview(); }
 	if ((actionParams.action == MERGE && action != MERGE) ||
 		(actionParams.action == COLLAPSE && action != COLLAPSE) ||
-		(actionParams.action == DISSOLVE && action != DISSOLVE)) {
+		(actionParams.action == DISSOLVE && action != DISSOLVE) ||
+		(actionParams.action == LOOPCUT && action != LOOPCUT)) {
 		if (actionParams.action == MERGE) {
 			mergeFirstVertex.reset();
 		}
@@ -598,7 +610,7 @@ void Viewport::setAction(Action action) {
 		disableElementFace();
 		disableElementObject();
 	}
-	else if (action == DISSOLVE) {
+	else if (action == DISSOLVE || action == LOOPCUT) {
 		enableElementEdge();
 		disableElementVertex();
 		disableElementFace();
@@ -1913,8 +1925,8 @@ void Viewport::knifeRecompute() {
 
 	if (path.size() >= 2) {
 		KnifeCamera camera;
-		//camera.viewProj = renderer.ViewProjection();
-		//camera.position = renderer.GetCamera()->position();
+		camera.viewProj = renderer.ViewProjection();
+		camera.position = renderer.GetCamera()->position();
 
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
@@ -1924,8 +1936,9 @@ void Viewport::knifeRecompute() {
 		}
 	}
 
-	makeCurrent();
-	//renderer.UpdateRenderBuffers(scene);
+	// The cut (or the restore) changes topology and element ids
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
 }
 
 void Viewport::knifeFinish() {
@@ -1938,8 +1951,9 @@ void Viewport::knifeFinish() {
 	knifeOccluders = KnifeOccluders();
 
 	if (renderer.Initialized()) {
-		makeCurrent();
-		//updateSelectionVisuals();
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+		updateGizmos();
 	}
 }
 
@@ -1951,11 +1965,11 @@ void Viewport::knifeConfirm() {
 	knifeRecompute();
 
 	// Same tool, next cut starts from the result
-	//knifeBegin();
+	knifeBegin();
 
-	//makeCurrent();
-	//updateSelectionVisuals();
-	//update();
+	renderer.UpdateSelection(selectionManager);
+	updateGizmos();
+	update();
 }
 
 bool Viewport::knifeCancel() {
@@ -1996,6 +2010,99 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 	QString hint = "Knife: click to cut, Enter to confirm, Esc to cancel, X cut through: ";
 	hint += knifeCutThrough ? "on" : "off";
 	if (knifeOriginals.empty()) { hint += "   (select a mesh to cut)"; }
+	painter.drawText(QPointF(12.0, 20.0), hint);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Loop Cut ------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+void Viewport::loopCutClearPreview() {
+	loopCutHover = Vec2u(MAX_UINT, MAX_UINT);
+	loopCutSegments.clear();
+	loopCutPoints.clear();
+}
+
+void Viewport::loopCutUpdatePreview(const Vec2u& selectionIds) {
+	loopCutClearPreview();
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) { return; }
+
+	loopCutHover = selectionIds;
+	HalfEdgeMesh& mesh = *scene[meshId];
+	HalfEdgeMeshLoopCutter cutter(mesh);
+	cutter.Preview(edgeId, loopCutCount, loopCutSegments, loopCutPoints);
+
+	// The preview is kept in world space and projected when drawn, so it follows the camera
+	for (auto& segment : loopCutSegments) {
+		segment.first = mesh.LocalPosToWorldPos(segment.first);
+		segment.second = mesh.LocalPosToWorldPos(segment.second);
+	}
+	for (Vec3f& point : loopCutPoints) { point = mesh.LocalPosToWorldPos(point); }
+}
+
+void Viewport::handleLoopCutClick(const Vec2u& selectionIds) {
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
+	if (meshId == MAX_UINT || edgeId == MAX_UINT ||
+		meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	HalfEdgeMeshLoopCutter cutter(*scene[meshId]);
+	if (!cutter.Cut(edgeId, loopCutCount)) {
+		std::cout << "Loop cut rejected: " << cutter.error << std::endl;
+		return;
+	}
+
+	std::cout << "Loop cut through edge " << edgeId << " on mesh " << meshId
+		<< " (" << loopCutCount << " cut" << (loopCutCount == 1 ? "" : "s") << ")" << std::endl;
+	loopCutClearPreview();
+	selectionManager.clearSelection();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::changeLoopCutCount(int delta) {
+	const int count = std::clamp(static_cast<int>(loopCutCount) + delta, 1, 64);
+	if (static_cast<uint>(count) == loopCutCount) { return; }
+	loopCutCount = static_cast<uint>(count);
+	if (loopCutHover.x != MAX_UINT) { loopCutUpdatePreview(loopCutHover); }
+	update();
+}
+
+void Viewport::drawLoopCutOverlay(QPainter& painter) {
+	// World -> widget pixels. Points behind the camera or past the far plane are skipped.
+	auto project = [this](const Vec3f& world, QPointF& out) {
+		const Vec3f ndc = renderer.CanonicalVolumePos(world);
+		if (!(ndc.z >= -1.0f && ndc.z <= 1.0f)) { return false; }
+		out = QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
+		return true;
+	};
+
+	const QColor color(255, 220, 60);
+	painter.setPen(QPen(color, 2.0));
+	for (const auto& segment : loopCutSegments) {
+		QPointF a, b;
+		if (project(segment.first, a) && project(segment.second, b)) { painter.drawLine(a, b); }
+	}
+
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(color);
+	for (const Vec3f& point : loopCutPoints) {
+		QPointF p;
+		if (project(point, p)) { painter.drawEllipse(p, 3.0, 3.0); }
+	}
+
+	painter.setPen(QColor(255, 255, 255));
+	QString hint = "Loop Cut: click an edge to cut, +/- number of cuts: ";
+	hint += QString::number(loopCutCount);
+	hint += ", Esc to leave";
 	painter.drawText(QPointF(12.0, 20.0), hint);
 }
 

@@ -67,6 +67,30 @@ ABC3D::ABC3D(QWidget *parent)
     rendererModes->setExclusive(true);
     rendererModes->addAction(actionStandardMode);
     rendererModes->addAction(actionSimpleMode);
+    // Search Bar for documents
+    QToolBar* searchToolbar = addToolBar("Search");
+    searchToolbar->setMovable(false);
+
+    QLineEdit* searchBar = new QLineEdit();    
+    searchBar->setPlaceholderText("Search Help Documents");
+    searchBar->setFixedHeight(30);
+    searchBar->setFixedWidth(200);
+    searchBar->setContentsMargins(5, 0, 5, 0);
+    ui.verticalLayout_13->addWidget(searchBar);
+
+    QStringList searchList;
+    searchList << "Beveling" << "Camera Movement" << "Controls" << "Elements" << "Extrusion" 
+        << "Knife Tool" << "Loop Cutting" << "Merging" << "Refinement" << "Scene" 
+        << "Selection" << "Shapes" << "Simple Mode" << "Translation";
+    QCompleter* searchCompleter = new QCompleter(searchList, this);
+
+    searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    searchCompleter->setFilterMode(Qt::MatchContains);
+    searchBar->setCompleter(searchCompleter);
+
+    QObject::connect(searchBar, &QLineEdit::editingFinished, this, [=]() {
+        updateSearchBar(searchBar->text());
+        });
 
     // Connections based on key-presses
     QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
@@ -83,6 +107,7 @@ ABC3D::ABC3D(QWidget *parent)
     });
 
     QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
+    QObject::connect(ui.loopCutToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionLoopCut);
     QObject::connect(ui.mergeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionMerge);
 
     // Pulls up subdivide panel
@@ -351,6 +376,17 @@ ABC3D::ABC3D(QWidget *parent)
         knifeMenu.exec(QCursor::pos());
         });
 
+    QObject::connect(ui.loopCutToolButton, &QPushButton::customContextMenuRequested, ui.loopCutToolButton, [=]() {
+        QMenu loopCutMenu(this);
+        QAction* helpAction = loopCutMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Loop Cut.html"));
+            });
+        loopCutMenu.exec(QCursor::pos());
+        });
+
     QObject::connect(ui.mergeToolButton, &QPushButton::customContextMenuRequested, ui.mergeToolButton, [=]() {
         QMenu mergeMenu(this);
         QAction* helpAction = mergeMenu.addAction("Help");
@@ -441,6 +477,12 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
             }
             break;
         }
+        if (ui.viewport->loopCutActive()) {
+            ui.viewport->setActionSelect();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.selectToolButton->setChecked(true);
+            break;
+        }
         this->close();
         break;
     // Enter - Confirms the knife cut
@@ -462,6 +504,26 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         if (ui.viewport->knifeActive()) {
             event->accept();
             ui.viewport->toggleKnifeCutThrough();
+        }
+        break;
+    // Loop Cut
+    case Qt::Key_L:
+        event->accept();
+        ui.viewport->setActionLoopCut();
+        ui.loopCutToolButton->setChecked(true);
+        break;
+    // Loop cut: more or fewer parallel cuts
+    case Qt::Key_Plus:
+    case Qt::Key_Equal:
+        if (ui.viewport->loopCutActive()) {
+            event->accept();
+            ui.viewport->changeLoopCutCount(1);
+        }
+        break;
+    case Qt::Key_Minus:
+        if (ui.viewport->loopCutActive()) {
+            event->accept();
+            ui.viewport->changeLoopCutCount(-1);
         }
         break;
     // Delete Selction

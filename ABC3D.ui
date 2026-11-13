@@ -123,7 +123,7 @@
          <x>0</x>
          <y>0</y>
          <width>68</width>
-         <height>1225</height>
+         <height>1223</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -721,6 +721,53 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="loopCutToolButton">
+          <property name="minimumSize">
+           <size>
+            <width>58</width>
+            <height>58</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>58</width>
+            <height>58</height>
+           </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Loop Cut Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Hover an edge to preview, click to cut the strip of faces around it. +/- changes the number of cuts.&lt;/p&gt;&lt;p&gt;'L' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">
+												QPushButton:checked { background-color: red; }
+												QPushButton { background-color: #646464; }
+											</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/loop_cut.svg</normaloff>assets/icons/loop_cut.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>58</width>
+            <height>58</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="mergeToolButton">
           <property name="minimumSize">
            <size>
@@ -791,6 +838,7 @@
        <zorder>bevelToolButton</zorder>
        <zorder>cameraToolButton</zorder>
        <zorder>knifeToolButton</zorder>
+       <zorder>loopCutToolButton</zorder>
        <zorder>verticalSpacer</zorder>
        <zorder>mergeToolButton</zorder>
       </widget>
@@ -1872,8 +1920,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>286</width>
-                <height>595</height>
+                <width>152</width>
+                <height>222</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -2363,8 +2411,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>288</width>
-                <height>597</height>
+                <width>233</width>
+                <height>454</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -3031,14 +3079,25 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1777</width>
-     <height>21</height>
+     <width>800</width>
+     <height>23</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>500</width>
+     <height>23</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>800</width>
+     <height>23</height>
+    </size>
+   </property>
    <property name="styleSheet">
-    <string notr="true">
-					background-color: #1c1c1c;
-					color: white;
+    <string notr="true">background-color: #1c1c1c;
+color: white;
 				</string>
    </property>
    <widget class="QMenu" name="menuFile">

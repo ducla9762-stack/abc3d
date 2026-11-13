@@ -24,6 +24,7 @@
 #include "sceneFile.h"
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
+#include "MeshLoopCut.h"
 
 inline bool initGlew = true;
 
@@ -133,7 +134,7 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT
 	};
 
 	Element getActiveElement();
@@ -222,6 +223,21 @@ private:
 	void knifeFinish();
 	void drawKnifeOverlay(QPainter& painter);
 	OverlayWidget* knifeOverlay = nullptr;
+
+// ---------------------------------------------------------------------------------------------
+// Loop Cut ------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+	// Hovering an edge previews the cut through its strip of faces. Clicking cuts it.
+	uint loopCutCount = 1;
+	Vec2u loopCutHover = Vec2u(MAX_UINT, MAX_UINT);           // mesh, half-edge under the cursor
+	std::vector<std::pair<Vec3f, Vec3f>> loopCutSegments;     // preview edges, world space
+	std::vector<Vec3f> loopCutPoints;                         // preview vertices, world space
+
+	void loopCutUpdatePreview(const Vec2u& selectionIds);
+	void loopCutClearPreview();
+	void handleLoopCutClick(const Vec2u& selectionIds);
+	void drawLoopCutOverlay(QPainter& painter);
 
 // ---------------------------------------------------------------------------------------------
 // Core OpenGL ---------------------------------------------------------------------------------
@@ -542,6 +558,17 @@ public slots:
 		emit elementChanged(EDGE);
 		setAction(DISSOLVE);
 	}
+	void setActionLoopCut() {
+		setActiveElement(EDGE);
+		elementButtons[1]->setChecked(true);
+		emit elementChanged(EDGE);
+		setAction(LOOPCUT);
+	}
+
+	/// <returns>True while the loop cut tool is the active tool.</returns>
+	bool loopCutActive() const { return actionParams.action == LOOPCUT; }
+	/// <summary>Changes how many parallel cuts the loop cut makes (at least 1).</summary>
+	void changeLoopCutCount(int delta);
 
 	/// <returns>True while the knife tool is the active tool.</returns>
 	bool knifeActive() const { return actionParams.action == KNIFE; }
@@ -563,7 +590,7 @@ public slots:
 	// Vertex Element
 	void setElementVertex() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -600,7 +627,7 @@ public slots:
 	// Face Element
 	void setElementFace() {
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -619,7 +646,7 @@ public slots:
 	// Object Element
 	void setElementObject() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
-			actionParams.action == DISSOLVE) { return; }
+			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
 		setActiveElement(OBJECT); 
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
