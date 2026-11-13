@@ -67,6 +67,35 @@ Viewport::Viewport(QWidget *parent)
 		else { drawKnifeOverlay(painter); }
 	};
 	knifeOverlay->hide();
+
+	// AI-generated code: Draws a mouse-transparent border overlay separating the four simple-mode quadrants.
+	simpleModeBorderOverlay = new OverlayWidget(this);
+	simpleModeBorderOverlay->draw = [this](QPainter& painter) {
+		QPen borderPen(QColor(210, 210, 210, 200));
+		borderPen.setWidth(2);
+		painter.setPen(borderPen);
+
+		const qreal right = width() - 1.0;
+		const qreal bottom = height() - 1.0;
+		const qreal centerX = width() / 2.0;
+		const qreal centerY = height() / 2.0;
+		painter.drawRect(QRectF(1.0, 1.0, right - 1.0, bottom - 1.0));
+		painter.drawLine(QPointF(centerX, 1.0), QPointF(centerX, bottom));
+		painter.drawLine(QPointF(1.0, centerY), QPointF(right, centerY));
+	};
+	simpleModeBorderOverlay->hide();
+
+	const QString labelText[4] = { "X Axis", "Perspective", "Y Axis", "Z Axis" };
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i] = new QLabel(labelText[i], this);
+		simpleModeLabels[i]->setAttribute(Qt::WA_TransparentForMouseEvents);
+		simpleModeLabels[i]->setStyleSheet(
+			"QLabel { color: white; background-color: rgba(0, 0, 0, 160); "
+			"padding: 4px 8px; border-radius: 3px; font-weight: bold; }"
+		);
+		simpleModeLabels[i]->adjustSize();
+		simpleModeLabels[i]->hide();
+	}
 }
 
 Viewport::~Viewport()
@@ -535,6 +564,25 @@ void Viewport::resizeEvent(QResizeEvent* event) {
 		int x = Y_PADDING * (i + 1) + 64 * i;
 		int y = this->height() - 1 - Y_PADDING - 64;
 		elementButtons[i]->move(x, y);
+	}
+
+	updateSimpleModeLabels();
+}
+
+void Viewport::updateSimpleModeLabels() {
+	const int rightX = width() / 2 + 8;
+	const int bottomY = height() / 2 + 8;
+	const QPoint positions[4] = {
+		QPoint(8, 8),
+		QPoint(rightX, 8),
+		QPoint(8, bottomY),
+		QPoint(rightX, bottomY)
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i]->move(positions[i]);
+		simpleModeLabels[i]->setVisible(simpleMode);
+		if (simpleMode) { simpleModeLabels[i]->raise(); }
 	}
 }
 

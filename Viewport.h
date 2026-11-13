@@ -6,6 +6,7 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QLabel>
 #include <QMenu>
 #include <QImage>
 #include <QPainter>
@@ -167,6 +168,7 @@ private:
 
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
+	QLabel* simpleModeLabels[4] = {};
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
 	// AI-generated code: Stores the alternate compositor and the active rendering mode.
@@ -227,6 +229,8 @@ private:
 	void knifeFinish();
 	void drawKnifeOverlay(QPainter& painter);
 	OverlayWidget* knifeOverlay = nullptr;
+	// AI-generated code: Stores the overlay used to visually divide the simple-mode quadrants.
+	OverlayWidget* simpleModeBorderOverlay = nullptr;
 
 // ---------------------------------------------------------------------------------------------
 // Loop Cut ------------------------------------------------------------------------------------
@@ -306,6 +310,7 @@ private:
 		renderer.SetViewProjection(camera.view, camera.projection, camera.gizmoFov);
 		drawViewport(targetFramebuffer);
 	}
+	void updateSimpleModeLabels();
 
 	void paintGL() override {
 		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
@@ -326,7 +331,16 @@ private:
 			renderer.RestoreCameraViewProjection();
 			drawViewport(defaultFramebufferObject());
 		}
+		if (simpleModeBorderOverlay) {
+			simpleModeBorderOverlay->setGeometry(rect());
+			simpleModeBorderOverlay->raise();
+			simpleModeBorderOverlay->setVisible(simpleMode);
+			simpleModeBorderOverlay->update();
+		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+		if (simpleMode) {
+			for (QLabel* label : simpleModeLabels) { label->raise(); }
+		}
 	}
 
 	void resizeGL(int w, int h) override { 
@@ -506,6 +520,7 @@ public slots:
 		}
 		if (simpleMode == enabled) return;
 		simpleMode = enabled;
+		updateSimpleModeLabels();
 		emit simpleModeChanged(simpleMode);
 		update();
 	}
