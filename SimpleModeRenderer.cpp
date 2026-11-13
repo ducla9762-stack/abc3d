@@ -85,18 +85,17 @@ void SimpleModeRenderer::UpdateCameras(const CameraView& perspective, const Vec3
 	const Matrix4f orthographic = OrthographicProjection(halfHeight, aspect, 0.1f, farPlane);
 	const float orthographicGizmoFov = radiansToDegrees(2.0f * std::atan(halfHeight));
 
-	const Vec3f positions[3] = {
-		target + WORLD_X * cameraDistance,
-		target + WORLD_Y * cameraDistance,
-		target + WORLD_Z * cameraDistance
-	};
+	const Vec3f cameraAxes[3] = { WORLD_X, WORLD_Y, WORLD_Z };
 	const Vec3f upVectors[3] = { WORLD_Y, -WORLD_Z, WORLD_Y };
 	const Vec3f gridAxesU[3] = { WORLD_Y, WORLD_X, WORLD_X };
 	const Vec3f gridAxesV[3] = { WORLD_Z, WORLD_Z, WORLD_Y };
 
 	for (uint i = 0; i < 3; ++i) {
-		cameras[i + 1].view.SetView(positions[i], target, upVectors[i]);
+		const float direction = axisViewNegated[i] ? -1.0f : 1.0f;
+		const Vec3f position = target + cameraAxes[i] * (cameraDistance * direction);
+		cameras[i + 1].view.SetView(position, target, upVectors[i]);
 		cameras[i + 1].projection = orthographic;
+		if (axisViewNegated[i]) cameras[i + 1].projection.cell[0] *= -1.0f;
 		cameras[i + 1].gizmoFov = orthographicGizmoFov;
 		cameras[i + 1].gridAxisU = gridAxesU[i];
 		cameras[i + 1].gridAxisV = gridAxesV[i];

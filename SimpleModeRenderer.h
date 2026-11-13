@@ -30,6 +30,7 @@ private:
 	int width = 0;
 	int height = 0;
 	std::array<CameraView, 4> cameras;
+	std::array<bool, 3> axisViewNegated = {};
 	uint activeCamera = 0;
 
 	bool EnsureFramebuffer(int newWidth, int newHeight);
@@ -46,6 +47,12 @@ public:
 	Vec2u MapPixelToSource(const Vec2u& pixel) const;
 	bool IsPerspectivePixel(const Vec2u& pixel) const {
 		return width <= 0 || height <= 0 || CameraIndexAt(pixel) == 0;
+	}
+	void ToggleAxisView(uint axisIndex) {
+		if (axisIndex < axisViewNegated.size()) axisViewNegated[axisIndex] = !axisViewNegated[axisIndex];
+	}
+	bool AxisViewNegated(uint axisIndex) const {
+		return axisIndex < axisViewNegated.size() && axisViewNegated[axisIndex];
 	}
 	const CameraView& ActiveCamera() const { return cameras[activeCamera]; }
 };

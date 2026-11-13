@@ -6,7 +6,6 @@
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
-#include <QLabel>
 #include <QMenu>
 #include <QImage>
 #include <QPainter>
@@ -168,7 +167,7 @@ private:
 
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
-	QLabel* simpleModeLabels[4] = {};
+	QPushButton* simpleModeLabels[4] = {};
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
 	// AI-generated code: Stores the alternate compositor and the active rendering mode.
@@ -329,6 +328,7 @@ private:
 		}
 	}
 	void updateSimpleModeLabels();
+	void toggleSimpleModeAxisView(uint axisIndex);
 
 	void paintGL() override {
 		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
@@ -360,7 +360,7 @@ private:
 		}
 		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
 		if (simpleMode) {
-			for (QLabel* label : simpleModeLabels) { label->raise(); }
+			for (QPushButton* label : simpleModeLabels) { label->raise(); }
 		}
 	}
 

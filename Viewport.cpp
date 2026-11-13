@@ -85,17 +85,28 @@ Viewport::Viewport(QWidget *parent)
 	};
 	simpleModeBorderOverlay->hide();
 
-	const QString labelText[4] = { "X Axis", "Perspective", "Y Axis", "Z Axis" };
+	const QString labelText[4] = { "Side", "Perspective", "Top", "Front" };
 	for (int i = 0; i < 4; ++i) {
-		simpleModeLabels[i] = new QLabel(labelText[i], this);
-		simpleModeLabels[i]->setAttribute(Qt::WA_TransparentForMouseEvents);
+		simpleModeLabels[i] = new QPushButton(labelText[i], this);
+		simpleModeLabels[i]->setFocusPolicy(Qt::NoFocus);
 		simpleModeLabels[i]->setStyleSheet(
-			"QLabel { color: white; background-color: rgba(0, 0, 0, 160); "
-			"padding: 4px 8px; border-radius: 3px; font-weight: bold; }"
+			"QPushButton { color: white; background-color: rgba(0, 0, 0, 160); border: none; "
+			"padding: 4px 8px; border-radius: 3px; font-weight: bold; } "
+			"QPushButton:hover { background-color: rgba(70, 70, 70, 210); } "
+			"QPushButton:pressed { background-color: rgba(100, 100, 100, 230); }"
 		);
 		simpleModeLabels[i]->adjustSize();
 		simpleModeLabels[i]->hide();
 	}
+
+	simpleModeLabels[1]->setAttribute(Qt::WA_TransparentForMouseEvents);
+	for (int index : { 0, 2, 3 }) {
+		simpleModeLabels[index]->setCursor(Qt::PointingHandCursor);
+		simpleModeLabels[index]->setToolTip("Click to view the opposite side");
+	}
+	QObject::connect(simpleModeLabels[0], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(0); });
+	QObject::connect(simpleModeLabels[2], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(1); });
+	QObject::connect(simpleModeLabels[3], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(2); });
 }
 
 Viewport::~Viewport()
@@ -584,6 +595,23 @@ void Viewport::updateSimpleModeLabels() {
 		simpleModeLabels[i]->setVisible(simpleMode);
 		if (simpleMode) { simpleModeLabels[i]->raise(); }
 	}
+}
+
+void Viewport::toggleSimpleModeAxisView(uint axisIndex) {
+	simpleModeRenderer.ToggleAxisView(axisIndex);
+	const bool negated = simpleModeRenderer.AxisViewNegated(axisIndex);
+
+	switch (axisIndex) {
+	case 0: simpleModeLabels[0]->setText(negated ? "Opposite Side" : "Side"); break;
+	case 1: simpleModeLabels[2]->setText(negated ? "Bottom" : "Top"); break;
+	case 2: simpleModeLabels[3]->setText(negated ? "Back" : "Front"); break;
+	default: return;
+	}
+
+	const int labelIndex = axisIndex == 0 ? 0 : static_cast<int>(axisIndex + 1);
+	simpleModeLabels[labelIndex]->adjustSize();
+	updateSimpleModeLabels();
+	update();
 }
 
 void Viewport::leaveEvent(QEvent* event) {
