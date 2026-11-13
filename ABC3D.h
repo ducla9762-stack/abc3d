@@ -60,6 +60,7 @@ private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
+    // AI-generated code: Routes the rendering-mode actions to the viewport.
     void showStandardMode() { ui.viewport->setSimpleMode(false); }
     void showSimpleMode() { ui.viewport->setSimpleMode(true); }
 

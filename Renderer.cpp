@@ -164,6 +164,7 @@ void ABC3DRenderer::DrawGizmos(GLuint defaultFramebuffer) {
 	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
 }
 
+// AI-generated code: Uploads a temporary camera for a simple-mode quadrant and restores the regular camera afterward.
 void ABC3DRenderer::SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov) {
 	customViewProjection = true;
 	transform.view = view;

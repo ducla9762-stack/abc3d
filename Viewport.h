@@ -15,6 +15,7 @@
 #include <algorithm>
 
 #include "renderer.h"
+// AI-generated code: Integrates the simple-mode multi-camera compositor with the viewport.
 #include "SimpleModeRenderer.h"
 #include "helper.h"
 #include "mesh.h"
@@ -128,6 +129,9 @@ signals:
 	void elementChanged(Element element);
 	void meshCountChanged(uint meshCount);
 	void selectionChanged(int index);
+	// AI-generated code: Keeps the main-window mode actions synchronized with the viewport.
+	void simpleModeChanged(bool enabled);
+	void orbitCameraActivated();
 
 public:
 
@@ -165,6 +169,7 @@ private:
 	QPushButton* elementButtons[4];
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
+	// AI-generated code: Stores the alternate compositor and the active rendering mode.
 	SimpleModeRenderer simpleModeRenderer;
 	bool simpleMode = false;
 	IconRenderer iconRenderer;
@@ -244,6 +249,7 @@ private:
 
 	void initializeGL() override;
 
+	// AI-generated code: Builds and draws camera descriptions used by the simple-mode quadrants.
 	SimpleModeRenderer::CameraView perspectiveCameraView() {
 		SimpleModeRenderer::CameraView camera;
 		camera.view = renderer.GetCamera()->transform();
@@ -258,6 +264,7 @@ private:
 		return camera;
 	}
 
+	// AI-generated code: Draws the standard viewport contents into a caller-selected framebuffer.
 	void drawViewport(GLuint targetFramebuffer) {
 		renderer.Draw(targetFramebuffer);
 		if (scene.ReferenceImageCount() != 0) {
@@ -303,6 +310,7 @@ private:
 	void paintGL() override {
 		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
 		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+		// AI-generated code: Selects the four-camera compositor or restores the standard camera path.
 		if (simpleMode) {
 			simpleModeRenderer.Draw(
 				defaultFramebufferObject(), pixelWidth, pixelHeight,
@@ -417,6 +425,7 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
+	// AI-generated code: Separates displayed quadrant coordinates from renderer-buffer coordinates.
 	Vec2u displayPixelFromLogical(const Vec2f& logicalPos) const {
 		const float dpr = static_cast<float>(devicePixelRatio());
 		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
@@ -432,6 +441,7 @@ private:
 		const Vec2u pixel = displayPixelFromLogical(logicalPos);
 		if (!simpleMode) return pixel;
 
+		// AI-generated code: Renders the pointed-at quadrant's picking buffers and remaps its coordinates.
 		makeCurrent();
 		simpleModeRenderer.PreparePicking(
 			pixel, pixelWidth, pixelHeight,
@@ -484,9 +494,19 @@ public:
 	~Viewport();
 
 public slots:
+	// AI-generated code: Switches between standard and simple viewport rendering.
 	void setSimpleMode(bool enabled) {
+		// AI-generated code: Entering simple mode from free-camera mode resets to an origin-centered orbit camera.
+		if (enabled && renderer.GetActiveCamType() != CameraType::ORBIT) {
+			const Vec3f origin(0.0f);
+			renderer.setOrbitOrigin(origin);
+			emit primaryCamParamChanged(origin);
+			emit orbitCameraActivated();
+			knifeRecompute();
+		}
 		if (simpleMode == enabled) return;
 		simpleMode = enabled;
+		emit simpleModeChanged(simpleMode);
 		update();
 	}
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
@@ -1323,6 +1343,8 @@ public slots:
 
 	void setCameraModeFree() { 
 		//std::cout << renderer.getCameraPosition() << std::endl;
+		// AI-generated code: Free-camera navigation always uses the standard single viewport.
+		if (simpleMode) setSimpleMode(false);
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); 
 		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
 	}

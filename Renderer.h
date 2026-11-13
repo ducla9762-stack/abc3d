@@ -883,6 +883,7 @@ class ABC3DRenderer {
 	} blends;
 
 	bool initialized = false;
+	// AI-generated code: Tracks temporary view/projection overrides used by simple mode.
 	bool customViewProjection = false;
 	uint meshVertDrawCount;
 	uint maxObjectCount = 64; //hard coded for now
@@ -906,6 +907,7 @@ public:
 	void Resize(int width, int height, GLuint defaultFrameBuffer);
 	void Draw(GLuint defaultFramebuffer);
 	void DrawGizmos(GLuint defaultFramebuffer);
+	// AI-generated code: Allows simple mode to render through this renderer with an external camera.
 	void SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov);
 	void RestoreCameraViewProjection();
 
@@ -1044,12 +1046,18 @@ public:
 	}
 
 	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
+	// AI-generated code: Exposes the focus and active view basis needed by simple-mode cameras and tools.
 	Vec3f GetCameraTarget() const { return cam.type == ORBIT ? cam.orbit.getOrigin() : cam.free.target(); }
 	void GetActiveViewDirections(Vec3f& forward, Vec3f& up, Vec3f& right) const {
 		const Matrix4f cameraTransform = transform.view.GetInverse();
-		right = Vec3f(cameraTransform.Column(0));
-		up = Vec3f(cameraTransform.Column(1));
 		forward = -Vec3f(cameraTransform.Column(2));
+		const Vec3f cameraUp(cameraTransform.Column(1));
+
+		// AI-generated code: Match Camera::directions() handedness so existing
+		// gizmo drag signs remain unchanged for every quadrant. The camera's own
+		// up vector also keeps this basis valid for the Y-axis orthographic view.
+		right = cameraUp.Cross(forward);
+		up = right.Cross(forward);
 		right.Normalize();
 		up.Normalize();
 		forward.Normalize();

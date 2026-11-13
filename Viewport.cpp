@@ -479,6 +479,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// If no action performed and no gizmo was captured, move the camera. A
 	// captured gizmo must keep ownership of the drag even when its projected
 	// axis is degenerate from the current camera angle.
+	// AI-generated code: Camera navigation belongs only to simple mode's perspective quadrant.
 	const bool perspectiveNavigation = !simpleMode ||
 		simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos));
 	if (!actionPerformed && !draggingGizmo && perspectiveNavigation) {
@@ -501,6 +502,7 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	// Accept event and get change in wheel
 	event->accept();
 	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+	// AI-generated code: Prevents orthographic quadrants from changing the perspective camera.
 	if (simpleMode && !simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos))) {
 		return;
 	}
@@ -851,6 +853,7 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 	renderer.GetActiveViewDirections(f, u, r);
 
 	const float SCALE = 0.01f;
@@ -1046,6 +1049,7 @@ bool Viewport::translateEdgeDrag() {
 
 	if (mouseAction.firstMoveEvent) {
 		Vec3f forward, up, right;
+		// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 		renderer.GetActiveViewDirections(forward, up, right);
 
 		// Mouse positions are converted to a bottom-left origin in the Qt event
@@ -1319,6 +1323,7 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 	renderer.GetActiveViewDirections(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
@@ -1384,6 +1389,7 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 	renderer.GetActiveViewDirections(forward, up, right);
 	Vec3f screenTangent = draggedRotationAxis.Cross(forward);
 	if (screenTangent.LengthSquared() <= 1e-8f) {
@@ -1453,6 +1459,7 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
@@ -1556,6 +1563,7 @@ bool Viewport::scaleGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
 	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
