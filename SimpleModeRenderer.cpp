@@ -91,11 +91,16 @@ void SimpleModeRenderer::UpdateCameras(const CameraView& perspective, const Vec3
 		target + WORLD_Z * cameraDistance
 	};
 	const Vec3f upVectors[3] = { WORLD_Y, -WORLD_Z, WORLD_Y };
+	const Vec3f gridAxesU[3] = { WORLD_Y, WORLD_X, WORLD_X };
+	const Vec3f gridAxesV[3] = { WORLD_Z, WORLD_Z, WORLD_Y };
 
 	for (uint i = 0; i < 3; ++i) {
 		cameras[i + 1].view.SetView(positions[i], target, upVectors[i]);
 		cameras[i + 1].projection = orthographic;
 		cameras[i + 1].gizmoFov = orthographicGizmoFov;
+		cameras[i + 1].gridAxisU = gridAxesU[i];
+		cameras[i + 1].gridAxisV = gridAxesV[i];
+		cameras[i + 1].wireframeOnly = true;
 	}
 }
 

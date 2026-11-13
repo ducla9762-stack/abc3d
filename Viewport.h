@@ -307,8 +307,26 @@ private:
 	}
 
 	void drawCameraView(GLuint targetFramebuffer, const SimpleModeRenderer::CameraView& camera) {
-		renderer.SetViewProjection(camera.view, camera.projection, camera.gizmoFov);
+		const bool showSurfaces = renderer.ShowSurfaces();
+		const bool showEdges = renderer.ShowEdges();
+		const bool showVertices = renderer.ShowVertices();
+
+		renderer.SetViewProjection(
+			camera.view, camera.projection, camera.gizmoFov,
+			camera.gridAxisU, camera.gridAxisV
+		);
+		if (camera.wireframeOnly) {
+			renderer.ShowSurfaces(false);
+			renderer.ShowEdges(true);
+			renderer.ShowVertices(true);
+		}
 		drawViewport(targetFramebuffer);
+
+		if (camera.wireframeOnly) {
+			renderer.ShowSurfaces(showSurfaces);
+			renderer.ShowEdges(showEdges);
+			renderer.ShowVertices(showVertices);
+		}
 	}
 	void updateSimpleModeLabels();
 
@@ -325,7 +343,10 @@ private:
 				}
 			);
 			const SimpleModeRenderer::CameraView& activeCamera = simpleModeRenderer.ActiveCamera();
-			renderer.SetViewProjection(activeCamera.view, activeCamera.projection, activeCamera.gizmoFov);
+			renderer.SetViewProjection(
+				activeCamera.view, activeCamera.projection, activeCamera.gizmoFov,
+				activeCamera.gridAxisU, activeCamera.gridAxisV
+			);
 		}
 		else {
 			renderer.RestoreCameraViewProjection();

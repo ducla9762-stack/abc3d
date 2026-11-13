@@ -725,6 +725,7 @@ public:
 class GridRenderer {
 	GLSLProgram prog;
 	GLuint vao;
+	enum Uniform : uint { MVP, AXIS_U, AXIS_V, AXIS_U_COLOR, AXIS_V_COLOR };
 public:
 	bool Initialize() {
 		glGenVertexArrays(1, &vao);
@@ -736,7 +737,12 @@ public:
 		}
 
 		prog.Bind();
-		prog.RegisterUniform(0, "mvp");
+		prog.RegisterUniform(MVP, "mvp");
+		prog.RegisterUniform(AXIS_U, "axisU");
+		prog.RegisterUniform(AXIS_V, "axisV");
+		prog.RegisterUniform(AXIS_U_COLOR, "axisUColor");
+		prog.RegisterUniform(AXIS_V_COLOR, "axisVColor");
+		SetPlane(WORLD_X, WORLD_Z);
 
 		return true;
 	}
@@ -750,7 +756,17 @@ public:
 
 	void SetTransform(float data [16]) {
 		prog.Bind();
-		prog.SetUniformMatrix4(0, data);
+		prog.SetUniformMatrix4(MVP, data);
+	}
+
+	void SetPlane(const Vec3f& axisU, const Vec3f& axisV) {
+		const Vec3f axisUColor(std::abs(axisU.z), std::abs(axisU.x), std::abs(axisU.y));
+		const Vec3f axisVColor(std::abs(axisV.z), std::abs(axisV.x), std::abs(axisV.y));
+		prog.Bind();
+		prog.SetUniform3(AXIS_U, &axisU.x);
+		prog.SetUniform3(AXIS_V, &axisV.x);
+		prog.SetUniform3(AXIS_U_COLOR, &axisUColor.x);
+		prog.SetUniform3(AXIS_V_COLOR, &axisVColor.x);
 	}
 };
 
@@ -908,7 +924,8 @@ public:
 	void Draw(GLuint defaultFramebuffer);
 	void DrawGizmos(GLuint defaultFramebuffer);
 	// AI-generated code: Allows simple mode to render through this renderer with an external camera.
-	void SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov);
+	void SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov,
+		const Vec3f& gridAxisU = WORLD_X, const Vec3f& gridAxisV = WORLD_Z);
 	void RestoreCameraViewProjection();
 
 private:

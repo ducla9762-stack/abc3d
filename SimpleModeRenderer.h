@@ -16,6 +16,9 @@ public:
 		Matrix4f view;
 		Matrix4f projection;
 		float gizmoFov = 70.0f;
+		Vec3f gridAxisU = WORLD_X;
+		Vec3f gridAxisV = WORLD_Z;
+		bool wireframeOnly = false;
 	};
 
 	using DrawView = std::function<void(GLuint, const CameraView&)>;
