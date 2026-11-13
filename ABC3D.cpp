@@ -85,7 +85,6 @@ ABC3D::ABC3D(QWidget *parent)
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");
     searchBar->setFixedHeight(30);
-    searchBar->setFixedWidth(200);
     searchBar->setContentsMargins(5, 0, 5, 0);
     ui.verticalLayout_13->addWidget(searchBar);
 
