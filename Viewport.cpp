@@ -58,7 +58,7 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
-	selectionManager.setActiveElement(OBJECT);
+	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 
 	knifeOverlay = new OverlayWidget(this);
@@ -263,6 +263,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
 	if (actionParams.action == MERGE) {
@@ -278,6 +279,7 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked
@@ -790,7 +792,7 @@ Element Viewport::getActiveElement() {
 }
 
 void Viewport::setActiveElement(Element element) {
-	selectionManager.setActiveElement(element);
+	selectionManager.setActiveElement(element, scene);
 
 	if (element == VERTEX) {
 		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }

@@ -14,6 +14,8 @@
 #include <QWidgetAction>
 #include <QToolBar>
 #include <QCompleter>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -37,6 +39,8 @@ private:
     QStandardItemModel* sceneModel;
     QModelIndex sceneModelIndex;
 
+    QGamepadManager* controllerManager = QGamepadManager::instance();
+  
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -171,5 +175,6 @@ signals:
     void deleteKeyPressed();
     void ctrlKeyPressed();
     void ctrlKeyReleased();
+    void cameraKeyPressed(uint8_t axis);
 };
 

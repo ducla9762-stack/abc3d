@@ -1007,6 +1007,12 @@ public:
 		update.camera = true;
 	}
 
+	void keyPress(uint8_t axis) {
+		if (cam.type == ORBIT) { cam.orbit.keyPress(axis); }
+		else { cam.free.keyPress(axis); }
+		update.camera = true;
+	}
+
 	CameraType GetActiveCamType() const { return cam.type; }
 
 	void setCameraPosition(const Vec3f& pos) {

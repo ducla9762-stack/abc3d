@@ -12,7 +12,6 @@
 #include <functional>
 #include <optional>
 #include <unordered_map>
-
 #include <algorithm>
 
 #include "renderer.h"
@@ -961,6 +960,10 @@ public slots:
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces, "UV Sphere");
+	}
+
+	void cameraKeyPress(uint8_t axis) {
+		renderer.keyPress(axis);
 	}
 
 	/// <summary>
