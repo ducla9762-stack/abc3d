@@ -61,7 +61,7 @@ Viewport::Viewport(QWidget *parent)
 	
 	InsetBuilder ss(*scene[0]);
 	std::vector<uint> newVerts;
-	ss.FullInset(0, newVerts);
+	ss.Inset(0, 0.5f);
 
 	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
