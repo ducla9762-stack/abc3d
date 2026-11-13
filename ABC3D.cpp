@@ -60,10 +60,6 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
-    // Search Bar for documents
-    QToolBar* searchToolbar = addToolBar("Search");
-    searchToolbar->setMovable(false);
-
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");
     searchBar->setFixedHeight(30);
@@ -415,6 +411,12 @@ ABC3D::ABC3D(QWidget *parent)
     for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
         createSceneButton(i, "Cube");
     }
+
+    // Wait for the main application to process so it registers the controller
+    for (int i = 0; i < 10 && controllerManager->connectedGamepads().isEmpty(); i++) {
+        QCoreApplication::processEvents();
+    }
+    const QList<int> devices = controllerManager->connectedGamepads();
 
     // Controller Connections
     if (!devices.isEmpty()) {

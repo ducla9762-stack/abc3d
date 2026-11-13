@@ -123,7 +123,7 @@
          <x>0</x>
          <y>0</y>
          <width>68</width>
-         <height>1223</height>
+         <height>1214</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -935,7 +935,7 @@
 										</string>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="helpPanel">
           <property name="styleSheet">
@@ -3022,25 +3022,32 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>23</height>
+     <width>1777</width>
+     <height>32</height>
     </rect>
    </property>
    <property name="minimumSize">
     <size>
      <width>500</width>
-     <height>23</height>
+     <height>32</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>800</width>
-     <height>23</height>
+     <width>16777215</width>
+     <height>32</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
    <property name="styleSheet">
-    <string notr="true">background-color: #1c1c1c;
-color: white;
+    <string notr="true">QMenuBar {background-color: #1c1c1c; color: white; padding-top: 5px; }
+
+QMenuBar::item::selected { background-color: red; }
+
 				</string>
    </property>
    <widget class="QMenu" name="menuFile">

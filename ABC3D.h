@@ -39,7 +39,6 @@ private:
     QModelIndex sceneModelIndex;
 
     QGamepadManager* controllerManager = QGamepadManager::instance();
-    const QList<int> devices = controllerManager->connectedGamepads();
   
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
