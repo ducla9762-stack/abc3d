@@ -48,6 +48,11 @@ public:
 	bool IsPerspectivePixel(const Vec2u& pixel) const {
 		return width <= 0 || height <= 0 || CameraIndexAt(pixel) == 0;
 	}
+	bool AllowsTranslationAxis(const Vec2u& pixel, uint axis) const {
+		if (axis >= 3 || width <= 0 || height <= 0) return true;
+		const uint cameraIndex = CameraIndexAt(pixel);
+		return cameraIndex == 0 || axis != cameraIndex - 1;
+	}
 	void ToggleAxisView(uint axisIndex) {
 		if (axisIndex < axisViewNegated.size()) axisViewNegated[axisIndex] = !axisViewNegated[axisIndex];
 	}

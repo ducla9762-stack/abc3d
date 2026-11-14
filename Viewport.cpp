@@ -278,6 +278,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -286,7 +287,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
 		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
 		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const bool gizmoHit =
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, ids.z);
+	const bool gizmoHit = translationAxisAllowed &&
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
@@ -1934,6 +1937,7 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -1943,14 +1947,18 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 		(actionParams.action == TRANSLATE_AXIS && (gizmoIds.y == 0 || gizmoIds.y == 4)) ||
 		(actionParams.action == SCALE && (gizmoIds.y == 1 || gizmoIds.y == 4)) ||
 		(actionParams.action == ROTATE && (gizmoIds.y == 2 || gizmoIds.y == 4));
-	const uint newHoveredAxis = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, gizmoIds.z);
+	const uint newHoveredAxis = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3)
 		? gizmoIds.z : MAX_UINT;
 	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
 	hoveredGizmoAxis = newHoveredAxis;
 	if (gizmoChanged) { updateGizmos(); }
 
-	const bool gizmoHit = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool gizmoHit = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3);
 	const Vec2u selectionIds = gizmoHit
 		? Vec2u(MAX_UINT)
