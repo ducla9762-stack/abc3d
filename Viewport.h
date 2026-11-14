@@ -135,7 +135,8 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT,
+		INSET, ROOF_EXTRUDE
 	};
 
 	Element getActiveElement();
@@ -171,6 +172,7 @@ private:
 	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
+	InsetBuilder* insetter;
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
@@ -323,6 +325,10 @@ private:
 	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
+	void setupInsetDrag();
+	bool insetDrag();
+	void setupRoofExtrudeDrag();
+	bool roofExtrudeDrag();
 	void extrudeSelectedElements();
 	bool extrudeDrag();
 	bool scaleDrag();
@@ -502,6 +508,9 @@ public slots:
 		emit elementChanged(EDGE);
 		setAction(LOOPCUT);
 	}
+
+	void setActionInset() { setAction(INSET); }
+	void setActionRoofExtrude() { setAction(ROOF_EXTRUDE); }
 
 	/// <returns>True while the loop cut tool is the active tool.</returns>
 	bool loopCutActive() const { return actionParams.action == LOOPCUT; }
@@ -683,10 +692,6 @@ public slots:
 				scene[mesh]->tessellateFaces(meshMap[mesh]);
 			}
 		}
-
-		makeCurrent();
-		/*renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();*/
 
 		// 10/16/26 - Update to public API.
 		renderer.UpdateGeometry();

@@ -61,7 +61,7 @@ Viewport::Viewport(QWidget *parent)
 	
 	InsetBuilder ss(*scene[0]);
 	std::vector<uint> newVerts;
-	ss.Inset(0, 0.5f);
+	//ss.Inset(0, 0.5f);
 
 	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
@@ -328,6 +328,21 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		update();
 		return;
 	}
+	else {
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+	}
+
+	if (actionParams.action == INSET && mouseAction.dragged && insetter) {
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+		insetter->EndInset(factor);
+		renderer.UpdateGeometry();
+		delete insetter;
+		insetter = nullptr;
+		update();
+		return;
+	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
 	const Vec2u pixel = physicalPixelFromLogical(pos);
@@ -473,6 +488,12 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		break;
 	case BEVEL:
 		actionPerformed = bevelDrag();
+		break;
+	case INSET:
+		actionPerformed = insetDrag();
+		break;
+	case ROOF_EXTRUDE:
+		actionPerformed = roofExtrudeDrag();
 		break;
 	default:
 		//updateRenderBuffers = false;
@@ -1157,6 +1178,105 @@ bool Viewport::bevelDrag() {
 	factor = std::min(factor, 0.25f) / 0.25f;
 
 	beveler->AdjustBevel(factor);
+
+	renderer.UpdateGeometry();
+
+	return true;
+}
+
+bool Viewport::roofExtrudeDrag() {
+	Element activeElm = selectionManager.getActiveElement();
+	// object included in statement temporarily
+	if (activeElm == VERTEX || activeElm == EDGE || activeElm == OBJECT) { return false; }
+	if (selectionManager.getSelectedItems().empty()) { return false; }
+
+	if (mouseAction.firstMoveEvent) {
+		setupRoofExtrudeDrag();
+		return true;
+	}
+
+	if (!insetter) { return false; }
+
+	translateActionElements();
+
+	renderer.UpdateGeometry();
+
+	return true;
+}
+
+void Viewport::setupRoofExtrudeDrag() {
+	if (insetter) { delete insetter; }
+
+	/*Vec2u pixel = physicalPixelFromLogical(mouseAction.mouseDragStartPos);
+	Vec2u ids;
+	bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
+	if (hit && ids.x < scene.MeshCount()) {
+
+	}*/
+
+	uint meshId = selectionManager.getSelectedItems()[0].meshId;
+	if (meshId >= scene.MeshCount()) { return; }
+
+	insetter = new InsetBuilder(*scene[meshId]);
+
+	std::vector<uint> elements;
+	elements.reserve(selectionManager.getSelectedItems().size());
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId != meshId) { continue; }
+		elements.push_back(item.componentId);
+	}
+
+	actionParams.mesh = meshId;
+	actionParams.elementType = VERTEX;
+	insetter->FullInset(elements, actionParams.elements, actionParams.dirs);
+
+	renderer.UpdateGeometry();
+}
+
+void Viewport::setupInsetDrag() {
+	if (insetter) { delete insetter; }
+
+	/*Vec2u pixel = physicalPixelFromLogical(mouseAction.mouseDragStartPos);
+	Vec2u ids;
+	bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
+	if (hit && ids.x < scene.MeshCount()) {
+
+	}*/
+
+	uint meshId = selectionManager.getSelectedItems()[0].meshId;
+	if (meshId >= scene.MeshCount()) { return; }
+
+	insetter = new InsetBuilder(*scene[meshId]);
+
+	std::vector<uint> elements;
+	elements.reserve(selectionManager.getSelectedItems().size());
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId != meshId) { continue; }
+		elements.push_back(item.componentId);
+	}
+
+	insetter->StartInset(elements);
+}
+
+bool Viewport::insetDrag() {
+	Element activeElm = selectionManager.getActiveElement();
+	// object included in statement temporarily
+	if (activeElm == VERTEX || activeElm == EDGE || activeElm == OBJECT) { return false; }
+	if (selectionManager.getSelectedItems().empty()) { return false; }
+
+	if (mouseAction.firstMoveEvent) {
+		setupInsetDrag();
+		return true;
+	}
+
+	if (!insetter) { return false; }
+
+	float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+	factor = std::min(factor, 0.25f) / 0.25f;
+
+	insetter->PreviewInset(factor);
 
 	renderer.UpdateGeometry();
 
