@@ -448,7 +448,8 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthMask(GL_FALSE);
+
+		glDepthMask(GL_TRUE);
 		DrawVisible(pos, rotation, scale, opacity, selected, selectionColor, textureIndex);
 		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);

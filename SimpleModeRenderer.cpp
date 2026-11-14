@@ -95,7 +95,6 @@ void SimpleModeRenderer::UpdateCameras(const CameraView& perspective, const Vec3
 		const Vec3f position = target + cameraAxes[i] * (cameraDistance * direction);
 		cameras[i + 1].view.SetView(position, target, upVectors[i]);
 		cameras[i + 1].projection = orthographic;
-		if (axisViewNegated[i]) cameras[i + 1].projection.cell[0] *= -1.0f;
 		cameras[i + 1].gizmoFov = orthographicGizmoFov;
 		cameras[i + 1].gridAxisU = gridAxesU[i];
 		cameras[i + 1].gridAxisV = gridAxesV[i];

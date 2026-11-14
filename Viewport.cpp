@@ -85,7 +85,7 @@ Viewport::Viewport(QWidget *parent)
 	};
 	simpleModeBorderOverlay->hide();
 
-	const QString labelText[4] = { "Side", "Perspective", "Top", "Front" };
+	const QString labelText[4] = { "Front (+X)", "Perspective", "Top (+Y)", "Side (+Z)" };
 	for (int i = 0; i < 4; ++i) {
 		simpleModeLabels[i] = new QPushButton(labelText[i], this);
 		simpleModeLabels[i]->setFocusPolicy(Qt::NoFocus);
@@ -605,9 +605,9 @@ void Viewport::toggleSimpleModeAxisView(uint axisIndex) {
 	const bool negated = simpleModeRenderer.AxisViewNegated(axisIndex);
 
 	switch (axisIndex) {
-	case 0: simpleModeLabels[0]->setText(negated ? "Opposite Side" : "Side"); break;
-	case 1: simpleModeLabels[2]->setText(negated ? "Bottom" : "Top"); break;
-	case 2: simpleModeLabels[3]->setText(negated ? "Back" : "Front"); break;
+	case 0: simpleModeLabels[0]->setText(negated ? "Back (-X)" : "Front (+X)"); break;
+	case 1: simpleModeLabels[2]->setText(negated ? "Bottom (-Y)" : "Top (+Y)"); break;
+	case 2: simpleModeLabels[3]->setText(negated ? "Opposite Side (-Z)" : "Side (+Z)"); break;
 	default: return;
 	}
 

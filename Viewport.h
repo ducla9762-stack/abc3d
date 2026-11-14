@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QMenu>
+#include <QInputDialog>
 #include <QImage>
 #include <QPainter>
 #include <functional>
@@ -1478,6 +1479,22 @@ public slots:
 		QImage image(filepath);
 		if (image.isNull()) { return; }
 
+		const QStringList axes{
+			"Front (+X)", "Back (-X)", "Top (+Y)",
+			"Bottom (-Y)", "Side (+Z)", "Opposite Side (-Z)"
+		};
+		
+		QInputDialog orientationDialog(this);
+		orientationDialog.setWindowTitle("Reference Image Orientation");
+		orientationDialog.setLabelText("Choose the axis the image should face toward:");
+		orientationDialog.setComboBoxItems(axes);
+		orientationDialog.setComboBoxEditable(false);
+		const QSize dialogSize = orientationDialog.sizeHint();
+		orientationDialog.setMinimumSize(dialogSize);
+		orientationDialog.resize(dialogSize);
+		if (orientationDialog.exec() != QDialog::Accepted) { return; }
+		const QString selectedAxis = orientationDialog.textValue();
+
 		image = image.convertToFormat(QImage::Format_RGBA8888);
 		image.flip();
 
@@ -1485,6 +1502,22 @@ public slots:
 
 		ReferenceImage* reference = scene.NewReferenceImage(filepath.toStdString());
 		reference->position = Vec3f(0.0f);
+		
+		if (selectedAxis == "Front (+X)") {
+			reference->rotation = Vec3f(0.0f, 90.0f, 0.0f);
+		}
+		else if (selectedAxis == "Back (-X)") {
+			reference->rotation = Vec3f(0.0f, -90.0f, 0.0f);
+		}
+		else if (selectedAxis == "Top (+Y)") {
+			reference->rotation = Vec3f(-90.0f, 0.0f, 0.0f);
+		}
+		else if (selectedAxis == "Bottom (-Y)") {
+			reference->rotation = Vec3f(90.0f, 0.0f, 0.0f);
+		}
+		else if (selectedAxis == "Opposite Side (-Z)") {
+			reference->rotation = Vec3f(180.0f, 0.0f, 0.0f);
+		}
 		referenceTextureIndices[reference->id] = imageRenderer.AddTexture(
 			image.constBits(),
 			static_cast<uint>(image.width()),
