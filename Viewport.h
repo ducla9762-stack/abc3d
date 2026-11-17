@@ -365,6 +365,7 @@ private:
 	void handleCollapseEdgeClick(const Vec2u& selectionIds);
 	void handleDissolveEdgeClick(const Vec2u& selectionIds);
 	void setActiveElement(Element element);
+	void clearSelection() { selectionManager.clearSelection(); emit selectionChanged(-1); }
 
 // ---------------------------------------------------------------------------------------------
 // Misc. Helpers -------------------------------------------------------------------------------
