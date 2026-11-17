@@ -21,6 +21,7 @@ public:
 	virtual bool MousePress() { return false; }
 	virtual bool MouseRelease(const Vec2f& pos) { return false; }
 	virtual bool MouseDoubleClick() { return false; }
+	virtual bool MouseDrag(const Vec2u& selectionIds) { return false; }
 };
 
 class AbstractMovingAction : public AbstractAction {
@@ -221,7 +222,46 @@ public:
 
 class ScaleAction : public AbstractAction {
 public:
-	bool MouseDrag() override { return false; }
+	bool MouseDrag() override { 
+		if (vp.selectionManager.getSelectedItems().empty()) {
+			return false;
+		}
+
+		float factor = 0.01f * vp.mouseAction.mouseDragChange.Dot(vp.mouseAction.initialDragDir);
+		const Element activeElement = vp.selectionManager.getActiveElement();
+
+		if (activeElement == EDGE || activeElement == FACE) {
+			const bool scaled = vp.scaleSelectedComponents(factor, 0, true);
+			if (scaled) {
+				vp.renderer.UpdateGeometry();
+			}
+			return scaled;
+		}
+
+		if (activeElement == VERTEX) {
+			return false;
+		}
+
+		for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = vp.scene.FindReferenceImage(item.componentId);
+				if (image && !image->locked) {
+					image->scale += Vec3f(factor);
+					image->scale.x = std::max(0.001f, image->scale.x);
+					image->scale.y = std::max(0.001f, image->scale.y);
+					image->scale.z = std::max(0.001f, image->scale.z);
+				}
+			}
+			else if (item.meshId < vp.scene.MeshCount()) {
+				vp.scene[item.meshId]->AddScale(factor);
+			}
+		}
+
+		vp.renderer.UpdateTransforms();
+
+		return true;
+	}
+
 	bool MousePress() override { return false; }
 	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
@@ -428,22 +468,139 @@ public:
 class MergeAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
-	bool MousePress() override { return false; }
-	bool MouseRelease(const Vec2f& pos) override { return false; }
+	bool MousePress(const Vec2u& selectionIds) {
+		// SelectionIds() returns a zero-based mesh ID and local vertex ID.
+		if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
+			return;
+		}
+
+		const uint meshId = selectionIds.x;
+		const uint vertexId = selectionIds.y;
+		if (meshId >= vp.scene.MeshCount() || vertexId >= vp.scene[meshId]->VertexCount()) {
+			return;
+		}
+
+		const SelectionItem clicked{ meshId, vertexId };
+		std::cout << "Merge mode vertex clicked: mesh " << meshId
+			<< ", vertex " << vertexId << std::endl;
+
+		if (!vp.mergeFirstVertex.has_value()) {
+			vp.mergeFirstVertex = clicked;
+			vp.selectionManager.clearSelection();
+			vp.selectionManager.addSelection(clicked);
+			vp.renderer.UpdateSelection(vp.selectionManager);
+			vp.renderer.ClearHover();
+			vp.emitSelectionChanged();
+			vp.update();
+			return;
+		}
+
+		const SelectionItem source = *vp.mergeFirstVertex;
+		if (source == clicked) {
+			std::cout << "Merge rejected: choose a different target vertex." << std::endl;
+			return;
+		}
+		if (source.meshId != clicked.meshId) {
+			std::cout << "Merge rejected: both vertices must belong to the same mesh." << std::endl;
+			return;
+		}
+
+		if (!vp.scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
+			std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
+			return;
+		}
+
+		std::cout << "Merged vertex " << source.componentId << " into vertex "
+			<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
+		vp.mergeFirstVertex.reset();
+		vp.selectionManager.clearSelection();
+		vp.renderer.UpdateGeometry();
+		vp.renderer.UpdateSelection(vp.selectionManager);
+		vp.renderer.ClearHover();
+		vp.hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		vp.emitSelectionChanged();
+		vp.update();
+	}
+
+	bool MouseRelease() override { return false; }
+
+	bool MouseDoubleClick() override {
+		vp.mergeFirstVertex.reset();
+	}
 };
 
 class CollapseAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
-	bool MousePress() override { return false; }
-	bool MouseRelease(const Vec2f& pos) override { return false; }
+	bool MousePress(const Vec2u& selectionIds) {
+		// SelectionIds() returns a zero-based mesh ID and local edge ID.
+		if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
+			return;
+		}
+
+		const uint meshId = selectionIds.x;
+		const uint edgeId = selectionIds.y;
+		if (meshId >= vp.scene.MeshCount() || edgeId >= vp.scene[meshId]->EdgeCount()) {
+			return;
+		}
+
+		std::cout << "Collapse mode edge clicked: mesh " << meshId
+			<< ", edge " << edgeId << std::endl;
+
+		if (!vp.scene[meshId]->CollapseEdge(edgeId)) {
+			std::cout << "Edge collapse rejected: the result would have invalid or open topology."
+				<< std::endl;
+			return;
+		}
+
+		std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
+		vp.selectionManager.clearSelection();
+		vp.renderer.UpdateGeometry();
+		vp.renderer.UpdateSelection(vp.selectionManager);
+		vp.renderer.ClearHover();
+		vp.hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		vp.emitSelectionChanged();
+		vp.update();
+	}
+
+	bool MouseRelease() override { return false; }
 };
 
 class DissolveAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
-	bool MousePress() override { return false; }
-	bool MouseRelease(const Vec2f& pos) override { return false; }
+	bool MousePress(const Vec2u& selectionIds) {
+		// SelectionIds() returns a zero-based mesh ID and local edge ID.
+		if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
+			return;
+		}
+
+		const uint meshId = selectionIds.x;
+		const uint edgeId = selectionIds.y;
+		if (meshId >= vp.scene.MeshCount() || edgeId >= vp.scene[meshId]->EdgeCount()) {
+			return;
+		}
+
+		std::cout << "Dissolve mode edge clicked: mesh " << meshId
+			<< ", edge " << edgeId << std::endl;
+
+		if (!vp.scene[meshId]->DissolveEdge(edgeId)) {
+			std::cout << "Dissolve rejected: choose an interior edge with valid topology."
+				<< std::endl;
+			return;
+		}
+
+		std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
+		vp.selectionManager.clearSelection();
+		vp.renderer.UpdateGeometry();
+		vp.renderer.UpdateSelection(vp.selectionManager);
+		vp.renderer.ClearHover();
+		vp.hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+		vp.emitSelectionChanged();
+		vp.update();
+	}
+
+	bool MouseRelease() override { return false; }
 };
 
 class LoopcutAction : public AbstractAction {
