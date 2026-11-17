@@ -516,14 +516,14 @@ public slots:
 
 	void setActionInset() { 
 		setAction(INSET); 
-#ifdef CGAL_AVAILABLE
+#ifndef CGAL_AVAILABLE
 		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
 #endif
 	}
 
 	void setActionRoofExtrude() { 
 		setAction(ROOF_EXTRUDE); 
-#ifdef CGAL_AVAILABLE
+#ifndef CGAL_AVAILABLE
 		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
 #endif
 	}

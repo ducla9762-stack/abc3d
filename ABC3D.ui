@@ -814,6 +814,100 @@ QPushButton { background-color: #646464; }
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="mergeToolButton_2">
+          <property name="minimumSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Merge Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the panel for merge, dissolve, and collapse&lt;br/&gt;&lt;br/&gt;'M' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">
+												QPushButton:checked { background-color: red; }
+												QPushButton { background-color: #646464; }
+											</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/merge.svg</normaloff>assets/icons/merge.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="mergeToolButton_3">
+          <property name="minimumSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Merge Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Brings up the panel for merge, dissolve, and collapse&lt;br/&gt;&lt;br/&gt;'M' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">
+												QPushButton:checked { background-color: red; }
+												QPushButton { background-color: #646464; }
+											</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset>
+            <normaloff>assets/icons/merge.svg</normaloff>assets/icons/merge.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>46</width>
+            <height>46</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="autoExclusive">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Orientation::Vertical</enum>
@@ -840,6 +934,8 @@ QPushButton { background-color: #646464; }
        <zorder>loopCutToolButton</zorder>
        <zorder>verticalSpacer</zorder>
        <zorder>mergeToolButton</zorder>
+       <zorder>mergeToolButton_2</zorder>
+       <zorder>mergeToolButton_3</zorder>
       </widget>
      </widget>
     </item>
@@ -2208,8 +2304,8 @@ QPushButton { background-color: #646464; }
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>286</width>
-                <height>590</height>
+                <width>168</width>
+                <height>148</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -2356,8 +2452,8 @@ li.checked::marker { content: &quot;\2612&quot;; }
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>288</width>
-                <height>592</height>
+                <width>230</width>
+                <height>448</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -3247,6 +3343,8 @@ QMenuBar::item::selected { background-color: red; }
     <slot>setPivotVisibility(bool)</slot>
     <slot>setPivotScale(double)</slot>
     <slot>cameraKeyPress(uint8_t)</slot>
+    <slot>setActionInset()</slot>
+    <slot>setActionRoofExtrude()</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -3439,8 +3537,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionRotate()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>48</x>
-     <y>311</y>
+     <x>47</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>668</x>
@@ -3455,8 +3553,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>45</x>
-     <y>195</y>
+     <x>44</x>
+     <y>194</y>
     </hint>
     <hint type="destinationlabel">
      <x>669</x>
@@ -3471,8 +3569,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionExtrude()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>447</y>
+     <x>43</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
      <x>692</x>
@@ -3503,8 +3601,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionBevel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>12</x>
-     <y>570</y>
+     <x>11</x>
+     <y>530</y>
     </hint>
     <hint type="destinationlabel">
      <x>695</x>
@@ -3519,8 +3617,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>48</x>
-     <y>505</y>
+     <x>47</x>
+     <y>474</y>
     </hint>
     <hint type="destinationlabel">
      <x>715</x>
@@ -3535,8 +3633,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionScale()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>57</x>
-     <y>253</y>
+     <x>50</x>
+     <y>250</y>
     </hint>
     <hint type="destinationlabel">
      <x>669</x>
@@ -3551,8 +3649,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>369</y>
+     <x>43</x>
+     <y>362</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -3583,8 +3681,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>showPropertiesPanel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>53</x>
-     <y>186</y>
+     <x>50</x>
+     <y>194</y>
     </hint>
     <hint type="destinationlabel">
      <x>390</x>
@@ -3615,8 +3713,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>showPropertiesPanel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>57</x>
-     <y>247</y>
+     <x>50</x>
+     <y>250</y>
     </hint>
     <hint type="destinationlabel">
      <x>224</x>
@@ -3631,8 +3729,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>showPropertiesPanel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>47</x>
-     <y>447</y>
+     <x>46</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
      <x>347</x>
@@ -3647,8 +3745,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>showPropertiesPanel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>311</y>
+     <x>31</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>539</x>
@@ -3663,8 +3761,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>showPropertiesPanel()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>53</x>
-     <y>570</y>
+     <x>50</x>
+     <y>530</y>
     </hint>
     <hint type="destinationlabel">
      <x>525</x>
@@ -3727,8 +3825,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableAllElements()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>369</y>
+     <x>31</x>
+     <y>362</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3807,8 +3905,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableElementObject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>309</y>
+     <x>31</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3823,8 +3921,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>309</y>
+     <x>31</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3839,8 +3937,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementFace()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>309</y>
+     <x>31</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3855,8 +3953,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementVertex()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>309</y>
+     <x>31</x>
+     <y>306</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3871,8 +3969,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableAllElements()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>31</x>
-     <y>570</y>
+     <x>30</x>
+     <y>530</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3887,8 +3985,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableAllElements()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>31</x>
-     <y>447</y>
+     <x>30</x>
+     <y>418</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3903,8 +4001,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableAllElements()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>31</x>
-     <y>505</y>
+     <x>30</x>
+     <y>474</y>
     </hint>
     <hint type="destinationlabel">
      <x>750</x>
@@ -3935,8 +4033,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>enableElementEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>708</y>
+     <x>1747</x>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>86</x>
@@ -3951,8 +4049,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionCollapse()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>708</y>
+     <x>1747</x>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>1425</x>
@@ -3967,8 +4065,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetVertexScale(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>801</y>
+     <x>1698</x>
+     <y>917</y>
     </hint>
     <hint type="destinationlabel">
      <x>1324</x>
@@ -3987,8 +4085,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>179</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>907</y>
+     <x>1756</x>
+     <y>1002</y>
     </hint>
    </hints>
   </connection>
@@ -3999,8 +4097,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionMerge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>640</y>
+     <x>1747</x>
+     <y>735</y>
     </hint>
     <hint type="destinationlabel">
      <x>1421</x>
@@ -4015,8 +4113,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementFace()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>708</y>
+     <x>1747</x>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>86</x>
@@ -4031,8 +4129,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementVertex()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>708</y>
+     <x>1747</x>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>86</x>
@@ -4047,8 +4145,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setLocalScaleMode()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1744</x>
-     <y>1000</y>
+     <x>1738</x>
+     <y>1095</y>
     </hint>
     <hint type="destinationlabel">
      <x>1103</x>
@@ -4063,8 +4161,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPrimarySelectionScale(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>1176</y>
+     <x>1756</x>
+     <y>1271</y>
     </hint>
     <hint type="destinationlabel">
      <x>727</x>
@@ -4079,8 +4177,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setCameraModeFree()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>579</y>
+     <x>1698</x>
+     <y>710</y>
     </hint>
     <hint type="destinationlabel">
      <x>607</x>
@@ -4095,8 +4193,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>triangulateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1623</x>
-     <y>579</y>
+     <x>1638</x>
+     <y>749</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -4111,8 +4209,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>loadCube()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1537</x>
-     <y>613</y>
+     <x>1552</x>
+     <y>717</y>
     </hint>
     <hint type="destinationlabel">
      <x>767</x>
@@ -4127,8 +4225,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetEdgeColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>910</y>
+     <x>1698</x>
+     <y>1014</y>
     </hint>
     <hint type="destinationlabel">
      <x>1350</x>
@@ -4143,8 +4241,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setAlwaysShowVertices(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>696</y>
+     <x>1588</x>
+     <y>845</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -4159,8 +4257,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetBackgroundColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>910</y>
+     <x>1698</x>
+     <y>1042</y>
     </hint>
     <hint type="destinationlabel">
      <x>1331</x>
@@ -4175,8 +4273,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>tessellateSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1623</x>
-     <y>579</y>
+     <x>1638</x>
+     <y>681</y>
     </hint>
     <hint type="destinationlabel">
      <x>696</x>
@@ -4191,8 +4289,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetEdgeVisibility(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>696</y>
+     <x>1693</x>
+     <y>845</y>
     </hint>
     <hint type="destinationlabel">
      <x>1320</x>
@@ -4207,8 +4305,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPrimarySelectionRot(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>1229</y>
+     <x>1756</x>
+     <y>1324</y>
     </hint>
     <hint type="destinationlabel">
      <x>694</x>
@@ -4227,8 +4325,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>253</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1123</y>
+     <x>1756</x>
+     <y>1218</y>
     </hint>
    </hints>
   </connection>
@@ -4239,8 +4337,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>disableElementObject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>708</y>
+     <x>1747</x>
+     <y>803</y>
     </hint>
     <hint type="destinationlabel">
      <x>86</x>
@@ -4255,8 +4353,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setAlwaysShowGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>696</y>
+     <x>1588</x>
+     <y>817</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -4271,8 +4369,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetFaceColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>910</y>
+     <x>1578</x>
+     <y>1014</y>
     </hint>
     <hint type="destinationlabel">
      <x>1206</x>
@@ -4291,8 +4389,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>245</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1018</y>
+     <x>1756</x>
+     <y>1113</y>
     </hint>
    </hints>
   </connection>
@@ -4307,8 +4405,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>538</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1123</y>
+     <x>1756</x>
+     <y>1218</y>
     </hint>
    </hints>
   </connection>
@@ -4319,8 +4417,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateEdge()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>907</y>
+     <x>1756</x>
+     <y>1002</y>
     </hint>
     <hint type="destinationlabel">
      <x>718</x>
@@ -4335,8 +4433,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetFOV(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>801</y>
+     <x>1698</x>
+     <y>948</y>
     </hint>
     <hint type="destinationlabel">
      <x>1334</x>
@@ -4355,8 +4453,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>53</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>798</y>
+     <x>1756</x>
+     <y>893</y>
     </hint>
    </hints>
   </connection>
@@ -4367,8 +4465,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>loadPyramid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1537</x>
-     <y>613</y>
+     <x>1622</x>
+     <y>717</y>
     </hint>
     <hint type="destinationlabel">
      <x>719</x>
@@ -4383,8 +4481,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetSurfaceVisibility(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>696</y>
+     <x>1693</x>
+     <y>817</y>
     </hint>
     <hint type="destinationlabel">
      <x>1334</x>
@@ -4399,8 +4497,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionDissolve()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1753</x>
-     <y>674</y>
+     <x>1747</x>
+     <y>769</y>
     </hint>
     <hint type="destinationlabel">
      <x>1425</x>
@@ -4415,8 +4513,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetSelectColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>910</y>
+     <x>1578</x>
+     <y>1070</y>
     </hint>
     <hint type="destinationlabel">
      <x>1294</x>
@@ -4431,8 +4529,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetHoverColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1494</x>
-     <y>881</y>
+     <x>1698</x>
+     <y>1070</y>
     </hint>
     <hint type="destinationlabel">
      <x>88</x>
@@ -4447,8 +4545,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>flipSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1623</x>
-     <y>579</y>
+     <x>1638</x>
+     <y>783</y>
     </hint>
     <hint type="destinationlabel">
      <x>674</x>
@@ -4463,8 +4561,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setAdditiveSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>792</y>
+     <x>1756</x>
+     <y>887</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -4479,8 +4577,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetEdgeRadius(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>801</y>
+     <x>1698</x>
+     <y>886</y>
     </hint>
     <hint type="destinationlabel">
      <x>1310</x>
@@ -4499,8 +4597,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>523</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1229</y>
+     <x>1756</x>
+     <y>1324</y>
     </hint>
    </hints>
   </connection>
@@ -4515,8 +4613,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>504</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1176</y>
+     <x>1756</x>
+     <y>1271</y>
     </hint>
    </hints>
   </connection>
@@ -4527,8 +4625,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateOut()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1601</x>
-     <y>896</y>
+     <x>1619</x>
+     <y>1002</y>
     </hint>
     <hint type="destinationlabel">
      <x>716</x>
@@ -4543,8 +4641,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>SetVertexColor(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>910</y>
+     <x>1578</x>
+     <y>1042</y>
     </hint>
     <hint type="destinationlabel">
      <x>1331</x>
@@ -4563,8 +4661,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>425</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1176</y>
+     <x>1756</x>
+     <y>1271</y>
     </hint>
    </hints>
   </connection>
@@ -4576,7 +4674,7 @@ QMenuBar::item::selected { background-color: red; }
    <hints>
     <hint type="sourcelabel">
      <x>1619</x>
-     <y>792</y>
+     <y>887</y>
     </hint>
     <hint type="destinationlabel">
      <x>801</x>
@@ -4595,8 +4693,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>498</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1229</y>
+     <x>1756</x>
+     <y>1324</y>
     </hint>
    </hints>
   </connection>
@@ -4607,8 +4705,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>subdivideSelection()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1623</x>
-     <y>579</y>
+     <x>1638</x>
+     <y>715</y>
     </hint>
     <hint type="destinationlabel">
      <x>724</x>
@@ -4623,12 +4721,12 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>706</y>
+     <x>43</x>
+     <y>698</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>717</y>
+     <x>1756</x>
+     <y>812</y>
     </hint>
    </hints>
   </connection>
@@ -4639,8 +4737,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setActionTranslateAxis()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>873</y>
+     <x>1756</x>
+     <y>968</y>
     </hint>
     <hint type="destinationlabel">
      <x>722</x>
@@ -4656,7 +4754,7 @@ QMenuBar::item::selected { background-color: red; }
    <hints>
     <hint type="sourcelabel">
      <x>1619</x>
-     <y>1000</y>
+     <y>1095</y>
     </hint>
     <hint type="destinationlabel">
      <x>1104</x>
@@ -4675,8 +4773,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>505</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1229</y>
+     <x>1756</x>
+     <y>1324</y>
     </hint>
    </hints>
   </connection>
@@ -4687,8 +4785,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPrimarySelectionPos(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1762</x>
-     <y>1123</y>
+     <x>1756</x>
+     <y>1218</y>
     </hint>
     <hint type="destinationlabel">
      <x>708</x>
@@ -4707,8 +4805,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>459</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1762</x>
-     <y>1176</y>
+     <x>1756</x>
+     <y>1271</y>
     </hint>
    </hints>
   </connection>
@@ -4719,8 +4817,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setCameraModeOrbit()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1583</x>
-     <y>579</y>
+     <x>1588</x>
+     <y>710</y>
     </hint>
     <hint type="destinationlabel">
      <x>738</x>
@@ -4735,8 +4833,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>loadIcoSphere()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1537</x>
-     <y>613</y>
+     <x>1552</x>
+     <y>787</y>
     </hint>
     <hint type="destinationlabel">
      <x>676</x>
@@ -4751,8 +4849,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPrimaryCamParam(Vec3f)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1696</x>
-     <y>646</y>
+     <x>1698</x>
+     <y>740</y>
     </hint>
     <hint type="destinationlabel">
      <x>1322</x>
@@ -4771,8 +4869,8 @@ QMenuBar::item::selected { background-color: red; }
      <y>722</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1696</x>
-     <y>646</y>
+     <x>1698</x>
+     <y>740</y>
     </hint>
    </hints>
   </connection>
@@ -4783,8 +4881,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPivotVisibility(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1527</x>
-     <y>1047</y>
+     <x>1619</x>
+     <y>1150</y>
     </hint>
     <hint type="destinationlabel">
      <x>1428</x>
@@ -4799,8 +4897,8 @@ QMenuBar::item::selected { background-color: red; }
    <slot>setPivotScale(double)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1674</x>
-     <y>1049</y>
+     <x>1747</x>
+     <y>1150</y>
     </hint>
     <hint type="destinationlabel">
      <x>1365</x>
@@ -4853,6 +4951,38 @@ QMenuBar::item::selected { background-color: red; }
     <hint type="destinationlabel">
      <x>768</x>
      <y>634</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mergeToolButton_2</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionInset()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>21</x>
+     <y>730</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>182</x>
+     <y>738</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mergeToolButton_3</sender>
+   <signal>released()</signal>
+   <receiver>viewport</receiver>
+   <slot>setActionRoofExtrude()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>46</x>
+     <y>782</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>177</x>
+     <y>759</y>
     </hint>
    </hints>
   </connection>
