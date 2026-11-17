@@ -383,12 +383,12 @@ public:
 
 			vp.mouseAction.StartMouseDragStep(pos.x, pos.y, vp.width(), vp.height());
 			if (vp.selectionManager.getActiveElement() == VERTEX) {
-				for (uint i = 0; i < uint(elements.size(); ++i) {
+				for (uint i = 0; i < uint(elements.size()); ++i) {
 					vp.scene[mesh]->TranslateVertex(elements[i], normals[i] * scale);
 				}
 			}
 			else {
-				for (uint i = 0; i < uint(elements.size(); ++i) {
+				for (uint i = 0; i < uint(elements.size()); ++i) {
 					vp.scene[mesh]->TranslateEdge(elements[i], normals[i] * scale);
 				}
 			}
@@ -591,7 +591,7 @@ public:
 		vp.update();
 	}
 
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 
 	bool MouseDoubleClick() override {
 		vp.mergeFirstVertex.reset();
@@ -632,7 +632,7 @@ public:
 		vp.update();
 	}
 
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class DissolveAction : public AbstractAction {
@@ -669,7 +669,7 @@ public:
 		vp.update();
 	}
 
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class LoopcutAction : public AbstractAction {
