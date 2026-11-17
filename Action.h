@@ -19,7 +19,7 @@ public:
 	virtual bool MouseDrag() { return false; }
 	virtual bool MouseMove(const Vec2f& pos) { return false; }
 	virtual bool MousePress() { return false; }
-	virtual bool MouseRelease() { return false; }
+	virtual bool MouseRelease(const Vec2f& pos) { return false; }
 	virtual bool MouseDoubleClick() { return false; }
 };
 
@@ -76,29 +76,135 @@ protected:
 	}
 };
 
-class TranslateOutAction : public AbstractAction {
+class TranslateFreeAction : public AbstractAction {
+public:
+	bool MouseDrag() override {
+		if (vp.selectionManager.getSelectedItems().empty()) { return false; }
+
+		Vec3f f, u, r;
+		vp.renderer.GetCamera()->directions(f, u, r);
+
+		const float SCALE = 0.01f;
+		const Vec2f& uv = vp.mouseAction.mouseDragChange;
+		Vec3f translation = -SCALE * (uv.x * r + uv.y * u);
+
+		bool transformed = false;
+
+		for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = vp.scene.FindReferenceImage(item.componentId);
+				if (image && !image->locked) {
+					image->position += translation;
+					transformed = true;
+				}
+				continue;
+			}
+			if (item.meshId >= vp.scene.MeshCount()) {
+				continue;
+			}
+
+			// Translate depending on which element type.
+			HalfEdgeMesh* mesh = vp.scene[item.meshId];
+			switch (vp.selectionManager.getActiveElement()) {
+			case OBJECT:
+				mesh->TranslatePos(translation);
+				break;
+			case VERTEX:
+				mesh->TranslateVertex(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			case EDGE:
+				mesh->TranslateEdge(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			case FACE:
+				mesh->TranslateFace(item.componentId, mesh->WorldDirToLocalDir(translation));
+				break;
+			}
+
+			transformed = true;
+		}
+
+		if (transformed) {
+			if (vp.selectionManager.getActiveElement() == OBJECT) {
+				vp.renderer.UpdateTransforms();
+			}
+			else {
+				vp.renderer.UpdateGeometry();
+			}
+		}
+
+		return transformed;
+	}
+
+	bool MousePress() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
+};
+
+class TranslateOutAction : public TranslateFreeAction {
+	std::vector<Vec3f> normals;
 public:
 	bool MouseDrag() override {
 		// If there are no selected elements, do nothing.
 		if (vp.selectionManager.getSelectedItems().empty()) { return false; }
 
 		// If we are selecting objects, translate free instead of out.
-		if (selectionManager.getActiveElement() == OBJECT) {
-			return translateFreeDrag();
+		if (vp.selectionManager.getActiveElement() == OBJECT) {
+			return TranslateFreeAction::MouseDrag();
 		}
 
 		// If this is the first drag step, compute normal directions
 		if (vp.mouseAction.firstMoveEvent) {
-			initActionDirsToSelectedNormals();
+			Element elm = vp.selectionManager.getActiveElement();
+			if (elm == VERTEX) {
+				for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+					if (item.meshId >= vp.scene.MeshCount()) { continue; }
+					normals.push_back(vp.scene[item.meshId]->GetVertexNormal(item.componentId));
+				}
+			}
+			if (elm == EDGE) {
+				for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+					if (item.meshId >= vp.scene.MeshCount()) { continue; }
+					normals.push_back(vp.scene[item.meshId]->GetEdgeNormal(item.componentId));
+				}
+			}
+			if (elm == FACE) {
+				for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+					if (item.meshId >= vp.scene.MeshCount()) { continue; }
+					normals.push_back(vp.scene[item.meshId]->GetFaceNormal(item.componentId));
+				}
+			}
 		}
 
-		if (actionParams.dirs.empty()) { return false; }
-
-		// Get all selected items.
-		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+		if (normals.empty()) { return false; }
 
 		// Translate
-		translateSelections();
+		const float SCALE_COEF = 0.01f;
+		float scale = SCALE_COEF * vp.mouseAction.mouseDragChange.Dot(vp.mouseAction.initialDragDir);
+		Element elm = vp.selectionManager.getActiveElement();
+
+		if (elm == VERTEX) {
+			uint element = 0;
+			for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+				if (item.meshId >= vp.scene.MeshCount()) { continue; }
+				vp.scene[item.meshId]->TranslateVertex(item.componentId, normals[element] * scale);
+				++element;
+			}
+		}
+		if (elm == EDGE) {
+			uint element = 0;
+			for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+				if (item.meshId >= vp.scene.MeshCount()) { continue; }
+				vp.scene[item.meshId]->TranslateEdge(item.componentId, normals[element] * scale);
+				++element;
+			}
+		}
+		if (elm == FACE) {
+			uint element = 0;
+			for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+				if (item.meshId >= vp.scene.MeshCount()) { continue; }
+				vp.scene[item.meshId]->TranslateFace(item.componentId, normals[element] * scale);
+				++element;
+			}
+		}
 
 		vp.renderer.UpdateGeometry();
 
@@ -106,34 +212,85 @@ public:
 	}
 };
 
-class TranslateFreeAction : public AbstractAction {
-public:
-	bool MouseDrag() override { return false; }
-	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
-};
-
 class TranslateEdgeAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class ScaleAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class BevelAction : public AbstractAction {
 protected:
 	HalfEdgeMeshBeveler* beveler;
+
+	void SetupBevelDrag() {
+		if (beveler) { delete beveler; }
+
+		uint meshId = vp.selectionManager.getSelectedItems()[0].meshId;
+		if (meshId >= vp.scene.MeshCount()) { return; }
+
+		beveler = new HalfEdgeMeshBeveler(*vp.scene[meshId]);
+
+		Element element = vp.selectionManager.getActiveElement();
+		if (element == OBJECT) {
+			beveler->StartObjectBevel();
+			return;
+		}
+
+		std::vector<uint> elements;
+		elements.reserve(vp.selectionManager.getSelectedItems().size());
+
+		for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+			if (item.meshId != meshId) { continue; }
+			elements.push_back(item.componentId);
+		}
+
+		switch (element) {
+		case EDGE:
+			beveler->StartEdgeBevel(elements);
+			break;
+		case FACE:
+			beveler->StartFaceBevel(elements);
+			break;
+		case VERTEX:
+			beveler->StartVertexBevel(elements);
+			break;
+		}
+
+		vp.renderer.UpdateSelection(vp.selectionManager);
+
+		return;
+	}
+
 public:
-	bool MouseDrag() override { return false; }
+	bool MouseDrag() override { 
+		if (vp.selectionManager.getSelectedItems().empty()) { return false; }
+
+		if (vp.mouseAction.firstMoveEvent) {
+			SetupBevelDrag();
+		}
+
+		if (!beveler) { return false; }
+
+		float factor = (vp.mouseAction.mouseDragPosUV - vp.mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		beveler->AdjustBevel(factor);
+
+		vp.renderer.UpdateGeometry();
+
+		return true;
+	}
+
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { if (beveler) delete beveler; return false; }
 };
 
 class ExtrudeAction : public BevelAction {
@@ -180,14 +337,22 @@ public:
 	}
 
 	bool MouseMove(const Vec2f& pos) override {
-		if (stage == 1) {
+		if (stage == 1 && !elements.empty()) {
+			const float SCALE_COEF = 0.01f;
+			float scale = SCALE_COEF * vp.mouseAction.mouseDragChange.Dot(vp.mouseAction.initialDragDir);
+
 			vp.mouseAction.StartMouseDragStep(pos.x, pos.y, vp.width(), vp.height());
 			if (vp.selectionManager.getActiveElement() == VERTEX) {
-				TranslateElements<VERTEX>();
+				for (uint i = 0; i < uint(elements.size(); ++i) {
+					vp.scene[mesh]->TranslateVertex(elements[i], normals[i] * scale);
+				}
 			}
 			else {
-				TranslateElements<EDGE>();
+				for (uint i = 0; i < uint(elements.size(); ++i) {
+					vp.scene[mesh]->TranslateEdge(elements[i], normals[i] * scale);
+				}
 			}
+
 			vp.mouseAction.EndMouseDragStep();
 			vp.renderer.UpdateGeometry();
 			vp.update();
@@ -208,21 +373,30 @@ public:
 		return false;
 	}
 
-	bool MouseRelease() override { 
-		if (stage == 1) {
+	bool MouseRelease(const Vec2f& pos) override { 
+		if (stage == 1 && beveler) {
 			Element elementType = vp.selectionManager.getActiveElement();
 			if (elementType == OBJECT) { elementType = EDGE; }
 
-			if (elementType == EDGE) { beveler->ExtrudeBeveledEdges(elements); }
-			else { beveler->ExtrudeBeveledVertices(elements); }
-
 			mesh = vp.selectionManager.getSelectedItems()[0].meshId;
-			vp.selectionManager.clearSelection();
 			vp.clearSelection();
 
-			initActionDirsToElementNormals(elementType, mesh);
+			if (elementType == EDGE) {
+				beveler->ExtrudeBeveledEdges(elements);
+				for (uint element : elements) {
+					normals.push_back(vp.scene[mesh]->GetEdgeNormal(element));
+				}
+			}
+			else {
+				beveler->ExtrudeBeveledVertices(elements);
+				for (uint element : elements) {
+					normals.push_back(vp.scene[mesh]->GetVertexNormal(element));
+				}
+			}
 
-			vp.mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
+			delete beveler;
+
+			vp.mouseAction.MousePress(pos.x, pos.y, vp.width(), vp.height());
 			vp.renderer.UpdateGeometry();
 			vp.renderer.UpdateSelection(vp.selectionManager);
 			vp.update();
@@ -241,42 +415,42 @@ class RotateActoin : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class KnifeAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class MergeAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class CollapseAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class DissolveAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 class LoopcutAction : public AbstractAction {
 public:
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 };
 
 #ifdef CGAL_AVAILABLE
@@ -332,7 +506,7 @@ public:
 
 	bool MousePress() override { return false; }
 
-	bool MouseRelease() override {
+	bool MouseRelease(const Vec2f& pos) override {
 		if (insetter) {
 			float factor = (vp.mouseAction.mouseDragPosUV - vp.mouseAction.mouseDragStartPosUV).Length();
 			factor = std::min(factor, 0.25f) / 0.25f;
@@ -351,7 +525,7 @@ public:
 
 	bool MouseDrag() override { return false; }
 	bool MousePress() override { return false; }
-	bool MouseRelease() override { return false; }
+	bool MouseRelease(const Vec2f& pos) override { return false; }
 
 };
 
@@ -404,7 +578,7 @@ public:
 		return true;
 	}
 
-	bool MouseRelease() override {
+	bool MouseRelease(const Vec2f& pos) override {
 		std::vector<uint>().swap(vertices);
 		std::vector<Vec3f>().swap(normals);
 
