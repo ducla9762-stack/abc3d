@@ -83,19 +83,19 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>68</width>
+        <width>56</width>
         <height>0</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>68</width>
+        <width>56</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="baseSize">
        <size>
-        <width>32</width>
+        <width>46</width>
         <height>300</height>
        </size>
       </property>
@@ -115,15 +115,15 @@
        <bool>true</bool>
       </property>
       <property name="alignment">
-       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+       <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
       </property>
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>68</width>
-         <height>1223</height>
+         <width>56</width>
+         <height>1214</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -134,13 +134,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>68</width>
+         <width>56</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>68</width>
+         <width>56</width>
          <height>16777215</height>
         </size>
        </property>
@@ -170,14 +170,14 @@
          <widget class="QPushButton" name="selectToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -196,9 +196,8 @@
            <number>-1</number>
           </property>
           <property name="styleSheet">
-           <string notr="true">
-												QPushButton:checked { background-color: red; }
-												QPushButton { background-color: #646464; }
+           <string notr="true">QPushButton:checked { background-color: red; }
+QPushButton { background-color: #646464; }
 											</string>
           </property>
           <property name="text">
@@ -210,8 +209,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -232,14 +231,14 @@
          <widget class="QPushButton" name="cameraToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -272,8 +271,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -294,14 +293,14 @@
          <widget class="QPushButton" name="translateToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -331,8 +330,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -347,14 +346,14 @@
          <widget class="QPushButton" name="scaleToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -367,7 +366,7 @@
            <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
           </property>
           <property name="toolTip">
-           <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected element&lt;br/&gt;Restricted to object, face, and edge elements&lt;/p&gt;&lt;p&gt;'S' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string extracomment="Scale Tool">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Scale Tool&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Changes the size of the selected element&lt;br/&gt;Restricted to object, face, and edge elements&lt;/p&gt;&lt;p&gt;'+/=' Key Shortcut&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="autoFillBackground">
            <bool>false</bool>
@@ -387,8 +386,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -403,14 +402,14 @@
          <widget class="QPushButton" name="rotateToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -440,8 +439,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -456,14 +455,14 @@
          <widget class="QPushButton" name="shapeToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -493,8 +492,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -509,14 +508,14 @@
          <widget class="QPushButton" name="extrudeToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -546,8 +545,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -562,14 +561,14 @@
          <widget class="QPushButton" name="subdivideToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -605,8 +604,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -621,14 +620,14 @@
          <widget class="QPushButton" name="bevelToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="sizeIncrement">
@@ -661,8 +660,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -677,14 +676,14 @@
          <widget class="QPushButton" name="knifeToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="contextMenuPolicy">
@@ -708,8 +707,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -724,14 +723,14 @@
          <widget class="QPushButton" name="loopCutToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="contextMenuPolicy">
@@ -755,8 +754,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -771,14 +770,14 @@
          <widget class="QPushButton" name="mergeToolButton">
           <property name="minimumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="contextMenuPolicy">
@@ -802,8 +801,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>58</width>
-            <height>58</height>
+            <width>46</width>
+            <height>46</height>
            </size>
           </property>
           <property name="checkable">
@@ -1896,8 +1895,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>286</width>
-                <height>594</height>
+                <width>152</width>
+                <height>222</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -2210,7 +2209,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>286</width>
-                <height>594</height>
+                <height>590</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -2358,7 +2357,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                 <x>0</x>
                 <y>0</y>
                 <width>288</width>
-                <height>596</height>
+                <height>592</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -3022,25 +3021,32 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>23</height>
+     <width>1777</width>
+     <height>32</height>
     </rect>
    </property>
    <property name="minimumSize">
     <size>
      <width>500</width>
-     <height>23</height>
+     <height>32</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>800</width>
-     <height>23</height>
+     <width>16777215</width>
+     <height>32</height>
     </size>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
    <property name="styleSheet">
-    <string notr="true">background-color: #1c1c1c;
-color: white;
+    <string notr="true">QMenuBar {background-color: #1c1c1c; color: white; }
+
+QMenuBar::item::selected { background-color: red; }
+
 				</string>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -3090,7 +3096,7 @@ color: white;
   </widget>
   <action name="actionSave">
    <property name="text">
-    <string>Save</string>
+    <string>Save - CTRL S</string>
    </property>
   </action>
   <action name="actionSettings">
@@ -3100,7 +3106,7 @@ color: white;
   </action>
   <action name="actionExit">
    <property name="text">
-    <string>Exit</string>
+    <string>Exit - ESC</string>
    </property>
   </action>
   <action name="actionModel">
@@ -3160,7 +3166,7 @@ color: white;
   </action>
   <action name="actionSaveAs">
    <property name="text">
-    <string>Save As</string>
+    <string>Save As - CTRL+SHIFT+S</string>
    </property>
   </action>
  </widget>
@@ -3240,6 +3246,7 @@ color: white;
     <slot>setPrimaryCamParam(Vec3f)</slot>
     <slot>setPivotVisibility(bool)</slot>
     <slot>setPivotScale(double)</slot>
+    <slot>cameraKeyPress(uint8_t)</slot>
    </slots>
   </customwidget>
   <customwidget>
@@ -4833,8 +4840,25 @@ color: white;
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>ABC3DClass</sender>
+   <signal>cameraKeyPressed(uint8_t)</signal>
+   <receiver>viewport</receiver>
+   <slot>cameraKeyPress(uint8_t)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>888</x>
+     <y>622</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>768</x>
+     <y>634</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
+  <signal>cameraKeyPressed(uint8_t)</signal>
   <slot>showPropertiesPanel()</slot>
   <slot>modelFileDialog()</slot>
   <slot>sceneFileDialog()</slot>

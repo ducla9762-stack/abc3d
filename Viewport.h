@@ -922,6 +922,10 @@ public slots:
 		loadMesh(vertices, faces, "UV Sphere");
 	}
 
+	void cameraKeyPress(uint8_t axis) {
+		renderer.keyPress(axis);
+	}
+
 	/// <summary>
 	/// Loads the file at filepath as a mesh.
 	/// </summary>

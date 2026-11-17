@@ -60,14 +60,9 @@ ABC3D::ABC3D(QWidget *parent)
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
 
-    // Search Bar for documents
-    QToolBar* searchToolbar = addToolBar("Search");
-    searchToolbar->setMovable(false);
-
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");
     searchBar->setFixedHeight(30);
-    searchBar->setFixedWidth(200);
     searchBar->setContentsMargins(5, 0, 5, 0);
     ui.verticalLayout_13->addWidget(searchBar);
 
@@ -415,10 +410,108 @@ ABC3D::ABC3D(QWidget *parent)
     for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
         createSceneButton(i, "Cube");
     }
+
+    // Wait for the main application to process so it registers the controller
+    for (int i = 0; i < 10 && controllerManager->connectedGamepads().isEmpty(); i++) {
+        QCoreApplication::processEvents();
+    }
+    const QList<int> devices = controllerManager->connectedGamepads();
+
+    // Controller Connections
+    if (!devices.isEmpty()) {
+        QGamepad* controller = new QGamepad(devices.first(), this);
+        // Analog Sticks
+        connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) mutable {
+        });
+
+        connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
+
+        });
+
+        connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
+
+        });
+
+        connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
+            
+        });
+
+        connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
+
+        });
+
+
+        // Controller Buttons
+        connect(controller, &QGamepad::buttonAChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonBChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonYChanged, this, [this](bool pressed) {
+
+        });
+
+        // Shoulder bumpers and triggers
+        connect(controller, &QGamepad::buttonL1Changed, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonL2Changed, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonR1Changed, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonR2Changed, this, [this](bool pressed) {
+
+        });
+
+        // D-Pad
+        connect(controller, &QGamepad::buttonUpChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonDownChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonLeftChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonRightChanged, this, [this](bool pressed) {
+
+        });
+
+        // Home, Select, & Start
+        connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
+
+        });
+
+        connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
+
+        });
+    }
 }
 
 void ABC3D::createSceneButton(uint i, QString name) {
-    //ui.viewport->setName(i, name.toStdString());
     sceneModel->insertRow(i);
     sceneModelIndex = sceneModel->index(i, 0);
     sceneModel->setData(sceneModelIndex, name);
@@ -447,17 +540,56 @@ void ABC3D::createSceneButton(uint i, QString name) {
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
     bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
+    bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
     switch (event->key()) {
     case Qt::Key_Control:
-            event->accept();
-            emit ctrlKeyPressed();
-            break;
+        event->accept();
+        emit ctrlKeyPressed();
+        break;
+    // WASD & Arrow keys
+    case Qt::Key_W:
+        event->accept();
+        emit cameraKeyPressed(Axis::X);
+        break;
+    case Qt::Key_S:
+        event->accept();
+        // Save - CTRL + S
+        if (ctrl && shift) { saveAsProject(); }
+        if (ctrl) { saveProject(); }
+
+        emit cameraKeyPressed(Axis::X_NEG);
+        break;
+    case Qt::Key_A:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z_NEG);
+        break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
+        event->accept();
         if (ctrl) { 
             ui.viewport->duplicateSelection();
         }
+
+        emit cameraKeyPressed(Axis::Z);
         break;
+
+    case Qt::Key_Up:
+        event->accept();
+        emit cameraKeyPressed(Axis::X);
+        break;
+    case Qt::Key_Down:
+        event->accept();
+        emit cameraKeyPressed(Axis::X_NEG);
+        break;
+    case Qt::Key_Left:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z_NEG);
+        break;
+    case Qt::Key_Right:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z);
+        break;
+
     // Escape - Cancels the knife cut, or leaves the knife. Otherwise closes program
     case Qt::Key_Escape:
         event->accept();
@@ -510,6 +642,12 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         if (ui.viewport->loopCutActive()) {
             event->accept();
             ui.viewport->changeLoopCutCount(1);
+        }
+        // Scale if Loop Cut isn't active
+        else {
+            ui.viewport->setActionScale();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.scaleToolButton->setChecked(true);
         }
         break;
     case Qt::Key_Minus:
@@ -576,17 +714,6 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.axisModeTranslationButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.translateToolButton->setChecked(true);
-        break;
-    // Scale
-    case Qt::Key_S:
-        event->accept();
-        // Save - CTRL + S
-        if (ctrl) { saveProject(); }
-        else {
-            ui.viewport->setActionScale();
-            ui.bottomRightPanels->setCurrentIndex(0);
-            ui.scaleToolButton->setChecked(true);
-        }
         break;
     // Rotate
     case Qt::Key_R:
