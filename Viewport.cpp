@@ -67,6 +67,46 @@ Viewport::Viewport(QWidget *parent)
 		else { drawKnifeOverlay(painter); }
 	};
 	knifeOverlay->hide();
+
+	// AI-generated code: Draws a mouse-transparent border overlay separating the four simple-mode quadrants.
+	simpleModeBorderOverlay = new OverlayWidget(this);
+	simpleModeBorderOverlay->draw = [this](QPainter& painter) {
+		QPen borderPen(QColor(210, 210, 210, 200));
+		borderPen.setWidth(2);
+		painter.setPen(borderPen);
+
+		const qreal right = width() - 1.0;
+		const qreal bottom = height() - 1.0;
+		const qreal centerX = width() / 2.0;
+		const qreal centerY = height() / 2.0;
+		painter.drawRect(QRectF(1.0, 1.0, right - 1.0, bottom - 1.0));
+		painter.drawLine(QPointF(centerX, 1.0), QPointF(centerX, bottom));
+		painter.drawLine(QPointF(1.0, centerY), QPointF(right, centerY));
+	};
+	simpleModeBorderOverlay->hide();
+
+	const QString labelText[4] = { "Front (+X)", "Perspective", "Top (+Y)", "Side (+Z)" };
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i] = new QPushButton(labelText[i], this);
+		simpleModeLabels[i]->setFocusPolicy(Qt::NoFocus);
+		simpleModeLabels[i]->setStyleSheet(
+			"QPushButton { color: white; background-color: rgba(0, 0, 0, 160); border: none; "
+			"padding: 4px 8px; border-radius: 3px; font-weight: bold; } "
+			"QPushButton:hover { background-color: rgba(70, 70, 70, 210); } "
+			"QPushButton:pressed { background-color: rgba(100, 100, 100, 230); }"
+		);
+		simpleModeLabels[i]->adjustSize();
+		simpleModeLabels[i]->hide();
+	}
+
+	simpleModeLabels[1]->setAttribute(Qt::WA_TransparentForMouseEvents);
+	for (int index : { 0, 2, 3 }) {
+		simpleModeLabels[index]->setCursor(Qt::PointingHandCursor);
+		simpleModeLabels[index]->setToolTip("Click to view the opposite side");
+	}
+	QObject::connect(simpleModeLabels[0], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(0); });
+	QObject::connect(simpleModeLabels[2], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(1); });
+	QObject::connect(simpleModeLabels[3], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(2); });
 }
 
 Viewport::~Viewport()
@@ -238,6 +278,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -246,7 +287,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
 		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
 		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const bool gizmoHit =
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, ids.z);
+	const bool gizmoHit = translationAxisAllowed &&
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
@@ -479,7 +522,10 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// If no action performed and no gizmo was captured, move the camera. A
 	// captured gizmo must keep ownership of the drag even when its projected
 	// axis is degenerate from the current camera angle.
-	if (!actionPerformed && !draggingGizmo) {
+	// AI-generated code: Camera navigation belongs only to simple mode's perspective quadrant.
+	const bool perspectiveNavigation = !simpleMode ||
+		simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos));
+	if (!actionPerformed && !draggingGizmo && perspectiveNavigation) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 		if (renderer.GetActiveCamType() == CameraType::FREE) {
 			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
@@ -498,6 +544,11 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 void Viewport::wheelEvent(QWheelEvent* event) {
 	// Accept event and get change in wheel
 	event->accept();
+	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+	// AI-generated code: Prevents orthographic quadrants from changing the perspective camera.
+	if (simpleMode && !simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos))) {
+		return;
+	}
 	QPoint change = event->angleDelta();
 
 	// Convert change in wheel to change in camera
@@ -528,6 +579,42 @@ void Viewport::resizeEvent(QResizeEvent* event) {
 		int y = this->height() - 1 - Y_PADDING - 64;
 		elementButtons[i]->move(x, y);
 	}
+
+	updateSimpleModeLabels();
+}
+
+void Viewport::updateSimpleModeLabels() {
+	const int rightX = width() / 2 + 8;
+	const int bottomY = height() / 2 + 8;
+	const QPoint positions[4] = {
+		QPoint(8, 8),
+		QPoint(rightX, 8),
+		QPoint(8, bottomY),
+		QPoint(rightX, bottomY)
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i]->move(positions[i]);
+		simpleModeLabels[i]->setVisible(simpleMode);
+		if (simpleMode) { simpleModeLabels[i]->raise(); }
+	}
+}
+
+void Viewport::toggleSimpleModeAxisView(uint axisIndex) {
+	simpleModeRenderer.ToggleAxisView(axisIndex);
+	const bool negated = simpleModeRenderer.AxisViewNegated(axisIndex);
+
+	switch (axisIndex) {
+	case 0: simpleModeLabels[0]->setText(negated ? "Back (-X)" : "Front (+X)"); break;
+	case 1: simpleModeLabels[2]->setText(negated ? "Bottom (-Y)" : "Top (+Y)"); break;
+	case 2: simpleModeLabels[3]->setText(negated ? "Opposite Side (-Z)" : "Side (+Z)"); break;
+	default: return;
+	}
+
+	const int labelIndex = axisIndex == 0 ? 0 : static_cast<int>(axisIndex + 1);
+	simpleModeLabels[labelIndex]->adjustSize();
+	updateSimpleModeLabels();
+	update();
 }
 
 void Viewport::leaveEvent(QEvent* event) {
@@ -845,7 +932,8 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -1040,7 +1128,8 @@ bool Viewport::translateEdgeDrag() {
 
 	if (mouseAction.firstMoveEvent) {
 		Vec3f forward, up, right;
-		renderer.GetCamera()->directions(forward, up, right);
+		// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+		renderer.GetActiveViewDirections(forward, up, right);
 
 		// Mouse positions are converted to a bottom-left origin in the Qt event
 		// handlers. Camera::directions() uses the opposite-handed basis from the
@@ -1313,7 +1402,8 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -1378,7 +1468,8 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 	Vec3f screenTangent = draggedRotationAxis.Cross(forward);
 	if (screenTangent.LengthSquared() <= 1e-8f) {
 		screenTangent = draggedRotationAxis.Cross(up);
@@ -1447,7 +1538,8 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1550,7 +1642,8 @@ bool Viewport::scaleGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1844,6 +1937,7 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -1853,14 +1947,18 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 		(actionParams.action == TRANSLATE_AXIS && (gizmoIds.y == 0 || gizmoIds.y == 4)) ||
 		(actionParams.action == SCALE && (gizmoIds.y == 1 || gizmoIds.y == 4)) ||
 		(actionParams.action == ROTATE && (gizmoIds.y == 2 || gizmoIds.y == 4));
-	const uint newHoveredAxis = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, gizmoIds.z);
+	const uint newHoveredAxis = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3)
 		? gizmoIds.z : MAX_UINT;
 	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
 	hoveredGizmoAxis = newHoveredAxis;
 	if (gizmoChanged) { updateGizmos(); }
 
-	const bool gizmoHit = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool gizmoHit = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3);
 	const Vec2u selectionIds = gizmoHit
 		? Vec2u(MAX_UINT)
