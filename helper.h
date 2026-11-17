@@ -7,6 +7,7 @@
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <cstdint>
 
 #include "cyVector.h"
 #include "cyMatrix.h"
