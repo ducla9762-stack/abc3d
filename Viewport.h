@@ -130,7 +130,7 @@ class Viewport : public QOpenGLWidget
 	friend class ScaleAction;
 	friend class ExtrudeAction;
 	friend class BevelAction;
-	friend class RotateActoin;
+	friend class RotateAction;
 	friend class KnifeAction;
 	friend class MergeAction;
 	friend class CollapseAction;

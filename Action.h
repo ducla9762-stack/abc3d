@@ -451,11 +451,80 @@ public:
 	}
 };
 
-class RotateActoin : public AbstractAction {
+class RotateAction : public AbstractAction {
 public:
-	bool MouseDrag() override { return false; }
-	bool MousePress() override { return false; }
-	bool MouseRelease(const Vec2f& pos) override { return false; }
+	bool MouseDrag() override { 
+		if (vp.selectionManager.getActiveElement() != OBJECT || vp.selectionManager.getSelectedItems().empty()) {
+			return false;
+		}const uint NO_HOVER = 4294967295u;
+
+
+		Vec3f f, u, r;
+		vp.renderer.GetCamera()->directions(f, u, r);
+
+		Vec3f dir = vp.mouseAction.mouseDragChange.y * r - vp.mouseAction.mouseDragChange.x * u;
+		float length = dir.Length();
+		if (length == 0.0f) {
+			return false;
+		}
+		dir /= length;
+
+		for (const SelectionItem& item : vp.selectionManager.getSelectedItems()) {
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = vp.scene.FindReferenceImage(item.componentId);
+				if (!image || image->locked) { continue; }
+				Matrix3f original;
+				original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
+				Matrix3f delta;
+				delta.SetRotation(dir, -length * 0.01f);
+				delta *= original;
+				image->rotation = matrixToEulerAngle(delta);
+				continue;
+			}
+			if (item.meshId >= vp.scene.MeshCount()) { continue; }
+
+			Vec3f eulerRot = vp.scene[item.meshId]->Rot();
+			Matrix3f origRot;
+			origRot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+			Matrix3f rot;
+			rot.SetRotation(dir, length * 0.01f);
+			rot *= origRot;
+
+			vp.scene[item.meshId]->Rot(matrixToEulerAngle(rot));
+		}
+
+		vp.renderer.UpdateTransforms();
+
+		return true;
+	}
+	bool MousePress() override { 
+		return false;
+	}
+	bool MouseRelease(const Vec2f& pos) override {
+		return false;
+	}
+
+	bool MouseDoubleClick() override {
+		vp.selectionManager.clearSelection();
+		vp.renderer.UpdateSelection(vp.selectionManager);
+		emit vp.selectionChanged(-1);
+
+		if (vp.action) { vp.action->MouseDoubleClick(); }
+
+		emit vp.primarySelectionChanged(false);
+		vp.update();
+
+		return;
+
+		vp.selectionManager.clearSelection();
+		emit vp.selectionChanged(-1);
+		vp.renderer.UpdateSelection(vp.selectionManager);
+		vp.updateGizmos();
+		vp.update();
+
+		emit vp.primarySelectionChanged(false);
+	}
 };
 
 class KnifeAction : public AbstractAction {
