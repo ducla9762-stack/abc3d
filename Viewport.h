@@ -2,6 +2,12 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+
+#include <functional>
+#include <optional>
+#include <unordered_map>
+#include <algorithm>
+
 #include <QOpenGLWidget>
 #include <QOpenGLContext>
 #include <QMouseEvent>
@@ -9,10 +15,8 @@
 #include <QMenu>
 #include <QImage>
 #include <QPainter>
-#include <functional>
-#include <optional>
-#include <unordered_map>
-#include <algorithm>
+#include <QMessageBox>
+
 #include <QtGamepadLegacy/QGamepad>
 #include <QtGamepadLegacy/QGamepadManager>
 
@@ -26,7 +30,6 @@
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
 #include "StraightSkeleton.h"
-#include "Action.h"
 
 inline bool initGlew = true;
 
@@ -121,22 +124,6 @@ class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
-	friend class AbstractAction;
-	friend class InsetAction;
-	friend class RoofExtrudeAction;
-	friend class TranslateOutAction;
-	friend class TranslateFreeAction;
-	friend class TranslateEdgeAction;
-	friend class ScaleAction;
-	friend class ExtrudeAction;
-	friend class BevelAction;
-	friend class RotateActoin;
-	friend class KnifeAction;
-	friend class MergeAction;
-	friend class CollapseAction;
-	friend class DissolveAction;
-	friend class LoopcutAction;
-
 signals:	
 	void primarySelectionPosChanged(const Vec3f& pos);
 	void primarySelectionScaleChanged(const Vec3f& scale);
@@ -178,8 +165,6 @@ private:
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
 
-	AbstractAction* action;
-
 	// OpenGL texture indices are renderer resources, not scene state.
 	std::unordered_map<uint, uint> referenceTextureIndices;
 
@@ -191,7 +176,9 @@ private:
 	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
+#ifdef CGAL_AVAILABLE
 	InsetBuilder* insetter;
+#endif
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
@@ -344,9 +331,8 @@ private:
 	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
-	void setupInsetDrag();
+	bool setupInsetDrag();
 	bool insetDrag();
-	void setupRoofExtrudeDrag();
 	bool roofExtrudeDrag();
 	void extrudeSelectedElements();
 	bool extrudeDrag();
@@ -528,8 +514,19 @@ public slots:
 		setAction(LOOPCUT);
 	}
 
-	void setActionInset() { setAction(INSET); }
-	void setActionRoofExtrude() { setAction(ROOF_EXTRUDE); }
+	void setActionInset() { 
+		setAction(INSET); 
+#ifdef CGAL_AVAILABLE
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
+
+	void setActionRoofExtrude() { 
+		setAction(ROOF_EXTRUDE); 
+#ifdef CGAL_AVAILABLE
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
 
 	/// <returns>True while the loop cut tool is the active tool.</returns>
 	bool loopCutActive() const { return actionParams.action == LOOPCUT; }

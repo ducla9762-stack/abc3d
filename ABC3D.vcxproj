@@ -141,6 +141,7 @@
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
     <QtMoc Include="ColorButton.h" />
+    <ClInclude Include="CGAL.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />

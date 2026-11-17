@@ -241,9 +241,25 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
-	if (action) { action->MousePress(); }
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == ROOF_EXTRUDE) {
+		Element activeElm = selectionManager.getActiveElement();
+		if (activeElm != FACE) { return; }
+		if (selectionManager.getSelectedItems().empty()) { return; }
 
-	return;
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			actionParams.dirs.emplace_back();
+			actionParams.elements.push_back(MAX_UINT);
+			actionParams.elements.push_back(item.meshId);
+			scene[item.meshId]->RoofExtrude(item.componentId, actionParams.elements, actionParams.dirs.back());
+		}
+
+		renderer.UpdateGeometry();
+
+		return;
+	}
+#endif
 
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
@@ -272,18 +288,6 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
-	event->accept();
-	selectionManager.clearSelection();
-	renderer.UpdateSelection(selectionManager);
-	emit selectionChanged(-1);
-
-	if (action) { action->MouseDoubleClick(); }
-
-	emit primarySelectionChanged(false);
-	update();
-
-	return;
-
 	if (actionParams.action == MERGE) {
 		mergeFirstVertex.reset();
 	}
@@ -321,6 +325,24 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		return;
 	}
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == INSET && insetter) {
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		insetter->EndInset(factor);
+
+		renderer.UpdateGeometry();
+
+		delete insetter;
+		insetter = nullptr;
+
+		update();
+
+		return;
+	}
+#endif
+
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
 
@@ -345,17 +367,6 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	else {
 		actionParams.ClearActionDirs();
 		actionParams.ClearElements();
-	}
-
-	if (actionParams.action == INSET && mouseAction.dragged && insetter) {
-		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
-		factor = std::min(factor, 0.25f) / 0.25f;
-		insetter->EndInset(factor);
-		renderer.UpdateGeometry();
-		delete insetter;
-		insetter = nullptr;
-		update();
-		return;
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
@@ -1199,67 +1210,42 @@ bool Viewport::bevelDrag() {
 }
 
 bool Viewport::roofExtrudeDrag() {
+#ifdef CGAL_AVAILABLE
 	Element activeElm = selectionManager.getActiveElement();
-	// object included in statement temporarily
-	if (activeElm == VERTEX || activeElm == EDGE || activeElm == OBJECT) { return false; }
-	if (selectionManager.getSelectedItems().empty()) { return false; }
+	if (activeElm != FACE || actionParams.elements.empty()) { return false; }
 
-	if (mouseAction.firstMoveEvent) {
-		setupRoofExtrudeDrag();
-		return true;
+	const uint size = uint(actionParams.elements.size());
+	uint currMesh = MAX_UINT;
+	int currNorm = -1;
+
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < size; ++i) {
+		if (actionParams.elements[i] == MAX_UINT) {
+			++i;
+			currMesh = actionParams.elements[i];
+			++currNorm;
+		}
+		else {
+			scene[currMesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[currNorm] * scale);
+		}
 	}
-
-	if (!insetter) { return false; }
-
-	translateActionElements();
 
 	renderer.UpdateGeometry();
 
 	return true;
+#else
+	return false;
+#endif
 }
 
-void Viewport::setupRoofExtrudeDrag() {
-	if (insetter) { delete insetter; }
-
-	/*Vec2u pixel = physicalPixelFromLogical(mouseAction.mouseDragStartPos);
-	Vec2u ids;
-	bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
-	if (hit && ids.x < scene.MeshCount()) {
-
-	}*/
+bool Viewport::setupInsetDrag() {
+#ifdef CGAL_AVAILABLE
+	if (insetter) { delete insetter; insetter = nullptr; }
 
 	uint meshId = selectionManager.getSelectedItems()[0].meshId;
-	if (meshId >= scene.MeshCount()) { return; }
-
-	insetter = new InsetBuilder(*scene[meshId]);
-
-	std::vector<uint> elements;
-	elements.reserve(selectionManager.getSelectedItems().size());
-
-	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId != meshId) { continue; }
-		elements.push_back(item.componentId);
-	}
-
-	actionParams.mesh = meshId;
-	actionParams.elementType = VERTEX;
-	insetter->FullInset(elements, actionParams.elements, actionParams.dirs);
-
-	renderer.UpdateGeometry();
-}
-
-void Viewport::setupInsetDrag() {
-	if (insetter) { delete insetter; }
-
-	/*Vec2u pixel = physicalPixelFromLogical(mouseAction.mouseDragStartPos);
-	Vec2u ids;
-	bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
-	if (hit && ids.x < scene.MeshCount()) {
-
-	}*/
-
-	uint meshId = selectionManager.getSelectedItems()[0].meshId;
-	if (meshId >= scene.MeshCount()) { return; }
+	if (meshId >= scene.MeshCount()) { return false; }
 
 	insetter = new InsetBuilder(*scene[meshId]);
 
@@ -1272,17 +1258,22 @@ void Viewport::setupInsetDrag() {
 	}
 
 	insetter->StartInset(elements);
+
+	return true;
+#else
+	return false;
+#endif
 }
 
 bool Viewport::insetDrag() {
+#ifdef CGAL_AVAILABLE
 	Element activeElm = selectionManager.getActiveElement();
 	// object included in statement temporarily
-	if (activeElm == VERTEX || activeElm == EDGE || activeElm == OBJECT) { return false; }
+	if (activeElm != FACE) { return false; }
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	if (mouseAction.firstMoveEvent) {
 		setupInsetDrag();
-		return true;
 	}
 
 	if (!insetter) { return false; }
@@ -1295,6 +1286,9 @@ bool Viewport::insetDrag() {
 	renderer.UpdateGeometry();
 
 	return true;
+#else
+	return false;
+#endif
 }
 
 void Viewport::extrudeSelectedElements() {

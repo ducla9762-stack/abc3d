@@ -1,13 +1,13 @@
-#if __has_include(<CGAL/straight_skeleton_2.h>)
-
 #ifndef _ABC3D_STRAIGHT_SKELETON_H_
 #define _ABC3D_STRAIGHT_SKELETON_H_
-
-#define CGAL_AVAILABLE
 
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+
+#include "CGAL.h"
+
+#ifdef CGAL_AVAILABLE
 
 #include <CGAL/point_2.h>
 #include <CGAL/straight_skeleton_2.h>
@@ -17,13 +17,6 @@
 #include "helper.h"
 #include "mesh.h"
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef CGAL::Straight_skeleton_2<K> StraightSkeleton;
-typedef CGAL::Point_2<K> Vec2_CGAL;
-
-inline Vec2f ToCyVec(const Vec2_CGAL& v) {
-	return Vec2f(float(v.x()), float(v.y()));
-}
 
 class InsetBuilder {
 	HalfEdgeMesh& mesh;
