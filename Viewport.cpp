@@ -58,10 +58,6 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
-	
-	InsetBuilder ss(*scene[0]);
-	std::vector<uint> newVerts;
-	//ss.Inset(0, 0.5f);
 
 	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
@@ -878,6 +874,42 @@ void Viewport::addSelection(int meshID) {
 	renderer.UpdateSelection(selectionManager);
 	updateGizmos();
 	update();
+}
+
+// Moves the selected element button back one - accessed by the controller
+void Viewport::cyclePrev() {
+	for (int i = 0; i < std::size(elementButtons) - 1; i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the end of the array if the first button is selected
+			if (i == 0 && elementButtons[i]->isEnabled()) {
+				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
+				return;
+			}
+			// Selects the previous button otherwise (as long as it's enabled)
+			else if(elementButtons[i - 1]->isEnabled()) {
+				elementButtons[i - 1]->setChecked(true);
+				return;
+			}
+		}
+	}
+}
+
+// Moves the selected element button forward one - accessed by the controller
+void Viewport::cycleNext() {
+	for (int i = 0; i < std::size(elementButtons) - 1; i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the first button if the last button is selected
+			if (i == std::size(elementButtons) - 1) {
+				elementButtons[0]->setChecked(true);
+				return;
+			}
+			// Selects the next button otherwise
+			else {
+				elementButtons[i + 1]->setChecked(true);
+				return;
+			}
+		}
+	}
 }
 
 SelectionItem Viewport::createSelectionItem(const Vec2u& ids)

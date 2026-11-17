@@ -149,6 +149,8 @@ public:
 	void setName(int index, std::string name);
 	void setSelection(int meshID);
 	void addSelection(int meshID);
+	void cyclePrev();
+	void cycleNext();
 
 private:
 
