@@ -26,6 +26,7 @@
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
 #include "StraightSkeleton.h"
+#include "Action.h"
 
 inline bool initGlew = true;
 
@@ -120,6 +121,22 @@ class Viewport : public QOpenGLWidget
 {
 	Q_OBJECT
 
+	friend class AbstractAction;
+	friend class InsetAction;
+	friend class RoofExtrudeAction;
+	friend class TranslateOutAction;
+	friend class TranslateFreeAction;
+	friend class TranslateEdgeAction;
+	friend class ScaleAction;
+	friend class ExtrudeAction;
+	friend class BevelAction;
+	friend class RotateActoin;
+	friend class KnifeAction;
+	friend class MergeAction;
+	friend class CollapseAction;
+	friend class DissolveAction;
+	friend class LoopcutAction;
+
 signals:	
 	void primarySelectionPosChanged(const Vec3f& pos);
 	void primarySelectionScaleChanged(const Vec3f& scale);
@@ -160,6 +177,8 @@ private:
 		void ClearActionDirs() { std::vector<Vec3f>().swap(dirs); }
 		void ClearElements() { std::vector<uint>().swap(elements); }
 	};
+
+	AbstractAction* action;
 
 	// OpenGL texture indices are renderer resources, not scene state.
 	std::unordered_map<uint, uint> referenceTextureIndices;

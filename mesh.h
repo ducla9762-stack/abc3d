@@ -15,12 +15,7 @@
 #include "cyMatrix.h"
 
 #include "helper.h"
-
-#if __has_include(<CGAL/straight_skeleton_2.h>)
-
-#define CGAL_AVAILABLE
-
-#endif
+#include "CGAL.h"
 
 #undef min
 #undef max
@@ -897,6 +892,95 @@ public:
 	/// </summary>
 	/// <param name="faceId">The face to extrude</param>
 	void Extrude(uint faceId);
+
+
+#ifdef CGAL_AVAILABLE
+	void RoofExtrude(uint face, std::vector<uint>& newVerts, Vec3f& normal) {
+		std::vector<Vec2_CGAL> polygon;
+
+		normal = GetFaceNormal(face);
+		Vec3f u, v;
+
+		planeBases(normal, u, v);
+		Vec3f first;
+
+		ForEachVertexInFace(face, LoadPolygonFunc(polygon, u, v, first));
+
+		std::shared_ptr<StraightSkeleton> skel = CGAL::create_interior_straight_skeleton_2(polygon.begin(), polygon.end());
+
+		bool found = false;
+
+		auto sEdge = skel->halfedges_begin();
+		while (sEdge != skel->halfedges_end()) {
+			if (!sEdge->is_bisector() && !sEdge->is_border() && CGAL::compare_xy(polygon[1], sEdge->vertex()->point()) == CGAL::EQUAL) {
+				found = true;
+				break;
+			}
+			++sEdge;
+		}
+
+		assert(found);
+		//std::unordered_map<int, uint> vertMap; may not actually need since I found out that you can call an internal id setter
+
+		uint edge = faceEdges[face];
+		for (uint i = 0; i < polygon.size(); ++i) {
+			sEdge->reset_id(edge);
+
+			//vertMap[sEdge->vertex()->id()] = mesh.edges[edge].dest;
+			sEdge->vertex()->reset_id__internal__(edges[edge].dest);
+
+			sEdge = sEdge->next()->opposite()->next();
+			edge = edges[edge].next;
+		}
+
+		int newEdge = int(edges.size());
+		for (auto it = skel->halfedges_begin(); it != skel->halfedges_end(); ++it) {
+			if (it->is_bisector()) { it->reset_id(newEdge); ++newEdge; }
+		}
+
+		edges.insert(edges.end(), size_t(newEdge) - edges.size(), HalfEdgeMesh::HalfEdge());
+
+		uint newVert = vertPos.size();
+		for (auto it = skel->vertices_begin(); it != skel->vertices_end(); ++it) {
+			if (!it->is_contour()) {
+				//vertMap[it->id()] = newVert; 
+				it->reset_id__internal__(newVert);
+				newVerts.push_back(newVert);
+				++newVert;
+				const Vec2_CGAL& uv = it->point();
+				Vec2f pos(float(uv.x()), float(uv.y()));
+				vertPos.push_back(projectFromUV(pos, first, u, v));
+				vertEdge.push_back(it->halfedge()->opposite()->id());
+			}
+		}
+
+		uint faceOffset = uint(faceEdges.size());
+		faceEdges.insert(faceEdges.end(), skel->size_of_faces() - 1, MAX_UINT);
+		auto faceIt = skel->faces_begin();
+
+		while (faceIt != skel->faces_end()) {
+			if (faceIt->id() == 0) { faceEdges[face] = faceIt->halfedge()->id(); }
+			else { faceEdges[faceIt->id() + faceOffset - 1] = faceIt->halfedge()->id(); }
+			++faceIt;
+		}
+
+		for (auto it = skel->halfedges_begin(); it != skel->halfedges_end(); ++it) {
+			if (it->is_border()) { continue; }
+			HalfEdgeMesh::HalfEdge& edge = edges[it->id()];
+			if (it->is_bisector()) {
+				//edge.dest = vertMap[it->vertex()->id()];
+				edge.dest = it->vertex()->id();
+				//edge.orig = vertMap[it->prev()->vertex()->id()];
+				edge.orig = it->prev()->vertex()->id();
+				edge.twin = it->opposite()->id();
+			}
+			edge.face = it->face()->id() == 0 ? face : (it->face()->id() + faceOffset - 1);
+			edge.next = it->next()->id();
+			edge.prev = it->prev()->id();
+		}
+	}
+#endif
+
 	/// <summary>Tesselates the mesh. N-gons are triangulated.</summary>
 	void tesselate();
 	void tessellateFaces(const std::vector<uint>& faceIds);

@@ -241,6 +241,10 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
+	if (action) { action->MousePress(); }
+
+	return;
+
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
 	const Vec2u pixel = physicalPixelFromLogical(pos);
@@ -268,8 +272,18 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 }
 
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
-	// The second click of a quick double click is a knife point (added on release), not a deselect
-	if (actionParams.action == KNIFE) { event->accept(); return; }
+	event->accept();
+	selectionManager.clearSelection();
+	renderer.UpdateSelection(selectionManager);
+	emit selectionChanged(-1);
+
+	if (action) { action->MouseDoubleClick(); }
+
+	emit primarySelectionChanged(false);
+	update();
+
+	return;
+
 	if (actionParams.action == MERGE) {
 		mergeFirstVertex.reset();
 	}
