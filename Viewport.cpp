@@ -214,18 +214,6 @@ void Viewport::emitSelectionChanged() {
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
-	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
-		actionParams.stage = 0;
-		actionParams.ClearActionDirs();
-		actionParams.ClearElements();
-		return;
-	}
-
-	// Only accept event if the left mouse button is clicked
-	if (!(event->button() & Qt::LeftButton)) {
-		return;
-	}
-
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
 	makeCurrent();
@@ -241,7 +229,7 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
-	if (action) { action->MousePress(); }
+	if (action && action->MousePress()) { return; }
 
 	return;
 
@@ -422,13 +410,9 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 
 	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
 
-	// AI-generated Line: Separates passive hover tracking from active drag handling
-	// so enabling Qt mouse tracking does not turn ordinary movement into camera movement.
-	const bool dragging = event->buttons() & Qt::LeftButton;
-
 	// With mouse tracking enabled, mouseMoveEvent also runs without a button
 	// pressed. Hovering must not be interpreted as a camera drag.
-	if (dragging) {
+	if (event->buttons()) {
 		mouseDragEvent(pos);
 		return;
 	}
@@ -440,6 +424,8 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		update();
 		return;
 	}
+
+	if (action && action->MouseMove()) { return; }
 
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
