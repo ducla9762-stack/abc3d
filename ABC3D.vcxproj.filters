@@ -10,7 +10,6 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="SimpleModeRenderer.cpp" />
     <ClCompile Include="GizmoRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -22,7 +21,6 @@
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="SimpleModeRenderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />

@@ -14,8 +14,4 @@ void main() {
 		color.rgb = mix(color.rgb, selectionColor, 0.5f);
 	}
 	color.a *= clamp(opacity, 0.0, 1.0);
-	// Fully transparent texels should not write depth and hide another image.
-	if (color.a <= 0.0) {
-		discard;
-	}
 }

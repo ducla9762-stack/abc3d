@@ -124,7 +124,6 @@
     <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="SimpleModeRenderer.cpp" />
     <ClCompile Include="GizmoRenderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
@@ -150,7 +149,6 @@
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="SimpleModeRenderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />

@@ -164,43 +164,6 @@ void ABC3DRenderer::DrawGizmos(GLuint defaultFramebuffer) {
 	rndrs.gizmo.Draw(defaultFramebuffer, frame.gizmoPickFbo, frame.width, frame.height);
 }
 
-// AI-generated code: Uploads a temporary camera for a simple-mode quadrant and restores the regular camera afterward.
-void ABC3DRenderer::SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov,
-	const Vec3f& gridAxisU, const Vec3f& gridAxisV) {
-	customViewProjection = true;
-	transform.view = view;
-	transform.proj = projection;
-
-	float data[16];
-	transform.view.Get(data);
-	prog.mesh.Bind();
-	prog.mesh.SetUniformMatrix4(VIEW, data);
-
-	Matrix4f viewProjection = transform.proj * transform.view;
-	viewProjection.Get(data);
-	prog.mesh.SetUniformMatrix4("proj", transform.proj.cell);
-	rndrs.grid.SetTransform(data);
-	rndrs.grid.SetPlane(gridAxisU, gridAxisV);
-	rndrs.edge.SetViewProjection(data);
-	rndrs.vert.SetViewProjection(data);
-	rndrs.gizmo.SetViewProjection(data, gizmoFov, frame.height);
-
-	// The supplied matrices already include the latest regular-camera state.
-	// Do not let Draw() replace them with the internal camera before this view renders.
-	update.camera = false;
-	update.rerenderGeom = true;
-}
-
-void ABC3DRenderer::RestoreCameraViewProjection() {
-	if (!customViewProjection) return;
-	customViewProjection = false;
-	rndrs.grid.SetPlane(WORLD_X, WORLD_Z);
-	UpdateProjectionUniforms();
-	UpdateViewUniforms();
-	update.camera = false;
-	update.rerenderGeom = true;
-}
-
 // ---------------------------------------------------------------------------------------------
 // Buffer Updates ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------

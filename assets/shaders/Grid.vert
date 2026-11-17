@@ -11,13 +11,11 @@ const vec2 positions[4] = vec2[4] (
 );
 
 uniform mat4 mvp;
-uniform vec3 axisU;
-uniform vec3 axisV;
 
 void main(){
 	// World-space position
 	pos = positions[gl_VertexID] * 1000.0;
 
 	// Projection of view-space position
-	gl_Position = mvp * vec4(axisU * pos.x + axisV * pos.y, 1.0);
+	gl_Position = mvp * vec4(pos.x, 0.0, pos.y, 1.0);
 }

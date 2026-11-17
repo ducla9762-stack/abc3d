@@ -50,37 +50,15 @@ ABC3D::ABC3D(QWidget *parent)
         &ABC3D::imageFileDialog
     );
 
-    // AI-generated code: Adds mutually exclusive UI actions for standard and simple rendering modes.
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
-    actionStandardMode->setCheckable(true);
-    actionStandardMode->setChecked(true);
     ui.menuBar->addAction(actionStandardMode);
     QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
-    actionSimpleMode->setCheckable(true);
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
-    QActionGroup* rendererModes = new QActionGroup(this);
-    rendererModes->setExclusive(true);
-    rendererModes->addAction(actionStandardMode);
-    rendererModes->addAction(actionSimpleMode);
-    // AI-generated code: Reflects rejected or automatic viewport mode changes in the menu actions.
-    QObject::connect(ui.viewport, &Viewport::simpleModeChanged, this,
-        [actionStandardMode, actionSimpleMode](bool simpleMode) {
-            if (simpleMode) actionSimpleMode->setChecked(true);
-            else actionStandardMode->setChecked(true);
-        });
-    // AI-generated code: Reflects Simple Mode's automatic orbit-camera switch in the camera controls.
-    QObject::connect(ui.viewport, &Viewport::orbitCameraActivated, this, [this]() {
-        ui.orbitButton->setChecked(true);
-        });
-
-    // Search Bar for documents
-    QToolBar* searchToolbar = addToolBar("Search");
-    searchToolbar->setMovable(false);
 
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");

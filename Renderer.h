@@ -448,8 +448,7 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		glDepthMask(GL_TRUE);
+		glDepthMask(GL_FALSE);
 		DrawVisible(pos, rotation, scale, opacity, selected, selectionColor, textureIndex);
 		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);
@@ -726,7 +725,6 @@ public:
 class GridRenderer {
 	GLSLProgram prog;
 	GLuint vao;
-	enum Uniform : uint { MVP, AXIS_U, AXIS_V, AXIS_U_COLOR, AXIS_V_COLOR };
 public:
 	bool Initialize() {
 		glGenVertexArrays(1, &vao);
@@ -738,12 +736,7 @@ public:
 		}
 
 		prog.Bind();
-		prog.RegisterUniform(MVP, "mvp");
-		prog.RegisterUniform(AXIS_U, "axisU");
-		prog.RegisterUniform(AXIS_V, "axisV");
-		prog.RegisterUniform(AXIS_U_COLOR, "axisUColor");
-		prog.RegisterUniform(AXIS_V_COLOR, "axisVColor");
-		SetPlane(WORLD_X, WORLD_Z);
+		prog.RegisterUniform(0, "mvp");
 
 		return true;
 	}
@@ -757,17 +750,7 @@ public:
 
 	void SetTransform(float data [16]) {
 		prog.Bind();
-		prog.SetUniformMatrix4(MVP, data);
-	}
-
-	void SetPlane(const Vec3f& axisU, const Vec3f& axisV) {
-		const Vec3f axisUColor(std::abs(axisU.z), std::abs(axisU.x), std::abs(axisU.y));
-		const Vec3f axisVColor(std::abs(axisV.z), std::abs(axisV.x), std::abs(axisV.y));
-		prog.Bind();
-		prog.SetUniform3(AXIS_U, &axisU.x);
-		prog.SetUniform3(AXIS_V, &axisV.x);
-		prog.SetUniform3(AXIS_U_COLOR, &axisUColor.x);
-		prog.SetUniform3(AXIS_V_COLOR, &axisVColor.x);
+		prog.SetUniformMatrix4(0, data);
 	}
 };
 
@@ -900,8 +883,6 @@ class ABC3DRenderer {
 	} blends;
 
 	bool initialized = false;
-	// AI-generated code: Tracks temporary view/projection overrides used by simple mode.
-	bool customViewProjection = false;
 	uint meshVertDrawCount;
 	uint maxObjectCount = 64; //hard coded for now
 
@@ -924,10 +905,6 @@ public:
 	void Resize(int width, int height, GLuint defaultFrameBuffer);
 	void Draw(GLuint defaultFramebuffer);
 	void DrawGizmos(GLuint defaultFramebuffer);
-	// AI-generated code: Allows simple mode to render through this renderer with an external camera.
-	void SetViewProjection(const Matrix4f& view, const Matrix4f& projection, float gizmoFov,
-		const Vec3f& gridAxisU = WORLD_X, const Vec3f& gridAxisV = WORLD_Z);
-	void RestoreCameraViewProjection();
 
 private:
 // ---------------------------------------------------------------------------------------------
@@ -1064,22 +1041,6 @@ public:
 	}
 
 	const Camera* GetCamera() const { return cam.type == ORBIT ? (Camera*)&cam.orbit : (Camera*)&cam.free; }
-	// AI-generated code: Exposes the focus and active view basis needed by simple-mode cameras and tools.
-	Vec3f GetCameraTarget() const { return cam.type == ORBIT ? cam.orbit.getOrigin() : cam.free.target(); }
-	void GetActiveViewDirections(Vec3f& forward, Vec3f& up, Vec3f& right) const {
-		const Matrix4f cameraTransform = transform.view.GetInverse();
-		forward = -Vec3f(cameraTransform.Column(2));
-		const Vec3f cameraUp(cameraTransform.Column(1));
-
-		// AI-generated code: Match Camera::directions() handedness so existing
-		// gizmo drag signs remain unchanged for every quadrant. The camera's own
-		// up vector also keeps this basis valid for the Y-axis orthographic view.
-		right = cameraUp.Cross(forward);
-		up = right.Cross(forward);
-		right.Normalize();
-		up.Normalize();
-		forward.Normalize();
-	}
 
 	void toggleCamType() {
 		if (cam.type == ORBIT) {
