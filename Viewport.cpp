@@ -58,7 +58,8 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
-	selectionManager.setActiveElement(OBJECT);
+
+	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 
 	knifeOverlay = new OverlayWidget(this);
@@ -67,6 +68,46 @@ Viewport::Viewport(QWidget *parent)
 		else { drawKnifeOverlay(painter); }
 	};
 	knifeOverlay->hide();
+
+	// AI-generated code: Draws a mouse-transparent border overlay separating the four simple-mode quadrants.
+	simpleModeBorderOverlay = new OverlayWidget(this);
+	simpleModeBorderOverlay->draw = [this](QPainter& painter) {
+		QPen borderPen(QColor(210, 210, 210, 200));
+		borderPen.setWidth(2);
+		painter.setPen(borderPen);
+
+		const qreal right = width() - 1.0;
+		const qreal bottom = height() - 1.0;
+		const qreal centerX = width() / 2.0;
+		const qreal centerY = height() / 2.0;
+		painter.drawRect(QRectF(1.0, 1.0, right - 1.0, bottom - 1.0));
+		painter.drawLine(QPointF(centerX, 1.0), QPointF(centerX, bottom));
+		painter.drawLine(QPointF(1.0, centerY), QPointF(right, centerY));
+	};
+	simpleModeBorderOverlay->hide();
+
+	const QString labelText[4] = { "Front (+X)", "Perspective", "Top (+Y)", "Side (+Z)" };
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i] = new QPushButton(labelText[i], this);
+		simpleModeLabels[i]->setFocusPolicy(Qt::NoFocus);
+		simpleModeLabels[i]->setStyleSheet(
+			"QPushButton { color: white; background-color: rgba(0, 0, 0, 160); border: none; "
+			"padding: 4px 8px; border-radius: 3px; font-weight: bold; } "
+			"QPushButton:hover { background-color: rgba(70, 70, 70, 210); } "
+			"QPushButton:pressed { background-color: rgba(100, 100, 100, 230); }"
+		);
+		simpleModeLabels[i]->adjustSize();
+		simpleModeLabels[i]->hide();
+	}
+
+	simpleModeLabels[1]->setAttribute(Qt::WA_TransparentForMouseEvents);
+	for (int index : { 0, 2, 3 }) {
+		simpleModeLabels[index]->setCursor(Qt::PointingHandCursor);
+		simpleModeLabels[index]->setToolTip("Click to view the opposite side");
+	}
+	QObject::connect(simpleModeLabels[0], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(0); });
+	QObject::connect(simpleModeLabels[2], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(1); });
+	QObject::connect(simpleModeLabels[3], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(2); });
 }
 
 Viewport::~Viewport()
@@ -209,6 +250,10 @@ void Viewport::emitSelectionChanged() {
 // Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
+void Viewport::controllerToMousePress(QMouseEvent* event) {
+	mousePressEvent(event);
+}
+
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
@@ -249,8 +294,29 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == ROOF_EXTRUDE) {
+		Element activeElm = selectionManager.getActiveElement();
+		if (activeElm != FACE) { return; }
+		if (selectionManager.getSelectedItems().empty()) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			actionParams.dirs.emplace_back();
+			actionParams.elements.push_back(MAX_UINT);
+			actionParams.elements.push_back(item.meshId);
+			scene[item.meshId]->RoofExtrude(item.componentId, actionParams.elements, actionParams.dirs.back());
+		}
+
+		renderer.UpdateGeometry();
+
+		return;
+	}
+#endif
+
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -259,7 +325,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
 		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
 		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const bool gizmoHit =
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, ids.z);
+	const bool gizmoHit = translationAxisAllowed &&
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
@@ -275,7 +343,12 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	}
 }
 
+void Viewport::controllerToMouseDoubleClick(QMouseEvent* event) {
+	mouseDoubleClickEvent(event);
+}
+
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
 	// Qt sends this instead of a second press. Its release still selects, so a left double
@@ -298,7 +371,12 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	emit primarySelectionChanged(false);
 }
 
+void Viewport::controllerToMouseRelease(QMouseEvent* event) {
+	mouseReleaseEvent(event);
+}
+
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked
@@ -325,6 +403,26 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		return;
 	}
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == INSET && insetter) {
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		insetter->EndInset(factor);
+
+		renderer.UpdateGeometry();
+
+		delete insetter;
+		insetter = nullptr;
+
+		// Commit point of the inset drag.
+		closeMouseStep();
+		update();
+
+		return;
+	}
+#endif
+
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
 
@@ -346,6 +444,10 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		update();
 		// The step stays open: the extrude commits on the next click.
 		return;
+	}
+	else {
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
@@ -497,6 +599,12 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	case BEVEL:
 		actionPerformed = bevelDrag();
 		break;
+	case INSET:
+		actionPerformed = insetDrag();
+		break;
+	case ROOF_EXTRUDE:
+		actionPerformed = roofExtrudeDrag();
+		break;
 	default:
 		//updateRenderBuffers = false;
 		break;
@@ -505,7 +613,10 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	// If no action performed and no gizmo was captured, move the camera. A
 	// captured gizmo must keep ownership of the drag even when its projected
 	// axis is degenerate from the current camera angle.
-	if (!actionPerformed && !draggingGizmo) {
+	// AI-generated code: Camera navigation belongs only to simple mode's perspective quadrant.
+	const bool perspectiveNavigation = !simpleMode ||
+		simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos));
+	if (!actionPerformed && !draggingGizmo && perspectiveNavigation) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
 		if (renderer.GetActiveCamType() == CameraType::FREE) {
 			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
@@ -524,6 +635,11 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 void Viewport::wheelEvent(QWheelEvent* event) {
 	// Accept event and get change in wheel
 	event->accept();
+	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+	// AI-generated code: Prevents orthographic quadrants from changing the perspective camera.
+	if (simpleMode && !simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos))) {
+		return;
+	}
 	QPoint change = event->angleDelta();
 
 	// Convert change in wheel to change in camera
@@ -554,6 +670,42 @@ void Viewport::resizeEvent(QResizeEvent* event) {
 		int y = this->height() - 1 - Y_PADDING - 64;
 		elementButtons[i]->move(x, y);
 	}
+
+	updateSimpleModeLabels();
+}
+
+void Viewport::updateSimpleModeLabels() {
+	const int rightX = width() / 2 + 8;
+	const int bottomY = height() / 2 + 8;
+	const QPoint positions[4] = {
+		QPoint(8, 8),
+		QPoint(rightX, 8),
+		QPoint(8, bottomY),
+		QPoint(rightX, bottomY)
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i]->move(positions[i]);
+		simpleModeLabels[i]->setVisible(simpleMode);
+		if (simpleMode) { simpleModeLabels[i]->raise(); }
+	}
+}
+
+void Viewport::toggleSimpleModeAxisView(uint axisIndex) {
+	simpleModeRenderer.ToggleAxisView(axisIndex);
+	const bool negated = simpleModeRenderer.AxisViewNegated(axisIndex);
+
+	switch (axisIndex) {
+	case 0: simpleModeLabels[0]->setText(negated ? "Back (-X)" : "Front (+X)"); break;
+	case 1: simpleModeLabels[2]->setText(negated ? "Bottom (-Y)" : "Top (+Y)"); break;
+	case 2: simpleModeLabels[3]->setText(negated ? "Opposite Side (-Z)" : "Side (+Z)"); break;
+	default: return;
+	}
+
+	const int labelIndex = axisIndex == 0 ? 0 : static_cast<int>(axisIndex + 1);
+	simpleModeLabels[labelIndex]->adjustSize();
+	updateSimpleModeLabels();
+	update();
 }
 
 void Viewport::leaveEvent(QEvent* event) {
@@ -828,7 +980,7 @@ Element Viewport::getActiveElement() {
 
 void Viewport::setActiveElement(Element element) {
 	StepScope step(this, "Select");
-	selectionManager.setActiveElement(element);
+	selectionManager.setActiveElement(element, scene);
 
 	if (element == VERTEX) {
 		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }
@@ -871,6 +1023,58 @@ void Viewport::addSelection(int meshID) {
 	update();
 }
 
+
+
+// Moves the selected element button back one - accessed by the controller
+void Viewport::cyclePrev() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the end of the array if the first button is selected
+			if (i == 0 && elementButtons[std::size(elementButtons) - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
+				setElementByIndex(std::size(elementButtons) - 1);
+				update();
+				updateGizmos();
+			}
+			// Selects the previous button otherwise (as long as it's enabled)
+			else if(elementButtons[i - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i - 1]->setChecked(true);
+				setElementByIndex(i - 1);
+				update();
+				updateGizmos();
+			}
+			return;
+		}
+	}
+}
+
+// Moves the selected element button forward one - accessed by the controller
+void Viewport::cycleNext() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the first button if the last button is selected
+			if (i == std::size(elementButtons) - 1 && elementButtons[0]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[0]->setChecked(true);
+				setElementByIndex(0);
+				update();
+				updateGizmos();
+			}
+			// Selects the next button otherwise
+			else if(i < std::size(elementButtons) && elementButtons[i + 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i + 1]->setChecked(true);
+				setElementByIndex(i + 1);
+				update();
+				updateGizmos();
+			}
+			return;
+		}
+	}
+}
+
 SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
 {
 	if (ids.y == MAX_UINT) { return { MAX_UINT, MAX_UINT }; }
@@ -889,7 +1093,8 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -1084,7 +1289,8 @@ bool Viewport::translateEdgeDrag() {
 
 	if (mouseAction.firstMoveEvent) {
 		Vec3f forward, up, right;
-		renderer.GetCamera()->directions(forward, up, right);
+		// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+		renderer.GetActiveViewDirections(forward, up, right);
 
 		// Mouse positions are converted to a bottom-left origin in the Qt event
 		// handlers. Camera::directions() uses the opposite-handed basis from the
@@ -1202,6 +1408,88 @@ bool Viewport::bevelDrag() {
 	renderer.UpdateGeometry();
 
 	return true;
+}
+
+bool Viewport::roofExtrudeDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	if (activeElm != FACE || actionParams.elements.empty()) { return false; }
+
+	const uint size = uint(actionParams.elements.size());
+	uint currMesh = MAX_UINT;
+	int currNorm = -1;
+
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < size; ++i) {
+		if (actionParams.elements[i] == MAX_UINT) {
+			++i;
+			currMesh = actionParams.elements[i];
+			++currNorm;
+		}
+		else {
+			scene[currMesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[currNorm] * scale);
+		}
+	}
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::setupInsetDrag() {
+#ifdef CGAL_AVAILABLE
+	if (insetter) { delete insetter; insetter = nullptr; }
+
+	uint meshId = selectionManager.getSelectedItems()[0].meshId;
+	if (meshId >= scene.MeshCount()) { return false; }
+
+	insetter = new InsetBuilder(*scene[meshId]);
+
+	std::vector<uint> elements;
+	elements.reserve(selectionManager.getSelectedItems().size());
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId != meshId) { continue; }
+		elements.push_back(item.componentId);
+	}
+
+	insetter->StartInset(elements);
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::insetDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	// object included in statement temporarily
+	if (activeElm != FACE) { return false; }
+	if (selectionManager.getSelectedItems().empty()) { return false; }
+
+	if (mouseAction.firstMoveEvent) {
+		setupInsetDrag();
+	}
+
+	if (!insetter) { return false; }
+
+	float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+	factor = std::min(factor, 0.25f) / 0.25f;
+
+	insetter->PreviewInset(factor);
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
 }
 
 void Viewport::extrudeSelectedElements() {
@@ -1357,7 +1645,8 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -1422,7 +1711,8 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 	Vec3f screenTangent = draggedRotationAxis.Cross(forward);
 	if (screenTangent.LengthSquared() <= 1e-8f) {
 		screenTangent = draggedRotationAxis.Cross(up);
@@ -1491,7 +1781,8 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1594,7 +1885,8 @@ bool Viewport::scaleGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1888,6 +2180,7 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
 	const Vec2u pixel = physicalPixelFromLogical(pos);
 	const uint x = pixel.x;
 	const uint y = pixel.y;
@@ -1897,14 +2190,18 @@ bool Viewport::updateHoverVisual(const Vec2f& pos) {
 		(actionParams.action == TRANSLATE_AXIS && (gizmoIds.y == 0 || gizmoIds.y == 4)) ||
 		(actionParams.action == SCALE && (gizmoIds.y == 1 || gizmoIds.y == 4)) ||
 		(actionParams.action == ROTATE && (gizmoIds.y == 2 || gizmoIds.y == 4));
-	const uint newHoveredAxis = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, gizmoIds.z);
+	const uint newHoveredAxis = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3)
 		? gizmoIds.z : MAX_UINT;
 	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
 	hoveredGizmoAxis = newHoveredAxis;
 	if (gizmoChanged) { updateGizmos(); }
 
-	const bool gizmoHit = gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+	const bool gizmoHit = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3);
 	const Vec2u selectionIds = gizmoHit
 		? Vec2u(MAX_UINT)
@@ -2230,6 +2527,8 @@ const char* Viewport::actionLabel(Action action) {
 	case COLLAPSE: return "Collapse Edge";
 	case DISSOLVE: return "Dissolve Edge";
 	case LOOPCUT: return "Loop Cut";
+	case INSET: return "Inset";
+	case ROOF_EXTRUDE: return "Roof Extrude";
 	default: return "Select";
 	}
 }
@@ -2245,6 +2544,8 @@ void Viewport::openMouseStep() {
 	switch (actionParams.action) {
 	case BEVEL:
 	case EXTRUDE:
+	case INSET:
+	case ROOF_EXTRUDE:
 		touchSelectedMeshes(true); // topology changes, even in object mode
 		break;
 	case TRANSLATE_OUT:

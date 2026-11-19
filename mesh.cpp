@@ -1052,18 +1052,6 @@ void HalfEdgeMesh::ClipCorner(uint hEdge, uint& innerClipId, uint& outerClipId, 
 	prev.prev = innerClipId;
 }
 
-Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p) {
-	uint component = abs(n.y) < 0.9f ? 1 : 0;
-	Vec3f uBasis(0.0f);
-	uBasis[component] = 1.0f;
-
-	uBasis = n.Cross(uBasis);
-	uBasis.Normalize();
-	Vec3f vBasis = n.Cross(uBasis);
-
-	return Vec2f(p.Dot(uBasis), p.Dot(vBasis));
-}
-
 // Macro to stop repeating same code but might be more confusing so not using for now
 #define TriangulatePolygonAndForEachEar(corner) \
 	while (numVertices > 2) {\
@@ -1361,8 +1349,8 @@ Vec3f HalfEdgeMesh::NewellNormal(uint faceId) const {
 	Vec3<double> normal(0.0);
 
 	StartEdgeIterationConst(faceId)
-		Vec3f orig = vertPos[edge.orig];
-		Vec3f dest = vertPos[edge.dest];
+		const Vec3f& orig = vertPos[edge.orig];
+		const Vec3f& dest = vertPos[edge.dest];
 		normal.x += (orig.y - dest.y) * (orig.z + dest.z);
 		normal.y += (orig.z - dest.z) * (orig.x + dest.x);
 		normal.z += (orig.x - dest.x) * (orig.y + dest.y);
@@ -1485,6 +1473,8 @@ void HalfEdgeMesh::deform() {
 	std::vector<Vec3f> newPositions;
 	newPositions.insert(newPositions.begin(), VertexCount(), Vec3f(0.0f));
 	for (uint vertId = 0; vertId < vertCount; ++vertId) {
+		if (vertEdge[vertId] == MAX_UINT) { continue; }
+		
 		VertexAdjacentInfo adjInfo = GetVertexAdjacentInfo(vertId);
 		if (adjInfo.triCount == 0) {
 			newPositions[vertId] = ApplyCatmullClarkMask(vertId, adjInfo.edgeCount, adjInfo.quadCount);
@@ -1849,12 +1839,15 @@ void HalfEdgeMesh::splitRefinedFace(uint faceId) {
 
 void HalfEdgeMesh::tessellateFaces(const std::vector<uint>& faceIds) {
 	for (uint faceId : faceIds) {
+		if (faceEdges[faceId] == MAX_UINT) { continue; }
 		if (IsNGon(faceId)) { TriangulateFace(faceId); }
 	}
 
 	uint prevMeshEdgeCount = edges.size();
 
 	for (uint faceId : faceIds) {
+		if (faceEdges[faceId] == MAX_UINT) { continue; }
+
 		uint first = faceEdges[faceId];
 		uint curr = first;
 		do {
@@ -1867,7 +1860,10 @@ void HalfEdgeMesh::tessellateFaces(const std::vector<uint>& faceIds) {
 		} while (curr != first);
 	}
 
-	for (uint faceId : faceIds) { splitRefinedFace(faceId); }
+	for (uint faceId : faceIds) { 
+		if (faceEdges[faceId] == MAX_UINT) { continue; }
+		splitRefinedFace(faceId); 
+	}
 }
 
 void HalfEdgeMesh::tesselate() {
@@ -1875,6 +1871,7 @@ void HalfEdgeMesh::tesselate() {
 	if (faceEdges.size() * 4 > 100000) { return; }
 
 	for (uint faceId = 0; faceId < faceEdges.size(); ++faceId) {
+		if (faceEdges[faceId] == MAX_UINT) { continue; }
 		if (IsNGon(faceId)) { TriangulateFace(faceId); }
 	}
 
@@ -1882,6 +1879,7 @@ void HalfEdgeMesh::tesselate() {
 	uint prevMeshEdgeCount = edges.size();
 
 	for (uint edgeId = 0; edgeId < prevMeshEdgeCount; ++edgeId) {
+		if (edges[edgeId].dest == MAX_UINT) { continue; }
 		const HalfEdge& edge = edges[edgeId];
 		if (edge.next < prevMeshEdgeCount) { // If edge hasn't already been refined
 			refineEdge(edgeId);
@@ -1891,6 +1889,7 @@ void HalfEdgeMesh::tesselate() {
 	// Tesselate faces
 	uint prevMeshFaceCount = faceEdges.size();
 	for (uint faceId = 0; faceId < prevMeshFaceCount; ++faceId) {
+		if (faceEdges[faceId] == MAX_UINT) { continue; }
 		splitRefinedFace(faceId);
 	}
 

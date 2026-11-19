@@ -8,8 +8,16 @@
 #include <QTreeView>
 #include <QCursor>
 #include <QButtonGroup>
+#include <QActionGroup>
 #include <QSaveFile>
 #include <QSignalBlocker>
+#include <QLineEdit>
+#include <QWidgetAction>
+#include <QToolBar>
+#include <QCompleter>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
+#include <QTimer>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -33,6 +41,14 @@ private:
     QStandardItemModel* sceneModel;
     QModelIndex sceneModelIndex;
 
+    bool L2pressed = false;
+    bool R2pressed = false;
+    QGamepad* controller = nullptr;
+    QGamepadManager* controllerManager = QGamepadManager::instance();
+    QList<int> devices;
+    QTimer* holdTimer = new QTimer(this);
+    int timerCaller = 0;
+  
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -48,12 +64,26 @@ private:
         else if (execResult == 6) { QDesktopServices::openUrl(QUrl("https://abc3d.me")); }
     }
 
+    // Creates all the connections for controllers
+    void createGamepad(int id);
+
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
-    void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
-    void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
+    // AI-generated code: Routes the rendering-mode actions to the viewport.
+    void showStandardMode() { ui.viewport->setSimpleMode(false); }
+    void showSimpleMode() { ui.viewport->setSimpleMode(true); }
+
+    void updateSearchBar(QString text) {
+        QModelIndex helpPath = helpFileModel->index("assets/help documents");
+        for (int i = 0; i < helpFileModel->rowCount(helpPath); i++) {
+            QModelIndex index = helpFileModel->index(i, 0, helpPath);
+            if (helpFileModel->fileName(index).toUpper().startsWith(text.toUpper())) {
+                helpRowClicked(index);
+            }
+        }
+    }
 
     void imageFileDialog() {
         QString file = QFileDialog::getOpenFileName(
@@ -160,5 +190,6 @@ signals:
     void deleteKeyPressed();
     void ctrlKeyPressed();
     void ctrlKeyReleased();
+    void cameraKeyPressed(Axis button);
 };
 

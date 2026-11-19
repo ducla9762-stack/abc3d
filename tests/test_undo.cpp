@@ -232,7 +232,7 @@ TEST(DocumentTransaction, TransformRoundTrip) {
 TEST(DocumentTransaction, TopologyRoundTripRestoresSelectionIds) {
 	Doc doc;
 	doc.AddCube();
-	doc.selection.setActiveElement(FACE);
+	doc.selection.setActiveElement(FACE, doc.scene);
 	doc.selection.addSelection({ 0, 2 });
 	const SceneSnapshot before = Snapshot(doc);
 

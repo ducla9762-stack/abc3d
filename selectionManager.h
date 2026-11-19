@@ -2,6 +2,7 @@
 #define _ABC3D_SELECTION_MANAGER_H_
 
 #include <unordered_map>
+#include "scene.h"
 #include "helper.h"
 
 #undef max
@@ -12,9 +13,6 @@ enum class SelectionTargetType : uint8_t {
 	Mesh,
 	ReferenceImage
 };
-
-// The maximum number of selected elements that is uploaded to the GPU.
-constexpr uint MAX_SELECTION_ITEMS = 64;
 
 struct SelectionItem {
 	uint meshId;
@@ -94,7 +92,6 @@ private:
 
 	// only call if item is not already added
 	void addItem(const SelectionItem& item) {
-		if (selectedItems.size() == MAX_SELECTION_ITEMS) { return; }
 
 		itemMap[item] = selectedItems.size();
 		selectedItems.push_back(item);
@@ -123,13 +120,153 @@ public:
 	/// <returns> The currently active element type. </returns>
 	Element getActiveElement() const { return activeElement; }
 
+	void DowngradeObjectSelection(Element newType, const Scene& scene, const std::vector<SelectionItem>& old) {
+		switch (newType) {
+		case FACE:
+		{
+			for (const SelectionItem& item : old) {
+				if (item.meshId >= scene.MeshCount()) { continue; }
+
+				const HalfEdgeMesh& mesh = *scene[item.meshId];
+
+				SelectionItem faceItem = item;
+
+				for (uint i = 0; i < uint(mesh.FaceCount()); ++i) {
+					if (mesh.FaceIsNull(i)) { continue; }
+					faceItem.componentId = i;
+					if (!itemMap.count(faceItem)) { addItem(faceItem); }
+				}
+			}
+			break;
+		}
+		case EDGE:
+		{
+			for (const SelectionItem& item : old) {
+				if (item.meshId >= scene.MeshCount()) { continue; }
+
+				const HalfEdgeMesh& mesh = *scene[item.meshId];
+
+				SelectionItem edgeItem = item;
+
+				for (uint i = 0; i < uint(mesh.EdgeCount()); ++i) {
+					if (mesh.EdgeIsNull(i)) { continue; }
+					edgeItem.componentId = i;
+					if (!itemMap.count(edgeItem)) { addItem(edgeItem); }
+				}
+			}
+			break;
+		}
+		case VERTEX:
+		{
+			for (const SelectionItem& item : old) {
+				if (item.meshId >= scene.MeshCount()) { continue; }
+
+				const HalfEdgeMesh& mesh = *scene[item.meshId];
+
+				SelectionItem vertItem = item;
+
+				for (uint i = 0; i < uint(mesh.VertexCount()); ++i) {
+					if (mesh.VertexIsNull(i)) { continue; }
+					vertItem.componentId = i;
+					if (!itemMap.count(vertItem)) { addItem(vertItem); }
+				}
+			}
+			break;
+		}
+		}
+	}
+
+	void DowngradeFaceSelection(Element newType, const Scene& scene, const std::vector<SelectionItem>& old) {
+		std::vector<uint> components; components.reserve(10);
+		switch (newType) {
+		case EDGE:
+		{
+			for (const SelectionItem& item : old) {
+				if (item.meshId >= scene.MeshCount() || item.componentId >= scene[item.meshId]->FaceCount()) {
+					continue;
+				}
+
+				scene[item.meshId]->GetFaceLogicalEdges(item.componentId, components);
+
+				SelectionItem edgeItem = item;
+
+				for (uint component : components) {
+					edgeItem.componentId = component;
+					if (!itemMap.count(edgeItem)) { addItem(edgeItem); }
+				}
+
+				components.clear();
+			}
+			break;
+		}
+		case VERTEX:
+		{
+			for (const SelectionItem& item : old) {
+				if (item.meshId >= scene.MeshCount() || item.componentId >= scene[item.meshId]->FaceCount()) {
+					continue;
+				}
+
+				scene[item.meshId]->GetFaceVertices(item.componentId, components);
+
+				SelectionItem vertItem = item;
+
+				for (uint component : components) {
+					vertItem.componentId = component;
+					if (!itemMap.count(vertItem)) { addItem(vertItem); }
+				}
+
+				components.clear();
+			}
+			break;
+		}
+		}
+	}
+
+	void DowngradeEdgeSelection(const Scene& scene, const std::vector<SelectionItem>& old) {
+		for (const SelectionItem& item : old) {
+			if (item.meshId >= scene.MeshCount() || item.componentId >= scene[item.meshId]->EdgeCount()) {
+				continue;
+			}
+
+			HalfEdgeMesh::HalfEdge edge = scene[item.meshId]->GetEdge(item.componentId);
+
+			SelectionItem vertItem = item;
+
+			vertItem.componentId = edge.orig;
+			if (!itemMap.count(vertItem)) { addItem(vertItem); }
+
+			vertItem.componentId = edge.dest;
+			if (!itemMap.count(vertItem)) { addItem(vertItem); }
+		}
+	}
+
 	/// <summary>
 	/// Sets the active element type and clears previous selections.
 	/// </summary>
 	/// <param name="type"> The new selection element type. </param>
-	void setActiveElement(Element type) { 
+	void setActiveElement(Element type, const Scene& scene) { 
+		if (activeElement == type) { return; }
+		if (type < activeElement) { activeElement = type; clearSelection(); return; }
+
+		std::vector<SelectionItem> old;
+
+		itemMap.clear();
+		meshMap.clear();
+		selectedItems.swap(old);
+		
+		switch (activeElement) {
+		case OBJECT:
+			DowngradeObjectSelection(type, scene, old);
+			break;
+		case FACE:
+			DowngradeFaceSelection(type, scene, old);
+			break;
+		case EDGE:
+			DowngradeEdgeSelection(scene, old);
+			break;
+		}
+
 		activeElement = type;
-		clearSelection();
 	}
 
 	// Additive mode must override the temporary Ctrl-key state.
@@ -175,7 +312,7 @@ public:
 	}
 
 	bool selectMesh(uint meshId) {
-		if (activeElement != OBJECT || objectMap.count(packUints(static_cast<uint>(SelectionTargetType::Mesh), meshId))) { return false; }
+		if (activeElement != OBJECT || meshMap.count(meshId)) { return false; }
 		addItem({ meshId, MAX_UINT });
 		return true;
 	}
@@ -224,24 +361,18 @@ public:
 		return 0;
 	}
 
-	// Kept for compatibility with the viewport API: this is the number of
-	// distinct selected scene objects, not only mesh objects.
-	uint meshCount() const { return static_cast<uint>(objectMap.size()); }
+	uint meshCount() const { return uint(meshMap.size()); }
 	uint objectCount() const { return static_cast<uint>(objectMap.size()); }
 
 	/// <param name="meshId"> Id of the mesh being queried </param>
 	/// <returns> True if contained false otherwise. </returns>
-	bool hasSelectedMesh(uint meshId) const {
-		return meshMap.count(meshId);
-	}
+	bool hasSelectedMesh(uint meshId) const { return meshMap.count(meshId); }
 
 	bool hasSelectedReferenceImage(uint imageId) const {
 		return objectMap.count(packUints(static_cast<uint>(SelectionTargetType::ReferenceImage), imageId));
 	}
 
-	bool isSelected(uint meshId, uint elementId) const {
-		return itemMap.count({ meshId, elementId });
-	}
+	bool isSelected(uint meshId, uint elementId) const { return itemMap.count({ meshId, elementId }); }
 };
 
 #endif

@@ -2,20 +2,28 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+
+#include <functional>
+#include <optional>
+#include <unordered_map>
+#include <algorithm>
+
 #include <QOpenGLWidget>
 #include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QMenu>
+#include <QInputDialog>
 #include <QImage>
 #include <QPainter>
-#include <functional>
-#include <optional>
-#include <unordered_map>
+#include <QMessageBox>
 
-#include <algorithm>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
 
 #include "renderer.h"
+// AI-generated code: Integrates the simple-mode multi-camera compositor with the viewport.
+#include "SimpleModeRenderer.h"
 #include "helper.h"
 #include "mesh.h"
 #include "selectionManager.h"
@@ -26,6 +34,7 @@
 #include "MeshLoopCut.h"
 #include "undoHistory.h"
 #include "sceneCommands.h"
+#include "StraightSkeleton.h"
 
 inline bool initGlew = true;
 
@@ -136,12 +145,16 @@ signals:
 	void displaySettingsChanged();
 	/// <summary>Undo/redo restored an element mode the active tool can't use, so the tool became Select.</summary>
 	void toolReset();
+	// AI-generated code: Keeps the main-window mode actions synchronized with the viewport.
+	void simpleModeChanged(bool enabled);
+	void orbitCameraActivated();
 
 public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT,
+		INSET, ROOF_EXTRUDE
 	};
 
 	Element getActiveElement();
@@ -150,6 +163,12 @@ public:
 	void setName(int index, std::string name);
 	void setSelection(int meshID);
 	void addSelection(int meshID);
+	void cyclePrev();
+	void cycleNext();
+	void controllerToMousePress(QMouseEvent* event);
+	void controllerToMouseRelease(QMouseEvent* event);
+	void controllerToMouseDoubleClick(QMouseEvent* event);
+	CameraType getCameraMode();
 
 private:
 
@@ -171,12 +190,19 @@ private:
 
 	ViewportMenu* menu;
 	QPushButton* elementButtons[4];
+	QPushButton* simpleModeLabels[4] = {};
 	SelectionManager selectionManager;
 	ABC3DRenderer renderer;
+	// AI-generated code: Stores the alternate compositor and the active rendering mode.
+	SimpleModeRenderer simpleModeRenderer;
+	bool simpleMode = false;
 	IconRenderer iconRenderer;
 	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler = nullptr;
+#ifdef CGAL_AVAILABLE
+	InsetBuilder* insetter;
+#endif
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool showPivot = false;
@@ -290,6 +316,8 @@ private:
 	void knifeFinish();
 	void drawKnifeOverlay(QPainter& painter);
 	OverlayWidget* knifeOverlay = nullptr;
+	// AI-generated code: Stores the overlay used to visually divide the simple-mode quadrants.
+	OverlayWidget* simpleModeBorderOverlay = nullptr;
 
 // ---------------------------------------------------------------------------------------------
 // Loop Cut ------------------------------------------------------------------------------------
@@ -312,32 +340,48 @@ private:
 
 	void initializeGL() override;
 
-	void paintGL() override {
-		renderer.Draw(defaultFramebufferObject());
+	// AI-generated code: Builds and draws camera descriptions used by the simple-mode quadrants.
+	SimpleModeRenderer::CameraView perspectiveCameraView() {
+		SimpleModeRenderer::CameraView camera;
+		camera.view = renderer.GetCamera()->transform();
+		camera.projection.SetPerspective(
+			degreesToRadians(renderer.FOV()),
+			static_cast<float>(std::max(1, static_cast<int>(width() * devicePixelRatio()))) /
+				static_cast<float>(std::max(1, static_cast<int>(height() * devicePixelRatio()))),
+			0.1f,
+			1000.0f
+		);
+		camera.gizmoFov = renderer.FOV();
+		return camera;
+	}
+
+	// AI-generated code: Draws the standard viewport contents into a caller-selected framebuffer.
+	void drawViewport(GLuint targetFramebuffer) {
+		renderer.Draw(targetFramebuffer);
 		if (scene.ReferenceImageCount() != 0) {
 			float viewProjection[16];
 			renderer.GetViewProjection(viewProjection);
 			const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
 			const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
 			imageRenderer.SetTransform(viewProjection);
-			imageRenderer.BeginPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			imageRenderer.BeginPickPass(targetFramebuffer, pixelWidth, pixelHeight);
 			for (const ReferenceImage& image : scene.ReferenceImages()) {
 				auto texture = referenceTextureIndices.find(image.id);
 				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
 				imageRenderer.DrawPick(image.position, image.rotation, image.scale, image.id, texture->second);
 			}
-			imageRenderer.EndPickPass(defaultFramebufferObject(), pixelWidth, pixelHeight);
+			imageRenderer.EndPickPass(targetFramebuffer, pixelWidth, pixelHeight);
 			for (const ReferenceImage& image : scene.ReferenceImages()) {
 				auto texture = referenceTextureIndices.find(image.id);
 				if (image.isNull() || !image.visible || texture == referenceTextureIndices.end()) continue;
 				imageRenderer.Draw(
 					image.position, image.rotation, image.scale, image.opacity,
 					selectionManager.hasSelectedReferenceImage(image.id), renderer.SelectionColor(), texture->second,
-					defaultFramebufferObject(), pixelWidth, pixelHeight
+					targetFramebuffer, pixelWidth, pixelHeight
 				);
 			}
 		}
-		renderer.DrawGizmos(defaultFramebufferObject());
+		renderer.DrawGizmos(targetFramebuffer);
 		if (showPivot && selectionManager.meshCount() == 1 && selectionManager.getActiveElement() == OBJECT &&
 			!selectionManager.getSelectedItems()[0].isReferenceImage()) {
 			Vec3f pos = renderer.CanonicalVolumePos(scene[selectionManager.getSelectedItems()[0].meshId]->Pos());
@@ -347,7 +391,65 @@ private:
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 		}
-		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE || actionParams.action == LOOPCUT); knifeOverlay->update(); }
+	}
+
+	void drawCameraView(GLuint targetFramebuffer, const SimpleModeRenderer::CameraView& camera) {
+		const bool showSurfaces = renderer.ShowSurfaces();
+		const bool showEdges = renderer.ShowEdges();
+		const bool showVertices = renderer.ShowVertices();
+
+		renderer.SetViewProjection(
+			camera.view, camera.projection, camera.gizmoFov,
+			camera.gridAxisU, camera.gridAxisV
+		);
+		if (camera.wireframeOnly) {
+			renderer.ShowSurfaces(false);
+			renderer.ShowEdges(true);
+			renderer.ShowVertices(true);
+		}
+		drawViewport(targetFramebuffer);
+
+		if (camera.wireframeOnly) {
+			renderer.ShowSurfaces(showSurfaces);
+			renderer.ShowEdges(showEdges);
+			renderer.ShowVertices(showVertices);
+		}
+	}
+	void updateSimpleModeLabels();
+	void toggleSimpleModeAxisView(uint axisIndex);
+
+	void paintGL() override {
+		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+		// AI-generated code: Selects the four-camera compositor or restores the standard camera path.
+		if (simpleMode) {
+			simpleModeRenderer.Draw(
+				defaultFramebufferObject(), pixelWidth, pixelHeight,
+				perspectiveCameraView(), renderer.GetCameraTarget(),
+				[this](GLuint framebuffer, const SimpleModeRenderer::CameraView& camera) {
+					drawCameraView(framebuffer, camera);
+				}
+			);
+			const SimpleModeRenderer::CameraView& activeCamera = simpleModeRenderer.ActiveCamera();
+			renderer.SetViewProjection(
+				activeCamera.view, activeCamera.projection, activeCamera.gizmoFov,
+				activeCamera.gridAxisU, activeCamera.gridAxisV
+			);
+		}
+		else {
+			renderer.RestoreCameraViewProjection();
+			drawViewport(defaultFramebufferObject());
+		}
+		if (simpleModeBorderOverlay) {
+			simpleModeBorderOverlay->setGeometry(rect());
+			simpleModeBorderOverlay->raise();
+			simpleModeBorderOverlay->setVisible(simpleMode);
+			simpleModeBorderOverlay->update();
+		}
+		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+		if (simpleMode) {
+			for (QPushButton* label : simpleModeLabels) { label->raise(); }
+		}
 	}
 
 	void resizeGL(int w, int h) override { 
@@ -391,6 +493,9 @@ private:
 	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
+	bool setupInsetDrag();
+	bool insetDrag();
+	bool roofExtrudeDrag();
 	void extrudeSelectedElements();
 	bool extrudeDrag();
 	bool scaleDrag();
@@ -447,13 +552,32 @@ private:
 		return selected.empty() ? all : selected;
 	}
 
-	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) const {
+	// AI-generated code: Separates displayed quadrant coordinates from renderer-buffer coordinates.
+	Vec2u displayPixelFromLogical(const Vec2f& logicalPos) const {
 		const float dpr = static_cast<float>(devicePixelRatio());
 		const int pixelWidth = std::max(1, static_cast<int>(width() * dpr));
 		const int pixelHeight = std::max(1, static_cast<int>(height() * dpr));
 		const int x = std::clamp(static_cast<int>(std::round(logicalPos.x * dpr)), 0, pixelWidth - 1);
 		const int y = std::clamp(static_cast<int>(std::round(logicalPos.y * dpr)), 0, pixelHeight - 1);
 		return Vec2u(static_cast<uint>(x), static_cast<uint>(y));
+	}
+
+	Vec2u physicalPixelFromLogical(const Vec2f& logicalPos) {
+		const int pixelWidth = std::max(1, static_cast<int>(width() * devicePixelRatio()));
+		const int pixelHeight = std::max(1, static_cast<int>(height() * devicePixelRatio()));
+		const Vec2u pixel = displayPixelFromLogical(logicalPos);
+		if (!simpleMode) return pixel;
+
+		// AI-generated code: Renders the pointed-at quadrant's picking buffers and remaps its coordinates.
+		makeCurrent();
+		simpleModeRenderer.PreparePicking(
+			pixel, pixelWidth, pixelHeight,
+			perspectiveCameraView(), renderer.GetCameraTarget(),
+			[this](GLuint framebuffer, const SimpleModeRenderer::CameraView& camera) {
+				drawCameraView(framebuffer, camera);
+			}
+		);
+		return simpleModeRenderer.MapPixelToSource(pixel);
 	}
 
 	Vec2u selectionIdsFromLogical(const Vec2f& logicalPos, Element elm) {
@@ -510,6 +634,22 @@ public slots:
 	/// <summary>Forgets every step (opening a scene, startup).</summary>
 	void clearHistory();
 
+	// AI-generated code: Switches between standard and simple viewport rendering.
+	void setSimpleMode(bool enabled) {
+		// AI-generated code: Entering simple mode from free-camera mode resets to an origin-centered orbit camera.
+		if (enabled && renderer.GetActiveCamType() != CameraType::ORBIT) {
+			const Vec3f origin(0.0f);
+			renderer.setOrbitOrigin(origin);
+			emit primaryCamParamChanged(origin);
+			emit orbitCameraActivated();
+			knifeRecompute();
+		}
+		if (simpleMode == enabled) return;
+		simpleMode = enabled;
+		updateSimpleModeLabels();
+		emit simpleModeChanged(simpleMode);
+		update();
+	}
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() {
 		StepScope step(this, "Select");
@@ -593,6 +733,22 @@ public slots:
 		setAction(LOOPCUT);
 	}
 
+	void setActionInset() {
+#ifdef CGAL_AVAILABLE
+		setAction(INSET); 
+#else
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
+
+	void setActionRoofExtrude() { 
+#ifdef CGAL_AVAILABLE
+		setAction(ROOF_EXTRUDE); 
+#else
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
+
 	/// <returns>True while the loop cut tool is the active tool.</returns>
 	bool loopCutActive() const { return actionParams.action == LOOPCUT; }
 	/// <summary>Changes how many parallel cuts the loop cut makes (at least 1).</summary>
@@ -612,6 +768,23 @@ public slots:
 		for (int i = 0; i < 4; ++i) {
 			elementButtons[i]->setEnabled(true);
 			elementButtons[i]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+		}
+	}
+
+	void setElementByIndex(int index) {
+		switch (index) {
+		case 0:
+			setElementVertex();
+			break;
+		case 1:
+			setElementEdge();
+			break;
+		case 2:
+			setElementFace();
+			break;
+		case 3:
+			setElementObject();
+			break;
 		}
 	}
 
@@ -779,10 +952,6 @@ public slots:
 				scene[mesh]->tessellateFaces(meshMap[mesh]);
 			}
 		}
-
-		makeCurrent();
-		/*renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();*/
 
 		// 10/16/26 - Update to public API.
 		renderer.UpdateGeometry();
@@ -1008,6 +1177,15 @@ public slots:
 		std::vector<Vec4u> faces;
 		generateUVSphere(vertices, faces, latitude, longitude);
 		loadMesh(vertices, faces, "UV Sphere");
+	}
+
+	void cameraKeyPress(Axis button) {
+		renderer.keyPress(button);
+		update();
+	}
+
+	CameraType getCameraType() {
+		return renderer.GetActiveCamType();
 	}
 
 	/// <summary>
@@ -1379,6 +1557,8 @@ public slots:
 
 	void setCameraModeFree() { 
 		//std::cout << renderer.getCameraPosition() << std::endl;
+		// AI-generated code: Free-camera navigation always uses the standard single viewport.
+		if (simpleMode) setSimpleMode(false);
 		renderer.setCameraMode(FREE); knifeRecompute(); update(); 
 		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
 	}
@@ -1422,6 +1602,22 @@ public slots:
 		QImage image(filepath);
 		if (image.isNull()) { return; }
 
+		const QStringList axes{
+			"Front (+X)", "Back (-X)", "Top (+Y)",
+			"Bottom (-Y)", "Side (+Z)", "Opposite Side (-Z)"
+		};
+		
+		QInputDialog orientationDialog(this);
+		orientationDialog.setWindowTitle("Reference Image Orientation");
+		orientationDialog.setLabelText("Choose the axis the image should face toward:");
+		orientationDialog.setComboBoxItems(axes);
+		orientationDialog.setComboBoxEditable(false);
+		const QSize dialogSize = orientationDialog.sizeHint();
+		orientationDialog.setMinimumSize(dialogSize);
+		orientationDialog.resize(dialogSize);
+		if (orientationDialog.exec() != QDialog::Accepted) { return; }
+		const QString selectedAxis = orientationDialog.textValue();
+
 		image = image.convertToFormat(QImage::Format_RGBA8888);
 		image.flip();
 
@@ -1430,6 +1626,22 @@ public slots:
 		StepScope step(this, "Load Reference Image");
 		ReferenceImage* reference = scene.NewReferenceImage(filepath.toStdString());
 		reference->position = Vec3f(0.0f);
+		
+		if (selectedAxis == "Front (+X)") {
+			reference->rotation = Vec3f(0.0f, 90.0f, 0.0f);
+		}
+		else if (selectedAxis == "Back (-X)") {
+			reference->rotation = Vec3f(0.0f, -90.0f, 0.0f);
+		}
+		else if (selectedAxis == "Top (+Y)") {
+			reference->rotation = Vec3f(-90.0f, 0.0f, 0.0f);
+		}
+		else if (selectedAxis == "Bottom (-Y)") {
+			reference->rotation = Vec3f(90.0f, 0.0f, 0.0f);
+		}
+		else if (selectedAxis == "Opposite Side (-Z)") {
+			reference->rotation = Vec3f(180.0f, 0.0f, 0.0f);
+		}
 		referenceTextureIndices[reference->id] = imageRenderer.AddTexture(
 			image.constBits(),
 			static_cast<uint>(image.width()),

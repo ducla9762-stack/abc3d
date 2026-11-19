@@ -53,10 +53,12 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(QtMsBuild)\Qt.props" />
+    <Import Project="QtGamepadLegacy.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(QtMsBuild)\Qt.props" />
+    <Import Project="QtGamepadLegacy.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -122,10 +124,12 @@
     <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SimpleModeRenderer.cpp" />
     <ClCompile Include="GizmoRenderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
+    <ClCompile Include="StraightSkeleton.h" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <QtMoc Include="StartMenu.h" />
@@ -138,6 +142,7 @@
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
     <QtMoc Include="ColorButton.h" />
+    <ClInclude Include="CGAL.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
@@ -147,6 +152,7 @@
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="renderBufferBuilder.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SimpleModeRenderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />
