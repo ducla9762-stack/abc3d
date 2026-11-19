@@ -207,6 +207,10 @@ void Viewport::emitSelectionChanged() {
 // Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
+void Viewport::controllerToMousePress(QMouseEvent* event) {
+	mousePressEvent(event);
+}
+
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
@@ -283,6 +287,10 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	}
 }
 
+void Viewport::controllerToMouseDoubleClick(QMouseEvent* event) {
+	mouseDoubleClickEvent(event);
+}
+
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
@@ -297,6 +305,10 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	update();
 
 	emit primarySelectionChanged(false);
+}
+
+void Viewport::controllerToMouseRelease(QMouseEvent* event) {
+	mouseReleaseEvent(event);
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
@@ -876,37 +888,54 @@ void Viewport::addSelection(int meshID) {
 	update();
 }
 
+
+
 // Moves the selected element button back one - accessed by the controller
 void Viewport::cyclePrev() {
-	for (int i = 0; i < std::size(elementButtons) - 1; i++) {
+	for (int i = 0; i < std::size(elementButtons); i++) {
 		if (elementButtons[i]->isChecked()) {
 			// Swings around to the end of the array if the first button is selected
 			if (i == 0 && elementButtons[std::size(elementButtons) - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
 				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
+				setElementByIndex(std::size(elementButtons) - 1);
+				update();
+				updateGizmos();
 			}
 			// Selects the previous button otherwise (as long as it's enabled)
 			else if(elementButtons[i - 1]->isEnabled()) {
-				qDebug() << " is enabled";
+				elementButtons[i]->setChecked(false);
 				elementButtons[i - 1]->setChecked(true);
+				setElementByIndex(i - 1);
+				update();
+				updateGizmos();
 			}
+			return;
 		}
 	}
 }
 
 // Moves the selected element button forward one - accessed by the controller
 void Viewport::cycleNext() {
-	for (int i = 0; i < std::size(elementButtons) - 1; i++) {
+	for (int i = 0; i < std::size(elementButtons); i++) {
 		if (elementButtons[i]->isChecked()) {
 			// Swings around to the first button if the last button is selected
-			if (i == std::size(elementButtons) - 1) {
+			if (i == std::size(elementButtons) - 1 && elementButtons[0]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
 				elementButtons[0]->setChecked(true);
-				return;
+				setElementByIndex(0);
+				update();
+				updateGizmos();
 			}
 			// Selects the next button otherwise
-			else {
+			else if(i < std::size(elementButtons) && elementButtons[i + 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
 				elementButtons[i + 1]->setChecked(true);
-				return;
+				setElementByIndex(i + 1);
+				update();
+				updateGizmos();
 			}
+			return;
 		}
 	}
 }

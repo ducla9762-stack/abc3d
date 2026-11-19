@@ -151,6 +151,9 @@ public:
 	void addSelection(int meshID);
 	void cyclePrev();
 	void cycleNext();
+	void controllerToMousePress(QMouseEvent* event);
+	void controllerToMouseRelease(QMouseEvent* event);
+	void controllerToMouseDoubleClick(QMouseEvent* event);
 
 private:
 
@@ -551,6 +554,23 @@ public slots:
 		for (int i = 0; i < 4; ++i) {
 			elementButtons[i]->setEnabled(true);
 			elementButtons[i]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+		}
+	}
+
+	void setElementByIndex(int index) {
+		switch (index) {
+		case 0:
+			setElementVertex();
+			break;
+		case 1:
+			setElementEdge();
+			break;
+		case 2:
+			setElementFace();
+			break;
+		case 3:
+			setElementObject();
+			break;
 		}
 	}
 

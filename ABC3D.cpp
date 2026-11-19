@@ -417,179 +417,208 @@ ABC3D::ABC3D(QWidget *parent)
     }
     const QList<int> devices = controllerManager->connectedGamepads();
 
-    // Controller Connections
+    // Create the first controller on start
     if (!devices.isEmpty()) {
-        QGamepad* controller = new QGamepad(devices.first(), this);
-        // Analog Sticks
-        connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) mutable {
-            // Changes the cursor's X value and leave the y value
-            QCursor::setPos(QCursor::pos().x() + value, QCursor::pos().y());
-        });
-
-        connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
-            // Changes the cursor's Y value and leaves the x value
-            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + value);
-        });
-
-        connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
-            
-        });
-
-        connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
-            
-        });
-
-        connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-
-        // Controller Buttons
-        // A button: selects the button, mesh, or 
-        // it's hovering over
-        connect(controller, &QGamepad::buttonAChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-                //ui.viewport->mouseReleaseEvent(QMouseEvent* rightclick);
-                // Check whether it's hovering over the entire layout
-                if (ui.verticalLayout->geometry().contains(controller->axisLeftX(), controller->axisLeftY())) {
-                    for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
-                        QLayoutItem* item = ui.verticalLayout->itemAt(i);
-                        QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
-                        // Check which individual button it's hovering over and select it
-                        if (btn->geometry().contains(controller->axisLeftX(), controller->axisLeftY())) {
-                            btn->setChecked(true);
-                            return;
-                        }
-                    }
-                }
-
-                // Check whether it's hovering over any objects
-                else {
-
-                }
-            }
-        });
-
-        connect(controller, &QGamepad::buttonBChanged, this, [this, controller](bool pressed) {
-            if (pressed) { }
-        });
-
-        connect(controller, &QGamepad::buttonXChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-                
-            }
-        });
-
-        connect(controller, &QGamepad::buttonYChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        // Shoulder bumpers and triggers
-        // Moves the selected left-toolbar button backward one
-        connect(controller, &QGamepad::buttonL1Changed, this, [this, controller](bool pressed) {
-            if (pressed) {
-                for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
-                    QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
-                    if (btn->isChecked()) {
-                        // Selects the last button if the first was selected
-                        if (i == 0) {
-                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(ui.verticalLayout->count() - 2)->widget());
-                            newBtn->setChecked(true);
-                        }
-
-                        // Selects the previous button otherwise
-                        else {
-                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
-                            newBtn->setChecked(true);
-                        }
-                        return;
-                    }
-                }
-            }
-        });
-
-        // Moves the selected left-toolbar button forward one
-        connect(controller, &QGamepad::buttonR1Changed, this, [this, controller](bool pressed) {
-            if (pressed) {
-                for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
-                    QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
-                    if (btn->isChecked()) {
-                        // Selects the first button if it reaches the end
-                        if (i == ui.verticalLayout->count() - 2) {
-                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(0)->widget());
-                            newBtn->setChecked(true);
-                        }
-
-                        // Selects the next button otherwise
-                        else {
-                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
-                            newBtn->setChecked(true);
-                        }
-
-                        return;
-                    }
-                }
-            }
-        });
-
-        connect(controller, &QGamepad::buttonL2Changed, this, [this, controller](bool pressed) {
-            if (pressed) { ui.viewport->cyclePrev(); }
-        });
-
-       
-
-        connect(controller, &QGamepad::buttonR2Changed, this, [this, controller](bool pressed) {
-            if (pressed) { ui.viewport->cycleNext(); }
-        });
-
-        // D-Pad
-        connect(controller, &QGamepad::buttonUpChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        connect(controller, &QGamepad::buttonDownChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        connect(controller, &QGamepad::buttonLeftChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        connect(controller, &QGamepad::buttonRightChanged, this, [this, controller](bool pressed) {
-            if (pressed) {
-
-            }
-        });
-
-        // Home, Select, & Start
-        connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
-            if (pressed) { showStart(); }
-        });
-
-        connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
-            if (pressed) { saveProject(); }
-        });
-
-        connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
-            if (pressed) { this->close(); }
-        });
+        createGamepad(devices.first()); 
     }
+
+    // AI-generated
+    // Handles gamepads connected after start 
+    connect(controllerManager, &QGamepadManager::gamepadConnected, this, [this](int id) {
+        if (!controller) {
+            createGamepad(id);
+        }
+    });
+
+    // Handles gamepads being disconnected
+    connect(controllerManager, &QGamepadManager::gamepadDisconnected, this, [this](int id) {
+        if (controller && controller->deviceId() == id) {
+            controller->deleteLater();
+            controller = nullptr;
+        }
+    });
+}
+
+void ABC3D::createGamepad(int id) {
+    QGamepad* controller = new QGamepad(id, this);
+    // Analog Sticks
+    connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) {
+        // Changes the cursor's X value and leave the y value
+        QCursor::setPos(QCursor::pos().x() + 60 * value, QCursor::pos().y());
+    });
+
+    connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
+        // Changes the cursor's Y value and leaves the x value
+        QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + 60 * value);
+    });
+
+    connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
+
+        });
+
+    connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
+
+        });
+
+    connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+    connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+
+    // Controller Buttons
+    // A button: selects the button, mesh, or whatever else it's hovering over
+    connect(controller, &QGamepad::buttonAChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+            QWidget* target = QApplication::widgetAt(QCursor::pos());
+            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+
+            QMouseEvent* pressEvent = new QMouseEvent(QEvent::MouseButtonPress, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+
+            ui.viewport->controllerToMousePress(pressEvent);
+            ui.viewport->controllerToMouseRelease(releaseEvent);
+
+            QApplication::postEvent(target, pressEvent);
+            QApplication::postEvent(target, releaseEvent);
+        }
+    });
+
+    connect(controller, &QGamepad::buttonBChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+            QWidget* target = QApplication::widgetAt(QCursor::pos());
+            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+            QMouseEvent* event = new QMouseEvent(QEvent::MouseButtonDblClick, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            ui.viewport->controllerToMouseRelease(event);
+            QApplication::postEvent(target, event);
+        }
+    });
+
+    connect(controller, &QGamepad::buttonXChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonYChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    // Shoulder bumpers and triggers
+    // Moves the selected left-toolbar button backward one
+    connect(controller, &QGamepad::buttonL1Changed, this, [this, controller](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the last button if the first was selected
+                    if (i == 0) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(ui.verticalLayout->count() - 2)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    // Selects the previous button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected left-toolbar button forward one
+    connect(controller, &QGamepad::buttonR1Changed, this, [this, controller](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the first button if it reaches the end
+                    if (i == ui.verticalLayout->count() - 2) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(0)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    // Selects the next button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected element backward one
+    connect(controller, &QGamepad::buttonL2Changed, this, [this](bool pressed) {
+        if (pressed == L2pressed) { return; }
+        L2pressed = pressed;
+
+        if (pressed) { ui.viewport->cyclePrev(); }
+        });
+
+
+    // Moves the selected element forward one
+    connect(controller, &QGamepad::buttonR2Changed, this, [this](bool pressed) {
+        if (pressed == R2pressed) { return; }
+        R2pressed = pressed;
+
+        if (pressed) { ui.viewport->cycleNext(); }
+        });
+
+    // D-Pad
+    connect(controller, &QGamepad::buttonUpChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+    connect(controller, &QGamepad::buttonDownChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonLeftChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonRightChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    // Home, Select, & Start
+    connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
+        if (pressed) { showStart(); }
+    });
+
+    connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
+        if (pressed) { saveProject(); }
+    });
+
+    connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
+        if (pressed) { this->close(); }
+    });
 }
 
 void ABC3D::createSceneButton(uint i, QString name) {
