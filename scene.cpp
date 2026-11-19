@@ -33,6 +33,24 @@ void Scene::DeleteMesh(uint id) {
 	names.pop_back();
 }
 
+std::pair<std::unique_ptr<HalfEdgeMesh>, std::string> Scene::DetachMesh(uint id) {
+	std::unique_ptr<HalfEdgeMesh> mesh(meshes.at(id));
+	std::string name = std::move(names[id]);
+	std::swap(meshes[id], meshes.back());
+	std::swap(names[id], names.back());
+	meshes.pop_back();
+	names.pop_back();
+	return { std::move(mesh), std::move(name) };
+}
+
+void Scene::InsertMeshAt(uint id, std::unique_ptr<HalfEdgeMesh> mesh, std::string name) {
+	if (id > meshes.size()) { id = static_cast<uint>(meshes.size()); }
+	meshes.push_back(mesh.release());
+	names.push_back(std::move(name));
+	std::swap(meshes[id], meshes.back());
+	std::swap(names[id], names.back());
+}
+
 void Scene::DuplicateMesh(uint id, std::string name) {
 	HalfEdgeMesh& newMesh = *NewMesh(name);
 	newMesh = *meshes.at(id);

@@ -41,6 +41,20 @@ struct std::hash<SelectionItem> {
 	}
 };
 
+/// <summary>
+/// The undoable part of a selection: element mode plus the selected items in order (the first
+/// item is the "primary" one the panels show). Additive flags are input state, not document state.
+/// </summary>
+struct SelectionState {
+	Element activeElement = OBJECT;
+	std::vector<SelectionItem> items;
+
+	bool operator==(const SelectionState& other) const {
+		return activeElement == other.activeElement && items == other.items;
+	}
+	bool operator!=(const SelectionState& other) const { return !(*this == other); }
+};
+
 class SelectionManager {
 private:
 	Element activeElement;
@@ -263,6 +277,21 @@ public:
 	// always additive even when Ctrl is not pressed.
 	bool isAdditiveMode() const { return additiveMode; }
 	void setAdditiveMode(bool additiveMode) { this->additiveMode = additiveMode; }
+
+	/// <returns>A copy of the element mode and selected items.</returns>
+	SelectionState getState() const { return { activeElement, selectedItems }; }
+
+	/// <summary>
+	/// Replaces the element mode and selection with a saved state. Ids are restored as-is;
+	/// callers that changed the scene must restore the matching geometry too.
+	/// </summary>
+	void setState(const SelectionState& state) {
+		activeElement = state.activeElement;
+		clearSelection();
+		for (const SelectionItem& item : state.items) {
+			if (!itemMap.count(item)) { addItem(item); }
+		}
+	}
 
 	/// <summary>
 	/// Clears the list of selected items.

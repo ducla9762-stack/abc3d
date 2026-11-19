@@ -10,6 +10,7 @@
 #include <QButtonGroup>
 #include <QActionGroup>
 #include <QSaveFile>
+#include <QSignalBlocker>
 #include <QLineEdit>
 #include <QWidgetAction>
 #include <QToolBar>
@@ -181,6 +182,9 @@ private slots:
     void meshCountChanged(uint meshCount);
     void createSceneButton(uint index, QString name);
     void selectionChanged(int index);
+    void refreshUndoActions();
+    void refreshDisplayWidgets();
+    void showSelectTool();
 
 signals:
     void deleteKeyPressed();

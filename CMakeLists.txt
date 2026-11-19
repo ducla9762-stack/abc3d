@@ -66,6 +66,8 @@ add_library(abc3d_core STATIC
     sceneFile.h
     selectionManager.h
     renderBufferBuilder.h
+    undoHistory.h
+    sceneCommands.h
 )
 
 #PUBLIC to allow inheritance of these paths

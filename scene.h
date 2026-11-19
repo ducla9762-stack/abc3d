@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <memory>
+#include <utility>
 
 #include "mesh.h"
 #include "helper.h"
@@ -47,6 +49,19 @@ public:
 	/// </summary>
 	/// <param name="id"> ID of mesh to be deleted. </param>
 	void DeleteMesh(uint id);
+
+	/// <summary>
+	/// Removes the mesh at id exactly like DeleteMesh (the last mesh moves into the hole),
+	/// but hands the mesh and its name to the caller instead of deleting it. Undo keeps
+	/// removed meshes this way without copying them.
+	/// </summary>
+	std::pair<std::unique_ptr<HalfEdgeMesh>, std::string> DetachMesh(uint id);
+
+	/// <summary>
+	/// Exact inverse of DetachMesh(id): appends the mesh, then swaps it into slot id, which
+	/// sends the mesh that was moved into the hole back to the end. id == MeshCount() appends.
+	/// </summary>
+	void InsertMeshAt(uint id, std::unique_ptr<HalfEdgeMesh> mesh, std::string name);
 
 	/// <summary>
 	/// Duplicate the mesh at id from the mesh list.
