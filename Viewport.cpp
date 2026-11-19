@@ -140,6 +140,9 @@ void Viewport::initializeGL() {
 		return;
 	}
 
+	// Settings made before GL existed (startup colors) only partly reached the renderer.
+	applyDisplaySettings();
+
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
 	renderer.SetScene(scene);
 	renderer.UpdateGeometry();
@@ -258,6 +261,13 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		actionParams.stage = 0;
 		actionParams.ClearActionDirs();
 		actionParams.ClearElements();
+		// The second click is the commit point of an edge/vertex extrude.
+		closeMouseStep();
+		// Its release can still change the selection, which is a step of its own.
+		if (event->button() & Qt::LeftButton) {
+			leftButtonDown = true;
+			openMouseStep();
+		}
 		return;
 	}
 
@@ -265,6 +275,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	if (!(event->button() & Qt::LeftButton)) {
 		return;
 	}
+
+	leftButtonDown = true;
+	openMouseStep();
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -338,6 +351,14 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
+	// Qt sends this instead of a second press. Its release still selects, so a left double
+	// click is one step from here to the release, like any other click.
+	const bool left = event->button() & Qt::LeftButton;
+	if (left) {
+		leftButtonDown = true;
+		openMouseStep();
+	}
+	StepScope step(this, "Select");
 	if (actionParams.action == MERGE) {
 		mergeFirstVertex.reset();
 	}
@@ -360,6 +381,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) { return; }
+	leftButtonDown = false;
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -376,6 +398,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			knifePath.push_back(knifeCursor);
 			knifeRecompute();
 		}
+		closeMouseStep();
 		update();
 		return;
 	}
@@ -392,6 +415,8 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		delete insetter;
 		insetter = nullptr;
 
+		// Commit point of the inset drag.
+		closeMouseStep();
 		update();
 
 		return;
@@ -417,6 +442,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		renderer.UpdateGeometry();
 		renderer.UpdateSelection(selectionManager);
 		update();
+		// The step stays open: the extrude commits on the next click.
 		return;
 	}
 	else {
@@ -436,6 +462,7 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			if (image && image->visible && !image->locked &&
 				referenceTextureIndices.find(imageId) != referenceTextureIndices.end()) {
 				handleSelection(SelectionItem::ReferenceImage(imageId));
+				closeMouseStep();
 				return;
 			}
 		}
@@ -473,6 +500,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 	draggedGizmoAxis = MAX_UINT;
 	draggedRotationAxis = Vec3f(0.0f);
 	updateGizmos();
+
+	// Commit point for drags and clicks.
+	closeMouseStep();
 
 	// A captured gizmo click does not change selection or hover state, so it
 	// does not need another repaint on release.
@@ -706,6 +736,15 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::setAction(Action action) {
+	StepScope step(this, "Select");
+	// Leaving extrude while it waits for its second click keeps the extrusion, as before;
+	// it is recorded as a finished step.
+	if (actionParams.action == EXTRUDE && action != EXTRUDE && actionParams.stage == 1) {
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+		closeMouseStep();
+	}
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
 	if (actionParams.action == LOOPCUT && action != LOOPCUT) { loopCutClearPreview(); }
 	if ((actionParams.action == MERGE && action != MERGE) ||
@@ -816,11 +855,13 @@ void Viewport::handleMergeVertexClick(const Vec2u& selectionIds) {
 		return;
 	}
 
+	touchMesh(clicked.meshId);
 	if (!scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
 		std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
 		return;
 	}
 
+	labelStep("Merge Vertices");
 	std::cout << "Merged vertex " << source.componentId << " into vertex "
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
@@ -848,12 +889,14 @@ void Viewport::handleCollapseEdgeClick(const Vec2u& selectionIds) {
 	std::cout << "Collapse mode edge clicked: mesh " << meshId
 		<< ", edge " << edgeId << std::endl;
 
+	touchMesh(meshId);
 	if (!scene[meshId]->CollapseEdge(edgeId)) {
 		std::cout << "Edge collapse rejected: the result would have invalid or open topology."
 			<< std::endl;
 		return;
 	}
 
+	labelStep("Collapse Edge");
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
 	renderer.UpdateGeometry();
@@ -879,12 +922,14 @@ void Viewport::handleDissolveEdgeClick(const Vec2u& selectionIds) {
 	std::cout << "Dissolve mode edge clicked: mesh " << meshId
 		<< ", edge " << edgeId << std::endl;
 
+	touchMesh(meshId);
 	if (!scene[meshId]->DissolveEdge(edgeId)) {
 		std::cout << "Dissolve rejected: choose an interior edge with valid topology."
 			<< std::endl;
 		return;
 	}
 
+	labelStep("Dissolve Edge");
 	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
 	renderer.UpdateGeometry();
@@ -934,13 +979,14 @@ Element Viewport::getActiveElement() {
 }
 
 void Viewport::setActiveElement(Element element) {
+	StepScope step(this, "Select");
 	selectionManager.setActiveElement(element, scene);
 
 	if (element == VERTEX) {
 		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }
 	}
-	else if(!verticesAlwaysVisible) {
-		renderer.ShowVertices(false);
+	else {
+		renderer.ShowVertices(displaySettings.verticesAlwaysVisible);
 	}
 
 	// Changing element mode clears the selection in SelectionManager. Push the
@@ -961,6 +1007,7 @@ void Viewport::setActiveElement(Element element) {
 
 
 void Viewport::setSelection(int meshID) {
+	StepScope step(this, "Select");
 	selectionManager.clearSelection();
 	selectionManager.selectMesh(meshID);
 	renderer.UpdateSelection(selectionManager);
@@ -969,6 +1016,7 @@ void Viewport::setSelection(int meshID) {
 }
 
 void Viewport::addSelection(int meshID) {
+	StepScope step(this, "Select");
 	selectionManager.selectMesh(meshID);
 	renderer.UpdateSelection(selectionManager);
 	updateGizmos();
@@ -2253,6 +2301,18 @@ void Viewport::knifeConfirm() {
 	knifeHasCursor = false;
 	knifeRecompute();
 
+	// Enter is the commit point. The meshes as they were before the cut are already copied.
+	{
+		StepScope step(this, "Knife Cut");
+		if (recording()) {
+			for (auto& original : knifeOriginals) {
+				if (original.first < scene.MeshCount()) {
+					pendingStep.touchMesh(docRefs, original.first, std::move(original.second));
+				}
+			}
+		}
+	}
+
 	// Same tool, next cut starts from the result
 	knifeBegin();
 
@@ -2339,12 +2399,14 @@ void Viewport::handleLoopCutClick(const Vec2u& selectionIds) {
 		return;
 	}
 
+	touchMesh(meshId);
 	HalfEdgeMeshLoopCutter cutter(*scene[meshId]);
 	if (!cutter.Cut(edgeId, loopCutCount)) {
 		std::cout << "Loop cut rejected: " << cutter.error << std::endl;
 		return;
 	}
-	
+
+	labelStep("Loop Cut");
 	std::cout << "Loop cut through edge " << edgeId << " on mesh " << meshId
 		<< " (" << loopCutCount << " cut" << (loopCutCount == 1 ? "" : "s") << ")" << std::endl;
 	loopCutClearPreview();
@@ -2393,6 +2455,286 @@ void Viewport::drawLoopCutOverlay(QPainter& painter) {
 	hint += QString::number(loopCutCount);
 	hint += ", Esc to leave";
 	painter.drawText(QPointF(12.0, 20.0), hint);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Undo / Redo ---------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+void Viewport::beginStep(std::string label) {
+	if (stepDepth++ == 0 && !applyingHistory) {
+		pendingStep.begin(docRefs, std::move(label));
+	}
+}
+
+void Viewport::commitStep() {
+	if (stepDepth == 0) { return; }
+	if (--stepDepth > 0 || !pendingStep.isActive()) { return; }
+
+	std::unique_ptr<Command> cmd = pendingStep.commit(docRefs);
+	if (cmd) {
+		history.push(std::move(cmd));
+		emit historyChanged();
+	}
+}
+
+void Viewport::discardOpenStep() {
+	pendingStep.reset();
+	stepDepth = 0;
+	mouseStepOpen = false;
+}
+
+void Viewport::touchSelectedMeshes(bool fullCopy) {
+	if (!recording()) { return; }
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage() || item.meshId >= scene.MeshCount()) { continue; }
+		if (fullCopy) { touchMesh(item.meshId); }
+		else { touchVertexPositions(item.meshId); }
+	}
+}
+
+HalfEdgeMesh* Viewport::newMeshRecorded(std::string name) {
+	HalfEdgeMesh* mesh = scene.NewMesh(std::move(name));
+	if (recording()) {
+		pendingStep.recordStructural(std::make_unique<AddMeshCommand>(scene.MeshCount() - 1));
+	}
+	return mesh;
+}
+
+void Viewport::deleteMeshRecorded(uint meshId) {
+	if (meshId >= scene.MeshCount()) { return; }
+	if (!recording()) {
+		scene.DeleteMesh(meshId);
+		return;
+	}
+	// The command keeps the mesh, so nothing is copied and the pointer the step holds stays valid.
+	auto detached = scene.DetachMesh(meshId);
+	pendingStep.recordStructural(std::make_unique<DeleteMeshCommand>(
+		meshId, std::move(detached.first), std::move(detached.second)));
+}
+
+const char* Viewport::actionLabel(Action action) {
+	switch (action) {
+	case TRANSLATE_OUT:
+	case TRANSLATE_FREE:
+	case TRANSLATE_AXIS:
+	case TRANSLATE_EDGE: return "Move";
+	case SCALE: return "Scale";
+	case ROTATE: return "Rotate";
+	case EXTRUDE: return "Extrude";
+	case BEVEL: return "Bevel";
+	case MERGE: return "Merge Vertices";
+	case COLLAPSE: return "Collapse Edge";
+	case DISSOLVE: return "Dissolve Edge";
+	case LOOPCUT: return "Loop Cut";
+	case INSET: return "Inset";
+	case ROOF_EXTRUDE: return "Roof Extrude";
+	default: return "Select";
+	}
+}
+
+void Viewport::openMouseStep() {
+	if (mouseStepOpen) { return; }
+	beginStep(actionLabel(actionParams.action));
+	mouseStepOpen = true;
+
+	// Capture what the drag may change before it starts. Object transforms, selection and
+	// reference images are always captured; meshes only when this action edits them.
+	const bool objects = selectionManager.getActiveElement() == OBJECT;
+	switch (actionParams.action) {
+	case BEVEL:
+	case EXTRUDE:
+	case INSET:
+	case ROOF_EXTRUDE:
+		touchSelectedMeshes(true); // topology changes, even in object mode
+		break;
+	case TRANSLATE_OUT:
+	case TRANSLATE_FREE:
+	case TRANSLATE_AXIS:
+	case TRANSLATE_EDGE:
+	case SCALE:
+		if (!objects) { touchSelectedMeshes(false); } // components only move
+		break;
+	default:
+		break; // click tools capture their mesh right before they change it
+	}
+}
+
+void Viewport::closeMouseStep() {
+	if (!mouseStepOpen) { return; }
+	mouseStepOpen = false;
+	commitStep();
+}
+
+void Viewport::cancelExtrudeStage() {
+	makeCurrent();
+	if (mouseStepOpen && stepDepth == 1 && pendingStep.isActive()) {
+		pendingStep.rollback(docRefs);
+	}
+	discardOpenStep();
+	actionParams.stage = 0;
+	actionParams.ClearActionDirs();
+	actionParams.ClearElements();
+	refreshAfterHistory();
+}
+
+void Viewport::clearHistory() {
+	history.clear();
+	emit historyChanged();
+}
+
+void Viewport::stepHistory(bool backwards) {
+	// A drag owns the document until it is released.
+	if (leftButtonDown) { return; }
+
+	// Undo/redo in the middle of an action cancels the action instead, like Esc.
+	if (knifeSession && !knifePath.empty()) {
+		knifeCancel();
+		return;
+	}
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		cancelExtrudeStage();
+		return;
+	}
+	if (stepDepth > 0) { return; }
+
+	makeCurrent();
+	applyingHistory = true;
+	const bool changed = backwards ? history.undo(docRefs) : history.redo(docRefs);
+	if (changed) { refreshAfterHistory(); }
+	applyingHistory = false;
+	emit historyChanged();
+}
+
+void Viewport::sanitizeSelection() {
+	// Ids are restored as they were saved; drop any that no longer exist so the renderer and
+	// the panels never index past the end of a mesh.
+	SelectionState state = selectionManager.getState();
+	const size_t before = state.items.size();
+	state.items.erase(std::remove_if(state.items.begin(), state.items.end(), [&](const SelectionItem& item) {
+		if (item.isReferenceImage()) { return scene.FindReferenceImage(item.componentId) == nullptr; }
+		if (item.meshId >= scene.MeshCount()) { return true; }
+		const HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (state.activeElement) {
+		case VERTEX: return item.componentId >= mesh->VertexCount();
+		case EDGE: return item.componentId >= mesh->EdgeCount();
+		case FACE: return item.componentId >= mesh->FaceCount();
+		default: return false;
+		}
+	}), state.items.end());
+	if (state.items.size() != before) { selectionManager.setState(state); }
+}
+
+void Viewport::syncReferenceTextures() {
+	// A deleted image's texture is released on delete, so an image that undo brings back is
+	// uploaded again from its file.
+	for (const ReferenceImage& reference : scene.ReferenceImages()) {
+		if (reference.isNull() || referenceTextureIndices.count(reference.id)) { continue; }
+		QImage image(QString::fromStdString(reference.sourcePath));
+		if (image.isNull()) { continue; }
+		image = image.convertToFormat(QImage::Format_RGBA8888);
+		image.flip();
+		makeCurrent();
+		referenceTextureIndices[reference.id] = imageRenderer.AddTexture(
+			image.constBits(), static_cast<uint>(image.width()),
+			static_cast<uint>(image.height()), GL_RGBA);
+	}
+}
+
+void Viewport::applyDisplaySettings() {
+	const DisplaySettings& d = displaySettings;
+	if (renderer.Initialized()) {
+		makeCurrent();
+		renderer.FaceColor<true>(d.faceColor);
+		renderer.EdgeColor<true>(d.edgeColor);
+		renderer.VertexColor<true>(d.vertexColor);
+		renderer.BackgroundColor<true>(d.backgroundColor);
+		renderer.SelectColor<true>(d.selectColor);
+		renderer.HoverColor<true>(d.hoverColor);
+		// These bind a shader program, so they need GL. initializeGL applies them once it's ready.
+		renderer.SetEdgeRadius(d.edgeRadius);
+		renderer.SetVertexScale(d.vertexScale);
+	}
+	else {
+		renderer.FaceColor<false>(d.faceColor);
+		renderer.EdgeColor<false>(d.edgeColor);
+		renderer.VertexColor<false>(d.vertexColor);
+		renderer.BackgroundColor<false>(d.backgroundColor);
+		renderer.SelectColor<false>(d.selectColor);
+		renderer.HoverColor<false>(d.hoverColor);
+	}
+	renderer.ShowSurfaces(d.surfacesVisible);
+	renderer.ShowEdges(d.edgesVisible);
+	renderer.ShowGrid(d.gridVisible);
+	renderer.ShowVertices(d.verticesAlwaysVisible || selectionManager.getActiveElement() == VERTEX);
+}
+
+void Viewport::refreshAfterHistory() {
+	// Commands only change data. Everything derived from it is rebuilt here.
+	sanitizeSelection();
+
+	// Tool state that referred to the old document.
+	mergeFirstVertex.reset();
+	loopCutClearPreview();
+	edgeDragEdges.clear();
+	edgeDragDistances.clear();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	hoveredGizmoAxis = MAX_UINT;
+	draggingGizmo = false;
+	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
+
+	syncReferenceTextures();
+	applyDisplaySettings();
+
+	// Element mode may have changed with the selection.
+	const Element element = selectionManager.getActiveElement();
+	const int button = element == VERTEX ? 0 : element == EDGE ? 1 : element == FACE ? 2 : 3;
+	elementButtons[button]->setChecked(true);
+
+	bool toolFits = true;
+	switch (actionParams.action) {
+	case MERGE:
+	case TRANSLATE_EDGE: toolFits = element == VERTEX; break;
+	case COLLAPSE:
+	case DISSOLVE:
+	case LOOPCUT: toolFits = element == EDGE; break;
+	case TRANSLATE_OUT: toolFits = element != OBJECT; break;
+	case ROTATE: toolFits = element == OBJECT; break;
+	case SCALE: toolFits = element != VERTEX; break;
+	default: break;
+	}
+	if (!toolFits) {
+		// Switching with setAction would clear the selection that was just restored.
+		actionParams.action = SELECT;
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+		enableAllElements();
+		emit toolReset();
+	}
+
+	// The knife's before-copies must match the restored meshes.
+	if (knifeSession) { knifeBegin(); }
+
+	makeCurrent();
+	renderer.UpdateGeometry();
+	renderer.UpdateTransforms();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	updateGizmos();
+	update();
+
+	emit meshCountChanged(scene.MeshCount());
+	emit elementChanged(element);
+	emit selectionChanged(-1);
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (!item.isReferenceImage() && item.meshId < scene.MeshCount()) {
+			emit selectionChanged(static_cast<int>(item.meshId));
+		}
+	}
+	emitSelectionChanged();
+	emit displaySettingsChanged();
 }
 
 int Viewport::getMeshCount() {

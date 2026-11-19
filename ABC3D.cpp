@@ -433,6 +433,20 @@ ABC3D::ABC3D(QWidget *parent)
         createSceneButton(i, "Cube");
     }
 
+    // Undo / Redo. Added to the window too so the shortcuts work wherever focus is.
+    ui.actionUndo->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z));
+    ui.actionRedo->setShortcuts({ QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), QKeySequence(Qt::CTRL | Qt::Key_Y) });
+    addAction(ui.actionUndo);
+    addAction(ui.actionRedo);
+    QObject::connect(ui.actionUndo, &QAction::triggered, ui.viewport, &Viewport::undo);
+    QObject::connect(ui.actionRedo, &QAction::triggered, ui.viewport, &Viewport::redo);
+    QObject::connect(ui.viewport, &Viewport::historyChanged, this, &ABC3D::refreshUndoActions);
+    QObject::connect(ui.viewport, &Viewport::displaySettingsChanged, this, &ABC3D::refreshDisplayWidgets);
+    QObject::connect(ui.viewport, &Viewport::toolReset, this, &ABC3D::showSelectTool);
+
+    // The startup color setup above is not a user edit.
+    ui.viewport->clearHistory();
+
     // Wait for the main application to process so it registers the controller
     for (int i = 0; i < 10 && controllerManager->connectedGamepads().isEmpty(); i++) {
         QCoreApplication::processEvents();
@@ -467,6 +481,51 @@ ABC3D::ABC3D(QWidget *parent)
         }
     });
 }
+
+void ABC3D::refreshUndoActions() {
+    const bool canUndo = ui.viewport->canUndo();
+    const bool canRedo = ui.viewport->canRedo();
+    ui.actionUndo->setEnabled(canUndo);
+    ui.actionRedo->setEnabled(canRedo);
+    ui.actionUndo->setText(canUndo ? QString("Undo %1").arg(ui.viewport->undoLabel()) : QString("Undo"));
+    ui.actionRedo->setText(canRedo ? QString("Redo %1").arg(ui.viewport->redoLabel()) : QString("Redo"));
+}
+
+void ABC3D::refreshDisplayWidgets() {
+    // Show the viewport's settings without the widgets sending them back as new edits.
+    const DisplaySettings& d = ui.viewport->getDisplaySettings();
+    auto setColor = [](ColorButton* button, const Vec3f& clr) {
+        const QSignalBlocker block(button);
+        button->SetColor(QColor::fromRgbF(clr.x, clr.y, clr.z));
+    };
+    auto setChecked = [](QAbstractButton* box, bool checked) {
+        const QSignalBlocker block(box);
+        box->setChecked(checked);
+    };
+    auto setValue = [](QDoubleSpinBox* spinner, double value) {
+        const QSignalBlocker block(spinner);
+        spinner->setValue(value);
+    };
+
+    setColor(ui.faceColorButton, d.faceColor);
+    setColor(ui.edgeColorButton, d.edgeColor);
+    setColor(ui.vertexColorButton, d.vertexColor);
+    setColor(ui.backgroundColorButton, d.backgroundColor);
+    setColor(ui.selectColorButton, d.selectColor);
+    setColor(ui.hoverColorButton, d.hoverColor);
+    setChecked(ui.checkBox, d.surfacesVisible);
+    setChecked(ui.checkBox_2, d.edgesVisible);
+    setChecked(ui.gridVisibilityBox, d.gridVisible);
+    setChecked(ui.vertexVisibilityBox, d.verticesAlwaysVisible);
+    setValue(ui.edgeRadiusSpinner, d.edgeRadius);
+    setValue(ui.vertexScaleSpinner, d.vertexScale);
+}
+
+void ABC3D::showSelectTool() {
+    ui.bottomRightPanels->setCurrentIndex(0);
+    ui.selectToolButton->setChecked(true);
+}
+
 
 void ABC3D::createGamepad(int id) {
     controller = new QGamepad(id, this);
@@ -928,6 +987,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         break;
     // Subdivide
     case Qt::Key_Z:
+        if (ctrl) { break; } // Ctrl+Z is Undo (handled by the Edit menu action)
         event->accept();
         ui.bottomRightPanels->setCurrentIndex(2);
         ui.subdivideToolButton->setChecked(true);
@@ -1008,6 +1068,12 @@ void ABC3D::meshCountChanged(uint meshCount) {
 
     // Creates scene buttons if there's a mismatch between mesh and button count
     else if (meshCount != btnCount) {
+        // Undoing a delete puts meshes back in the middle, so existing ids can change names too
+        for (uint i = 0; i < btnCount; ++i) {
+            QString updatedName = QString::fromStdString(ui.viewport->getNames()[i]);
+            sceneButtons[i]->setText(updatedName);
+            sceneModel->setData(sceneModel->index(i, 0), updatedName);
+        }
         for (uint i = btnCount; i < meshCount; ++i) {
             //ui.viewport->setName(i, ui.viewport->getNames()[i]);
             createSceneButton(i, QString::fromStdString(ui.viewport->getNames()[i]));

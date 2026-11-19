@@ -459,6 +459,45 @@ public:
 		pos += rot * (scale * origin);
 	}
 
+	// Undo support ------------------------------------------------------------------------
+
+	/// <returns>True when both meshes hold identical topology, positions, and transform.</returns>
+	bool SameState(const HalfEdgeMesh& other) const {
+		if (scale != other.scale || pos != other.pos || eulerRot != other.eulerRot) { return false; }
+		if (faceEdges != other.faceEdges || vertEdge != other.vertEdge || vertPos != other.vertPos) { return false; }
+		if (edges.size() != other.edges.size()) { return false; }
+		for (size_t i = 0; i < edges.size(); ++i) {
+			const HalfEdge& a = edges[i];
+			const HalfEdge& b = other.edges[i];
+			if (a.orig != b.orig || a.dest != b.dest || a.face != b.face ||
+				a.twin != b.twin || a.next != b.next || a.prev != b.prev) { return false; }
+		}
+		return true;
+	}
+
+	/// <returns>Approximate heap memory held by the mesh's element arrays.</returns>
+	size_t MemoryBytes() const {
+		return sizeof(*this) +
+			faceEdges.capacity() * sizeof(uint) +
+			vertPos.capacity() * sizeof(Vec3f) +
+			vertEdge.capacity() * sizeof(uint) +
+			edges.capacity() * sizeof(HalfEdge);
+	}
+
+	/// <returns>Every vertex position, local space.</returns>
+	const std::vector<Vec3f>& VertexPositionList() const { return vertPos; }
+
+	/// <summary>
+	/// Swaps the vertex position array with another of the same size. Topology is untouched,
+	/// so this only makes sense for edits that moved vertices without adding or removing any.
+	/// </summary>
+	/// <returns>False (and does nothing) when the sizes differ.</returns>
+	bool SwapVertexPositions(std::vector<Vec3f>& positions) {
+		if (positions.size() != vertPos.size()) { return false; }
+		vertPos.swap(positions);
+		return true;
+	}
+
 	/// <returns>Mesh's scale factor.</returns>
 	const Vec3f& Scale() const { return scale; }
 	/// <returns>Mesh's world-space position.</returns>

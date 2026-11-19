@@ -61,6 +61,12 @@
     <ClInclude Include="selectionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="undoHistory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sceneCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="shapes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
