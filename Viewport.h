@@ -24,6 +24,8 @@
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
+#include "undoHistory.h"
+#include "sceneCommands.h"
 
 inline bool initGlew = true;
 
@@ -128,6 +130,12 @@ signals:
 	void elementChanged(Element element);
 	void meshCountChanged(uint meshCount);
 	void selectionChanged(int index);
+	/// <summary>Undo/redo availability or labels changed.</summary>
+	void historyChanged();
+	/// <summary>Display settings changed without the panel widgets (undo/redo, opening a scene).</summary>
+	void displaySettingsChanged();
+	/// <summary>Undo/redo restored an element mode the active tool can't use, so the tool became Select.</summary>
+	void toolReset();
 
 public:
 
@@ -168,10 +176,9 @@ private:
 	IconRenderer iconRenderer;
 	ImageRenderer imageRenderer;
 	Scene scene;
-	HalfEdgeMeshBeveler* beveler;
+	HalfEdgeMeshBeveler* beveler = nullptr;
 	MouseTracker mouseAction;
 	ActionParams actionParams;
-	bool verticesAlwaysVisible = false;
 	bool showPivot = false;
 	float pivotScale = 0.05f;
 	Vec2f menuPos;
@@ -198,6 +205,69 @@ private:
 	// Signed movement accumulated along each chosen edge.  This lets the drag
 	// clamp at the vertex's original position when the mouse reverses.
 	std::unordered_map<SelectionItem, float> edgeDragDistances;
+
+// ---------------------------------------------------------------------------------------------
+// Undo / Redo ---------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+	// Display settings live here (the renderer only has setters for most of them) so a step can
+	// tell what a setting was before it changed. Every Set* slot writes here, then to the renderer.
+	DisplaySettings displaySettings;
+	DocumentRefs docRefs{ scene, selectionManager, displaySettings };
+	UndoHistory history;
+
+	// The step being recorded. Steps nest: only the outermost begin/commit pair records, so a slot
+	// that is called from inside a mouse action becomes part of that action's step.
+	DocumentTransaction pendingStep;
+	int stepDepth = 0;
+	// Set while undo/redo restores the document, so nothing that echoes back records a step.
+	bool applyingHistory = false;
+	// A mouse action's step is open from the left press to its commit point (usually the release).
+	bool mouseStepOpen = false;
+	bool leftButtonDown = false;
+
+	// Opens a step for the rest of the enclosing scope.
+	struct StepScope {
+		Viewport* viewport;
+		StepScope(Viewport* viewport, std::string label) : viewport(viewport) { viewport->beginStep(std::move(label)); }
+		~StepScope() { viewport->commitStep(); }
+		StepScope(const StepScope&) = delete;
+		StepScope& operator=(const StepScope&) = delete;
+	};
+
+	void beginStep(std::string label);
+	void commitStep();
+	bool recording() const { return stepDepth > 0 && pendingStep.isActive() && !applyingHistory; }
+	void labelStep(const char* label) { if (recording()) { pendingStep.setLabel(label); } }
+	// Capture a mesh's before-state ahead of an edit: a full copy for topology changes,
+	// positions only for edits that just move vertices.
+	void touchMesh(uint meshId) { if (recording()) { pendingStep.touchMesh(docRefs, meshId); } }
+	void touchVertexPositions(uint meshId) { if (recording()) { pendingStep.touchVertexPositions(docRefs, meshId); } }
+	void touchSelectedMeshes(bool fullCopy);
+	// Mesh adds and deletes go through these so the step can put them back exactly.
+	HalfEdgeMesh* newMeshRecorded(std::string name);
+	void deleteMeshRecorded(uint meshId);
+
+	static const char* actionLabel(Action action);
+	void openMouseStep();
+	void closeMouseStep();
+	// Edge/vertex extrude waiting for its second click: put the mesh back and record nothing.
+	void cancelExtrudeStage();
+	// Drops an open step without restoring anything (the document is about to be replaced).
+	void discardOpenStep();
+
+	void stepHistory(bool backwards);
+	void refreshAfterHistory();
+	void sanitizeSelection();
+	void syncReferenceTextures();
+	void applyDisplaySettings();
+	template<typename F>
+	void changeDisplay(const char* label, F&& change) {
+		StepScope step(this, label);
+		change(displaySettings);
+		applyDisplaySettings();
+		update();
+	}
 
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
@@ -347,7 +417,8 @@ private:
 
 	template<typename T, typename U>
 	void loadMesh(const T& vertices, const U& faces, std::string name) {
-		scene.NewMesh(name)->load(vertices, faces);
+		StepScope step(this, "Add " + name);
+		newMeshRecorded(name)->load(vertices, faces);
 		emit meshCountChanged(scene.MeshCount());
 		makeCurrent();
 		// 10/16/26 - Update to public API.
@@ -425,9 +496,23 @@ public:
 	Viewport(QWidget* parent);
 	~Viewport();
 
+	bool canUndo() const { return history.canUndo(); }
+	bool canRedo() const { return history.canRedo(); }
+	const char* undoLabel() const { return history.undoLabel(); }
+	const char* redoLabel() const { return history.redoLabel(); }
+	const DisplaySettings& getDisplaySettings() const { return displaySettings; }
+
 public slots:
+	/// <summary>Undoes the newest step. Mid-action (knife points, extrude waiting for its second
+	/// click) it cancels the action instead. Ignored while the left button is held.</summary>
+	void undo() { stepHistory(true); }
+	void redo() { stepHistory(false); }
+	/// <summary>Forgets every step (opening a scene, startup).</summary>
+	void clearHistory();
+
 	void setActionTranslateFree() { setAction(TRANSLATE_FREE); }
 	void setActionTranslateOut() {
+		StepScope step(this, "Select");
 		if (getActiveElement() == OBJECT) {
 			setActiveElement(FACE);
 			elementButtons[2]->setChecked(true);
@@ -436,6 +521,7 @@ public slots:
 	}
 	void setActionTranslateAxis() { setAction(TRANSLATE_AXIS); }
 	void setActionTranslateEdge() {
+		StepScope step(this, "Select");
 		// The constrained operation is vertex only.
 		if (selectionManager.getActiveElement() != VERTEX) {
 			setActiveElement(VERTEX);
@@ -456,14 +542,16 @@ public slots:
 
 	void setActionExtrude() { setAction(EXTRUDE); }
 	void setActionBevel() { setAction(BEVEL); }
-	void setActionScale() { 
+	void setActionScale() {
+		StepScope step(this, "Select");
 		if (getActiveElement() == VERTEX) {
 			setActiveElement(OBJECT);
 			elementButtons[3]->setChecked(true);
 			emit selectionChanged(-1);
 		}
 		setAction(SCALE); }
-	void setActionRotate() { 
+	void setActionRotate() {
+		StepScope step(this, "Select");
 		if (getActiveElement() != OBJECT) {
 			setActiveElement(OBJECT);
 			emit selectionChanged(-1);
@@ -475,6 +563,7 @@ public slots:
 	void setActionCamera() { setAction(CAMERA); }
 	void setActionKnife() { setAction(KNIFE); }
 	void setActionMerge() {
+		StepScope step(this, "Select");
 		mergeFirstVertex.reset();
 		setActiveElement(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -483,18 +572,21 @@ public slots:
 	}
 
 	void setActionCollapse() {
+		StepScope step(this, "Select");
 		setActiveElement(EDGE);
 		elementButtons[1]->setChecked(true);
 		emit elementChanged(EDGE);
 		setAction(COLLAPSE);
 	}
 	void setActionDissolve() {
+		StepScope step(this, "Select");
 		setActiveElement(EDGE);
 		elementButtons[1]->setChecked(true);
 		emit elementChanged(EDGE);
 		setAction(DISSOLVE);
 	}
 	void setActionLoopCut() {
+		StepScope step(this, "Select");
 		setActiveElement(EDGE);
 		elementButtons[1]->setChecked(true);
 		emit elementChanged(EDGE);
@@ -527,6 +619,7 @@ public slots:
 	void setElementVertex() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
 			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
+		StepScope step(this, "Select");
 		setActiveElement(VERTEX);
 		emit elementChanged(VERTEX);
 		elementButtons[0]->setChecked(true);
@@ -545,6 +638,7 @@ public slots:
 	// Edge Element
 	void setElementEdge() {
 		if (actionParams.action == MERGE) { return; }
+		StepScope step(this, "Select");
 		setActiveElement(EDGE);
 		emit elementChanged(EDGE);
 		elementButtons[1]->setChecked(true);
@@ -564,6 +658,7 @@ public slots:
 	void setElementFace() {
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
 			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
+		StepScope step(this, "Select");
 		setActiveElement(FACE);
 		emit elementChanged(FACE);
 		elementButtons[2]->setChecked(true);
@@ -583,7 +678,8 @@ public slots:
 	void setElementObject() { 
 		if (actionParams.action == MERGE || actionParams.action == COLLAPSE ||
 			actionParams.action == DISSOLVE || actionParams.action == LOOPCUT) { return; }
-		setActiveElement(OBJECT); 
+		StepScope step(this, "Select");
+		setActiveElement(OBJECT);  
 		emit elementChanged(OBJECT);
 		elementButtons[3]->setChecked(true);
 	}
@@ -634,6 +730,8 @@ public slots:
 
 	void tessellateSelection() {
 		if (selectionManager.getSelectedItems().empty()) { return; }
+		StepScope step(this, "Tessellate");
+		touchSelectedMeshes(true);
 
 		std::vector<uint> meshes;
 		std::unordered_map<uint, std::vector<uint>> meshMap;
@@ -695,6 +793,8 @@ public slots:
 
 	void subdivideSelection() {
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
+		StepScope step(this, "Subdivide");
+		touchSelectedMeshes(true);
 
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId < scene.MeshCount()) {
@@ -715,6 +815,8 @@ public slots:
 	}
 
 	void triangulateSelection() {
+		StepScope step(this, "Triangulate");
+		touchSelectedMeshes(true);
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
@@ -748,6 +850,8 @@ public slots:
 
 	void flipSelection() {
 		if (selectionManager.getActiveElement() != EDGE || selectionManager.itemCount() == 0) { return; }
+		StepScope step(this, "Flip Edge");
+		touchSelectedMeshes(true);
 
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
@@ -767,11 +871,13 @@ public slots:
 
 	void setPrimarySelectionPos(const Vec3f& pos) {
 		if (selectionManager.meshCount() != 1) { return; }
+		StepScope step(this, "Move");
 
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
 
 		if (selectionManager.getActiveElement() == VERTEX) {
 			if (selectionManager.itemCount() != 1) { return; }
+			touchVertexPositions(item.meshId);
 			Vec3f vertPos = scene[item.meshId]->WorldPosToLocalPos(pos);
 			scene[item.meshId]->SetVertexPosition(item.componentId, vertPos);
 
@@ -798,6 +904,7 @@ public slots:
 
 	void setPrimarySelectionScale(const Vec3f& scale) {
 		if (selectionManager.meshCount() != 1) { return; }
+		StepScope step(this, "Scale");
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
@@ -820,6 +927,7 @@ public slots:
 
 	void setPrimarySelectionRot(const Vec3f& rot) {
 		if (selectionManager.meshCount() != 1) { return; }
+		StepScope step(this, "Rotate");
 
 		if (selectionManager.getActiveElement() != VERTEX) {
 			const SelectionItem& item = selectionManager.getSelectedItems()[0];
@@ -842,6 +950,7 @@ public slots:
 
 	void setPrimaryReferenceImageOpacity(double opacity) {
 		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		StepScope step(this, "Reference Image");
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
 		if (!item.isReferenceImage()) { return; }
 		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
@@ -852,6 +961,7 @@ public slots:
 
 	void setPrimaryReferenceImageVisibility(bool visible) {
 		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		StepScope step(this, "Reference Image");
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
 		if (!item.isReferenceImage()) { return; }
 		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
@@ -862,6 +972,7 @@ public slots:
 
 	void setPrimaryReferenceImageLocked(bool locked) {
 		if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
+		StepScope step(this, "Reference Image");
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
 		if (!item.isReferenceImage()) { return; }
 		ReferenceImage* image = scene.FindReferenceImage(item.componentId);
@@ -911,8 +1022,9 @@ public slots:
 		ImportReport report = loadMeshes(filepath, candidates);
 		if (!report.ok()) { return report; }
 
+		StepScope step(this, "Import");
 		for (HalfEdgeMesh& candidate : candidates) {
-			*scene.NewMesh("Object") = std::move(candidate);
+			*newMeshRecorded("Object") = std::move(candidate);
 			emit meshCountChanged(scene.MeshCount());
 		}
 
@@ -965,7 +1077,10 @@ public slots:
 		}
 
 		//emit meshCountChanged(scene.MeshCount());
-		
+
+		// The old meshes are freed below, so nothing may still point at them.
+		discardOpenStep();
+		if (actionParams.action == EXTRUDE) { actionParams.stage = 0; actionParams.ClearActionDirs(); actionParams.ClearElements(); }
 
 		scene.Clear();
 		emit selectionChanged(-1);
@@ -1002,7 +1117,8 @@ public slots:
 
 		// 10/16/26 - Updated to public API.
 
-		renderer.ShowGrid(doc.grid);
+		displaySettings.gridVisible = doc.grid;
+		applyDisplaySettings();
 		//renderer.SetVertexPointsVisible(doc.points);
 
 		//setElementObject();
@@ -1023,6 +1139,9 @@ public slots:
 
 		emitSelectionChanged();
 
+		// The knife's before-copies belong to the old scene.
+		if (knifeSession) { knifeBegin(); }
+
 		makeCurrent();
 		//renderer.SetScene(scene);
 		renderer.UpdateGeometry();
@@ -1031,25 +1150,26 @@ public slots:
 		//updateSelectionVisuals();
 		update();
 
+		// Opening a scene starts a new history. Saving does not touch it.
+		clearHistory();
+		emit displaySettingsChanged();
+
 		return true;
 	}
 
 	void setAlwaysShowVertices(bool show) {
-		if(selectionManager.getActiveElement() != VERTEX){
-			verticesAlwaysVisible = show;
-			renderer.ShowVertices(show);
-			update();
-		}
+		// Vertex mode always shows vertices; the setting takes effect when leaving it.
+		changeDisplay("Vertex Visibility", [&](DisplaySettings& d) { d.verticesAlwaysVisible = show; });
 	}
 
 	void setAlwaysShowGrid(bool show) {
-		renderer.ShowGrid(show);
-		update();
+		changeDisplay("Grid Visibility", [&](DisplaySettings& d) { d.gridVisible = show; });
 	}
 
 	// directly ported from FLTK Version's Viewport::deleteElement
 	void deleteSelection() {
 		if (knifeSession) { return; } // the knife holds mesh ids
+		StepScope step(this, "Delete");
 		std::cout << "delete" << std::endl;
 		std::vector<SelectionItem> selectedItems = selectionManager.getSelectedItems();
 		if (selectionManager.getActiveElement() == OBJECT) {
@@ -1084,7 +1204,7 @@ public slots:
 
 			switch (selectionManager.getActiveElement()) {
 			case OBJECT:
-				scene.DeleteMesh(item.meshId);
+				deleteMeshRecorded(item.meshId);
 				emit meshCountChanged(scene.MeshCount());
 				break;
 
@@ -1094,11 +1214,13 @@ public slots:
 
 			case EDGE:
 				// Dissolve edge as delete operation.
+				touchMesh(item.meshId);
 				scene[item.meshId]->DissolveEdge(item.componentId);
 				break;
 
 			case FACE:
 				// Delete faces in descending ID order; see the sort above.
+				touchMesh(item.meshId);
 				scene[item.meshId]->DeleteFace(item.componentId);
 				break;
 			}
@@ -1216,9 +1338,10 @@ public slots:
 	void duplicateSelection() {
 		if (knifeSession) { return; }
 		if (selectionManager.getActiveElement() != OBJECT) { return; }
+		StepScope step(this, "Duplicate");
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
 			if (item.meshId >= scene.MeshCount()) { continue; }
-			scene.DuplicateMesh(item.meshId, scene.Names()[item.meshId]);
+			*newMeshRecorded(scene.Names()[item.meshId]) = *scene[item.meshId];
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
@@ -1271,79 +1394,25 @@ public slots:
 		}
 	}
 
-	void SetSurfaceVisibility(bool show) { renderer.ShowSurfaces(show); update(); }
+	void SetSurfaceVisibility(bool show) { changeDisplay("Surface Visibility", [&](DisplaySettings& d) { d.surfacesVisible = show; }); }
 
-	void SetEdgeVisibility(bool show) { renderer.ShowEdges(show); update(); }
+	void SetEdgeVisibility(bool show) { changeDisplay("Edge Visibility", [&](DisplaySettings& d) { d.edgesVisible = show; }); }
 
-	void SetFaceColor(const Vec3f& clr) { 
-		if (renderer.Initialized()) {
-			makeCurrent(); 
-			renderer.FaceColor<true>(clr); 
-			update();
-		}
-		else {
-			renderer.FaceColor<false>(clr);
-		}
-	}
+	void SetFaceColor(const Vec3f& clr) { changeDisplay("Face Color", [&](DisplaySettings& d) { d.faceColor = clr; }); }
 
-	void SetEdgeColor(const Vec3f& clr) { 
-		if (renderer.Initialized()) {
-			makeCurrent();
-			renderer.EdgeColor<true>(clr);
-			update();
-		}
-		else {
-			renderer.EdgeColor<false>(clr);
-		}
-	}
+	void SetEdgeColor(const Vec3f& clr) { changeDisplay("Edge Color", [&](DisplaySettings& d) { d.edgeColor = clr; }); }
 
-	void SetVertexColor(const Vec3f& clr) { 
-		if (renderer.Initialized()) {
-			makeCurrent();
-			renderer.VertexColor<true>(clr);
-			update();
-		}
-		else {
-			renderer.VertexColor<false>(clr);
-		}
-	}
+	void SetVertexColor(const Vec3f& clr) { changeDisplay("Vertex Color", [&](DisplaySettings& d) { d.vertexColor = clr; }); }
 
-	void SetBackgroundColor(const Vec3f& clr) { 
-		if (renderer.Initialized()) {
-			makeCurrent();
-			renderer.BackgroundColor<true>(clr);
-			update();
-		}
-		else {
-			renderer.BackgroundColor<false>(clr);
-		}
-	}
+	void SetBackgroundColor(const Vec3f& clr) { changeDisplay("Background Color", [&](DisplaySettings& d) { d.backgroundColor = clr; }); }
 
-	void SetSelectColor(const Vec3f& clr) {
-		if (renderer.Initialized()) {
-			makeCurrent();
-			renderer.SelectColor<true>(clr);
-			update();
-		}
-		else {
-			renderer.SelectColor<false>(clr);
-		}
-	}
+	void SetSelectColor(const Vec3f& clr) { changeDisplay("Select Color", [&](DisplaySettings& d) { d.selectColor = clr; }); }
 
-	void SetHoverColor(const Vec3f& clr) {
-		if (renderer.Initialized()) {
-			makeCurrent();
-			renderer.HoverColor<true>(clr);
-			update();
-		}
-		else {
-			renderer.HoverColor<false>(clr);
-		}
-	}
+	void SetHoverColor(const Vec3f& clr) { changeDisplay("Hover Color", [&](DisplaySettings& d) { d.hoverColor = clr; }); }
 
-	void SetEdgeRadius(double radius) { makeCurrent(); renderer.SetEdgeRadius(radius); update(); }
+	void SetEdgeRadius(double radius) { changeDisplay("Edge Radius", [&](DisplaySettings& d) { d.edgeRadius = static_cast<float>(radius); }); }
 
-	void SetVertexScale(double scale){ makeCurrent(); renderer.SetVertexScale(scale); update(); }
+	void SetVertexScale(double scale) { changeDisplay("Vertex Scale", [&](DisplaySettings& d) { d.vertexScale = static_cast<float>(scale); }); }
 
 	void setPivotVisibility(bool visible) { if (showPivot != visible) { showPivot = visible; update(); } }
 
@@ -1358,6 +1427,7 @@ public slots:
 
 		makeCurrent();
 
+		StepScope step(this, "Load Reference Image");
 		ReferenceImage* reference = scene.NewReferenceImage(filepath.toStdString());
 		reference->position = Vec3f(0.0f);
 		referenceTextureIndices[reference->id] = imageRenderer.AddTexture(
@@ -1375,7 +1445,8 @@ private slots:
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		qDebug() << "pickedMeshiD =" << ids.x << " scene Mesh Count = " << scene.MeshCount();
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
-			scene.DuplicateMesh(ids.x, scene.Names()[ids.x]);
+			StepScope step(this, "Duplicate");
+			*newMeshRecorded(scene.Names()[ids.x]) = *scene[ids.x];
 			emit meshCountChanged(scene.MeshCount());
 
 			renderer.UpdateGeometry();
@@ -1388,6 +1459,7 @@ private slots:
 	void rightClickDelete() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			StepScope step(this, "Delete");
 			deleteSelection();
 			emit meshCountChanged(scene.MeshCount());
 			emit selectionChanged(-1);
@@ -1411,6 +1483,8 @@ private slots:
 	void rightClickRecenter() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			StepScope step(this, "Set Pivot");
+			touchMesh(ids.x);
 			scene[ids.x]->RecenterOnCentroid();
 
 			renderer.UpdateGeometry();
@@ -1428,6 +1502,8 @@ private slots:
 	void rightClickBakeScale() {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			StepScope step(this, "Bake Scale");
+			touchMesh(ids.x);
 			scene[ids.x]->BakeScale();
 
 			renderer.UpdateGeometry();
@@ -1443,6 +1519,8 @@ private slots:
 	void rightClickCenterOnBoundary(Axis boundary) {
 		Vec2u ids = selectionIdsFromLogical(menuPos, OBJECT);
 		if (ids.x != MAX_UINT && ids.x < scene.MeshCount()) {
+			StepScope step(this, "Set Pivot");
+			touchMesh(ids.x);
 			scene[ids.x]->RecenterOnBoundary(boundary);
 
 			renderer.UpdateGeometry();
@@ -1463,6 +1541,8 @@ private slots:
 		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids, &pos);
 		if (!hit || ids.x >= scene.MeshCount()) { return; }
 
+		StepScope step(this, "Set Pivot");
+		touchMesh(ids.x);
 		scene[ids.x]->RecenterOn(scene[ids.x]->WorldPosToLocalPos(pos));
 
 		renderer.UpdateGeometry();
@@ -1482,6 +1562,8 @@ private slots:
 		bool hit = renderer.QueryFace(pixel.x, pixel.y, &ids);
 		if (!hit || ids.x >= scene.MeshCount()) { return; }
 
+		StepScope step(this, "Set Pivot");
+		touchMesh(ids.x);
 		scene[ids.x]->RecenterOn(scene[ids.x]->faceCentroid(ids.y));
 
 		renderer.UpdateGeometry();
