@@ -2,6 +2,8 @@
 
 out vec4 color;
 in vec2 pos; // World-Space Position
+uniform vec3 axisUColor;
+uniform vec3 axisVColor;
 
 // Full World-Space Width of Lines (will be a uniform variable later)
 float baseLineWidth = 0.01;
@@ -46,12 +48,18 @@ void main(){
 	// Determine color based on whether pixel is on an axis line.
 	// There is probably a better way to do this but this is what I'm doing for the moment.
 	bvec2 axisLine = bvec2(uvec2(lessThan(abs(pos), vec2(0.5))) * uvec2(greaterThan(lines, vec2(0.0))));
-	float r = float(!axisLine.y || axisLine.x);
-	float g = float(!axisLine.x || axisLine.y);
-	float b = float(!(axisLine.x || axisLine.y));
+	vec3 lineColor = vec3(1.0);
+	if (axisLine.x || axisLine.y) {
+		lineColor = clamp(
+			(axisLine.x ? axisVColor : vec3(0.0)) +
+			(axisLine.y ? axisUColor : vec3(0.0)),
+			0.0,
+			1.0
+		);
+	}
 
 	// Output final color
-	color = vec4(r, g, b, alpha);
+	color = vec4(lineColor, alpha);
 
 	/*
 	// Debug Code 
