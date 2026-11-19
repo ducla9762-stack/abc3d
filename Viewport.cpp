@@ -2344,7 +2344,7 @@ void Viewport::handleLoopCutClick(const Vec2u& selectionIds) {
 		std::cout << "Loop cut rejected: " << cutter.error << std::endl;
 		return;
 	}
-
+	
 	std::cout << "Loop cut through edge " << edgeId << " on mesh " << meshId
 		<< " (" << loopCutCount << " cut" << (loopCutCount == 1 ? "" : "s") << ")" << std::endl;
 	loopCutClearPreview();

@@ -437,8 +437,10 @@ ABC3D::ABC3D(QWidget *parent)
     for (int i = 0; i < 10 && controllerManager->connectedGamepads().isEmpty(); i++) {
         QCoreApplication::processEvents();
     }
-    const QList<int> devices = controllerManager->connectedGamepads();
 
+    devices = controllerManager->connectedGamepads();
+    holdTimer->setInterval(16);
+ 
     // Create the first controller on start
     if (!devices.isEmpty()) {
         createGamepad(devices.first()); 
@@ -454,82 +456,109 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Handles gamepads being disconnected
     connect(controllerManager, &QGamepadManager::gamepadDisconnected, this, [this](int id) {
-        if (controller && controller->deviceId() == id) {
+        if (controller) {
+            QObject::disconnect(controller, nullptr, this, nullptr);
             controller->deleteLater();
             controller = nullptr;
+
+            holdTimer->stop();
+            L2pressed = false;
+            R2pressed = false;
         }
     });
 }
 
 void ABC3D::createGamepad(int id) {
-    QGamepad* controller = new QGamepad(id, this);
+    controller = new QGamepad(id, this);
     // Analog Sticks
     connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) {
-        // Changes the cursor's X value and leave the y value
-        QCursor::setPos(QCursor::pos().x() + 60 * value, QCursor::pos().y());
+        if (ui.viewport->getCameraType() == FREE) {
+
+        }
     });
 
     connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
-        // Changes the cursor's Y value and leaves the x value
-        QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + 60 * value);
+        if (ui.viewport->getCameraType() == ORBIT) {
+            if (value > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+            else { emit cameraKeyPressed(Axis::Z); }
+        }
+
+        else {
+            if(value > 0) { }
+            else {}
+        }
     });
 
     connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
+        // Changes the cursor's X value and leave the y value
+        // right: spherical.x & spherical.y
+        if (ui.viewport->getCameraType() == ORBIT) {
+            if (value > 0) { emit cameraKeyPressed(Axis::X); }
+            else { emit cameraKeyPressed(Axis::X_NEG); }
+        }
 
-        });
+        else {
+            if (value > 0) { emit cameraKeyPressed(Axis::X_NEG); }
+            else { emit cameraKeyPressed(Axis::X); }
+        }
+    });
 
     connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
-
-        });
+        // Changes the cursor's Y value and leaves the x value
+        if (ui.viewport->getCameraType() == ORBIT) {
+            if (value > 0) { emit cameraKeyPressed(Axis::Y); }
+            else { emit cameraKeyPressed(Axis::Y_NEG); }
+        }
+        else { 
+            if (value > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+            else { emit cameraKeyPressed(Axis::Z); }
+        }
+    });
 
     connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
-        if (pressed) {
-
-        }
-        });
+    
+    });
 
     connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
-        if (pressed) {
-
-        }
-        });
+      
+    });
 
 
     // Controller Buttons
     // A button: selects the button, mesh, or whatever else it's hovering over
-    connect(controller, &QGamepad::buttonAChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonAChanged, this, [this](bool pressed) {
+        QWidget* target = QApplication::widgetAt(QCursor::pos());
+        QPoint localPosition = target->mapFromGlobal(QCursor::pos());
         if (pressed) {
-            QWidget* target = QApplication::widgetAt(QCursor::pos());
-            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
-
             QMouseEvent* pressEvent = new QMouseEvent(QEvent::MouseButtonPress, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-            QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-
-            ui.viewport->controllerToMousePress(pressEvent);
-            ui.viewport->controllerToMouseRelease(releaseEvent);
-
             QApplication::postEvent(target, pressEvent);
+
+        }
+
+        else {
+            QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
             QApplication::postEvent(target, releaseEvent);
+
         }
     });
 
-    connect(controller, &QGamepad::buttonBChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonBChanged, this, [this](bool pressed) {
+        QWidget* target = QApplication::widgetAt(QCursor::pos());
+        QPoint localPosition = target->mapFromGlobal(QCursor::pos());
         if (pressed) {
-            QWidget* target = QApplication::widgetAt(QCursor::pos());
-            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
             QMouseEvent* event = new QMouseEvent(QEvent::MouseButtonDblClick, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
             ui.viewport->controllerToMouseRelease(event);
             QApplication::postEvent(target, event);
         }
     });
 
-    connect(controller, &QGamepad::buttonXChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
         if (pressed) {
 
         }
     });
 
-    connect(controller, &QGamepad::buttonYChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonYChanged, this, [this](bool pressed) {
         if (pressed) {
 
         }
@@ -537,7 +566,7 @@ void ABC3D::createGamepad(int id) {
 
     // Shoulder bumpers and triggers
     // Moves the selected left-toolbar button backward one
-    connect(controller, &QGamepad::buttonL1Changed, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonL1Changed, this, [this](bool pressed) {
         if (pressed) {
             for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
                 QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
@@ -548,7 +577,6 @@ void ABC3D::createGamepad(int id) {
                         newBtn->setChecked(true);
                         newBtn->released();
                     }
-
                     // Selects the previous button otherwise
                     else {
                         QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
@@ -562,7 +590,7 @@ void ABC3D::createGamepad(int id) {
     });
 
     // Moves the selected left-toolbar button forward one
-    connect(controller, &QGamepad::buttonR1Changed, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonR1Changed, this, [this](bool pressed) {
         if (pressed) {
             for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
                 QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
@@ -573,14 +601,12 @@ void ABC3D::createGamepad(int id) {
                         newBtn->setChecked(true);
                         newBtn->released();
                     }
-
                     // Selects the next button otherwise
                     else {
                         QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
                         newBtn->setChecked(true);
                         newBtn->released();
                     }
-
                     return;
                 }
             }
@@ -605,27 +631,60 @@ void ABC3D::createGamepad(int id) {
         });
 
     // D-Pad
-    connect(controller, &QGamepad::buttonUpChanged, this, [this, controller](bool pressed) {
-        if (pressed) {
-
+    connect(holdTimer, &QTimer::timeout, this, [this]() {
+        switch (timerCaller) {
+        case 1:
+            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() - 10);
+            break;
+        case 2:
+            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + 10);
+            break;
+        case 3:
+            QCursor::setPos(QCursor::pos().x() - 10, QCursor::pos().y());
+            break;
+        case 4:
+            QCursor::setPos(QCursor::pos().x() + 10, QCursor::pos().y());
+            break;
         }
-        });
-
-    connect(controller, &QGamepad::buttonDownChanged, this, [this, controller](bool pressed) {
+    });
+    
+    connect(controller, &QGamepad::buttonUpChanged, this, [this](bool pressed) {
         if (pressed) {
+            timerCaller = 1;
+            holdTimer->start();
+        }
+        else {
+            holdTimer->stop();
+        }
+     });
 
+    connect(controller, &QGamepad::buttonDownChanged, this, [this](bool pressed) {
+        if (pressed) {
+            timerCaller = 2;
+            holdTimer->start();
+        }
+        else {
+            holdTimer->stop();
         }
     });
 
-    connect(controller, &QGamepad::buttonLeftChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonLeftChanged, this, [this](bool pressed) {
         if (pressed) {
-
+            timerCaller = 3;
+            holdTimer->start();
+        }
+        else {
+            holdTimer->stop();
         }
     });
 
-    connect(controller, &QGamepad::buttonRightChanged, this, [this, controller](bool pressed) {
+    connect(controller, &QGamepad::buttonRightChanged, this, [this](bool pressed) {
         if (pressed) {
-
+            timerCaller = 4;
+            holdTimer->start();
+        }
+        else {
+            holdTimer->stop();
         }
     });
 
@@ -681,7 +740,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
     // WASD & Arrow keys
     case Qt::Key_W:
         event->accept();
-        emit cameraKeyPressed(Axis::X);
+        emit cameraKeyPressed(Axis::Z);
         break;
     case Qt::Key_S:
         event->accept();
@@ -689,11 +748,11 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         if (ctrl && shift) { saveAsProject(); }
         if (ctrl) { saveProject(); }
 
-        emit cameraKeyPressed(Axis::X_NEG);
+        emit cameraKeyPressed(Axis::Z_NEG);
         break;
     case Qt::Key_A:
         event->accept();
-        emit cameraKeyPressed(Axis::Z_NEG);
+        emit cameraKeyPressed(Axis::X);
         break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
@@ -702,7 +761,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
             ui.viewport->duplicateSelection();
         }
 
-        emit cameraKeyPressed(Axis::Z);
+        emit cameraKeyPressed(Axis::X_NEG);
         break;
 
     case Qt::Key_Up:

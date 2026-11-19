@@ -85,11 +85,19 @@ public:
 	}
 
 	void keyPress(Axis button) override {
-		// orbit: change radius with w & s (spherical.z), A&D change first angle (spherical.x)
-		constexpr float ANGLE_INC = 1.0f;
-		constexpr float RADIUS_INC = 0.02f;
+		constexpr float RADIUS_INC = 0.1f;
+		constexpr float ANGLE_INC = 2.0f;
 		if (button == X) { spherical.x += ANGLE_INC; }
+		else if (button == X_NEG) { spherical.x -= ANGLE_INC;  }
+
+		if (button == Y) { spherical.y += ANGLE_INC; }
+		else if (button == Y_NEG) { spherical.y -= ANGLE_INC; }
+
 		if (button == Z) { spherical.z -= RADIUS_INC; }
+		else if (button == Z_NEG) { spherical.z += RADIUS_INC; }
+
+		cartesian = sphericalToCartesian(spherical);
+		// orbit: change radius with w & s (spherical.z), A&D change first angle (spherical.x)
 	}
 };
 
@@ -134,7 +142,7 @@ public:
 	}
 
 	void keyPress(Axis button) override {
-		constexpr float DIST = 0.02f;
+		constexpr float DIST = 0.1f;
 		// Free: get direction from camera, move along directions
 		if (button & X) {
 			Vec3f r = right();
@@ -146,6 +154,7 @@ public:
 			if (button & NEG) { f = -f; }
 			pos += f * DIST;
 		}
+		// Add a way to change direction
 	}
 };
 

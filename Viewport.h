@@ -160,6 +160,7 @@ public:
 	void controllerToMousePress(QMouseEvent* event);
 	void controllerToMouseRelease(QMouseEvent* event);
 	void controllerToMouseDoubleClick(QMouseEvent* event);
+	CameraType getCameraMode();
 
 private:
 
@@ -1067,8 +1068,13 @@ public slots:
 		loadMesh(vertices, faces, "UV Sphere");
 	}
 
-	void cameraKeyPress(uint8_t axis) {
-		renderer.keyPress(axis);
+	void cameraKeyPress(Axis button) {
+		renderer.keyPress(button);
+		update();
+	}
+
+	CameraType getCameraType() {
+		return renderer.GetActiveCamType();
 	}
 
 	/// <summary>

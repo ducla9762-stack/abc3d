@@ -1027,9 +1027,9 @@ public:
 		update.camera = true;
 	}
 
-	void keyPress(uint8_t axis) {
-		if (cam.type == ORBIT) { cam.orbit.keyPress(axis); }
-		else { cam.free.keyPress(axis); }
+	void keyPress(Axis button) {
+		if (cam.type == ORBIT) { cam.orbit.keyPress(button); }
+		else { cam.free.keyPress(button); }
 		update.camera = true;
 	}
 

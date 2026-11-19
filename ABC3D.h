@@ -16,6 +16,7 @@
 #include <QCompleter>
 #include <QtGamepadLegacy/QGamepad>
 #include <QtGamepadLegacy/QGamepadManager>
+#include <QTimer>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -38,11 +39,14 @@ private:
     QButtonGroup* sceneGroup = new QButtonGroup(this);
     QStandardItemModel* sceneModel;
     QModelIndex sceneModelIndex;
+
     bool L2pressed = false;
     bool R2pressed = false;
     QGamepad* controller = nullptr;
-
     QGamepadManager* controllerManager = QGamepadManager::instance();
+    QList<int> devices;
+    QTimer* holdTimer = new QTimer(this);
+    int timerCaller = 0;
   
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
@@ -182,6 +186,6 @@ signals:
     void deleteKeyPressed();
     void ctrlKeyPressed();
     void ctrlKeyReleased();
-    void cameraKeyPressed(uint8_t axis);
+    void cameraKeyPressed(Axis button);
 };
 
