@@ -9,6 +9,7 @@
 #include <QCursor>
 #include <QButtonGroup>
 #include <QSaveFile>
+#include <QSignalBlocker>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -151,6 +152,9 @@ private slots:
     void meshCountChanged(uint meshCount);
     void createSceneButton(uint index, QString name);
     void selectionChanged(int index);
+    void refreshUndoActions();
+    void refreshDisplayWidgets();
+    void showSelectTool();
 
 signals:
     void deleteKeyPressed();
