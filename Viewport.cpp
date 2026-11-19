@@ -881,14 +881,13 @@ void Viewport::cyclePrev() {
 	for (int i = 0; i < std::size(elementButtons) - 1; i++) {
 		if (elementButtons[i]->isChecked()) {
 			// Swings around to the end of the array if the first button is selected
-			if (i == 0 && elementButtons[i]->isEnabled()) {
+			if (i == 0 && elementButtons[std::size(elementButtons) - 1]->isEnabled()) {
 				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
-				return;
 			}
 			// Selects the previous button otherwise (as long as it's enabled)
 			else if(elementButtons[i - 1]->isEnabled()) {
+				qDebug() << " is enabled";
 				elementButtons[i - 1]->setChecked(true);
-				return;
 			}
 		}
 	}

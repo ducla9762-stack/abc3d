@@ -423,12 +423,12 @@ ABC3D::ABC3D(QWidget *parent)
         // Analog Sticks
         connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) mutable {
             // Changes the cursor's X value and leave the y value
-            QCursor::setPos(value, QCursor::pos().y());
+            QCursor::setPos(QCursor::pos().x() + value, QCursor::pos().y());
         });
 
         connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
             // Changes the cursor's Y value and leaves the x value
-            QCursor::setPos(QCursor::pos().x(), value);
+            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + value);
         });
 
         connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
@@ -457,6 +457,7 @@ ABC3D::ABC3D(QWidget *parent)
         // it's hovering over
         connect(controller, &QGamepad::buttonAChanged, this, [this, controller](bool pressed) {
             if (pressed) {
+                //ui.viewport->mouseReleaseEvent(QMouseEvent* rightclick);
                 // Check whether it's hovering over the entire layout
                 if (ui.verticalLayout->geometry().contains(controller->axisLeftX(), controller->axisLeftY())) {
                     for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
@@ -497,22 +498,20 @@ ABC3D::ABC3D(QWidget *parent)
         // Moves the selected left-toolbar button backward one
         connect(controller, &QGamepad::buttonL1Changed, this, [this, controller](bool pressed) {
             if (pressed) {
-                for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
-                    QLayoutItem* item = ui.verticalLayout->itemAt(i);
-                    QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
+                for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
+                    QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
                     if (btn->isChecked()) {
                         // Selects the last button if the first was selected
                         if (i == 0) {
-                            QLayoutItem* item = ui.verticalLayout->itemAt(ui.verticalLayout->count() - 1);
+                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(ui.verticalLayout->count() - 2)->widget());
+                            newBtn->setChecked(true);
                         }
 
                         // Selects the previous button otherwise
                         else {
-                            QLayoutItem* item = ui.verticalLayout->itemAt(i-1);
+                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
+                            newBtn->setChecked(true);
                         }
-
-                        QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
-                        btn->setChecked(true);
                         return;
                     }
                 }
@@ -523,21 +522,20 @@ ABC3D::ABC3D(QWidget *parent)
         connect(controller, &QGamepad::buttonR1Changed, this, [this, controller](bool pressed) {
             if (pressed) {
                 for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
-                    QLayoutItem* item = ui.verticalLayout->itemAt(i);
-                    QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
+                    QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
                     if (btn->isChecked()) {
                         // Selects the first button if it reaches the end
-                        if (i == ui.verticalLayout->count() - 1) {
-                            QLayoutItem* item = ui.verticalLayout->itemAt(0);
+                        if (i == ui.verticalLayout->count() - 2) {
+                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(0)->widget());
+                            newBtn->setChecked(true);
                         }
 
                         // Selects the next button otherwise
                         else {
-                            QLayoutItem* item = ui.verticalLayout->itemAt(i + 1);
+                            QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
+                            newBtn->setChecked(true);
                         }
 
-                        QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
-                        btn->setChecked(true);
                         return;
                     }
                 }
