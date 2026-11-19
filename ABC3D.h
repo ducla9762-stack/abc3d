@@ -8,6 +8,7 @@
 #include <QTreeView>
 #include <QCursor>
 #include <QButtonGroup>
+#include <QActionGroup>
 #include <QSaveFile>
 #include <QLineEdit>
 #include <QWidgetAction>
@@ -37,6 +38,9 @@ private:
     QButtonGroup* sceneGroup = new QButtonGroup(this);
     QStandardItemModel* sceneModel;
     QModelIndex sceneModelIndex;
+    bool L2pressed = false;
+    bool R2pressed = false;
+    QGamepad* controller = nullptr;
 
     QGamepadManager* controllerManager = QGamepadManager::instance();
   
@@ -55,12 +59,16 @@ private:
         else if (execResult == 6) { QDesktopServices::openUrl(QUrl("https://abc3d.me")); }
     }
 
+    // Creates all the connections for controllers
+    void createGamepad(int id);
+
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
 
-    void showStandardMode() { std::cout << "Standard Mode" << std::endl; }
-    void showSimpleMode() { std::cout << "Simple Mode" << std::endl; }
+    // AI-generated code: Routes the rendering-mode actions to the viewport.
+    void showStandardMode() { ui.viewport->setSimpleMode(false); }
+    void showSimpleMode() { ui.viewport->setSimpleMode(true); }
 
     void updateSearchBar(QString text) {
         QModelIndex helpPath = helpFileModel->index("assets/help documents");

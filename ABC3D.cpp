@@ -50,15 +50,37 @@ ABC3D::ABC3D(QWidget *parent)
         &ABC3D::imageFileDialog
     );
 
+    // AI-generated code: Adds mutually exclusive UI actions for standard and simple rendering modes.
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
+    actionStandardMode->setCheckable(true);
+    actionStandardMode->setChecked(true);
     ui.menuBar->addAction(actionStandardMode);
     QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
+    actionSimpleMode->setCheckable(true);
     ui.menuBar->addAction(actionSimpleMode);
     QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+    QActionGroup* rendererModes = new QActionGroup(this);
+    rendererModes->setExclusive(true);
+    rendererModes->addAction(actionStandardMode);
+    rendererModes->addAction(actionSimpleMode);
+    // AI-generated code: Reflects rejected or automatic viewport mode changes in the menu actions.
+    QObject::connect(ui.viewport, &Viewport::simpleModeChanged, this,
+        [actionStandardMode, actionSimpleMode](bool simpleMode) {
+            if (simpleMode) actionSimpleMode->setChecked(true);
+            else actionStandardMode->setChecked(true);
+        });
+    // AI-generated code: Reflects Simple Mode's automatic orbit-camera switch in the camera controls.
+    QObject::connect(ui.viewport, &Viewport::orbitCameraActivated, this, [this]() {
+        ui.orbitButton->setChecked(true);
+        });
+
+    // Search Bar for documents
+    QToolBar* searchToolbar = addToolBar("Search");
+    searchToolbar->setMovable(false);
 
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");
@@ -417,98 +439,208 @@ ABC3D::ABC3D(QWidget *parent)
     }
     const QList<int> devices = controllerManager->connectedGamepads();
 
-    // Controller Connections
+    // Create the first controller on start
     if (!devices.isEmpty()) {
-        QGamepad* controller = new QGamepad(devices.first(), this);
-        // Analog Sticks
-        connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) mutable {
-        });
-
-        connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
-
-        });
-
-        connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
-
-        });
-
-        connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
-            
-        });
-
-        connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
-
-        });
-
-
-        // Controller Buttons
-        connect(controller, &QGamepad::buttonAChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonBChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonYChanged, this, [this](bool pressed) {
-
-        });
-
-        // Shoulder bumpers and triggers
-        connect(controller, &QGamepad::buttonL1Changed, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonL2Changed, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonR1Changed, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonR2Changed, this, [this](bool pressed) {
-
-        });
-
-        // D-Pad
-        connect(controller, &QGamepad::buttonUpChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonDownChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonLeftChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonRightChanged, this, [this](bool pressed) {
-
-        });
-
-        // Home, Select, & Start
-        connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
-
-        });
-
-        connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
-
-        });
+        createGamepad(devices.first()); 
     }
+
+    // AI-generated
+    // Handles gamepads connected after start 
+    connect(controllerManager, &QGamepadManager::gamepadConnected, this, [this](int id) {
+        if (!controller) {
+            createGamepad(id);
+        }
+    });
+
+    // Handles gamepads being disconnected
+    connect(controllerManager, &QGamepadManager::gamepadDisconnected, this, [this](int id) {
+        if (controller && controller->deviceId() == id) {
+            controller->deleteLater();
+            controller = nullptr;
+        }
+    });
+}
+
+void ABC3D::createGamepad(int id) {
+    QGamepad* controller = new QGamepad(id, this);
+    // Analog Sticks
+    connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) {
+        // Changes the cursor's X value and leave the y value
+        QCursor::setPos(QCursor::pos().x() + 60 * value, QCursor::pos().y());
+    });
+
+    connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
+        // Changes the cursor's Y value and leaves the x value
+        QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + 60 * value);
+    });
+
+    connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
+
+        });
+
+    connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
+
+        });
+
+    connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+    connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+
+    // Controller Buttons
+    // A button: selects the button, mesh, or whatever else it's hovering over
+    connect(controller, &QGamepad::buttonAChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+            QWidget* target = QApplication::widgetAt(QCursor::pos());
+            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+
+            QMouseEvent* pressEvent = new QMouseEvent(QEvent::MouseButtonPress, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+
+            ui.viewport->controllerToMousePress(pressEvent);
+            ui.viewport->controllerToMouseRelease(releaseEvent);
+
+            QApplication::postEvent(target, pressEvent);
+            QApplication::postEvent(target, releaseEvent);
+        }
+    });
+
+    connect(controller, &QGamepad::buttonBChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+            QWidget* target = QApplication::widgetAt(QCursor::pos());
+            QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+            QMouseEvent* event = new QMouseEvent(QEvent::MouseButtonDblClick, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            ui.viewport->controllerToMouseRelease(event);
+            QApplication::postEvent(target, event);
+        }
+    });
+
+    connect(controller, &QGamepad::buttonXChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonYChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    // Shoulder bumpers and triggers
+    // Moves the selected left-toolbar button backward one
+    connect(controller, &QGamepad::buttonL1Changed, this, [this, controller](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the last button if the first was selected
+                    if (i == 0) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(ui.verticalLayout->count() - 2)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    // Selects the previous button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected left-toolbar button forward one
+    connect(controller, &QGamepad::buttonR1Changed, this, [this, controller](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the first button if it reaches the end
+                    if (i == ui.verticalLayout->count() - 2) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(0)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    // Selects the next button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected element backward one
+    connect(controller, &QGamepad::buttonL2Changed, this, [this](bool pressed) {
+        if (pressed == L2pressed) { return; }
+        L2pressed = pressed;
+
+        if (pressed) { ui.viewport->cyclePrev(); }
+        });
+
+
+    // Moves the selected element forward one
+    connect(controller, &QGamepad::buttonR2Changed, this, [this](bool pressed) {
+        if (pressed == R2pressed) { return; }
+        R2pressed = pressed;
+
+        if (pressed) { ui.viewport->cycleNext(); }
+        });
+
+    // D-Pad
+    connect(controller, &QGamepad::buttonUpChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+        });
+
+    connect(controller, &QGamepad::buttonDownChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonLeftChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    connect(controller, &QGamepad::buttonRightChanged, this, [this, controller](bool pressed) {
+        if (pressed) {
+
+        }
+    });
+
+    // Home, Select, & Start
+    connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
+        if (pressed) { showStart(); }
+    });
+
+    connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
+        if (pressed) { saveProject(); }
+    });
+
+    connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
+        if (pressed) { this->close(); }
+    });
 }
 
 void ABC3D::createSceneButton(uint i, QString name) {
