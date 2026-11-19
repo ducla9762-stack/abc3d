@@ -265,5 +265,34 @@ inline Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
 	return (u != Vec3f(0.0f)) ? (v.Dot(u) / u.LengthSquared()) * u : u;
 }
 
+inline void planeBases(const Vec3f& n, Vec3f& u, Vec3f& v) {
+	uint component = abs(n.y) < 0.9f ? 1 : 0;
+	u.Set(0.0f);
+	u[component] = 1.0f;
+
+	u = n.Cross(u);
+	u.Normalize();
+
+	v = n.Cross(u);
+}
+
+inline Vec2f projectToUV(const Vec3f& p, const Vec3f& uBasis, const Vec3f& vBasis) {
+	return Vec2f(p.Dot(uBasis), p.Dot(vBasis));
+}
+
+inline Vec3f projectFromUV(const Vec2f& p, const Vec3f& offset, const Vec3f& u, const Vec3f& v) {
+	return offset + (p.x * u) + (p.y * v);
+}
+
+inline Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p, Vec3f& uBasis, Vec3f& vBasis) {
+	planeBases(n, uBasis, vBasis);
+	return projectToUV(p, uBasis, vBasis);
+}
+
+inline Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p) {
+	Vec3f u, v;
+	return projectToLocalPlane(n, p, u, v);
+}
+
 
 #endif

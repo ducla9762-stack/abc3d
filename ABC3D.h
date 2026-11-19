@@ -38,6 +38,9 @@ private:
     QButtonGroup* sceneGroup = new QButtonGroup(this);
     QStandardItemModel* sceneModel;
     QModelIndex sceneModelIndex;
+    bool L2pressed = false;
+    bool R2pressed = false;
+    QGamepad* controller = nullptr;
 
     QGamepadManager* controllerManager = QGamepadManager::instance();
   
@@ -55,6 +58,9 @@ private:
         else if (execResult == 5) { sceneFileDialog(); }
         else if (execResult == 6) { QDesktopServices::openUrl(QUrl("https://abc3d.me")); }
     }
+
+    // Creates all the connections for controllers
+    void createGamepad(int id);
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }

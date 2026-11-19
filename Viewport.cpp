@@ -58,6 +58,7 @@ Viewport::Viewport(QWidget *parent)
 	// Set Default Settings & Load Default Cube
 
 	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
+
 	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 
@@ -246,6 +247,10 @@ void Viewport::emitSelectionChanged() {
 // Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
+void Viewport::controllerToMousePress(QMouseEvent* event) {
+	mousePressEvent(event);
+}
+
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
 
@@ -276,6 +281,26 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == ROOF_EXTRUDE) {
+		Element activeElm = selectionManager.getActiveElement();
+		if (activeElm != FACE) { return; }
+		if (selectionManager.getSelectedItems().empty()) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			actionParams.dirs.emplace_back();
+			actionParams.elements.push_back(MAX_UINT);
+			actionParams.elements.push_back(item.meshId);
+			scene[item.meshId]->RoofExtrude(item.componentId, actionParams.elements, actionParams.dirs.back());
+		}
+
+		renderer.UpdateGeometry();
+
+		return;
+	}
+#endif
+
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
 	const Vec2u displayPixel = displayPixelFromLogical(pos);
@@ -305,6 +330,10 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	}
 }
 
+void Viewport::controllerToMouseDoubleClick(QMouseEvent* event) {
+	mouseDoubleClickEvent(event);
+}
+
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
@@ -319,6 +348,10 @@ void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
 	update();
 
 	emit primarySelectionChanged(false);
+}
+
+void Viewport::controllerToMouseRelease(QMouseEvent* event) {
+	mouseReleaseEvent(event);
 }
 
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
@@ -347,6 +380,24 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		return;
 	}
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == INSET && insetter) {
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		insetter->EndInset(factor);
+
+		renderer.UpdateGeometry();
+
+		delete insetter;
+		insetter = nullptr;
+
+		update();
+
+		return;
+	}
+#endif
+
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
 
@@ -367,6 +418,10 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		renderer.UpdateSelection(selectionManager);
 		update();
 		return;
+	}
+	else {
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
@@ -513,6 +568,12 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		break;
 	case BEVEL:
 		actionPerformed = bevelDrag();
+		break;
+	case INSET:
+		actionPerformed = insetDrag();
+		break;
+	case ROOF_EXTRUDE:
+		actionPerformed = roofExtrudeDrag();
 		break;
 	default:
 		//updateRenderBuffers = false;
@@ -914,6 +975,58 @@ void Viewport::addSelection(int meshID) {
 	update();
 }
 
+
+
+// Moves the selected element button back one - accessed by the controller
+void Viewport::cyclePrev() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the end of the array if the first button is selected
+			if (i == 0 && elementButtons[std::size(elementButtons) - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
+				setElementByIndex(std::size(elementButtons) - 1);
+				update();
+				updateGizmos();
+			}
+			// Selects the previous button otherwise (as long as it's enabled)
+			else if(elementButtons[i - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i - 1]->setChecked(true);
+				setElementByIndex(i - 1);
+				update();
+				updateGizmos();
+			}
+			return;
+		}
+	}
+}
+
+// Moves the selected element button forward one - accessed by the controller
+void Viewport::cycleNext() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the first button if the last button is selected
+			if (i == std::size(elementButtons) - 1 && elementButtons[0]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[0]->setChecked(true);
+				setElementByIndex(0);
+				update();
+				updateGizmos();
+			}
+			// Selects the next button otherwise
+			else if(i < std::size(elementButtons) && elementButtons[i + 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i + 1]->setChecked(true);
+				setElementByIndex(i + 1);
+				update();
+				updateGizmos();
+			}
+			return;
+		}
+	}
+}
+
 SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
 {
 	if (ids.y == MAX_UINT) { return { MAX_UINT, MAX_UINT }; }
@@ -1247,6 +1360,88 @@ bool Viewport::bevelDrag() {
 	renderer.UpdateGeometry();
 
 	return true;
+}
+
+bool Viewport::roofExtrudeDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	if (activeElm != FACE || actionParams.elements.empty()) { return false; }
+
+	const uint size = uint(actionParams.elements.size());
+	uint currMesh = MAX_UINT;
+	int currNorm = -1;
+
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < size; ++i) {
+		if (actionParams.elements[i] == MAX_UINT) {
+			++i;
+			currMesh = actionParams.elements[i];
+			++currNorm;
+		}
+		else {
+			scene[currMesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[currNorm] * scale);
+		}
+	}
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::setupInsetDrag() {
+#ifdef CGAL_AVAILABLE
+	if (insetter) { delete insetter; insetter = nullptr; }
+
+	uint meshId = selectionManager.getSelectedItems()[0].meshId;
+	if (meshId >= scene.MeshCount()) { return false; }
+
+	insetter = new InsetBuilder(*scene[meshId]);
+
+	std::vector<uint> elements;
+	elements.reserve(selectionManager.getSelectedItems().size());
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId != meshId) { continue; }
+		elements.push_back(item.componentId);
+	}
+
+	insetter->StartInset(elements);
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::insetDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	// object included in statement temporarily
+	if (activeElm != FACE) { return false; }
+	if (selectionManager.getSelectedItems().empty()) { return false; }
+
+	if (mouseAction.firstMoveEvent) {
+		setupInsetDrag();
+	}
+
+	if (!insetter) { return false; }
+
+	float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+	factor = std::min(factor, 0.25f) / 0.25f;
+
+	insetter->PreviewInset(factor);
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
 }
 
 void Viewport::extrudeSelectedElements() {

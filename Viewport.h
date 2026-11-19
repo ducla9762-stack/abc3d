@@ -2,6 +2,12 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
+
+#include <functional>
+#include <optional>
+#include <unordered_map>
+#include <algorithm>
+
 #include <QOpenGLWidget>
 #include <QOpenGLContext>
 #include <QMouseEvent>
@@ -10,10 +16,10 @@
 #include <QInputDialog>
 #include <QImage>
 #include <QPainter>
-#include <functional>
-#include <optional>
-#include <unordered_map>
-#include <algorithm>
+#include <QMessageBox>
+
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
 
 #include "renderer.h"
 // AI-generated code: Integrates the simple-mode multi-camera compositor with the viewport.
@@ -26,6 +32,7 @@
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
+#include "StraightSkeleton.h"
 
 inline bool initGlew = true;
 
@@ -138,7 +145,8 @@ public:
 
 	enum Action {
 		CAMERA, SELECT, TRANSLATE_OUT, TRANSLATE_FREE, TRANSLATE_AXIS, TRANSLATE_EDGE,
-		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT
+		SCALE, EXTRUDE, BEVEL, SHAPE, ROTATE, KNIFE, MERGE, COLLAPSE, DISSOLVE, LOOPCUT,
+		INSET, ROOF_EXTRUDE
 	};
 
 	Element getActiveElement();
@@ -147,6 +155,11 @@ public:
 	void setName(int index, std::string name);
 	void setSelection(int meshID);
 	void addSelection(int meshID);
+	void cyclePrev();
+	void cycleNext();
+	void controllerToMousePress(QMouseEvent* event);
+	void controllerToMouseRelease(QMouseEvent* event);
+	void controllerToMouseDoubleClick(QMouseEvent* event);
 
 private:
 
@@ -178,6 +191,9 @@ private:
 	ImageRenderer imageRenderer;
 	Scene scene;
 	HalfEdgeMeshBeveler* beveler;
+#ifdef CGAL_AVAILABLE
+	InsetBuilder* insetter;
+#endif
 	MouseTracker mouseAction;
 	ActionParams actionParams;
 	bool verticesAlwaysVisible = false;
@@ -406,6 +422,9 @@ private:
 	bool translateEdgeDrag();
 	void setupBevelDrag();
 	bool bevelDrag();
+	bool setupInsetDrag();
+	bool insetDrag();
+	bool roofExtrudeDrag();
 	void extrudeSelectedElements();
 	bool extrudeDrag();
 	bool scaleDrag();
@@ -621,6 +640,22 @@ public slots:
 		setAction(LOOPCUT);
 	}
 
+	void setActionInset() {
+#ifdef CGAL_AVAILABLE
+		setAction(INSET); 
+#else
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
+
+	void setActionRoofExtrude() { 
+#ifdef CGAL_AVAILABLE
+		setAction(ROOF_EXTRUDE); 
+#else
+		QMessageBox::warning(this, "Missing Package", "Must install version of ABC3D compiled with CGAL to use this feature!");
+#endif
+	}
+
 	/// <returns>True while the loop cut tool is the active tool.</returns>
 	bool loopCutActive() const { return actionParams.action == LOOPCUT; }
 	/// <summary>Changes how many parallel cuts the loop cut makes (at least 1).</summary>
@@ -640,6 +675,23 @@ public slots:
 		for (int i = 0; i < 4; ++i) {
 			elementButtons[i]->setEnabled(true);
 			elementButtons[i]->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+		}
+	}
+
+	void setElementByIndex(int index) {
+		switch (index) {
+		case 0:
+			setElementVertex();
+			break;
+		case 1:
+			setElementEdge();
+			break;
+		case 2:
+			setElementFace();
+			break;
+		case 3:
+			setElementObject();
+			break;
 		}
 	}
 
@@ -801,10 +853,6 @@ public slots:
 				scene[mesh]->tessellateFaces(meshMap[mesh]);
 			}
 		}
-
-		makeCurrent();
-		/*renderer.UpdateRenderBuffers(scene);
-		renderer.ResetColorBuffer<true>();*/
 
 		// 10/16/26 - Update to public API.
 		renderer.UpdateGeometry();

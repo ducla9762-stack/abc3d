@@ -129,6 +129,7 @@
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
+    <ClCompile Include="StraightSkeleton.h" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <QtMoc Include="StartMenu.h" />
@@ -141,6 +142,7 @@
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
     <QtMoc Include="ColorButton.h" />
+    <ClInclude Include="CGAL.h" />
     <ClInclude Include="Gizmo.h" />
     <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
