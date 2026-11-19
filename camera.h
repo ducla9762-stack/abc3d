@@ -30,7 +30,7 @@ public:
 
 	virtual void mouseDrag(const Vec2f& drag) = 0;
 	virtual void mouseWheel(float dx, float dy) = 0;
-	virtual void keyPress(uint8_t axis) = 0;
+	virtual void keyPress(Axis button) = 0;
 };
 
 class OrbitCamera : public Camera {
@@ -84,8 +84,12 @@ public:
 		cartesian = sphericalToCartesian(spherical);
 	}
 
-	void keyPress(uint8_t axis) override {
+	void keyPress(Axis button) override {
 		// orbit: change radius with w & s (spherical.z), A&D change first angle (spherical.x)
+		constexpr float ANGLE_INC = 1.0f;
+		constexpr float RADIUS_INC = 0.02f;
+		if (button == X) { spherical.x += ANGLE_INC; }
+		if (button == Z) { spherical.z -= RADIUS_INC; }
 	}
 };
 
@@ -129,8 +133,19 @@ public:
 		pos += f * -dy;
 	}
 
-	void keyPress(uint8_t axis) override {
+	void keyPress(Axis button) override {
+		constexpr float DIST = 0.02f;
 		// Free: get direction from camera, move along directions
+		if (button & X) {
+			Vec3f r = right();
+			if (button & NEG) { r = -r; }
+			pos += r * DIST;
+		}
+		else if (button & Z) {
+			Vec3f f = forward();
+			if (button & NEG) { f = -f; }
+			pos += f * DIST;
+		}
 	}
 };
 
