@@ -6,6 +6,32 @@
 // Core ----------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
+bool ABC3DRenderer::InitializeShadeProgram(GLSLProgram& program, const char* fragmentShaderPath) {
+	if (!program.BuildFiles("assets/shaders/BasicLightPass.vert", fragmentShaderPath)) {
+		return false;
+	}
+
+	program.Bind();
+	program.SetUniform("posTex", TexBindings::POS);
+	program.SetUniform("normTex", TexBindings::NORM);
+	program.SetUniform("idTex", TexBindings::ID);
+
+	program.RegisterUniform(BaseColors::ALL, "colors");
+	program.RegisterUniform(BaseColors::BACKGROUND, "colors[0]");
+	program.RegisterUniform(BaseColors::FACES, "colors[1]");
+	program.RegisterUniform(BaseColors::EDGES, "colors[2]");
+	program.RegisterUniform(BaseColors::VERTICES, "colors[3]");
+	program.SetUniform3(BaseColors::ALL, &colors.background.x, 4);
+
+	program.RegisterUniform(BlendColors::ALL + 5, "blendClrs");
+	program.RegisterUniform(BlendColors::SELECT + 5, "blendClrs[0]");
+	program.RegisterUniform(BlendColors::HOVER + 5, "blendClrs[1]");
+	program.RegisterUniform(BlendColors::BOTH + 5, "blendClrs[2]");
+	program.SetUniform3(BlendColors::ALL + 5, &blends.select.x, 3);
+
+	return true;
+}
+
 bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 
 	glGenVertexArrays(2, &vao.mesh);
@@ -26,32 +52,17 @@ bool ABC3DRenderer::Initialize(GLuint defaultFrameBuffer) {
 
 	prog.mesh.RegisterUniform(VIEW, "view");
 
-	success = prog.shade.BuildFiles("assets/shaders/BasicLightPass.vert", "assets/shaders/BasicLightPass.frag");
+	success = InitializeShadeProgram(prog.defaultShade, "assets/shaders/BasicLightPass.frag");
 	if (!success) {
-		std::cout << "Failed to compile deferred shader program!" << std::endl;
+		std::cout << "Failed to compile default mesh shading program!" << std::endl;
 		return false;
 	}
 
-	prog.shade.Bind();
-
-	prog.shade.SetUniform("posTex", TexBindings::POS);
-	prog.shade.SetUniform("normTex", TexBindings::NORM);
-	prog.shade.SetUniform("idTex", TexBindings::ID);
-
-	prog.shade.RegisterUniform(BaseColors::ALL, "colors");
-	prog.shade.RegisterUniform(BaseColors::BACKGROUND, "colors[0]");
-	prog.shade.RegisterUniform(BaseColors::FACES, "colors[1]");
-	prog.shade.RegisterUniform(BaseColors::EDGES, "colors[2]");
-	prog.shade.RegisterUniform(BaseColors::VERTICES, "colors[3]");
-
-	prog.shade.SetUniform3(BaseColors::ALL, &colors.background.x, 4);
-
-	prog.shade.RegisterUniform(BlendColors::ALL + 5, "blendClrs");
-	prog.shade.RegisterUniform(BlendColors::SELECT + 5, "blendClrs[0]");
-	prog.shade.RegisterUniform(BlendColors::HOVER + 5, "blendClrs[1]");
-	prog.shade.RegisterUniform(BlendColors::BOTH + 5, "blendClrs[2]");
-
-	prog.shade.SetUniform3(BlendColors::ALL + 5, &blends.select.x, 3);
+	success = InitializeShadeProgram(prog.pixelShade, "assets/shaders/PixelShader.frag");
+	if (!success) {
+		std::cout << "Failed to compile pixel mesh shading program!" << std::endl;
+		return false;
+	}
 
 	rndrs.vert.Initialize(header.data());
 	rndrs.edge.Initialize(header.data());
@@ -142,7 +153,7 @@ void ABC3DRenderer::Draw(GLuint defaultFramebuffer) {
 	glDisable(GL_DEPTH_TEST);
 
 	glBindVertexArray(vao.frame);
-	prog.shade.Bind();
+	ShadeProgram().Bind();
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	glEnable(GL_DEPTH_TEST);

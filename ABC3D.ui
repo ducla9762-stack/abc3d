@@ -2598,7 +2598,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                    </widget>
                   </item>
                   <item>
-                   <widget class="QComboBox" name="comboBox">
+                   <widget class="QComboBox" name="shaderComboBox">
                     <item>
                      <property name="text">
                       <string>Default</string>
@@ -2606,7 +2606,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     </item>
                     <item>
                      <property name="text">
-                      <string>Stylized 1</string>
+                      <string>Pixel</string>
                      </property>
                     </item>
                    </widget>
