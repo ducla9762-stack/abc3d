@@ -28,6 +28,7 @@ struct DisplaySettings {
 	Vec3f hoverColor = Vec3f(0.0f);
 	float edgeRadius = 0.01f;
 	float vertexScale = 0.1f;
+	uint meshShader = 0;
 	bool surfacesVisible = true;
 	bool edgesVisible = true;
 	bool gridVisible = true;
@@ -36,7 +37,7 @@ struct DisplaySettings {
 	bool operator==(const DisplaySettings& o) const {
 		return faceColor == o.faceColor && edgeColor == o.edgeColor && vertexColor == o.vertexColor &&
 			backgroundColor == o.backgroundColor && selectColor == o.selectColor && hoverColor == o.hoverColor &&
-			edgeRadius == o.edgeRadius && vertexScale == o.vertexScale &&
+			edgeRadius == o.edgeRadius && vertexScale == o.vertexScale && meshShader == o.meshShader &&
 			surfacesVisible == o.surfacesVisible && edgesVisible == o.edgesVisible &&
 			gridVisible == o.gridVisible && verticesAlwaysVisible == o.verticesAlwaysVisible;
 	}

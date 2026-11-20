@@ -2667,6 +2667,7 @@ void Viewport::applyDisplaySettings() {
 		renderer.SelectColor<false>(d.selectColor);
 		renderer.HoverColor<false>(d.hoverColor);
 	}
+	renderer.SetMeshShader(d.meshShader == 1 ? MeshShader::PIXEL : MeshShader::DEFAULT);
 	renderer.ShowSurfaces(d.surfacesVisible);
 	renderer.ShowEdges(d.edgesVisible);
 	renderer.ShowGrid(d.gridVisible);

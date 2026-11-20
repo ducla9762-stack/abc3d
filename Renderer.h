@@ -771,6 +771,11 @@ public:
 	}
 };
 
+enum class MeshShader : uint {
+	DEFAULT = 0,
+	PIXEL = 1
+};
+
 class ABC3DRenderer {
 
 	struct Renderers {
@@ -808,7 +813,8 @@ class ABC3DRenderer {
 
 	struct Programs {
 		GLSLProgram mesh;
-		GLSLProgram shade;
+		GLSLProgram defaultShade;
+		GLSLProgram pixelShade;
 	} prog;
 
 	struct FrameBuffer {
@@ -900,6 +906,7 @@ class ABC3DRenderer {
 	} blends;
 
 	bool initialized = false;
+	MeshShader meshShader = MeshShader::DEFAULT;
 	// AI-generated code: Tracks temporary view/projection overrides used by simple mode.
 	bool customViewProjection = false;
 	uint meshVertDrawCount;
@@ -956,6 +963,16 @@ private:
 
 	void UpdateProjectionUniforms();
 	void UpdateViewUniforms();
+	bool InitializeShadeProgram(GLSLProgram& program, const char* fragmentShaderPath);
+	GLSLProgram& ShadeProgram() {
+		return meshShader == MeshShader::PIXEL ? prog.pixelShade : prog.defaultShade;
+	}
+	void SetShadeUniform3(int uniform, const float* data, int count = 1) {
+		prog.defaultShade.Bind();
+		prog.defaultShade.SetUniform3(uniform, data, count);
+		prog.pixelShade.Bind();
+		prog.pixelShade.SetUniform3(uniform, data, count);
+	}
 
 public:
 // ---------------------------------------------------------------------------------------------
@@ -1014,6 +1031,7 @@ public:
 
 	bool Initialized() { return initialized; }
 	const Vec3f& SelectionColor() const { return blends.select; }
+	void SetMeshShader(MeshShader shader) { meshShader = shader; }
 
 	void mouseDrag(const Vec2f& drag) {
 		if (cam.type == ORBIT) { cam.orbit.mouseDrag(drag); }
@@ -1219,8 +1237,7 @@ public:
 	void FaceColor(const Vec3f& clr) {
 		colors.faces = clr; 
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BaseColors::FACES, &colors.faces.x);
+			SetShadeUniform3(BaseColors::FACES, &colors.faces.x);
 		}
 	}
 
@@ -1228,8 +1245,7 @@ public:
 	void EdgeColor(const Vec3f& clr) {
 		colors.edges = clr;
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BaseColors::EDGES, &colors.edges.x);
+			SetShadeUniform3(BaseColors::EDGES, &colors.edges.x);
 		}
 	}
 
@@ -1237,8 +1253,7 @@ public:
 	void VertexColor(const Vec3f& clr) {
 		colors.verts = clr;
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BaseColors::VERTICES, &colors.verts.x);
+			SetShadeUniform3(BaseColors::VERTICES, &colors.verts.x);
 		}
 	}
 
@@ -1246,8 +1261,7 @@ public:
 	void BackgroundColor(const Vec3f& clr) {
 		colors.background = clr; 
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BaseColors::BACKGROUND, &colors.background.x);
+			SetShadeUniform3(BaseColors::BACKGROUND, &colors.background.x);
 		}
 	}
 
@@ -1255,8 +1269,7 @@ public:
 	void SelectColor(const Vec3f& clr) {
 		blends.select = clr; 
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BlendColors::SELECT + 5, &blends.select.x);
+			SetShadeUniform3(BlendColors::SELECT + 5, &blends.select.x);
 		}
 	}
 
@@ -1264,8 +1277,7 @@ public:
 	void HoverColor(const Vec3f& clr) {
 		blends.hover = clr;
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BlendColors::HOVER + 5, &blends.hover.x);
+			SetShadeUniform3(BlendColors::HOVER + 5, &blends.hover.x);
 		}
 	}
 
@@ -1273,8 +1285,7 @@ public:
 	void SelectHoverColor(const Vec3f& clr) {
 		blends.both = clr;
 		if constexpr (uploadUniform) {
-			prog.shade.Bind();
-			prog.shade.SetUniform3(BlendColors::BOTH + 5, &blends.both.x);
+			SetShadeUniform3(BlendColors::BOTH + 5, &blends.both.x);
 		}
 	}
 

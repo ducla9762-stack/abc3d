@@ -192,6 +192,7 @@
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+    <None Include="assets\shaders\PixelShader.frag" />
     <None Include="assets\shaders\Mace.vert" />
     <None Include="assets\shaders\VertexDraw.frag" />
     <None Include="assets\shaders\VertexDraw.vert" />

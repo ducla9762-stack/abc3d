@@ -1595,6 +1595,10 @@ public slots:
 
 	void SetVertexScale(double scale) { changeDisplay("Vertex Scale", [&](DisplaySettings& d) { d.vertexScale = static_cast<float>(scale); }); }
 
+	void SetMeshShader(int shaderIndex) {
+		changeDisplay("Mesh Shader", [&](DisplaySettings& d) { d.meshShader = shaderIndex == 1 ? 1u : 0u; });
+	}
+
 	void setPivotVisibility(bool visible) { if (showPivot != visible) { showPivot = visible; update(); } }
 
 	void setPivotScale(double scale) { pivotScale = float(scale); update(); }
