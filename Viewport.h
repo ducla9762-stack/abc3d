@@ -168,6 +168,7 @@ public:
 	void controllerToMousePress(QMouseEvent* event);
 	void controllerToMouseRelease(QMouseEvent* event);
 	void controllerToMouseDoubleClick(QMouseEvent* event);
+	void controllerToContextMenu(QContextMenuEvent* event);
 	CameraType getCameraMode();
 
 private:

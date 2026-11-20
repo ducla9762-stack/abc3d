@@ -719,6 +719,10 @@ void Viewport::leaveEvent(QEvent* event) {
 	update();
 }
 
+void Viewport::controllerToContextMenu(QContextMenuEvent* event) {
+	contextMenuEvent(event);
+}
+
 void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 	if (!(event->reason() == QContextMenuEvent::Mouse)) { 
 		event->ignore();

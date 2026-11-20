@@ -79,9 +79,6 @@ ABC3D::ABC3D(QWidget *parent)
         });
 
     // Search Bar for documents
-    QToolBar* searchToolbar = addToolBar("Search");
-    searchToolbar->setMovable(false);
-
     QLineEdit* searchBar = new QLineEdit();    
     searchBar->setPlaceholderText("Search Help Documents");
     searchBar->setFixedHeight(30);
@@ -453,7 +450,8 @@ ABC3D::ABC3D(QWidget *parent)
     }
 
     devices = controllerManager->connectedGamepads();
-    holdTimer->setInterval(16);
+    analogTimer->setInterval(16);
+    dPadTimer->setInterval(16);
  
     // Create the first controller on start
     if (!devices.isEmpty()) {
@@ -475,7 +473,8 @@ ABC3D::ABC3D(QWidget *parent)
             controller->deleteLater();
             controller = nullptr;
 
-            holdTimer->stop();
+            analogTimer->stop();
+            dPadTimer->stop();
             L2pressed = false;
             R2pressed = false;
         }
@@ -526,60 +525,65 @@ void ABC3D::showSelectTool() {
     ui.selectToolButton->setChecked(true);
 }
 
-
 void ABC3D::createGamepad(int id) {
     controller = new QGamepad(id, this);
+
     // Analog Sticks
-    connect(controller, &QGamepad::axisLeftXChanged, this, [this](double value) {
-        if (ui.viewport->getCameraType() == FREE) {
+    // updateAxis AI-generated
+    auto updateAxis = [this](double& axisMember, double rawValue) {
+        axisMember = (std::abs(rawValue) < 0.15) ? 0.0 : rawValue;
 
+        bool anyActive = (leftX != 0.0 || leftY != 0.0 || rightX != 0.0 || rightY != 0.0);
+        if (anyActive) {
+            if (!analogTimer->isActive()) {
+                analogTimer->start();
+            }
         }
-    });
-
-    connect(controller, &QGamepad::axisLeftYChanged, this, [this](double value) {
-        if (ui.viewport->getCameraType() == ORBIT) {
-            if (value > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
-            else { emit cameraKeyPressed(Axis::Z); }
-        }
-
         else {
-            if(value > 0) { }
-            else {}
+            analogTimer->stop();
         }
-    });
+    };
 
-    connect(controller, &QGamepad::axisRightXChanged, this, [this](double value) {
-        // Changes the cursor's X value and leave the y value
-        // right: spherical.x & spherical.y
-        if (ui.viewport->getCameraType() == ORBIT) {
-            if (value > 0) { emit cameraKeyPressed(Axis::X); }
-            else { emit cameraKeyPressed(Axis::X_NEG); }
+ 
+    connect(controller, &QGamepad::axisLeftXChanged, this, [=](double value) { updateAxis(leftX, value); });
+    connect(controller, &QGamepad::axisLeftYChanged, this, [=](double value) { updateAxis(leftY, value); });
+    connect(controller, &QGamepad::axisRightXChanged, this, [=](double value) { updateAxis(rightX, value); });
+    connect(controller, &QGamepad::axisRightYChanged, this, [=](double value) { updateAxis(rightY, value); });
+
+    // Timer for holding down the analog sticks
+    connect(analogTimer, &QTimer::timeout, this, [this]() {
+        if (leftX != 0.0) {
+
         }
 
-        else {
-            if (value > 0) { emit cameraKeyPressed(Axis::X_NEG); }
-            else { emit cameraKeyPressed(Axis::X); }
+        if (leftY != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (leftY > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+                else { emit cameraKeyPressed(Axis::Z); }
+            }
         }
-    });
 
-    connect(controller, &QGamepad::axisRightYChanged, this, [this](double value) {
-        // Changes the cursor's Y value and leaves the x value
-        if (ui.viewport->getCameraType() == ORBIT) {
-            if (value > 0) { emit cameraKeyPressed(Axis::Y); }
-            else { emit cameraKeyPressed(Axis::Y_NEG); }
+        if (rightX != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (rightX > 0) { emit cameraKeyPressed(Axis::X); }
+                else { emit cameraKeyPressed(Axis::X_NEG); }
+            }
+            else {
+                if (rightX > 0) { emit cameraKeyPressed(Axis::X_NEG); }
+                else { emit cameraKeyPressed(Axis::X); }
+            }
         }
-        else { 
-            if (value > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
-            else { emit cameraKeyPressed(Axis::Z); }
+
+        if (rightY != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (rightY > 0) { emit cameraKeyPressed(Axis::Y); }
+                else { emit cameraKeyPressed(Axis::Y_NEG); }
+            }
+            else {
+                if (rightY > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+                else { emit cameraKeyPressed(Axis::Z); }
+            }
         }
-    });
-
-    connect(controller, &QGamepad::buttonL3Changed, this, [this](bool pressed) {
-    
-    });
-
-    connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
-      
     });
 
 
@@ -591,13 +595,11 @@ void ABC3D::createGamepad(int id) {
         if (pressed) {
             QMouseEvent* pressEvent = new QMouseEvent(QEvent::MouseButtonPress, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
             QApplication::postEvent(target, pressEvent);
-
         }
 
         else {
             QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
             QApplication::postEvent(target, releaseEvent);
-
         }
     });
 
@@ -613,7 +615,6 @@ void ABC3D::createGamepad(int id) {
 
     connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
         if (pressed) {
-
         }
     });
 
@@ -687,10 +688,19 @@ void ABC3D::createGamepad(int id) {
         R2pressed = pressed;
 
         if (pressed) { ui.viewport->cycleNext(); }
-        });
+    });
+
+    connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
+        if (pressed) {
+            QContextMenuEvent* event = new QContextMenuEvent(QContextMenuEvent::Mouse, QCursor::pos(), QCursor::pos(), Qt::NoModifier);
+            ui.viewport->controllerToContextMenu(event);
+        }
+    });
 
     // D-Pad
-    connect(holdTimer, &QTimer::timeout, this, [this]() {
+
+    // Timer for holding down the d pad
+    connect(dPadTimer, &QTimer::timeout, this, [this]() {
         switch (timerCaller) {
         case 1:
             QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() - 10);
@@ -710,40 +720,40 @@ void ABC3D::createGamepad(int id) {
     connect(controller, &QGamepad::buttonUpChanged, this, [this](bool pressed) {
         if (pressed) {
             timerCaller = 1;
-            holdTimer->start();
+            dPadTimer->start();
         }
         else {
-            holdTimer->stop();
+            dPadTimer->stop();
         }
      });
 
     connect(controller, &QGamepad::buttonDownChanged, this, [this](bool pressed) {
         if (pressed) {
             timerCaller = 2;
-            holdTimer->start();
+            dPadTimer->start();
         }
         else {
-            holdTimer->stop();
+            dPadTimer->stop();
         }
     });
 
     connect(controller, &QGamepad::buttonLeftChanged, this, [this](bool pressed) {
         if (pressed) {
             timerCaller = 3;
-            holdTimer->start();
+            dPadTimer->start();
         }
         else {
-            holdTimer->stop();
+            dPadTimer->stop();
         }
     });
 
     connect(controller, &QGamepad::buttonRightChanged, this, [this](bool pressed) {
         if (pressed) {
             timerCaller = 4;
-            holdTimer->start();
+            dPadTimer->start();
         }
         else {
-            holdTimer->stop();
+            dPadTimer->stop();
         }
     });
 
@@ -825,19 +835,19 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
 
     case Qt::Key_Up:
         event->accept();
-        emit cameraKeyPressed(Axis::X);
+        emit cameraKeyPressed(Axis::Z);
         break;
     case Qt::Key_Down:
         event->accept();
-        emit cameraKeyPressed(Axis::X_NEG);
+        emit cameraKeyPressed(Axis::Z_NEG);
         break;
     case Qt::Key_Left:
         event->accept();
-        emit cameraKeyPressed(Axis::Z_NEG);
+        emit cameraKeyPressed(Axis::X);
         break;
     case Qt::Key_Right:
         event->accept();
-        emit cameraKeyPressed(Axis::Z);
+        emit cameraKeyPressed(Axis::X_NEG);
         break;
 
     // Escape - Cancels the knife cut, or leaves the knife. Otherwise closes program

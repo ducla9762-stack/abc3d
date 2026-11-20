@@ -46,8 +46,14 @@ private:
     QGamepad* controller = nullptr;
     QGamepadManager* controllerManager = QGamepadManager::instance();
     QList<int> devices;
-    QTimer* holdTimer = new QTimer(this);
+    QTimer* dPadTimer = new QTimer(this);
+    QTimer* analogTimer = new QTimer(this);
+    QTimer* aButtonTimer = new QTimer(this);
     int timerCaller = 0;
+    double leftX = 0.0;
+    double leftY = 0.0;
+    double rightX = 0.0;
+    double rightY = 0.0;
   
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
@@ -66,6 +72,7 @@ private:
 
     // Creates all the connections for controllers
     void createGamepad(int id);
+    void analogConnections(int caller, double value);
 
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
