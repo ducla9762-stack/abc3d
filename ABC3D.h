@@ -54,6 +54,10 @@ private:
     double leftY = 0.0;
     double rightX = 0.0;
     double rightY = 0.0;
+    bool dPadUp = 0.0;
+    bool dPadDown = 0.0;
+    bool dPadLeft = 0.0;
+    bool dPadRight = 0.0;
   
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;

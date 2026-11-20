@@ -458,7 +458,7 @@ ABC3D::ABC3D(QWidget *parent)
         createGamepad(devices.first()); 
     }
 
-    // AI-generated
+    // AI-assisted
     // Handles gamepads connected after start 
     connect(controllerManager, &QGamepadManager::gamepadConnected, this, [this](int id) {
         if (!controller) {
@@ -529,7 +529,7 @@ void ABC3D::createGamepad(int id) {
     controller = new QGamepad(id, this);
 
     // Analog Sticks
-    // updateAxis AI-generated
+    // updateAxis AI-assisted
     auto updateAxis = [this](double& axisMember, double rawValue) {
         axisMember = (std::abs(rawValue) < 0.15) ? 0.0 : rawValue;
 
@@ -544,12 +544,12 @@ void ABC3D::createGamepad(int id) {
         }
     };
 
- 
     connect(controller, &QGamepad::axisLeftXChanged, this, [=](double value) { updateAxis(leftX, value); });
     connect(controller, &QGamepad::axisLeftYChanged, this, [=](double value) { updateAxis(leftY, value); });
     connect(controller, &QGamepad::axisRightXChanged, this, [=](double value) { updateAxis(rightX, value); });
     connect(controller, &QGamepad::axisRightYChanged, this, [=](double value) { updateAxis(rightY, value); });
 
+    // AI-assisted
     // Timer for holding down the analog sticks
     connect(analogTimer, &QTimer::timeout, this, [this]() {
         if (leftX != 0.0) {
@@ -586,6 +586,42 @@ void ABC3D::createGamepad(int id) {
         }
     });
 
+    // AI-assisted
+    auto updateDPad = [this](bool& buttonState, bool pressed) {
+        buttonState = pressed;
+
+        bool anyPressed = (dPadUp || dPadDown || dPadLeft || dPadRight);
+        if (anyPressed) {
+            if (!dPadTimer->isActive()) {
+                dPadTimer->start();
+            }
+        }
+        else {
+            dPadTimer->stop();
+        }
+    };
+
+    connect(controller, &QGamepad::buttonUpChanged, this, [=](bool pressed) { updateDPad(dPadUp, pressed); });
+    connect(controller, &QGamepad::buttonDownChanged, this, [=](bool pressed) { updateDPad(dPadDown, pressed); });
+    connect(controller, &QGamepad::buttonLeftChanged, this, [=](bool pressed) { updateDPad(dPadLeft, pressed); });
+    connect(controller, &QGamepad::buttonRightChanged, this, [=](bool pressed) { updateDPad(dPadRight, pressed); });
+
+    // AI-assisted
+    connect(dPadTimer, &QTimer::timeout, this, [this]() {
+        int dx = 0;
+        int dy = 0;
+        const int step = 10;
+
+        if (dPadUp)    dy -= step;
+        if (dPadDown)  dy += step;
+        if (dPadLeft)  dx -= step;
+        if (dPadRight) dx += step;
+
+        if (dx != 0 || dy != 0) {
+            QCursor::setPos(QCursor::pos() + QPoint(dx, dy));
+        }
+    });
+
 
     // Controller Buttons
     // A button: selects the button, mesh, or whatever else it's hovering over
@@ -603,6 +639,7 @@ void ABC3D::createGamepad(int id) {
         }
     });
 
+    // B button: deselects current selection
     connect(controller, &QGamepad::buttonBChanged, this, [this](bool pressed) {
         QWidget* target = QApplication::widgetAt(QCursor::pos());
         QPoint localPosition = target->mapFromGlobal(QCursor::pos());
@@ -613,14 +650,17 @@ void ABC3D::createGamepad(int id) {
         }
     });
 
+    // X Button: triggers redo
     connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
         if (pressed) {
+            ui.actionUndo->trigger();
         }
     });
 
+    // Y Button: triggers undo
     connect(controller, &QGamepad::buttonYChanged, this, [this](bool pressed) {
         if (pressed) {
-
+            ui.actionRedo->trigger();
         }
     });
 
@@ -690,70 +730,11 @@ void ABC3D::createGamepad(int id) {
         if (pressed) { ui.viewport->cycleNext(); }
     });
 
+    // Maps to right click and pulls up the corresponding menu
     connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
         if (pressed) {
             QContextMenuEvent* event = new QContextMenuEvent(QContextMenuEvent::Mouse, QCursor::pos(), QCursor::pos(), Qt::NoModifier);
             ui.viewport->controllerToContextMenu(event);
-        }
-    });
-
-    // D-Pad
-
-    // Timer for holding down the d pad
-    connect(dPadTimer, &QTimer::timeout, this, [this]() {
-        switch (timerCaller) {
-        case 1:
-            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() - 10);
-            break;
-        case 2:
-            QCursor::setPos(QCursor::pos().x(), QCursor::pos().y() + 10);
-            break;
-        case 3:
-            QCursor::setPos(QCursor::pos().x() - 10, QCursor::pos().y());
-            break;
-        case 4:
-            QCursor::setPos(QCursor::pos().x() + 10, QCursor::pos().y());
-            break;
-        }
-    });
-    
-    connect(controller, &QGamepad::buttonUpChanged, this, [this](bool pressed) {
-        if (pressed) {
-            timerCaller = 1;
-            dPadTimer->start();
-        }
-        else {
-            dPadTimer->stop();
-        }
-     });
-
-    connect(controller, &QGamepad::buttonDownChanged, this, [this](bool pressed) {
-        if (pressed) {
-            timerCaller = 2;
-            dPadTimer->start();
-        }
-        else {
-            dPadTimer->stop();
-        }
-    });
-
-    connect(controller, &QGamepad::buttonLeftChanged, this, [this](bool pressed) {
-        if (pressed) {
-            timerCaller = 3;
-            dPadTimer->start();
-        }
-        else {
-            dPadTimer->stop();
-        }
-    });
-
-    connect(controller, &QGamepad::buttonRightChanged, this, [this](bool pressed) {
-        if (pressed) {
-            timerCaller = 4;
-            dPadTimer->start();
-        }
-        else {
-            dPadTimer->stop();
         }
     });
 
