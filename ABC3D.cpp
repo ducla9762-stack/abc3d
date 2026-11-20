@@ -50,6 +50,9 @@ ABC3D::ABC3D(QWidget *parent)
         &ABC3D::imageFileDialog
     );
 
+    QObject::connect(ui.shaderComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+        ui.viewport, &Viewport::SetMeshShader);
+
     // AI-generated code: Adds mutually exclusive UI actions for standard and simple rendering modes.
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
@@ -505,6 +508,7 @@ void ABC3D::refreshDisplayWidgets() {
         const QSignalBlocker block(spinner);
         spinner->setValue(value);
     };
+	const QSignalBlocker shaderBlock(ui.shaderComboBox);
 
     setColor(ui.faceColorButton, d.faceColor);
     setColor(ui.edgeColorButton, d.edgeColor);
@@ -518,6 +522,7 @@ void ABC3D::refreshDisplayWidgets() {
     setChecked(ui.vertexVisibilityBox, d.verticesAlwaysVisible);
     setValue(ui.edgeRadiusSpinner, d.edgeRadius);
     setValue(ui.vertexScaleSpinner, d.vertexScale);
+    ui.shaderComboBox->setCurrentIndex(static_cast<int>(d.meshShader));
 }
 
 void ABC3D::showSelectTool() {

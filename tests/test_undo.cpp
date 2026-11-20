@@ -287,6 +287,7 @@ TEST(DocumentTransaction, ReferenceImagesAndDisplayRoundTrip) {
 	doc.scene.NewReferenceImage("b.png");
 	doc.display.edgeColor = Vec3f(1.0f, 0.0f, 0.0f);
 	doc.display.gridVisible = false;
+	doc.display.meshShader = 1;
 	ASSERT_TRUE(doc.Commit());
 	const SceneSnapshot after = Snapshot(doc);
 
