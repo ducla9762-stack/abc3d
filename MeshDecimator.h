@@ -81,6 +81,23 @@ public:
 		return count;
 	}
 
+	/// <summary>
+	/// Relative cost of decimating a mesh of `triangles` triangles to `ratio` (0 to 1), for time estimates. Seeding
+	/// the queue costs about n log n, and the collapse loop adds about the same again for each triangle removed.
+	/// Multiply by SecondsPerWorkUnit for a time.
+	/// </summary>
+	static double EstimateWork(uint triangles, float ratio) {
+		const double keep = std::clamp(double(ratio), 0.0, 1.0);
+		if (triangles < 2 || keep >= 1.0) { return 0.0; }
+		const double n = double(triangles);
+		return n * std::log2(n) * (0.2 + (1.0 - keep));
+	}
+
+	/// Seconds per unit of EstimateWork on a Release build, from the Decimate.DISABLED_Timing test (200 to 430 ns
+	/// measured from 8k to 520k triangles; large meshes are slower per unit as they fall out of cache). This is only
+	/// the starting point: the viewport replaces it with the rate it measures.
+	static constexpr double SecondsPerWorkUnit = 300e-9;
+
 	/// <summary>Decimates to `ratio` (0 to 1) of the triangulated face count.</summary>
 	bool DecimateToRatio(float ratio, Result* result = nullptr) {
 		Options options;
