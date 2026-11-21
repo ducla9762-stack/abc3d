@@ -1,6 +1,9 @@
 
 #include "ABC3D.h"
 
+#include <QLocale>
+#include <QMessageBox>
+
 ABC3D::ABC3D(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -126,8 +129,43 @@ ABC3D::ABC3D(QWidget *parent)
         emit elementChanged(ui.viewport->getActiveElement());
         });
 
+    // Decimate blocks the UI, so ask first when it would take noticeably long
     QObject::connect(ui.decimateButton, &QPushButton::released, this, [=]() {
-        ui.viewport->decimateSelection(ui.decimateRatioSpinner->value());
+        const int percent = ui.decimateRatioSpinner->value();
+        const Viewport::DecimateEstimate estimate = ui.viewport->estimateDecimate(percent);
+        if (estimate.objects == 0) { return; }
+
+        // Ask from about the size of a cube subdivided four times (6 * 4^4 quads = 3072 triangles), where the pause
+        // starts to be noticeable, or whenever the measured rate says it will take a second or more
+        constexpr uint CONFIRM_TRIANGLES = 3072;
+        constexpr double CONFIRM_SECONDS = 1.0;
+        if (estimate.triangles >= CONFIRM_TRIANGLES || estimate.seconds >= CONFIRM_SECONDS) {
+            QString duration;
+            if (estimate.seconds < 1.0) {
+                duration = "less than a second";
+            }
+            else if (estimate.seconds < 60.0) {
+                const int seconds = qRound(estimate.seconds);
+                duration = QString("about %1 second%2").arg(seconds).arg(seconds == 1 ? "" : "s");
+            }
+            else {
+                const int minutes = qRound(estimate.seconds / 60.0);
+                duration = QString("about %1 minute%2").arg(minutes).arg(minutes == 1 ? "" : "s");
+            }
+            const QString objects = estimate.objects == 1 ? "1 object" : QString("%1 objects").arg(estimate.objects);
+
+            QMessageBox confirm(QMessageBox::Warning, "Decimate",
+                QString("Decimating %1 triangles (%2) down to %3% may take %4.")
+                    .arg(QLocale().toString(estimate.triangles), objects).arg(percent).arg(duration),
+                QMessageBox::NoButton, this);
+            confirm.setInformativeText("ABC3D will not respond until it finishes. Decimate anyway?");
+            QPushButton* decimate = confirm.addButton("Decimate", QMessageBox::AcceptRole);
+            confirm.setDefaultButton(confirm.addButton(QMessageBox::Cancel));
+            confirm.exec();
+            if (confirm.clickedButton() != decimate) { return; }
+        }
+
+        ui.viewport->decimateSelection(percent);
         });
 
     // Pulls up shape panel

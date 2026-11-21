@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cmath>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -314,5 +316,30 @@ TEST(Decimate, TeapotModel) {
 		EXPECT_TRUE(IsValid(mesh));
 		EXPECT_TRUE(AllTriangles(mesh));
 		EXPECT_LE(LiveFaces(mesh), before / 10 + 1);
+	}
+}
+
+TEST(Decimate, EstimateWorkGrowsWithSizeAndReduction) {
+	EXPECT_EQ(Decimator::EstimateWork(1000, 1.0f), 0.0); // nothing to remove
+	EXPECT_EQ(Decimator::EstimateWork(1, 0.5f), 0.0);
+	EXPECT_GT(Decimator::EstimateWork(1000, 0.1f), Decimator::EstimateWork(1000, 0.5f));
+	EXPECT_GT(Decimator::EstimateWork(2000, 0.5f), 2.0 * Decimator::EstimateWork(1000, 0.5f)); // n log n
+	EXPECT_EQ(Decimator::EstimateWork(1000, -1.0f), Decimator::EstimateWork(1000, 0.0f)); // ratio is clamped
+}
+
+// Times Decimate on growing spheres so Decimator::SecondsPerWorkUnit can be recalibrated.
+// Run with --gtest_also_run_disabled_tests --gtest_filter=Decimate.DISABLED_Timing (use a Release build).
+TEST(Decimate, DISABLED_Timing) {
+	for (uint n : { 64u, 128u, 256u, 512u }) {
+		for (float ratio : { 0.5f, 0.1f }) {
+			HalfEdgeMesh mesh = Sphere(n, n);
+			const uint triangles = Decimator::TriangleCount(mesh);
+			const auto start = std::chrono::steady_clock::now();
+			Decimator decimator(mesh);
+			ASSERT_TRUE(decimator.DecimateToRatio(ratio)) << decimator.error;
+			const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+			std::cout << triangles << " triangles to " << ratio << ": " << seconds << " s, "
+			          << 1e9 * seconds / Decimator::EstimateWork(triangles, ratio) << " ns per work unit" << std::endl;
+		}
 	}
 }
