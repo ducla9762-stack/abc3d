@@ -448,7 +448,7 @@ private:
 			simpleModeBorderOverlay->setVisible(simpleMode);
 			simpleModeBorderOverlay->update();
 		}
-		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE); knifeOverlay->update(); }
+		if (knifeOverlay) { knifeOverlay->setGeometry(rect()); knifeOverlay->raise(); knifeOverlay->setVisible(actionParams.action == KNIFE || actionParams.action == LOOPCUT); knifeOverlay->update(); }
 		if (simpleMode) {
 			for (QPushButton* label : simpleModeLabels) { label->raise(); }
 		}
