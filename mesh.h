@@ -15,6 +15,7 @@
 #include "cyMatrix.h"
 
 #include "helper.h"
+#include "CGAL.h"
 
 #undef min
 #undef max
@@ -121,7 +122,10 @@ public:
 };
 
 class HalfEdgeMeshBeveler;
+class InsetBuilder;
 class HalfEdgeMeshKnife; 
+class HalfEdgeMeshLoopCutter; 
+class HalfEdgeMeshDecimator;
 
 class HalfEdgeMesh {
 
@@ -148,6 +152,14 @@ public:
 
 private:
 
+	struct AABB {
+		Vec3f min;
+		Vec3f max;
+		AABB(const Vec3f& min, const Vec3f& max) : min(min), max(max) {}
+		AABB(const Vec3f& val) : min(val), max(val) {}
+		AABB() : min(std::numeric_limits<float>::infinity()), max(0.0f) {}
+	};
+
 	struct VertexAdjacentInfo {
 		uint edgeCount = 0;
 		uint quadCount = 0;
@@ -157,6 +169,12 @@ private:
 	friend class RenderBufferBuilder;
 	friend class HalfEdgeMeshBeveler;
 	friend class HalfEdgeMeshKnife; 
+	friend class HalfEdgeMeshLoopCutter; 
+	friend class HalfEdgeMeshDecimator;
+
+#ifdef CGAL_AVAILABLE
+	friend class InsetBuilder;
+#endif
 
 	/// <summary>
 	/// Adds a new face.
@@ -257,17 +275,29 @@ private:
 	Vec3f ApplyHybridMask(uint vertId, uint edgeCount, uint quadCount);
 
 	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Approximates the surface area of a face.
-	/// </summary>
-	/// <param name="faceId">The face whose area will be approximated.</param>
-	/// <returns>Approximate surface area of the face.</returns>
-	float approxFaceSurfaceArea(uint faceId);
-
-	/// <summary>
-	/// CURRENTLY OUTDATED AND NEEDS UPDATING! Computes the area based centroid of the mesh.
+	/// Computes the area based centroid of the mesh.
 	/// </summary>
 	/// <returns>The area based centroid of the mesh.</returns>
 	Vec3f computeCentroid();
+
+	AABB ComputeBoundingBox() {
+		AABB box;
+
+		if (vertPos.empty()) { return box; }
+
+		for (uint i = 0; i < uint(vertPos.size()); ++i) {
+			if (vertEdge[i] == MAX_UINT) { continue; }
+			Vec3f& pos = vertPos[i];
+			if (pos.x < box.min.x) { box.min.x = pos.x; }
+			if (pos.x > box.max.x) { box.max.x = pos.x; }
+			if (pos.y < box.min.y) { box.min.y = pos.y; }
+			if (pos.y > box.max.y) { box.max.y = pos.y; }
+			if (pos.z < box.min.z) { box.min.z = pos.z; }
+			if (pos.z > box.max.z) { box.max.z = pos.z; }
+		}
+
+		return box;
+	}
 
 	/// <summary>
 	/// Translate all vertices by a translation factor.
@@ -382,6 +412,94 @@ public:
 		return edges.at(edgeId);
 	}
 
+	void RecenterOnCentroid() {
+		Vec3f centroid = computeCentroid();
+		for (Vec3f& pos : vertPos) { pos -= centroid; }
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * centroid);
+	}
+
+	void RecenterOn(const Vec3f& pivot) {
+		for (Vec3f& pos : vertPos) { pos -= pivot; }
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * pivot);
+	}
+
+	void RecenterOnBoundary(Axis boundary) {
+		AABB box = ComputeBoundingBox();
+		if (box.min.x == std::numeric_limits<float>::infinity()) { return; }
+
+		Vec3f origin(0.0f);
+
+		if (boundary & Axis::X) {
+			origin.y = (box.max.y + box.min.y) / 2.0f; 
+			origin.z = (box.max.z + box.min.z) / 2.0f;
+			origin.x = (boundary & Axis::NEG) ? box.min.x : box.max.x;
+		}
+		else if (boundary & Axis::Y) {
+			origin.x = (box.max.x + box.min.x) / 2.0f;
+			origin.z = (box.max.z + box.min.z) / 2.0f;
+			origin.y = (boundary & Axis::NEG) ? box.min.y : box.max.y;
+		}
+		else if (boundary & Axis::Z) {
+			origin.x = (box.max.x + box.min.x) / 2.0f;
+			origin.y = (box.max.y + box.min.y) / 2.0f;
+			origin.z = (boundary & Axis::NEG) ? box.min.z : box.max.z;
+		}
+
+		for (Vec3f& pos : vertPos) { pos -= origin; }
+
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		pos += rot * (scale * origin);
+	}
+
+	// Undo support ------------------------------------------------------------------------
+
+	/// <returns>True when both meshes hold identical topology, positions, and transform.</returns>
+	bool SameState(const HalfEdgeMesh& other) const {
+		if (scale != other.scale || pos != other.pos || eulerRot != other.eulerRot) { return false; }
+		if (faceEdges != other.faceEdges || vertEdge != other.vertEdge || vertPos != other.vertPos) { return false; }
+		if (edges.size() != other.edges.size()) { return false; }
+		for (size_t i = 0; i < edges.size(); ++i) {
+			const HalfEdge& a = edges[i];
+			const HalfEdge& b = other.edges[i];
+			if (a.orig != b.orig || a.dest != b.dest || a.face != b.face ||
+				a.twin != b.twin || a.next != b.next || a.prev != b.prev) { return false; }
+		}
+		return true;
+	}
+
+	/// <returns>Approximate heap memory held by the mesh's element arrays.</returns>
+	size_t MemoryBytes() const {
+		return sizeof(*this) +
+			faceEdges.capacity() * sizeof(uint) +
+			vertPos.capacity() * sizeof(Vec3f) +
+			vertEdge.capacity() * sizeof(uint) +
+			edges.capacity() * sizeof(HalfEdge);
+	}
+
+	/// <returns>Every vertex position, local space.</returns>
+	const std::vector<Vec3f>& VertexPositionList() const { return vertPos; }
+
+	/// <summary>
+	/// Swaps the vertex position array with another of the same size. Topology is untouched,
+	/// so this only makes sense for edits that moved vertices without adding or removing any.
+	/// </summary>
+	/// <returns>False (and does nothing) when the sizes differ.</returns>
+	bool SwapVertexPositions(std::vector<Vec3f>& positions) {
+		if (positions.size() != vertPos.size()) { return false; }
+		vertPos.swap(positions);
+		return true;
+	}
+
 	/// <returns>Mesh's scale factor.</returns>
 	const Vec3f& Scale() const { return scale; }
 	/// <returns>Mesh's world-space position.</returns>
@@ -415,8 +533,27 @@ public:
 	/// <param name="add">The scale factor to add uniformly.</param>
 	void AddScale(const float& add) { this->scale += add; }
 
+	void BakeScale() {
+		for (Vec3f& pos : vertPos) {
+			pos *= scale;
+		}
+		scale.Set(1.0f);
+	}
+
 	/// <returns>Model transformation for the mesh.</returns>
 	Matrix4f getTransform() const;
+	void getTransform(CompactTransform140& trans) const {
+		trans.translateX = pos.x;
+		trans.translateY = pos.y;
+		trans.translateZ = pos.z;
+		trans.scale = scale;
+		Matrix3f rot; 
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+		trans.rotCol1 = rot.Column(0);
+		trans.rotCol2 = rot.Column(1);
+		trans.rotCol3 = rot.Column(2);
+	}
+
 	/// <returns>Scale and rotation components of model transform.</returns>
 	Matrix3f getTransform3x3() const;
 	/// <param name="worldDir">Direction in world-space.</param>
@@ -427,10 +564,47 @@ public:
 		return (getTransform3x3() * pos) + this->pos;
 	}
 
-	Vec3f WorldPosToLocalPos(const Vec3f& pos) {
-		Matrix3f inv = getTransform3x3();
-		inv.Invert();
-		return inv * (pos - this->pos);
+	Vec3f WorldPosToLocalPos(const Vec3f& pos) const {
+		Matrix3f rot;
+		rot.SetRotationZYX(degreesToRadians(eulerRot.x), degreesToRadians(eulerRot.y), degreesToRadians(eulerRot.z));
+
+		Vec3f translated = pos - this->pos;
+		Vec3f local;
+
+		local.x = (
+			rot.cell[0] * translated[0] +
+			rot.cell[1] * translated[1] +
+			rot.cell[2] * translated[2]
+		);
+
+		local.y = (
+			rot.cell[3] * translated[0] +
+			rot.cell[4] * translated[1] +
+			rot.cell[5] * translated[2]
+		);
+
+		local.z = (
+			rot.cell[6] * translated[0] +
+			rot.cell[7] * translated[1] +
+			rot.cell[8] * translated[2]
+		);
+
+		local /= scale;
+
+		return local;
+	}
+
+	template <typename Callback, bool CCW = true>
+	void ForEachVertexInFace(uint faceId, Callback func) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+
+		do {
+			const HalfEdgeMesh::HalfEdge& edge = edges[curr];
+			func(vertPos[edge.orig]);
+			if constexpr (CCW) { curr = edge.next; }
+			else { curr = edge.prev; }
+		} while (curr != first);
 	}
 
 	/// <param name="faceId">A face of the mesh.</param>
@@ -459,6 +633,28 @@ public:
 
 	void GetFaceEdges(uint faceId, std::vector<uint>& edges) const;
 
+	void GetFaceLogicalEdges(uint faceId, std::vector<uint>& edges) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		if (first == MAX_UINT) { return; }
+
+		do {
+			uint twin = this->edges[curr].twin;
+			if (curr < twin) {
+				edges.push_back(curr);
+			}
+			else {
+				edges.push_back(twin);
+			}
+			edges.push_back(curr);
+			curr = this->edges[curr].next;
+		} while (curr != first);
+	}
+
+	bool FaceIsNull(uint faceId) const { return faceEdges[faceId] == MAX_UINT; }
+	bool EdgeIsNull(uint edgeId) const { return edges[edgeId].dest == MAX_UINT; }
+	bool VertexIsNull(uint id) const { return vertEdge[id] == MAX_UINT; }
+
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <param name="vertices">
 	/// Will contain the first 4 vertices of the face. 
@@ -478,12 +674,6 @@ public:
 	/// <returns>Number of vertices in the mesh.</returns>
 	uint VertexCount() const;
 
-	/// <returns>Number of faces in mesh</returns>
-	uint FaceCount() const{ return static_cast<uint>(faceEdges.size());}
-
-	/// <returns>Number of half-edges in a mesh</returns>
-	uint EdgeCount() const { return static_cast<uint>(edges.size());  }
-
 	/// <summary>
 	/// Checks: 
 	/// 1) Every twin is symmetric. 
@@ -495,9 +685,6 @@ public:
 	/// <returns>True if mesh satisfies conditions</returns>
 	bool Validate(std::string& err) const; 
 
-	/// <summary>
-	/// OUTDATED AND NEEDS UPDATE.
-	/// </summary>
 	/// <param name="faceId">A face of the mesh.</param>
 	/// <returns>Centroid of the face.</returns>
 	Vec3f faceCentroid(uint faceId);
@@ -596,9 +783,9 @@ public:
 	bool DissolveEdge(uint edgeId);
 
 	/// <summary>
-	/// Removes a face and rebuilds its boundary as an open mesh boundary.
+	/// Marks a face as deleted and marks its half-edges as boundary edges.
 	/// </summary>
-	/// <returns>True when the face was removed; false when the face ID or resulting topology is invalid.</returns>
+	/// <returns>True when the face was marked deleted; false when the face ID is invalid or already deleted.</returns>
 	bool DeleteFace(uint faceId);
 
 	/// <summary>
@@ -616,13 +803,70 @@ public:
 		uint degree = 0;
 
 		do {
-			HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
+			const HalfEdgeMesh::HalfEdge& edge = edges[currEdge];
 			++degree;
 			currEdge = edges[edge.twin].next;
 		} while (currEdge != firstEdge);
 
 		return degree;
 	}
+
+	uint NearestEdge(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+		Vec3f prev = vertPos[edges[first].orig];
+
+		uint nearestEdge = first;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			const HalfEdge& edge = edges[curr];
+			Vec3f next = vertPos[edge.dest];
+			Vec3f lineSeg = next - prev;
+			Vec3f relPos = pos - prev;
+			float t = relPos.Dot(lineSeg) / lineSeg.LengthSquared();
+			if (t >= 0.0f && t <= 1.0f) {
+				Vec3f rejection = relPos - (t * lineSeg);
+				float distSqrd = rejection.LengthSquared();
+				if (distSqrd < nearestDistSqrd) {
+					nearestDistSqrd = distSqrd;
+					nearestEdge = curr;
+				}
+			}
+			prev = next;
+			curr = edge.next;
+		} while (curr != first);
+
+		uint twin = edges[nearestEdge].twin;
+		if (twin < nearestEdge) { return twin; }
+
+		return nearestEdge;
+	}
+
+	uint NearestVertex(uint faceId, const Vec3f& pos) const {
+		uint first = faceEdges[faceId];
+		uint curr = first;
+
+		uint nearestVert = MAX_UINT;
+		float nearestDistSqrd = std::numeric_limits<float>::infinity();
+
+		do {
+			const HalfEdge& edge = edges[curr];
+
+			Vec3f vert = vertPos[edge.orig];
+			float distSqrd = (pos - vert).LengthSquared();
+			if (distSqrd < nearestDistSqrd) {
+				nearestDistSqrd = distSqrd;
+				nearestVert = edge.orig;
+			}
+
+			curr = edge.next;
+		} while (curr != first);
+
+		return nearestVert;
+	}
+
+	uint FaceCount() const { return faceEdges.size(); }
 
 	/// <summary>
 	///		Splits an edge in half. Original edge's vertices will still reference a valid outgoing 
@@ -689,6 +933,95 @@ public:
 	/// </summary>
 	/// <param name="faceId">The face to extrude</param>
 	void Extrude(uint faceId);
+
+
+#ifdef CGAL_AVAILABLE
+	void RoofExtrude(uint face, std::vector<uint>& newVerts, Vec3f& normal) {
+		std::vector<Vec2_CGAL> polygon;
+
+		normal = GetFaceNormal(face);
+		Vec3f u, v;
+
+		planeBases(normal, u, v);
+		Vec3f first;
+
+		ForEachVertexInFace(face, LoadPolygonFunc(polygon, u, v, first));
+
+		std::shared_ptr<StraightSkeleton> skel = CGAL::create_interior_straight_skeleton_2(polygon.begin(), polygon.end());
+
+		bool found = false;
+
+		auto sEdge = skel->halfedges_begin();
+		while (sEdge != skel->halfedges_end()) {
+			if (!sEdge->is_bisector() && !sEdge->is_border() && CGAL::compare_xy(polygon[1], sEdge->vertex()->point()) == CGAL::EQUAL) {
+				found = true;
+				break;
+			}
+			++sEdge;
+		}
+
+		assert(found);
+		//std::unordered_map<int, uint> vertMap; may not actually need since I found out that you can call an internal id setter
+
+		uint edge = faceEdges[face];
+		for (uint i = 0; i < polygon.size(); ++i) {
+			sEdge->reset_id(edge);
+
+			//vertMap[sEdge->vertex()->id()] = mesh.edges[edge].dest;
+			sEdge->vertex()->reset_id__internal__(edges[edge].dest);
+
+			sEdge = sEdge->next()->opposite()->next();
+			edge = edges[edge].next;
+		}
+
+		int newEdge = int(edges.size());
+		for (auto it = skel->halfedges_begin(); it != skel->halfedges_end(); ++it) {
+			if (it->is_bisector()) { it->reset_id(newEdge); ++newEdge; }
+		}
+
+		edges.insert(edges.end(), size_t(newEdge) - edges.size(), HalfEdgeMesh::HalfEdge());
+
+		uint newVert = vertPos.size();
+		for (auto it = skel->vertices_begin(); it != skel->vertices_end(); ++it) {
+			if (!it->is_contour()) {
+				//vertMap[it->id()] = newVert; 
+				it->reset_id__internal__(newVert);
+				newVerts.push_back(newVert);
+				++newVert;
+				const Vec2_CGAL& uv = it->point();
+				Vec2f pos(float(uv.x()), float(uv.y()));
+				vertPos.push_back(projectFromUV(pos, first, u, v));
+				vertEdge.push_back(it->halfedge()->opposite()->id());
+			}
+		}
+
+		uint faceOffset = uint(faceEdges.size());
+		faceEdges.insert(faceEdges.end(), skel->size_of_faces() - 1, MAX_UINT);
+		auto faceIt = skel->faces_begin();
+
+		while (faceIt != skel->faces_end()) {
+			if (faceIt->id() == 0) { faceEdges[face] = faceIt->halfedge()->id(); }
+			else { faceEdges[faceIt->id() + faceOffset - 1] = faceIt->halfedge()->id(); }
+			++faceIt;
+		}
+
+		for (auto it = skel->halfedges_begin(); it != skel->halfedges_end(); ++it) {
+			if (it->is_border()) { continue; }
+			HalfEdgeMesh::HalfEdge& edge = edges[it->id()];
+			if (it->is_bisector()) {
+				//edge.dest = vertMap[it->vertex()->id()];
+				edge.dest = it->vertex()->id();
+				//edge.orig = vertMap[it->prev()->vertex()->id()];
+				edge.orig = it->prev()->vertex()->id();
+				edge.twin = it->opposite()->id();
+			}
+			edge.face = it->face()->id() == 0 ? face : (it->face()->id() + faceOffset - 1);
+			edge.next = it->next()->id();
+			edge.prev = it->prev()->id();
+		}
+	}
+#endif
+
 	/// <summary>Tesselates the mesh. N-gons are triangulated.</summary>
 	void tesselate();
 	void tessellateFaces(const std::vector<uint>& faceIds);
@@ -709,6 +1042,9 @@ public:
 
 	bool exportObj(const char* filePath) const;
 	bool exportStl(const char* filePath, bool isBinary = true) const;
+
+	const std::vector<Vec3f>& Vertices() const { return vertPos; }
+	uint EdgeCount() const { return edges.size(); }
 
 	/// <summary>
 	/// For obj files, we always convert the vertices into world space. 
@@ -882,11 +1218,6 @@ bool HalfEdgeMesh::build(const T& faces, uint (*faceVertexCount)(const Face&)) {
 		edge.next = nextId;
 		next->prev = i;
 	}
-	
-	//Translate vertices for shapes relative to the centroid instead of centering all shapes to origin
-	const Vec3f centroid = computeCentroid();
-	translateVertices(-centroid);
-	pos += centroid;
 
 	return true;
 }

@@ -4,8 +4,20 @@
 #include <QFileDialog>
 #include <QFileSystemModel>
 #include <QDesktopServices>
+#include <QStandardItemModel>
 #include <QTreeView>
+#include <QCursor>
+#include <QButtonGroup>
+#include <QActionGroup>
 #include <QSaveFile>
+#include <QSignalBlocker>
+#include <QLineEdit>
+#include <QWidgetAction>
+#include <QToolBar>
+#include <QCompleter>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
+#include <QTimer>
 #include "ui_ABC3D.h"
 #include "StartMenu.h"
 
@@ -19,13 +31,34 @@ public:
 
     bool firstShow = true;
 
-    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
-    QFileSystemModel* helpFileModel = new QFileSystemModel;
-
 private:
     Ui::ABC3DClass ui;
     QByteArray projectFile;
+    QFileSystemModel* tutorialFileModel = new QFileSystemModel;
+    QFileSystemModel* helpFileModel = new QFileSystemModel;
+    std::vector<QPushButton*> sceneButtons;
+    QButtonGroup* sceneGroup = new QButtonGroup(this);
+    QStandardItemModel* sceneModel;
+    QModelIndex sceneModelIndex;
 
+    bool L2pressed = false;
+    bool R2pressed = false;
+    QGamepad* controller = nullptr;
+    QGamepadManager* controllerManager = QGamepadManager::instance();
+    QList<int> devices;
+    QTimer* dPadTimer = new QTimer(this);
+    QTimer* analogTimer = new QTimer(this);
+    QTimer* aButtonTimer = new QTimer(this);
+    int timerCaller = 0;
+    double leftX = 0.0;
+    double leftY = 0.0;
+    double rightX = 0.0;
+    double rightY = 0.0;
+    bool dPadUp = 0.0;
+    bool dPadDown = 0.0;
+    bool dPadLeft = 0.0;
+    bool dPadRight = 0.0;
+  
     // Hotkeys
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -41,9 +74,45 @@ private:
         else if (execResult == 6) { QDesktopServices::openUrl(QUrl("https://abc3d.me")); }
     }
 
+    // Creates all the connections for controllers
+    void createGamepad(int id);
+    void analogConnections(int caller, double value);
+
 private slots:
     void showPropertiesPanel() { ui.bottomRightPanels->setCurrentIndex(0); }
     void showCameraPanel() { ui.bottomRightPanels->setCurrentIndex(3); }
+
+    // AI-generated code: Routes the rendering-mode actions to the viewport.
+    void showStandardMode() { ui.viewport->setSimpleMode(false); }
+    void showSimpleMode() { ui.viewport->setSimpleMode(true); }
+
+    void updateSearchBar(QString text) {
+        QModelIndex helpPath = helpFileModel->index("assets/help documents");
+        for (int i = 0; i < helpFileModel->rowCount(helpPath); i++) {
+            QModelIndex index = helpFileModel->index(i, 0, helpPath);
+            if (helpFileModel->fileName(index).toUpper().startsWith(text.toUpper())) {
+                helpRowClicked(index);
+            }
+        }
+    }
+
+    void imageFileDialog() {
+        QString file = QFileDialog::getOpenFileName(
+            this,
+            "Import Image",
+            "assets/images/",
+            "Images (*.png *.jpg *.jpeg)"
+        );
+
+        const bool supportedImage =
+            file.endsWith(".png", Qt::CaseInsensitive) ||
+            file.endsWith(".jpg", Qt::CaseInsensitive) ||
+            file.endsWith(".jpeg", Qt::CaseInsensitive);
+
+        if (!file.isEmpty() && supportedImage) {
+            ui.viewport->loadReferenceImage(file);
+        }
+    }
 
     void modelFileDialog() {
         QStringList files = QFileDialog::getOpenFileNames(
@@ -121,10 +190,17 @@ private slots:
     void tutorialRowClicked(const QModelIndex& index);
     void helpRowClicked(const QModelIndex& index);
     void elementChanged(Element element);
+    void meshCountChanged(uint meshCount);
+    void createSceneButton(uint index, QString name);
+    void selectionChanged(int index);
+    void refreshUndoActions();
+    void refreshDisplayWidgets();
+    void showSelectTool();
 
 signals:
     void deleteKeyPressed();
     void ctrlKeyPressed();
     void ctrlKeyReleased();
+    void cameraKeyPressed(Axis button);
 };
 

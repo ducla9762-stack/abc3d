@@ -1,82 +1,51 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>qml;cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>qrc;rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Form Files">
-      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
-      <Extensions>ui</Extensions>
-    </Filter>
-    <Filter Include="Translation Files">
-      <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
-      <Extensions>ts</Extensions>
-    </Filter>
+    <ClCompile Include="mesh.cpp" />
+    <ClCompile Include="scene.cpp" />
+    <ClCompile Include="sceneFile.cpp" />
+    <ClCompile Include="StartMenu.cpp" />
+    <ClCompile Include="VectorInput.cpp" />
+    <ClCompile Include="Viewport.cpp" />
+    <ClCompile Include="ABC3D.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SimpleModeRenderer.cpp" />
+    <ClCompile Include="GizmoRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <QtRcc Include="ABC3D.qrc">
-      <Filter>Resource Files</Filter>
-    </QtRcc>
-    <QtUic Include="ABC3D.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
-    <QtMoc Include="ABC3D.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <ClCompile Include="ABC3D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="GizmoRenderer.h" />
+    <ClInclude Include="helper.h" />
+    <ClInclude Include="mesh.h" />
+    <ClInclude Include="MeshBeveler.h" />
+    <ClInclude Include="renderBufferBuilder.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SimpleModeRenderer.h" />
+    <ClInclude Include="scene.h" />
+    <ClInclude Include="sceneFile.h" />
+    <ClInclude Include="selectionManager.h" />
+    <ClInclude Include="shapes.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Viewport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="render.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VectorInput.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sceneFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StartMenu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <QtMoc Include="StartMenu.h" />
+    <QtMoc Include="VectorInput.h" />
+    <QtMoc Include="Viewport.h" />
+    <QtMoc Include="ABC3D.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="Viewport.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="VectorInput.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="StartMenu.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
+    <QtRcc Include="ABC3D.qrc" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="ABC3D.ui" />
+    <QtUic Include="StartMenu.ui" />
+    <QtUic Include="VectorInput.ui" />
     <ClInclude Include="helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -90,6 +59,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="selectionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="undoHistory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sceneCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="shapes.h">
@@ -110,30 +85,48 @@
     <ClInclude Include="MeshKnife.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MeshLoopCut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshDecimator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\Arrow.vert" />
     <None Include="assets\shaders\ArrowBasic.vert" />
     <None Include="assets\shaders\ArrowColor.frag" />
+    <None Include="assets\shaders\GizmoColor.frag" />
+    <None Include="assets\shaders\GizmoPick.frag" />
     <None Include="assets\shaders\BlinnPhong.frag" />
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />
     <None Include="assets\shaders\Grid.vert" />
+    <None Include="assets\shaders\BasicLightPass.frag" />
+    <None Include="assets\shaders\BasicLightPass.vert" />
+    <None Include="assets\shaders\Cube.vert" />
+    <None Include="assets\shaders\EdgeDraw.frag" />
+    <None Include="assets\shaders\EdgeDraw.vert" />
+    <None Include="assets\shaders\GeomPass.frag" />
+    <None Include="assets\shaders\GeomPass.vert" />
+    <None Include="assets\shaders\Icon.frag" />
+    <None Include="assets\shaders\Icon.vert" />
+    <None Include="assets\shaders\Image.frag" />
+    <None Include="assets\shaders\ImagePick.frag" />
+    <None Include="assets\shaders\Image.vert" />
+    <None Include="assets\shaders\Hoop.vert" />
+    <None Include="assets\shaders\Hoop.frag" />
     <None Include="assets\shaders\Mesh.frag" />
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\RotationRing.vert" />
     <None Include="assets\shaders\RotationRing.frag" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+    <None Include="assets\shaders\PixelShader.frag" />
+    <None Include="assets\shaders\Mace.vert" />
+    <None Include="assets\shaders\VertexDraw.frag" />
+    <None Include="assets\shaders\VertexDraw.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtUic Include="VectorInput.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
-    <QtUic Include="StartMenu.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
   </ItemGroup>
 </Project>

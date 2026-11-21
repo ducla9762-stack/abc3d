@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QSignalBlocker>
 #include "ui_VectorInput.h"
 #include "helper.h"
 
@@ -25,7 +26,12 @@ private slots:
 	}
 
 public slots:
+	// Programmatic refresh (the viewport reporting a drag, undo/redo): emits nothing, so the
+	// value is not applied back to the selection, which would record extra undo steps.
 	void setValue(const Vec3f& val) {
+		const QSignalBlocker blockX(ui.xSpinner);
+		const QSignalBlocker blockY(ui.ySpinner);
+		const QSignalBlocker blockZ(ui.zSpinner);
 		ui.xSpinner->setValue(val.x);
 		ui.ySpinner->setValue(val.y);
 		ui.zSpinner->setValue(val.z);

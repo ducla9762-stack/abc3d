@@ -2,6 +2,7 @@
 #include "shapes.h"
 #include <qpushbutton.h>
 #include <QMenu>
+#include <QFontMetricsF>
 #include <QPainter>
 #include <unordered_map>
 #include <unordered_set>
@@ -53,24 +54,61 @@ Viewport::Viewport(QWidget *parent)
 
 	// Right Click Panel Actions
 
-	menuActions[0] = new QAction("Delete", this);
-	menuActions[1] = new QAction("Duplicate", this);
-	menuActions[2] = new QAction("Orbit Camera", this);
-
-	QObject::connect(menuActions[0], &QAction::triggered, this, &Viewport::deleteSelection);
-	QObject::connect(menuActions[1], &QAction::triggered, this, &Viewport::duplicateSelection);
-	QObject::connect(menuActions[2], &QAction::triggered, this, &Viewport::orbitSelection);
+	menu = new ViewportMenu(this);
 
 	// Set Default Settings & Load Default Cube
 
-	scene.NewMesh()->load(CUBE_VERTICES, CUBE_FACES);
+	scene.NewMesh("Cube")->load(CUBE_VERTICES, CUBE_FACES);
 
-	selectionManager.setActiveElement(OBJECT);
+	selectionManager.setActiveElement(OBJECT, scene);
 	setMouseTracking(true);
 
 	knifeOverlay = new OverlayWidget(this);
-	knifeOverlay->draw = [this](QPainter& painter) { drawKnifeOverlay(painter); };
+	knifeOverlay->draw = [this](QPainter& painter) {
+		if (actionParams.action == LOOPCUT) { drawLoopCutOverlay(painter); }
+		else { drawKnifeOverlay(painter); }
+	};
 	knifeOverlay->hide();
+
+	// AI-generated code: Draws a mouse-transparent border overlay separating the four simple-mode quadrants.
+	simpleModeBorderOverlay = new OverlayWidget(this);
+	simpleModeBorderOverlay->draw = [this](QPainter& painter) {
+		QPen borderPen(QColor(210, 210, 210, 200));
+		borderPen.setWidth(2);
+		painter.setPen(borderPen);
+
+		const qreal right = width() - 1.0;
+		const qreal bottom = height() - 1.0;
+		const qreal centerX = width() / 2.0;
+		const qreal centerY = height() / 2.0;
+		painter.drawRect(QRectF(1.0, 1.0, right - 1.0, bottom - 1.0));
+		painter.drawLine(QPointF(centerX, 1.0), QPointF(centerX, bottom));
+		painter.drawLine(QPointF(1.0, centerY), QPointF(right, centerY));
+	};
+	simpleModeBorderOverlay->hide();
+
+	const QString labelText[4] = { "Front (+X)", "Perspective", "Top (+Y)", "Side (+Z)" };
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i] = new QPushButton(labelText[i], this);
+		simpleModeLabels[i]->setFocusPolicy(Qt::NoFocus);
+		simpleModeLabels[i]->setStyleSheet(
+			"QPushButton { color: white; background-color: rgba(0, 0, 0, 160); border: none; "
+			"padding: 4px 8px; border-radius: 3px; font-weight: bold; } "
+			"QPushButton:hover { background-color: rgba(70, 70, 70, 210); } "
+			"QPushButton:pressed { background-color: rgba(100, 100, 100, 230); }"
+		);
+		simpleModeLabels[i]->adjustSize();
+		simpleModeLabels[i]->hide();
+	}
+
+	simpleModeLabels[1]->setAttribute(Qt::WA_TransparentForMouseEvents);
+	for (int index : { 0, 2, 3 }) {
+		simpleModeLabels[index]->setCursor(Qt::PointingHandCursor);
+		simpleModeLabels[index]->setToolTip("Click to view the opposite side");
+	}
+	QObject::connect(simpleModeLabels[0], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(0); });
+	QObject::connect(simpleModeLabels[2], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(1); });
+	QObject::connect(simpleModeLabels[3], &QPushButton::clicked, this, [this]() { toggleSimpleModeAxisView(2); });
 }
 
 Viewport::~Viewport()
@@ -99,17 +137,36 @@ void Viewport::initializeGL() {
 
 	if (!success) {
 		std::cout << "Failed to initialize renderer" << std::endl;
+		this->close();
 		return;
 	}
 
-	rendererInitialized = true;
+	// Settings made before GL existed (startup colors) only partly reached the renderer.
+	applyDisplaySettings();
 
 	renderer.setCameraPosition(Vec3f(5.0f, 0.0f, 0.0f));
-	renderer.SetVertexPointsVisible(verticesAlwaysVisible);
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	renderer.UpdateHover(Vec3u(0u), selectionManager.getActiveElement(), scene);
+	renderer.SetScene(scene);
+	renderer.UpdateGeometry();
+	renderer.UpdateTransforms();
+	renderer.UpdateSelection(selectionManager);
+
 	updateGizmos();
+
+	QImage pivotImg("assets/icons/pivot.png");
+	if (pivotImg.isNull()) { 
+		std::cout << "Couldn't load pivot icon. Using default instead." << std::endl;
+		iconRenderer.Initialize(7, nullptr, 0, 0);
+	}
+	else {
+		bool r = pivotImg.reinterpretAsFormat(QImage::Format::Format_RGBA8888);
+		pivotImg.flip();
+		iconRenderer.Initialize(7, pivotImg.constBits(), pivotImg.width(), pivotImg.height(), GL_BGRA);
+	}
+
+	if (!imageRenderer.Initialize(8)) {
+		std::cout << "Failed to initialize image renderer" << std::endl;
+	}
+
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -127,7 +184,15 @@ void Viewport::emitPrimarySelectionPosChanged() {
 	}
 	else if (selectionManager.getActiveElement() == OBJECT) {
 		const SelectionItem& item = selectionManager.getSelectedItems()[0];
-		Vec3f pos = scene[item.meshId]->Pos();
+		Vec3f pos(0.0f);
+		if (item.isReferenceImage()) {
+			const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image) { return; }
+			pos = image->position;
+		}
+		else {
+			pos = scene[item.meshId]->Pos();
+		}
 		emit primarySelectionPosChanged(pos);
 	}
 }
@@ -136,7 +201,15 @@ void Viewport::emitPrimarySelectionScaleChanged() {
 	if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
 
 	const SelectionItem& item = selectionManager.getSelectedItems()[0];
-	Vec3f scale = scene[item.meshId]->Scale();
+	Vec3f scale(1.0f);
+	if (item.isReferenceImage()) {
+		const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		scale = image->scale;
+	}
+	else {
+		scale = scene[item.meshId]->Scale();
+	}
 	emit primarySelectionScaleChanged(scale);
 }
 
@@ -144,7 +217,15 @@ void Viewport::emitPrimarySelectionRotChanged() {
 	if (selectionManager.meshCount() != 1 || selectionManager.getActiveElement() != OBJECT) { return; }
 
 	const SelectionItem& item = selectionManager.getSelectedItems()[0];
-	Vec3f rot = scene[item.meshId]->Rot();
+	Vec3f rot(0.0f);
+	if (item.isReferenceImage()) {
+		const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+		if (!image) { return; }
+		rot = image->rotation;
+	}
+	else {
+		rot = scene[item.meshId]->Rot();
+	}
 	emit primarySelectionRotChanged(rot);
 }
 
@@ -167,8 +248,12 @@ void Viewport::emitSelectionChanged() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Event Handlers -------------------------------------------------------------------------------
+// Event Handlers ------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
+
+void Viewport::controllerToMousePress(QMouseEvent* event) {
+	mousePressEvent(event);
+}
 
 void Viewport::mousePressEvent(QMouseEvent* event) {
 	QOpenGLWidget::mousePressEvent(event);
@@ -177,8 +262,13 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 		actionParams.stage = 0;
 		actionParams.ClearActionDirs();
 		actionParams.ClearElements();
-		renderer.UpdateRenderBuffers(scene);
-		update();
+		// The second click is the commit point of an edge/vertex extrude.
+		closeMouseStep();
+		// Its release can still change the selection, which is a step of its own.
+		if (event->button() & Qt::LeftButton) {
+			leftButtonDown = true;
+			openMouseStep();
+		}
 		return;
 	}
 
@@ -186,6 +276,9 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	if (!(event->button() & Qt::LeftButton)) {
 		return;
 	}
+
+	leftButtonDown = true;
+	openMouseStep();
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -202,21 +295,40 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	// Update MouseAction struct
 	mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
 
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == ROOF_EXTRUDE) {
+		Element activeElm = selectionManager.getActiveElement();
+		if (activeElm != FACE) { return; }
+		if (selectionManager.getSelectedItems().empty()) { return; }
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			actionParams.dirs.emplace_back();
+			actionParams.elements.push_back(MAX_UINT);
+			actionParams.elements.push_back(item.meshId);
+			scene[item.meshId]->RoofExtrude(item.componentId, actionParams.elements, actionParams.dirs.back());
+		}
+
+		renderer.UpdateGeometry();
+
+		return;
+	}
+#endif
+
 	// Capture an axis on press. The gizmo moves while it is being dragged,
 	// so looking up the ID on release would lose the original constraint.
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const int rawX = static_cast<int>(pos.x * pixelRatio);
-	const int rawY = static_cast<int>(pos.y * pixelRatio);
-	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
-	const Vec3u ids = renderer.SelectionIds(x, y);
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
+	const Vec3u ids = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =
 		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
 		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
 		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const bool gizmoHit =
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, ids.z);
+	const bool gizmoHit = translationAxisAllowed &&
 		ids.x == GIZMO_IDENTIFIER && activeGizmo &&
 		((ids.y == 4 && ids.z == 3) || ids.z < 3);
 	draggingGizmo = gizmoHit;
@@ -224,40 +336,53 @@ void Viewport::mousePressEvent(QMouseEvent* event) {
 	draggedRotationAxis = Vec3f(0.0f);
 	if (gizmoHit && actionParams.action == ROTATE && ids.z < 3) {
 		Vec3f localAxis(0.0f);
-		switch (ids.z) {
-		case 0: localAxis.x = 1.0f; break;
-		case 1: localAxis.y = 1.0f; break;
-		case 2: localAxis.z = 1.0f; break;
-		default: break;
-		}
-
-		// Capture the same oriented axis used to draw the rotation rings. This
-		// value must not be recomputed after each incremental rotation.
+		if (ids.z == 0) localAxis.x = 1.0f;
+		else if (ids.z == 1) localAxis.y = 1.0f;
+		else if (ids.z == 2) localAxis.z = 1.0f;
 		draggedRotationAxis = getGizmoRotation() * localAxis;
 		draggedRotationAxis.Normalize();
 	}
 }
 
+void Viewport::controllerToMouseDoubleClick(QMouseEvent* event) {
+	mouseDoubleClickEvent(event);
+}
+
 void Viewport::mouseDoubleClickEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	// The second click of a quick double click is a knife point (added on release), not a deselect
 	if (actionParams.action == KNIFE) { event->accept(); return; }
+	// Qt sends this instead of a second press. Its release still selects, so a left double
+	// click is one step from here to the release, like any other click.
+	const bool left = event->button() & Qt::LeftButton;
+	if (left) {
+		leftButtonDown = true;
+		openMouseStep();
+	}
+	StepScope step(this, "Select");
 	if (actionParams.action == MERGE) {
 		mergeFirstVertex.reset();
 	}
 	selectionManager.clearSelection();
-	makeCurrent();
-	updateSelectionVisuals();
+	emit selectionChanged(-1);
+	renderer.UpdateSelection(selectionManager);
 	updateGizmos();
 	update();
 
 	emit primarySelectionChanged(false);
 }
 
+void Viewport::controllerToMouseRelease(QMouseEvent* event) {
+	mouseReleaseEvent(event);
+}
+
 void Viewport::mouseReleaseEvent(QMouseEvent* event) {
+	this->setFocusPolicy(Qt::ClickFocus);
 	QOpenGLWidget::mouseReleaseEvent(event);
 
 	// Only accept event if the left mouse button is clicked
 	if (!(event->button() & Qt::LeftButton)) { return; }
+	leftButtonDown = false;
 
 	// Accept the event and make the OpenGL context current in case the renderer needs it for selection behavior
 	event->accept();
@@ -274,9 +399,30 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			knifePath.push_back(knifeCursor);
 			knifeRecompute();
 		}
+		closeMouseStep();
 		update();
 		return;
 	}
+
+#ifdef CGAL_AVAILABLE
+	if (actionParams.action == INSET && insetter) {
+		float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+		factor = std::min(factor, 0.25f) / 0.25f;
+
+		insetter->EndInset(factor);
+
+		renderer.UpdateGeometry();
+
+		delete insetter;
+		insetter = nullptr;
+
+		// Commit point of the inset drag.
+		closeMouseStep();
+		update();
+
+		return;
+	}
+#endif
 
 	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
 		actionParams.elements.clear();
@@ -289,26 +435,46 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 		
 		uint mesh = selectionManager.getSelectedItems()[0].meshId;
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 
 		initActionDirsToElementNormals(elementType, mesh);
 
 		mouseAction.MousePress(pos.x, pos.y, this->width(), this->height());
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
 		update();
+		// The step stays open: the extrude commits on the next click.
 		return;
+	}
+	else {
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
 	}
 
 	// Retrieve selection ids from corresponding physical pixel and print them
-	Vec3u ids = renderer.SelectionIds(devicePixelRatio() * pos.x, devicePixelRatio() * (pos.y));
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	Vec2u ids = renderer.SelectionIds(selectionManager.getActiveElement(), pixel.x, pixel.y);
 
 	const bool gizmoDragWasCaptured = draggingGizmo;
+	if (!gizmoDragWasCaptured && !mouseAction.dragged) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			const uint imageId = imageRenderer.ImageIdAt(pixel.x, pixel.y);
+			const ReferenceImage* image = scene.FindReferenceImage(imageId);
+			if (image && image->visible && !image->locked &&
+				referenceTextureIndices.find(imageId) != referenceTextureIndices.end()) {
+				handleSelection(SelectionItem::ReferenceImage(imageId));
+				closeMouseStep();
+				return;
+			}
+		}
+	}
 
 	// An axis click is a gizmo interaction, not a mesh selection. The axis
 	// was captured on press and must remain captured even if the cursor moved.
 	if (!gizmoDragWasCaptured) {
 		// Only process selection if the mouse was clicked, not dragged.
 		// Also make sure the selection is valid (not background).
-		if (!mouseAction.dragged && ids.x != 0) {
+		if (!mouseAction.dragged) {
 			if (actionParams.action == MERGE) {
 				handleMergeVertexClick(ids);
 			}
@@ -318,6 +484,9 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 			else if (actionParams.action == DISSOLVE) {
 				handleDissolveEdgeClick(ids);
 			}
+			else if (actionParams.action == LOOPCUT) {
+				handleLoopCutClick(ids);
+			}
 			else {
 				handleSelection(ids);
 			}
@@ -325,13 +494,16 @@ void Viewport::mouseReleaseEvent(QMouseEvent* event) {
 
 		// Print selection ids.
 		std::cout << "Object Id: " << ids.x << std::endl;
-		std::cout << "Component Id: " << ids.y << std::endl;
-		std::cout << "Sub-Component Id: " << ids.z << std::endl;
+		std::cout << "Element Id: " << ids.y << std::endl;
 	}
 
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
 	draggedRotationAxis = Vec3f(0.0f);
+	updateGizmos();
+
+	// Commit point for drags and clicks.
+	closeMouseStep();
 
 	// A captured gizmo click does not change selection or hover state, so it
 	// does not need another repaint on release.
@@ -370,13 +542,16 @@ void Viewport::mouseMoveEvent(QMouseEvent* event) {
 		mouseAction.StartMouseDragStep(pos.x, pos.y, this->width(), this->height());
 		translateActionElements();
 		mouseAction.EndMouseDragStep();
-		renderer.UpdateRenderBuffers(scene);
+		renderer.UpdateGeometry();
 		update();
 		return;
 	}
 
 	// Update hover visuals.
 	const bool hoverChanged = updateHoverVisual(pos);
+	if (actionParams.action == LOOPCUT && hoverChanged) {
+		loopCutUpdatePreview(Vec2u(hoveredSelectionIds.x, hoveredSelectionIds.y));
+	}
 	if (hoverChanged) { update(); }
 
 	return;
@@ -391,7 +566,7 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 
 	// Later we'll want to not update render buffers for simple transforms like object level scale, rotate, and translate.
 	// We'll do this with a buffer containing objects' model transformations in the shader & renderer
-	bool updateRenderBuffers = true;
+	//bool updateRenderBuffers = true;
 
 	switch (actionParams.action) {
 	case TRANSLATE_OUT:
@@ -409,14 +584,13 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 		break;
 	case TRANSLATE_AXIS:
 		actionPerformed = translateGizmoDrag();
+		if (actionPerformed) { emitPrimarySelectionPosChanged(); }
 		break;
 	case SCALE:
-		//actionPerformed = scaleDrag();
 		actionPerformed = scaleGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionScaleChanged(); }
 		break;
 	case ROTATE:
-		//actionPerformed = rotateDrag();
 		actionPerformed = rotateGizmoDrag();
 		if (actionPerformed) { emitPrimarySelectionRotChanged(); }
 		break;
@@ -426,20 +600,29 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 	case BEVEL:
 		actionPerformed = bevelDrag();
 		break;
+	case INSET:
+		actionPerformed = insetDrag();
+		break;
+	case ROOF_EXTRUDE:
+		actionPerformed = roofExtrudeDrag();
+		break;
 	default:
-		updateRenderBuffers = false;
+		//updateRenderBuffers = false;
 		break;
 	}
 
 	// If no action performed and no gizmo was captured, move the camera. A
 	// captured gizmo must keep ownership of the drag even when its projected
 	// axis is degenerate from the current camera angle.
-	if (!actionPerformed && !draggingGizmo) {
+	// AI-generated code: Camera navigation belongs only to simple mode's perspective quadrant.
+	const bool perspectiveNavigation = !simpleMode ||
+		simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos));
+	if (!actionPerformed && !draggingGizmo && perspectiveNavigation) {
 		renderer.mouseDrag(mouseAction.mouseDragChange);
+		if (renderer.GetActiveCamType() == CameraType::FREE) {
+			emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+		}
 		knifeRecompute(); // the path stays put on the screen, so what it hits changes
-	}
-	else if (actionPerformed && updateRenderBuffers) {
-		renderer.UpdateRenderBuffers(scene);
 	}
 
 	updateGizmos();
@@ -453,6 +636,11 @@ void Viewport::mouseDragEvent(const Vec2f& pos) {
 void Viewport::wheelEvent(QWheelEvent* event) {
 	// Accept event and get change in wheel
 	event->accept();
+	const Vec2f pos(event->position().x(), this->height() - 1.0f - event->position().y());
+	// AI-generated code: Prevents orthographic quadrants from changing the perspective camera.
+	if (simpleMode && !simpleModeRenderer.IsPerspectivePixel(displayPixelFromLogical(pos))) {
+		return;
+	}
 	QPoint change = event->angleDelta();
 
 	// Convert change in wheel to change in camera
@@ -461,8 +649,12 @@ void Viewport::wheelEvent(QWheelEvent* event) {
 	camChange *= SCALE;
 
 	// Update renderer and viewport
-	makeCurrent();
 	renderer.mouseWheel(camChange.x, camChange.y);
+
+	if (renderer.GetActiveCamType() == CameraType::FREE) {
+		emit primaryCamParamChanged(renderer.getPrimaryCamParam());
+	}
+
 	knifeRecompute();
 
 	update();
@@ -479,22 +671,57 @@ void Viewport::resizeEvent(QResizeEvent* event) {
 		int y = this->height() - 1 - Y_PADDING - 64;
 		elementButtons[i]->move(x, y);
 	}
+
+	updateSimpleModeLabels();
+}
+
+void Viewport::updateSimpleModeLabels() {
+	const int rightX = width() / 2 + 8;
+	const int bottomY = height() / 2 + 8;
+	const QPoint positions[4] = {
+		QPoint(8, 8),
+		QPoint(rightX, 8),
+		QPoint(8, bottomY),
+		QPoint(rightX, bottomY)
+	};
+
+	for (int i = 0; i < 4; ++i) {
+		simpleModeLabels[i]->move(positions[i]);
+		simpleModeLabels[i]->setVisible(simpleMode);
+		if (simpleMode) { simpleModeLabels[i]->raise(); }
+	}
+}
+
+void Viewport::toggleSimpleModeAxisView(uint axisIndex) {
+	simpleModeRenderer.ToggleAxisView(axisIndex);
+	const bool negated = simpleModeRenderer.AxisViewNegated(axisIndex);
+
+	switch (axisIndex) {
+	case 0: simpleModeLabels[0]->setText(negated ? "Back (-X)" : "Front (+X)"); break;
+	case 1: simpleModeLabels[2]->setText(negated ? "Bottom (-Y)" : "Top (+Y)"); break;
+	case 2: simpleModeLabels[3]->setText(negated ? "Opposite Side (-Z)" : "Side (+Z)"); break;
+	default: return;
+	}
+
+	const int labelIndex = axisIndex == 0 ? 0 : static_cast<int>(axisIndex + 1);
+	simpleModeLabels[labelIndex]->adjustSize();
+	updateSimpleModeLabels();
+	update();
 }
 
 void Viewport::leaveEvent(QEvent* event) {
 	event->accept();
-	makeCurrent();
-	const bool hoverChanged = renderer.UpdateHover(
-		Vec3u(0u), selectionManager.getActiveElement(), scene);
 	const bool gizmoChanged = hoveredGizmoAxis != MAX_UINT;
 	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	hoveredGizmoAxis = MAX_UINT;
-	if (gizmoChanged) {
-		updateGizmos();
-	}
-	if (hoverChanged || gizmoChanged) {
-		update();
-	}
+	renderer.ClearHover();
+	loopCutClearPreview();
+	if (gizmoChanged) updateGizmos();
+	update();
+}
+
+void Viewport::controllerToContextMenu(QContextMenuEvent* event) {
+	contextMenuEvent(event);
 }
 
 void Viewport::contextMenuEvent(QContextMenuEvent* event) {
@@ -505,12 +732,8 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 
 	event->accept();
 
-	QMenu menu(this);
-	for (int i = 0; i < 3; ++i) {
-		menu.addAction(menuActions[i]);
-	}
-
-	menu.exec(event->globalPos());
+	menuPos.Set(float(event->pos().x()), float(this->height() - event->pos().y()) - 1.0f);
+	menu->exec(event->globalPos());
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -518,18 +741,51 @@ void Viewport::contextMenuEvent(QContextMenuEvent* event) {
 // ---------------------------------------------------------------------------------------------
 
 void Viewport::setAction(Action action) {
+	StepScope step(this, "Select");
+	// Leaving extrude while it waits for its second click keeps the extrusion, as before;
+	// it is recorded as a finished step.
+	if (actionParams.action == EXTRUDE && action != EXTRUDE && actionParams.stage == 1) {
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+		closeMouseStep();
+	}
 	if (actionParams.action == KNIFE && action != KNIFE) { knifeFinish(); }
+	if (actionParams.action == LOOPCUT && action != LOOPCUT) { loopCutClearPreview(); }
 	if ((actionParams.action == MERGE && action != MERGE) ||
 		(actionParams.action == COLLAPSE && action != COLLAPSE) ||
-		(actionParams.action == DISSOLVE && action != DISSOLVE)) {
+		(actionParams.action == DISSOLVE && action != DISSOLVE) ||
+		(actionParams.action == LOOPCUT && action != LOOPCUT)) {
 		if (actionParams.action == MERGE) {
 			mergeFirstVertex.reset();
 		}
 		selectionManager.clearSelection();
+		emit selectionChanged(-1);
 		enableAllElements();
 	}
 
 	actionParams.action = action;
+	// The toolbar's "Free" mode uses TRANSLATE_AXIS so it can display the
+	// active translation gizmo. Both free-translation actions allow every
+	// element type, including objects.
+	if (action == TRANSLATE_FREE || action == TRANSLATE_AXIS) {
+		enableAllElements();
+	}
+
+	else if (action == TRANSLATE_OUT) {
+		enableElementVertex();
+		enableElementEdge();
+		enableElementFace();
+		disableElementObject();
+	}
+
+	else if (action == TRANSLATE_EDGE) {
+		enableElementVertex();
+		disableElementEdge();
+		disableElementFace();
+		disableElementObject();
+	}
+
 	if (action == MERGE) {
 		enableElementVertex();
 		disableElementEdge();
@@ -542,41 +798,39 @@ void Viewport::setAction(Action action) {
 		disableElementFace();
 		disableElementObject();
 	}
-	else if (action == DISSOLVE) {
+	else if (action == DISSOLVE || action == LOOPCUT) {
 		enableElementEdge();
 		disableElementVertex();
 		disableElementFace();
 		disableElementObject();
 	}
-	if (action == KNIFE) { knifeBegin(); }
+	if (action == KNIFE) {
+		enableAllElements();
+		knifeBegin();
+	}
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
 	draggedRotationAxis = Vec3f(0.0f);
-	if (rendererInitialized) {
-		makeCurrent();
-		if (action != MERGE) {
-			updateSelectionVisuals();
-		}
+	if (renderer.Initialized()) {
 		updateGizmos();
+		update();
 	}
-	update();
 }
 
 // ---------------------------------------------------------------------------------------------
 // Selection -----------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------
 
-void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
-	// Vertex-point hits are encoded as (MAX_UINT, one-based mesh ID,
-	// zero-based vertex ID). Surface hits are intentionally ignored.
-	if (selectionIds.x != MAX_UINT || selectionIds.y == 0 ||
-		selectionIds.y == MAX_UINT || selectionIds.z == MAX_UINT) {
+
+void Viewport::handleMergeVertexClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local vertex ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.y - 1;
-	const uint vertexId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint vertexId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || vertexId >= scene[meshId]->VertexCount()) {
 		return;
 	}
@@ -589,8 +843,8 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		mergeFirstVertex = clicked;
 		selectionManager.clearSelection();
 		selectionManager.addSelection(clicked);
-		updateSelectionVisuals();
-		updateGizmos();
+		renderer.UpdateSelection(selectionManager);
+		renderer.ClearHover();
 		emitSelectionChanged();
 		update();
 		return;
@@ -606,32 +860,33 @@ void Viewport::handleMergeVertexClick(const Vec3u& selectionIds) {
 		return;
 	}
 
+	touchMesh(clicked.meshId);
 	if (!scene[clicked.meshId]->MergeVertices(source.componentId, clicked.componentId)) {
 		std::cout << "Merge rejected: the result would have invalid topology." << std::endl;
 		return;
 	}
 
+	labelStep("Merge Vertices");
 	std::cout << "Merged vertex " << source.componentId << " into vertex "
 		<< clicked.componentId << " on mesh " << clicked.meshId << std::endl;
 	mergeFirstVertex.reset();
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	emitSelectionChanged();
 	update();
 }
 
-void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
-	// Surface edge hits are (one-based mesh ID, face ID, half-edge ID).
-	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
-		selectionIds.z == MAX_UINT) {
+void Viewport::handleCollapseEdgeClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local edge ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.x - 1;
-	const uint edgeId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
 		return;
 	}
@@ -639,31 +894,32 @@ void Viewport::handleCollapseEdgeClick(const Vec3u& selectionIds) {
 	std::cout << "Collapse mode edge clicked: mesh " << meshId
 		<< ", edge " << edgeId << std::endl;
 
+	touchMesh(meshId);
 	if (!scene[meshId]->CollapseEdge(edgeId)) {
 		std::cout << "Edge collapse rejected: the result would have invalid or open topology."
 			<< std::endl;
 		return;
 	}
 
+	labelStep("Collapse Edge");
 	std::cout << "Collapsed edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	emitSelectionChanged();
 	update();
 }
 
-void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
-	// Surface edge hits are encoded as (one-based mesh ID, face ID, edge ID).
-	if (selectionIds.x == 0 || selectionIds.x >= GIZMO_IDENTIFIER ||
-		selectionIds.z == MAX_UINT) {
+void Viewport::handleDissolveEdgeClick(const Vec2u& selectionIds) {
+	// SelectionIds() returns a zero-based mesh ID and local edge ID.
+	if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
 		return;
 	}
 
-	const uint meshId = selectionIds.x - 1;
-	const uint edgeId = selectionIds.z;
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
 	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
 		return;
 	}
@@ -671,67 +927,56 @@ void Viewport::handleDissolveEdgeClick(const Vec3u& selectionIds) {
 	std::cout << "Dissolve mode edge clicked: mesh " << meshId
 		<< ", edge " << edgeId << std::endl;
 
+	touchMesh(meshId);
 	if (!scene[meshId]->DissolveEdge(edgeId)) {
 		std::cout << "Dissolve rejected: choose an interior edge with valid topology."
 			<< std::endl;
 		return;
 	}
 
+	labelStep("Dissolve Edge");
 	std::cout << "Dissolved edge " << edgeId << " on mesh " << meshId << std::endl;
 	selectionManager.clearSelection();
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
-	updateSelectionVisuals();
-	updateGizmos();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	emitSelectionChanged();
 	update();
 }
 
-void Viewport::handleSelection(const Vec3u& selectionIds) {
-	// Create a selection item to send to the selection manager.
-	SelectionItem item = createSelectionItem(selectionIds);
+void Viewport::handleSelection(const Vec2u& selectionIds) {
+	handleSelection(createSelectionItem(selectionIds));
+}
 
-	if (item.meshId == MAX_UINT) {
+void Viewport::handleSelection(const SelectionItem& item) {
+	// Mesh and reference-image picks use the same selection manager path.
+
+	if (!item.isValid()) {
 		// Clicking the background is a deselection. Keep the renderer and
 		// gizmo in sync when the last selected item is removed.
 		if (!selectionManager.getSelectedItems().empty()) {
 			selectionManager.clearSelection();
-			updateSelectionVisuals();
+			emit selectionChanged(-1);
+			renderer.UpdateSelection(selectionManager);
 			updateGizmos();
 			emitSelectionChanged();
+			update();
 		}
 		return;
 	}
 
-	// Store one half-edge for each logical edge.
-	// Render both half-edges as selected.
-	if (selectionManager.getActiveElement() == EDGE && item.meshId < scene.MeshCount()) {
-		const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
-		if (twinId != MAX_UINT && twinId < item.componentId) {
-			item.componentId = twinId;
-		}
-	}
-
-	// Edge translation is intentionally a single-vertex operation.  Ignore
-	// Ctrl/additive selection while this action is active and replace the
-	// current vertex with the one that was clicked.
-	if (actionParams.action == TRANSLATE_EDGE &&
-		selectionManager.getActiveElement() == VERTEX) {
-		const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
-		if (selectedItems.size() != 1 || !(selectedItems.front() == item)) {
-			selectionManager.clearSelection();
-			selectionManager.addSelection(item);
-		}
-	}
-	else {
-		selectionManager.processSelection(item);
-	}
+	selectionManager.processSelection(item);
 
 	// Tell the renderer to update the selection visuals.
-	updateSelectionVisuals();
+	renderer.UpdateSelection(selectionManager);
+	for (SelectionItem item : selectionManager.getSelectedItems()) {
+		emit selectionChanged(item.meshId);
+	}
 	updateGizmos();
 
 	emitSelectionChanged();
+	update();
 }
 
 Element Viewport::getActiveElement() {
@@ -739,119 +984,110 @@ Element Viewport::getActiveElement() {
 }
 
 void Viewport::setActiveElement(Element element) {
-	selectionManager.setActiveElement(element);
+	StepScope step(this, "Select");
+	selectionManager.setActiveElement(element, scene);
 
-	if (!verticesAlwaysVisible) {
-		renderer.SetVertexPointsVisible(element == VERTEX);
+	if (element == VERTEX) {
+		if (!renderer.ShowVertices()) { renderer.ShowVertices(true); }
+	}
+	else {
+		renderer.ShowVertices(displaySettings.verticesAlwaysVisible);
 	}
 
 	// Changing element mode clears the selection in SelectionManager. Push the
 	// empty selection to the renderer immediately so the old highlight vanishes.
-	makeCurrent();
-	updateSelectionVisuals();
-	renderer.UpdateHover(Vec3u(0u), element, scene);
+	//renderer.UpdateHover(Vec3u(0u), element, scene);
+	renderer.UpdateSelection(selectionManager);
 	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
 	hoveredGizmoAxis = MAX_UINT;
 	draggingGizmo = false;
 	draggedGizmoAxis = MAX_UINT;
-	draggedRotationAxis = Vec3f(0.0f);
+	renderer.ClearHover();
 	updateGizmos();
 	update();
 
 	emit primarySelectionChanged(false);
 }
 
-SelectionItem Viewport::createSelectionItem(const Vec3u& ids)
-{
-	switch (selectionManager.getActiveElement()) {
-	case OBJECT:
-		// Normal hit.
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER) {
-			return SelectionItem{
-				ids.x - 1,
-				MAX_UINT
-			};
-		}
-		// Vertex hit belonging to object.
-		else if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				MAX_UINT
-			};
-		}
 
-		break;
 
-	case VERTEX:
-		if (ids.x == MAX_UINT && ids.y != 0) {
-			return SelectionItem{
-				ids.y - 1,
-				ids.z
-			};
-		}
-
-		break;
-
-	case FACE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.x != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.y
-			};
-		}
-
-		break;
-
-	case EDGE:
-		if (ids.x != 0 && ids.x < GIZMO_IDENTIFIER && ids.z != MAX_UINT) {
-			return SelectionItem{
-				ids.x - 1,
-				ids.z
-			};
-		}
-
-		break;
-	}
-
-	return { MAX_UINT, MAX_UINT };
+void Viewport::setSelection(int meshID) {
+	StepScope step(this, "Select");
+	selectionManager.clearSelection();
+	selectionManager.selectMesh(meshID);
+	renderer.UpdateSelection(selectionManager);
+	updateGizmos();
+	update();
 }
 
-void Viewport::updateSelectionVisuals() {
-	// Get the selected items from the selection manager, these determine what gets operated on.
-	const std::vector<SelectionItem>& selectedItems = selectionManager.getSelectedItems();
+void Viewport::addSelection(int meshID) {
+	StepScope step(this, "Select");
+	selectionManager.selectMesh(meshID);
+	renderer.UpdateSelection(selectionManager);
+	updateGizmos();
+	update();
+}
 
-	// Allocate a buffer for items that get rendered.
-	// Edges also have a twin, which should appear selected, but will not be operated on.
-	std::vector<SelectionItem> renderItems;
-	renderItems.reserve(selectedItems.size() * 2);
 
-	const Element activeElement = selectionManager.getActiveElement();
 
-	// Check all selected items.
-	for (const SelectionItem& item : selectedItems) {
-		// If the selection size is exceeded, don't do anything.
-		if (renderItems.size() >= MAX_SELECTION_ITEMS) {
-			break;
-		}
-
-		// Else, put the selection in the buffer.
-		renderItems.push_back(item);
-
-		// If the element is not an edge, don't continue on looking for the twin.
-		if (activeElement != EDGE || item.meshId >= scene.MeshCount()) {
-			continue;
-		}
-
-		// Get the twin of the edge, if valid add to the buffer.
-		const uint twinId = scene[item.meshId]->GetEdge(item.componentId).twin;
-		if (twinId != MAX_UINT && twinId != item.componentId &&
-			renderItems.size() < MAX_SELECTION_ITEMS) {
-			renderItems.push_back(SelectionItem{ item.meshId, twinId });
+// Moves the selected element button back one - accessed by the controller
+void Viewport::cyclePrev() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the end of the array if the first button is selected
+			if (i == 0 && elementButtons[std::size(elementButtons) - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[std::size(elementButtons) - 1]->setChecked(true);
+				setElementByIndex(std::size(elementButtons) - 1);
+				update();
+				updateGizmos();
+			}
+			// Selects the previous button otherwise (as long as it's enabled)
+			else if(elementButtons[i - 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i - 1]->setChecked(true);
+				setElementByIndex(i - 1);
+				update();
+				updateGizmos();
+			}
+			return;
 		}
 	}
+}
 
-	// Send the render buffer to the renderer for rendering (render render render).
-	renderer.UpdateSelection(renderItems, activeElement);
+// Moves the selected element button forward one - accessed by the controller
+void Viewport::cycleNext() {
+	for (int i = 0; i < std::size(elementButtons); i++) {
+		if (elementButtons[i]->isChecked()) {
+			// Swings around to the first button if the last button is selected
+			if (i == std::size(elementButtons) - 1 && elementButtons[0]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[0]->setChecked(true);
+				setElementByIndex(0);
+				update();
+				updateGizmos();
+			}
+			// Selects the next button otherwise
+			else if(i < std::size(elementButtons) && elementButtons[i + 1]->isEnabled()) {
+				elementButtons[i]->setChecked(false);
+				elementButtons[i + 1]->setChecked(true);
+				setElementByIndex(i + 1);
+				update();
+				updateGizmos();
+			}
+			return;
+		}
+	}
+}
+
+SelectionItem Viewport::createSelectionItem(const Vec2u& ids)
+{
+	if (ids.y == MAX_UINT) { return { MAX_UINT, MAX_UINT }; }
+	if (selectionManager.getActiveElement() == OBJECT) {
+		return{ ids.x, ids.x };
+	}
+	
+	return { ids.x, ids.y };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -862,7 +1098,8 @@ bool Viewport::translateFreeDrag() {
 	if (selectionManager.getSelectedItems().empty()) { return false; }
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	const float SCALE = 0.01f;
 	const Vec2f& uv = mouseAction.mouseDragChange;
@@ -871,6 +1108,14 @@ bool Viewport::translateFreeDrag() {
 	bool transformed = false;
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (image && !image->locked) {
+				image->position += translation;
+				transformed = true;
+			}
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -893,6 +1138,15 @@ bool Viewport::translateFreeDrag() {
 		}
 
 		transformed = true;
+	}
+
+	if (transformed) {
+		if (selectionManager.getActiveElement() == OBJECT) {
+			renderer.UpdateTransforms();
+		}
+		else {
+			renderer.UpdateGeometry();
+		}
 	}
 
 	return transformed;
@@ -1021,6 +1275,8 @@ bool Viewport::translateOutDrag() {
 	// Translate
 	translateSelections();
 
+	renderer.UpdateGeometry();
+
 	return true;
 }
 
@@ -1038,7 +1294,8 @@ bool Viewport::translateEdgeDrag() {
 
 	if (mouseAction.firstMoveEvent) {
 		Vec3f forward, up, right;
-		renderer.GetCamera()->directions(forward, up, right);
+		// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+		renderer.GetActiveViewDirections(forward, up, right);
 
 		// Mouse positions are converted to a bottom-left origin in the Qt event
 		// handlers. Camera::directions() uses the opposite-handed basis from the
@@ -1093,6 +1350,10 @@ bool Viewport::translateEdgeDrag() {
 		transformed = true;
 	}
 
+	if (transformed) {
+		renderer.UpdateGeometry();
+	}
+
 	return transformed;
 }
 
@@ -1130,6 +1391,8 @@ void Viewport::setupBevelDrag() {
 		break;
 	}
 
+	renderer.UpdateSelection(selectionManager);
+
 	return;
 }
 
@@ -1147,7 +1410,91 @@ bool Viewport::bevelDrag() {
 
 	beveler->AdjustBevel(factor);
 
+	renderer.UpdateGeometry();
+
 	return true;
+}
+
+bool Viewport::roofExtrudeDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	if (activeElm != FACE || actionParams.elements.empty()) { return false; }
+
+	const uint size = uint(actionParams.elements.size());
+	uint currMesh = MAX_UINT;
+	int currNorm = -1;
+
+	const float SCALE_COEF = 0.01f;
+	float scale = SCALE_COEF * mouseAction.mouseDragChange.Dot(mouseAction.initialDragDir);
+
+	for (uint i = 0; i < size; ++i) {
+		if (actionParams.elements[i] == MAX_UINT) {
+			++i;
+			currMesh = actionParams.elements[i];
+			++currNorm;
+		}
+		else {
+			scene[currMesh]->TranslateVertex(actionParams.elements[i], actionParams.dirs[currNorm] * scale);
+		}
+	}
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::setupInsetDrag() {
+#ifdef CGAL_AVAILABLE
+	if (insetter) { delete insetter; insetter = nullptr; }
+
+	uint meshId = selectionManager.getSelectedItems()[0].meshId;
+	if (meshId >= scene.MeshCount()) { return false; }
+
+	insetter = new InsetBuilder(*scene[meshId]);
+
+	std::vector<uint> elements;
+	elements.reserve(selectionManager.getSelectedItems().size());
+
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.meshId != meshId) { continue; }
+		elements.push_back(item.componentId);
+	}
+
+	insetter->StartInset(elements);
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool Viewport::insetDrag() {
+#ifdef CGAL_AVAILABLE
+	Element activeElm = selectionManager.getActiveElement();
+	// object included in statement temporarily
+	if (activeElm != FACE) { return false; }
+	if (selectionManager.getSelectedItems().empty()) { return false; }
+
+	if (mouseAction.firstMoveEvent) {
+		setupInsetDrag();
+	}
+
+	if (!insetter) { return false; }
+
+	float factor = (mouseAction.mouseDragPosUV - mouseAction.mouseDragStartPosUV).Length();
+	factor = std::min(factor, 0.25f) / 0.25f;
+
+	insetter->PreviewInset(factor);
+
+	renderer.UpdateGeometry();
+
+	return true;
+#else
+	return false;
+#endif
 }
 
 void Viewport::extrudeSelectedElements() {
@@ -1179,10 +1526,13 @@ bool Viewport::extrudeDrag() {
 	// Extrude selected elements if this is the first move event
 	if (mouseAction.firstMoveEvent) {
 		extrudeSelectedElements();
+		renderer.UpdateSelection(selectionManager);
 	}
 
 	// Translated extruded faces
 	translateSelections();
+
+	renderer.UpdateGeometry();
 
 	return true;
 }
@@ -1196,20 +1546,33 @@ bool Viewport::scaleDrag() {
 	const Element activeElement = selectionManager.getActiveElement();
 
 	if (activeElement == EDGE || activeElement == FACE) {
-		return scaleSelectedComponents(factor, 0, true);
+		const bool scaled = scaleSelectedComponents(factor, 0, true);
+		if (scaled) {
+			renderer.UpdateGeometry();
+		}
+		return scaled;
 	}
 
-	if (activeElement != OBJECT) {
+	if (activeElement == VERTEX) {
 		return false;
 	}
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId < scene.MeshCount()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (image && !image->locked) {
+				image->scale += Vec3f(factor);
+				image->scale.x = std::max(0.001f, image->scale.x);
+				image->scale.y = std::max(0.001f, image->scale.y);
+				image->scale.z = std::max(0.001f, image->scale.z);
+			}
+		}
+		else if (item.meshId < scene.MeshCount()) {
 			scene[item.meshId]->AddScale(factor);
 		}
 	}
 
-	renderer.UpdateRenderBuffers(scene);
+	renderer.UpdateTransforms();
 
 	return true;
 }
@@ -1287,7 +1650,8 @@ bool Viewport::rotateDrag() {
 
 
 	Vec3f f, u, r;
-	renderer.GetCamera()->directions(f, u, r);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(f, u, r);
 
 	Vec3f dir = mouseAction.mouseDragChange.y * r - mouseAction.mouseDragChange.x * u;
 	float length = dir.Length();
@@ -1297,6 +1661,17 @@ bool Viewport::rotateDrag() {
 	dir /= length;
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image || image->locked) { continue; }
+			Matrix3f original;
+			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
+			Matrix3f delta;
+			delta.SetRotation(dir, -length * 0.01f);
+			delta *= original;
+			image->rotation = matrixToEulerAngle(delta);
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) { continue; }
 
 		Vec3f eulerRot = scene[item.meshId]->Rot();
@@ -1310,7 +1685,7 @@ bool Viewport::rotateDrag() {
 		scene[item.meshId]->Rot(matrixToEulerAngle(rot));
 	}
 
-	renderer.UpdateRenderBuffers(scene);
+	renderer.UpdateTransforms();
 
 	return true;
 }
@@ -1341,57 +1716,48 @@ bool Viewport::rotateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
-
-	// A rotation ring moves along the screen-space tangent to its selected
-	// axis. Use the press-time axis so the tangent cannot switch as the mesh
-	// and gizmo rotate during the drag.
-	Vec2f screenTangent(
-		-draggedRotationAxis.Dot(up),
-		draggedRotationAxis.Dot(right));
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
+	Vec3f screenTangent = draggedRotationAxis.Cross(forward);
 	if (screenTangent.LengthSquared() <= 1e-8f) {
-		// When the axis points directly at the camera, its projection has no
-		// stable tangent.
-		screenTangent = Vec2f(1.0f, 0.0f);
+		screenTangent = draggedRotationAxis.Cross(up);
+	}
+	if (screenTangent.LengthSquared() <= 1e-8f) {
+		return false;
 	}
 	screenTangent.Normalize();
-
-	const float angle = 0.01f * mouseAction.mouseDragChange.Dot(screenTangent);
-	if (std::abs(angle) <= 1e-6f) {
+	const Vec2f tangentScreen(screenTangent.Dot(right), screenTangent.Dot(up));
+	// Invert the screen-drag direction so the mesh follows the gizmo handle.
+	const float angle = -0.01f * Vec2f(-mouseAction.mouseDragChange.x,
+		-mouseAction.mouseDragChange.y).Dot(tangentScreen);
+	if (std::abs(angle) <= 1e-8f) {
 		return false;
 	}
 
-	// Left-multiply the current orientation with one rotation around the
-	// captured world-space axis. This is a pure axis-angle delta; no Euler
-	// component from another axis is used to drive the operation.
-	Matrix3f delta;
-	delta.SetRotation(draggedRotationAxis, angle);
-	bool rotated = false;
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-		if (item.meshId >= scene.MeshCount()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image || image->locked) { continue; }
+			Matrix3f original;
+			original.SetRotationZYX(degreesToRadians(image->rotation.x), degreesToRadians(image->rotation.y), degreesToRadians(image->rotation.z));
+			Matrix3f delta;
+			delta.SetRotation(draggedRotationAxis, -angle);
+			delta *= original;
+			image->rotation = matrixToEulerAngle(delta);
 			continue;
 		}
-
-		const Vec3f& eulerRotation = scene[item.meshId]->Rot();
-		Matrix3f currentRotation;
-		currentRotation.SetRotationZYX(
-			degreesToRadians(eulerRotation.x),
-			degreesToRadians(eulerRotation.y),
-			degreesToRadians(eulerRotation.z));
-
-		currentRotation = delta * currentRotation;
-		scene[item.meshId]->Rot(matrixToEulerAngle(currentRotation));
-		rotated = true;
+		if (item.meshId >= scene.MeshCount()) continue;
+		const Vec3f euler = scene[item.meshId]->Rot();
+		Matrix3f original;
+		original.SetRotationZYX(degreesToRadians(euler.x), degreesToRadians(euler.y), degreesToRadians(euler.z));
+		Matrix3f delta;
+		delta.SetRotation(draggedRotationAxis, angle);
+		delta *= original;
+		scene[item.meshId]->Rot(matrixToEulerAngle(delta));
 	}
-
-	if (rotated) {
-		renderer.UpdateRenderBuffers(scene);
-	}
-
-	if (rotated) {
-		emitPrimarySelectionRotChanged();
-	}
-	return rotated;
+	renderer.UpdateTransforms();
+	emitPrimarySelectionRotChanged();
+	return true;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -1420,7 +1786,8 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1430,9 +1797,8 @@ bool Viewport::translateGizmoDrag() {
 	default: return false;
 	}
 
-	// AI-generated: Match axis-drag projection to the rotated gizmo display.
-	// We actually want to translate using world space not local space.
-	//axis = getGizmoRotation() * axis;
+	// Translation gizmos use world-space axes rather than the selected object's
+	// local orientation.
 	axis.Normalize();
 
 	// Project the selected world axis onto the screen to determine how much
@@ -1453,8 +1819,17 @@ bool Viewport::translateGizmoDrag() {
 	const Vec3f worldTranslation = axis * (0.01f * change.Dot(axisScreen));
 
 	bool transformed = false;
-	std::unordered_set<uint> transformedObjects;
+	std::unordered_set<uint64_t> transformedObjects;
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			const uint64_t key = packUints(static_cast<uint>(SelectionTargetType::ReferenceImage), item.componentId);
+			if (image && !image->locked && transformedObjects.insert(key).second) {
+				image->position += worldTranslation;
+				transformed = true;
+			}
+			continue;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -1462,7 +1837,7 @@ bool Viewport::translateGizmoDrag() {
 		HalfEdgeMesh* mesh = scene[item.meshId];
 		switch (selectionManager.getActiveElement()) {
 		case OBJECT:
-			if (transformedObjects.insert(item.meshId).second) {
+			if (transformedObjects.insert(packUints(static_cast<uint>(SelectionTargetType::Mesh), item.meshId)).second) {
 				mesh->TranslatePos(worldTranslation);
 				transformed = true;
 			}
@@ -1486,6 +1861,8 @@ bool Viewport::translateGizmoDrag() {
 	}
 
 	if (transformed) {
+		if (selectionManager.getActiveElement() == OBJECT) renderer.UpdateTransforms();
+		else renderer.UpdateGeometry();
 		emitPrimarySelectionPosChanged();
 	}
 	return transformed;
@@ -1513,7 +1890,8 @@ bool Viewport::scaleGizmoDrag() {
 	}
 
 	Vec3f forward, up, right;
-	renderer.GetCamera()->directions(forward, up, right);
+	// AI-generated code: Uses the active simple-mode quadrant's camera basis.
+	renderer.GetActiveViewDirections(forward, up, right);
 
 	Vec3f axis;
 	switch (draggedGizmoAxis) {
@@ -1554,6 +1932,15 @@ bool Viewport::scaleGizmoDrag() {
 	// Else we are scaling meshes.
 	else {
 		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.isReferenceImage()) {
+				ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image && !image->locked && draggedGizmoAxis < 3) {
+					const float newScale = std::max(0.001f, image->scale[draggedGizmoAxis] + factor);
+					image->scale[draggedGizmoAxis] = newScale;
+					scaled = true;
+				}
+				continue;
+			}
 			if (item.meshId < scene.MeshCount()) {
 				HalfEdgeMesh* mesh = scene[item.meshId];
 				const float newScale = std::max(0.001f, mesh->Scale()[draggedGizmoAxis] + factor);
@@ -1563,9 +1950,9 @@ bool Viewport::scaleGizmoDrag() {
 		}
 	}
 
-	renderer.UpdateRenderBuffers(scene);
-
 	if (scaled) {
+		if (activeElement == OBJECT) renderer.UpdateTransforms();
+		else renderer.UpdateGeometry();
 		emitPrimarySelectionScaleChanged();
 	}
 	return scaled;
@@ -1577,6 +1964,15 @@ Matrix3f Viewport::getGizmoRotation() const {
 	rotation.SetIdentity();
 
 	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage()) {
+			const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+			if (!image) { continue; }
+			rotation.SetRotationZYX(
+				degreesToRadians(image->rotation.x),
+				degreesToRadians(image->rotation.y),
+				degreesToRadians(image->rotation.z));
+			break;
+		}
 		if (item.meshId >= scene.MeshCount()) {
 			continue;
 		}
@@ -1613,6 +2009,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1650,7 +2054,8 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Translation, gizmoRotation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis,
+			GizmoRenderer::Type::Translation, gizmoRotation);
 	}
 	// Update scale gizmo.
 	else if (actionParams.action == SCALE) {
@@ -1674,6 +2079,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1709,7 +2122,8 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Scale, gizmoRotation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis,
+			GizmoRenderer::Type::Scale, gizmoRotation);
 	}
 	// Update rotate gizmo.
 	else if (actionParams.action == ROTATE) {
@@ -1729,6 +2143,14 @@ void Viewport::updateGizmos() {
 		uint positionCount = 0;
 
 		for (const SelectionItem& item : selectedItems) {
+			if (item.isReferenceImage()) {
+				const ReferenceImage* image = scene.FindReferenceImage(item.componentId);
+				if (image) {
+					positionSum += image->position;
+					++positionCount;
+				}
+				continue;
+			}
 			if (item.meshId >= scene.MeshCount()) {
 				continue;
 			}
@@ -1748,7 +2170,8 @@ void Viewport::updateGizmos() {
 
 		// Give averaged position and the current highlighted axis to the renderer.
 		const uint highlightedAxis = draggingGizmo ? draggedGizmoAxis : hoveredGizmoAxis;
-		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis, GizmoRenderer::Type::Rotation, gizmoRotation);
+		renderer.UpdateGizmos(positionSum / float(positionCount), highlightedAxis,
+			GizmoRenderer::Type::Rotation, gizmoRotation);
 	}
 	// Else, undefined gizmo, clear all gizmos.
 	else {
@@ -1762,37 +2185,44 @@ void Viewport::updateGizmos() {
 
 // AI Generated Code
 bool Viewport::updateHoverVisual(const Vec2f& pos) {
-	const float pixelRatio = static_cast<float>(devicePixelRatio());
-	const int pixelWidth = std::max(1, static_cast<int>(width() * pixelRatio));
-	const int pixelHeight = std::max(1, static_cast<int>(height() * pixelRatio));
-	const int rawX = static_cast<int>(pos.x * pixelRatio);
-	const int rawY = static_cast<int>(pos.y * pixelRatio);
-	const uint x = static_cast<uint>(std::clamp(rawX, 0, pixelWidth - 1));
-	const uint y = static_cast<uint>(std::clamp(rawY, 0, pixelHeight - 1));
-	const Vec3u ids = renderer.SelectionIds(x, y);
+	const Vec2u displayPixel = displayPixelFromLogical(pos);
+	const Vec2u pixel = physicalPixelFromLogical(pos);
+	const uint x = pixel.x;
+	const uint y = pixel.y;
+
+	const Vec3u gizmoIds = renderer.GizmoSelectionIds(x, y);
 	const bool activeGizmo =
-		(actionParams.action == TRANSLATE_AXIS && (ids.y == 0 || ids.y == 4)) ||
-		(actionParams.action == SCALE && (ids.y == 1 || ids.y == 4)) ||
-		(actionParams.action == ROTATE && (ids.y == 2 || ids.y == 4));
-	const uint newHoveredAxis =
-		(ids.x == GIZMO_IDENTIFIER && activeGizmo &&
-			((ids.y == 4 && ids.z == 3) || ids.z < 3))
-		? ids.z
-		: MAX_UINT;
-
+		(actionParams.action == TRANSLATE_AXIS && (gizmoIds.y == 0 || gizmoIds.y == 4)) ||
+		(actionParams.action == SCALE && (gizmoIds.y == 1 || gizmoIds.y == 4)) ||
+		(actionParams.action == ROTATE && (gizmoIds.y == 2 || gizmoIds.y == 4));
+	const bool translationAxisAllowed = !simpleMode || actionParams.action != TRANSLATE_AXIS ||
+		simpleModeRenderer.AllowsTranslationAxis(displayPixel, gizmoIds.z);
+	const uint newHoveredAxis = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3)
+		? gizmoIds.z : MAX_UINT;
 	const bool gizmoChanged = newHoveredAxis != hoveredGizmoAxis;
-	hoveredSelectionIds = ids;
 	hoveredGizmoAxis = newHoveredAxis;
+	if (gizmoChanged) { updateGizmos(); }
 
-	const bool rendererChanged = renderer.UpdateHover(
-		ids, selectionManager.getActiveElement(), scene);
-	if (gizmoChanged) {
-		updateGizmos();
+	const bool gizmoHit = translationAxisAllowed &&
+		gizmoIds.x == GIZMO_IDENTIFIER && activeGizmo &&
+		((gizmoIds.y == 4 && gizmoIds.z == 3) || gizmoIds.z < 3);
+	const Vec2u selectionIds = gizmoHit
+		? Vec2u(MAX_UINT)
+		: renderer.SelectionIds(selectionManager.getActiveElement(), x, y);
+	const Vec2u oldHover(hoveredSelectionIds.x, hoveredSelectionIds.y);
+	const bool meshChanged = selectionIds.x != oldHover.x || selectionIds.y != oldHover.y;
+	hoveredSelectionIds = Vec3u(selectionIds.x, selectionIds.y, 0);
+	if (meshChanged) {
+		if (selectionIds.x == MAX_UINT || selectionIds.y == MAX_UINT) {
+			renderer.ClearHover();
+		}
+		else {
+			renderer.UpdateHover(selectionIds.x, selectionIds.y);
+		}
 	}
-	// Raw framebuffer IDs can change while the same logical object remains
-	// hovered (for example, crossing faces in OBJECT mode). Only repaint when
-	// the logical mesh hover or gizmo hover actually changes.
-	return gizmoChanged || rendererChanged;
+	return gizmoChanged || meshChanged;
 }
 // ---------------------------------------------------------------------------------------------
 // Knife ---------------------------------------------------------------------------------------
@@ -1810,6 +2240,8 @@ void Viewport::knifeBegin() {
 	knifeHasCursor = false;
 	knifeOriginals.clear();
 	knifeOccluders = KnifeOccluders();
+	knifeUnselected = KnifeScreenCover();
+	knifeSegmentBlocked.clear();
 
 	// Only selected meshes are cut, but any mesh can hide them
 	std::unordered_set<uint> selected;
@@ -1818,7 +2250,10 @@ void Viewport::knifeBegin() {
 			knifeOriginals.emplace_back(item.meshId, *scene[item.meshId]);
 		}
 	}
-	for (uint i = 0; i < scene.MeshCount(); ++i) { knifeOccluders.Add(*scene[i]); }
+	for (uint i = 0; i < scene.MeshCount(); ++i) {
+		knifeOccluders.Add(*scene[i]);
+		if (!selected.count(i)) { knifeUnselected.Add(*scene[i]); }
+	}
 }
 
 void Viewport::knifeRestoreOriginals() {
@@ -1828,28 +2263,41 @@ void Viewport::knifeRestoreOriginals() {
 }
 
 void Viewport::knifeRecompute() {
-	if (!knifeSession || !rendererInitialized) { return; }
+	if (!knifeSession || !renderer.Initialized()) { return; }
 
 	knifeRestoreOriginals();
 
 	std::vector<Vec2f> path = knifePath;
 	if (knifeHasCursor) { path.push_back(knifeCursor); }
 
+	knifeSegmentBlocked.clear();
 	if (path.size() >= 2) {
 		KnifeCamera camera;
 		camera.viewProj = renderer.ViewProjection();
 		camera.position = renderer.GetCamera()->position();
 
+		std::vector<char> segmentCut(path.size() - 1, 0);
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
 			// Cut() leaves the mesh untouched when nothing was hit or the result was not valid
 			HalfEdgeMeshKnife knife(*scene[original.first]);
-			knife.Cut(camera, path, knifeCutThrough, knifeOccluders);
+			knife.Cut(camera, path, knifeCutThrough, knifeOccluders, &segmentCut);
+		}
+
+		// With nothing selected nothing can be cut, so the whole path is gray. Otherwise a segment that cuts
+		// nothing but lies over an unselected mesh is most likely meant for that mesh.
+		knifeSegmentBlocked.assign(path.size() - 1, knifeOriginals.empty() ? 1 : 0);
+		if (!knifeOriginals.empty() && !knifeUnselected.Empty()) {
+			knifeUnselected.Project(camera.viewProj);
+			for (size_t i = 0; i + 1 < path.size(); ++i) {
+				knifeSegmentBlocked[i] = !segmentCut[i] && knifeUnselected.Crosses(path[i], path[i + 1]);
+			}
 		}
 	}
 
-	makeCurrent();
-	renderer.UpdateRenderBuffers(scene);
+	// The cut (or the restore) changes topology and element ids
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
 }
 
 void Viewport::knifeFinish() {
@@ -1860,11 +2308,12 @@ void Viewport::knifeFinish() {
 	knifePath.clear();
 	knifeOriginals.clear();
 	knifeOccluders = KnifeOccluders();
+	knifeUnselected = KnifeScreenCover();
+	knifeSegmentBlocked.clear();
 
-	if (rendererInitialized) {
-		makeCurrent();
-		renderer.UpdateRenderBuffers(scene);
-		updateSelectionVisuals();
+	if (renderer.Initialized()) {
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
 		updateGizmos();
 	}
 }
@@ -1876,11 +2325,22 @@ void Viewport::knifeConfirm() {
 	knifeHasCursor = false;
 	knifeRecompute();
 
+	// Enter is the commit point. The meshes as they were before the cut are already copied.
+	{
+		StepScope step(this, "Knife Cut");
+		if (recording()) {
+			for (auto& original : knifeOriginals) {
+				if (original.first < scene.MeshCount()) {
+					pendingStep.touchMesh(docRefs, original.first, std::move(original.second));
+				}
+			}
+		}
+	}
+
 	// Same tool, next cut starts from the result
 	knifeBegin();
 
-	makeCurrent();
-	updateSelectionVisuals();
+	renderer.UpdateSelection(selectionManager);
 	updateGizmos();
 	update();
 }
@@ -1905,23 +2365,472 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 		return QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
 	};
 
-	painter.setPen(QPen(QColor(255, 220, 60), 2.0));
+	// Yellow cuts. Gray cuts nothing: no mesh is selected, or it is over a mesh that isn't.
+	const QColor cutColor(255, 220, 60);
+	const QColor blockedColor(150, 150, 150);
+	auto blocked = [this](size_t segment) {
+		return segment < knifeSegmentBlocked.size() && knifeSegmentBlocked[segment];
+	};
+	bool anyBlocked = false;
+
 	for (size_t i = 0; i + 1 < knifePath.size(); ++i) {
+		anyBlocked |= blocked(i);
+		painter.setPen(QPen(blocked(i) ? blockedColor : cutColor, 2.0));
 		painter.drawLine(toWidget(knifePath[i]), toWidget(knifePath[i + 1]));
 	}
 
 	if (knifeHasCursor && !knifePath.empty()) {
-		painter.setPen(QPen(QColor(255, 220, 60, 150), 1.0, Qt::DashLine));
+		const size_t cursorSegment = knifePath.size() - 1;
+		anyBlocked |= blocked(cursorSegment);
+		QColor color = blocked(cursorSegment) ? blockedColor : cutColor;
+		color.setAlpha(150);
+		painter.setPen(QPen(color, 1.0, Qt::DashLine));
 		painter.drawLine(toWidget(knifePath.back()), toWidget(knifeCursor));
 	}
 
+	// A point is gray when every segment touching it is
 	painter.setPen(Qt::NoPen);
-	painter.setBrush(QColor(255, 220, 60));
-	for (const Vec2f& p : knifePath) { painter.drawEllipse(toWidget(p), 4.0, 4.0); }
+	const size_t segmentCount = knifePath.empty() ? 0 : knifePath.size() - 1 + (knifeHasCursor ? 1 : 0);
+	for (size_t i = 0; i < knifePath.size(); ++i) {
+		const bool before = i > 0, after = i < segmentCount;
+		const bool gray = (before || after) && (!before || blocked(i - 1)) && (!after || blocked(i));
+		painter.setBrush(gray ? blockedColor : cutColor);
+		painter.drawEllipse(toWidget(knifePath[i]), 4.0, 4.0);
+	}
 
 	painter.setPen(QColor(255, 255, 255));
 	QString hint = "Knife: click to cut, Enter to confirm, Esc to cancel, X cut through: ";
 	hint += knifeCutThrough ? "on" : "off";
 	if (knifeOriginals.empty()) { hint += "   (select a mesh to cut)"; }
 	painter.drawText(QPointF(12.0, 20.0), hint);
+
+	if (anyBlocked) { drawKnifeNotSelectedHint(painter); }
+}
+
+void Viewport::drawKnifeNotSelectedHint(QPainter& painter) {
+	// A warning panel along the bottom edge, out of the way of the cut. It brings its own dark backing, so the
+	// red title reads on any background color, and red stays clear of the yellow cut line and green selection.
+	const QString title = "WARNING: Knife tool can't be used on current mesh as it is NOT selected";
+	const QString detail = "Press K to leave the knife tool, click the object to select it, then press K again to cut.";
+	const QColor warningColor(255, 85, 85);
+
+	const QFont detailFont = painter.font();
+	QFont titleFont = detailFont;
+	titleFont.setBold(true);
+	if (titleFont.pointSizeF() > 0.0) { titleFont.setPointSizeF(titleFont.pointSizeF() * 1.35); }
+	else if (titleFont.pixelSize() > 0) { titleFont.setPixelSize(static_cast<int>(titleFont.pixelSize() * 1.35)); }
+	const QFontMetricsF titleMetrics(titleFont);
+	const QFontMetricsF detailMetrics(detailFont);
+
+	const qreal pad = 14.0;
+	const qreal gap = 6.0;
+	const qreal textWidth = std::max(titleMetrics.horizontalAdvance(title), detailMetrics.horizontalAdvance(detail));
+	const qreal boxWidth = std::min(textWidth + 2.0 * pad, width() - 24.0);
+	const qreal boxHeight = titleMetrics.height() + gap + detailMetrics.height() + 2.0 * pad;
+	const QRectF box((width() - boxWidth) * 0.5, height() - boxHeight - 24.0, boxWidth, boxHeight);
+
+	painter.save();
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setPen(QPen(warningColor, 2.0));
+	painter.setBrush(QColor(15, 15, 15, 230));
+	painter.drawRoundedRect(box, 6.0, 6.0);
+
+	const QRectF inner = box.adjusted(pad, pad, -pad, -pad);
+	painter.setPen(warningColor);
+	painter.setFont(titleFont);
+	painter.drawText(QRectF(inner.left(), inner.top(), inner.width(), titleMetrics.height()),
+		Qt::AlignHCenter | Qt::AlignVCenter, titleMetrics.elidedText(title, Qt::ElideRight, inner.width()));
+	painter.setFont(detailFont);
+	painter.setPen(QColor(235, 235, 235));
+	painter.drawText(QRectF(inner.left(), inner.top() + titleMetrics.height() + gap, inner.width(), detailMetrics.height()),
+		Qt::AlignHCenter | Qt::AlignVCenter, detailMetrics.elidedText(detail, Qt::ElideRight, inner.width()));
+	painter.restore();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Loop Cut ------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+void Viewport::loopCutClearPreview() {
+	loopCutHover = Vec2u(MAX_UINT, MAX_UINT);
+	loopCutSegments.clear();
+	loopCutPoints.clear();
+}
+
+void Viewport::loopCutUpdatePreview(const Vec2u& selectionIds) {
+	loopCutClearPreview();
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
+	if (meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) { return; }
+
+	loopCutHover = selectionIds;
+	HalfEdgeMesh& mesh = *scene[meshId];
+	HalfEdgeMeshLoopCutter cutter(mesh);
+	cutter.Preview(edgeId, loopCutCount, loopCutSegments, loopCutPoints);
+
+	// The preview is kept in world space and projected when drawn, so it follows the camera
+	for (auto& segment : loopCutSegments) {
+		segment.first = mesh.LocalPosToWorldPos(segment.first);
+		segment.second = mesh.LocalPosToWorldPos(segment.second);
+	}
+	for (Vec3f& point : loopCutPoints) { point = mesh.LocalPosToWorldPos(point); }
+}
+
+void Viewport::handleLoopCutClick(const Vec2u& selectionIds) {
+	const uint meshId = selectionIds.x;
+	const uint edgeId = selectionIds.y;
+	if (meshId == MAX_UINT || edgeId == MAX_UINT ||
+		meshId >= scene.MeshCount() || edgeId >= scene[meshId]->EdgeCount()) {
+		return;
+	}
+
+	touchMesh(meshId);
+	HalfEdgeMeshLoopCutter cutter(*scene[meshId]);
+	if (!cutter.Cut(edgeId, loopCutCount)) {
+		std::cout << "Loop cut rejected: " << cutter.error << std::endl;
+		return;
+	}
+
+	labelStep("Loop Cut");
+	std::cout << "Loop cut through edge " << edgeId << " on mesh " << meshId
+		<< " (" << loopCutCount << " cut" << (loopCutCount == 1 ? "" : "s") << ")" << std::endl;
+	loopCutClearPreview();
+	selectionManager.clearSelection();
+	renderer.UpdateGeometry();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	emitSelectionChanged();
+	update();
+}
+
+void Viewport::changeLoopCutCount(int delta) {
+	const int count = std::clamp(static_cast<int>(loopCutCount) + delta, 1, 64);
+	if (static_cast<uint>(count) == loopCutCount) { return; }
+	loopCutCount = static_cast<uint>(count);
+	if (loopCutHover.x != MAX_UINT) { loopCutUpdatePreview(loopCutHover); }
+	update();
+}
+
+void Viewport::drawLoopCutOverlay(QPainter& painter) {
+	// World -> widget pixels. Points behind the camera or past the far plane are skipped.
+	auto project = [this](const Vec3f& world, QPointF& out) {
+		const Vec3f ndc = renderer.CanonicalVolumePos(world);
+		if (!(ndc.z >= -1.0f && ndc.z <= 1.0f)) { return false; }
+		out = QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
+		return true;
+	};
+
+	const QColor color(255, 220, 60);
+	painter.setPen(QPen(color, 2.0));
+	for (const auto& segment : loopCutSegments) {
+		QPointF a, b;
+		if (project(segment.first, a) && project(segment.second, b)) { painter.drawLine(a, b); }
+	}
+
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(color);
+	for (const Vec3f& point : loopCutPoints) {
+		QPointF p;
+		if (project(point, p)) { painter.drawEllipse(p, 3.0, 3.0); }
+	}
+
+	painter.setPen(QColor(255, 255, 255));
+	QString hint = "Loop Cut: click an edge to cut, +/- number of cuts: ";
+	hint += QString::number(loopCutCount);
+	hint += ", Esc to leave";
+	painter.drawText(QPointF(12.0, 20.0), hint);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Undo / Redo ---------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+void Viewport::beginStep(std::string label) {
+	if (stepDepth++ == 0 && !applyingHistory) {
+		pendingStep.begin(docRefs, std::move(label));
+	}
+}
+
+void Viewport::commitStep() {
+	if (stepDepth == 0) { return; }
+	if (--stepDepth > 0 || !pendingStep.isActive()) { return; }
+
+	std::unique_ptr<Command> cmd = pendingStep.commit(docRefs);
+	if (cmd) {
+		history.push(std::move(cmd));
+		emit historyChanged();
+	}
+}
+
+void Viewport::discardOpenStep() {
+	pendingStep.reset();
+	stepDepth = 0;
+	mouseStepOpen = false;
+}
+
+void Viewport::touchSelectedMeshes(bool fullCopy) {
+	if (!recording()) { return; }
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (item.isReferenceImage() || item.meshId >= scene.MeshCount()) { continue; }
+		if (fullCopy) { touchMesh(item.meshId); }
+		else { touchVertexPositions(item.meshId); }
+	}
+}
+
+HalfEdgeMesh* Viewport::newMeshRecorded(std::string name) {
+	HalfEdgeMesh* mesh = scene.NewMesh(std::move(name));
+	if (recording()) {
+		pendingStep.recordStructural(std::make_unique<AddMeshCommand>(scene.MeshCount() - 1));
+	}
+	return mesh;
+}
+
+void Viewport::deleteMeshRecorded(uint meshId) {
+	if (meshId >= scene.MeshCount()) { return; }
+	if (!recording()) {
+		scene.DeleteMesh(meshId);
+		return;
+	}
+	// The command keeps the mesh, so nothing is copied and the pointer the step holds stays valid.
+	auto detached = scene.DetachMesh(meshId);
+	pendingStep.recordStructural(std::make_unique<DeleteMeshCommand>(
+		meshId, std::move(detached.first), std::move(detached.second)));
+}
+
+const char* Viewport::actionLabel(Action action) {
+	switch (action) {
+	case TRANSLATE_OUT:
+	case TRANSLATE_FREE:
+	case TRANSLATE_AXIS:
+	case TRANSLATE_EDGE: return "Move";
+	case SCALE: return "Scale";
+	case ROTATE: return "Rotate";
+	case EXTRUDE: return "Extrude";
+	case BEVEL: return "Bevel";
+	case MERGE: return "Merge Vertices";
+	case COLLAPSE: return "Collapse Edge";
+	case DISSOLVE: return "Dissolve Edge";
+	case LOOPCUT: return "Loop Cut";
+	case INSET: return "Inset";
+	case ROOF_EXTRUDE: return "Roof Extrude";
+	default: return "Select";
+	}
+}
+
+void Viewport::openMouseStep() {
+	if (mouseStepOpen) { return; }
+	beginStep(actionLabel(actionParams.action));
+	mouseStepOpen = true;
+
+	// Capture what the drag may change before it starts. Object transforms, selection and
+	// reference images are always captured; meshes only when this action edits them.
+	const bool objects = selectionManager.getActiveElement() == OBJECT;
+	switch (actionParams.action) {
+	case BEVEL:
+	case EXTRUDE:
+	case INSET:
+	case ROOF_EXTRUDE:
+		touchSelectedMeshes(true); // topology changes, even in object mode
+		break;
+	case TRANSLATE_OUT:
+	case TRANSLATE_FREE:
+	case TRANSLATE_AXIS:
+	case TRANSLATE_EDGE:
+	case SCALE:
+		if (!objects) { touchSelectedMeshes(false); } // components only move
+		break;
+	default:
+		break; // click tools capture their mesh right before they change it
+	}
+}
+
+void Viewport::closeMouseStep() {
+	if (!mouseStepOpen) { return; }
+	mouseStepOpen = false;
+	commitStep();
+}
+
+void Viewport::cancelExtrudeStage() {
+	makeCurrent();
+	if (mouseStepOpen && stepDepth == 1 && pendingStep.isActive()) {
+		pendingStep.rollback(docRefs);
+	}
+	discardOpenStep();
+	actionParams.stage = 0;
+	actionParams.ClearActionDirs();
+	actionParams.ClearElements();
+	refreshAfterHistory();
+}
+
+void Viewport::clearHistory() {
+	history.clear();
+	emit historyChanged();
+}
+
+void Viewport::stepHistory(bool backwards) {
+	// A drag owns the document until it is released.
+	if (leftButtonDown) { return; }
+
+	// Undo/redo in the middle of an action cancels the action instead, like Esc.
+	if (knifeSession && !knifePath.empty()) {
+		knifeCancel();
+		return;
+	}
+	if (actionParams.action == EXTRUDE && actionParams.stage == 1) {
+		cancelExtrudeStage();
+		return;
+	}
+	if (stepDepth > 0) { return; }
+
+	makeCurrent();
+	applyingHistory = true;
+	const bool changed = backwards ? history.undo(docRefs) : history.redo(docRefs);
+	if (changed) { refreshAfterHistory(); }
+	applyingHistory = false;
+	emit historyChanged();
+}
+
+void Viewport::sanitizeSelection() {
+	// Ids are restored as they were saved; drop any that no longer exist so the renderer and
+	// the panels never index past the end of a mesh.
+	SelectionState state = selectionManager.getState();
+	const size_t before = state.items.size();
+	state.items.erase(std::remove_if(state.items.begin(), state.items.end(), [&](const SelectionItem& item) {
+		if (item.isReferenceImage()) { return scene.FindReferenceImage(item.componentId) == nullptr; }
+		if (item.meshId >= scene.MeshCount()) { return true; }
+		const HalfEdgeMesh* mesh = scene[item.meshId];
+		switch (state.activeElement) {
+		case VERTEX: return item.componentId >= mesh->VertexCount();
+		case EDGE: return item.componentId >= mesh->EdgeCount();
+		case FACE: return item.componentId >= mesh->FaceCount();
+		default: return false;
+		}
+	}), state.items.end());
+	if (state.items.size() != before) { selectionManager.setState(state); }
+}
+
+void Viewport::syncReferenceTextures() {
+	// A deleted image's texture is released on delete, so an image that undo brings back is
+	// uploaded again from its file.
+	for (const ReferenceImage& reference : scene.ReferenceImages()) {
+		if (reference.isNull() || referenceTextureIndices.count(reference.id)) { continue; }
+		QImage image(QString::fromStdString(reference.sourcePath));
+		if (image.isNull()) { continue; }
+		image = image.convertToFormat(QImage::Format_RGBA8888);
+		image.flip();
+		makeCurrent();
+		referenceTextureIndices[reference.id] = imageRenderer.AddTexture(
+			image.constBits(), static_cast<uint>(image.width()),
+			static_cast<uint>(image.height()), GL_RGBA);
+	}
+}
+
+void Viewport::applyDisplaySettings() {
+	const DisplaySettings& d = displaySettings;
+	if (renderer.Initialized()) {
+		makeCurrent();
+		renderer.FaceColor<true>(d.faceColor);
+		renderer.EdgeColor<true>(d.edgeColor);
+		renderer.VertexColor<true>(d.vertexColor);
+		renderer.BackgroundColor<true>(d.backgroundColor);
+		renderer.SelectColor<true>(d.selectColor);
+		renderer.HoverColor<true>(d.hoverColor);
+		// These bind a shader program, so they need GL. initializeGL applies them once it's ready.
+		renderer.SetEdgeRadius(d.edgeRadius);
+		renderer.SetVertexScale(d.vertexScale);
+	}
+	else {
+		renderer.FaceColor<false>(d.faceColor);
+		renderer.EdgeColor<false>(d.edgeColor);
+		renderer.VertexColor<false>(d.vertexColor);
+		renderer.BackgroundColor<false>(d.backgroundColor);
+		renderer.SelectColor<false>(d.selectColor);
+		renderer.HoverColor<false>(d.hoverColor);
+	}
+	renderer.SetMeshShader(d.meshShader == 1 ? MeshShader::PIXEL : MeshShader::DEFAULT);
+	renderer.ShowSurfaces(d.surfacesVisible);
+	renderer.ShowEdges(d.edgesVisible);
+	renderer.ShowGrid(d.gridVisible);
+	renderer.ShowVertices(d.verticesAlwaysVisible || selectionManager.getActiveElement() == VERTEX);
+}
+
+void Viewport::refreshAfterHistory() {
+	// Commands only change data. Everything derived from it is rebuilt here.
+	sanitizeSelection();
+
+	// Tool state that referred to the old document.
+	mergeFirstVertex.reset();
+	loopCutClearPreview();
+	edgeDragEdges.clear();
+	edgeDragDistances.clear();
+	hoveredSelectionIds = Vec3u(MAX_UINT, MAX_UINT, MAX_UINT);
+	hoveredGizmoAxis = MAX_UINT;
+	draggingGizmo = false;
+	draggedGizmoAxis = MAX_UINT;
+	draggedRotationAxis = Vec3f(0.0f);
+
+	syncReferenceTextures();
+	applyDisplaySettings();
+
+	// Element mode may have changed with the selection.
+	const Element element = selectionManager.getActiveElement();
+	const int button = element == VERTEX ? 0 : element == EDGE ? 1 : element == FACE ? 2 : 3;
+	elementButtons[button]->setChecked(true);
+
+	bool toolFits = true;
+	switch (actionParams.action) {
+	case MERGE:
+	case TRANSLATE_EDGE: toolFits = element == VERTEX; break;
+	case COLLAPSE:
+	case DISSOLVE:
+	case LOOPCUT: toolFits = element == EDGE; break;
+	case TRANSLATE_OUT: toolFits = element != OBJECT; break;
+	case ROTATE: toolFits = element == OBJECT; break;
+	case SCALE: toolFits = element != VERTEX; break;
+	default: break;
+	}
+	if (!toolFits) {
+		// Switching with setAction would clear the selection that was just restored.
+		actionParams.action = SELECT;
+		actionParams.stage = 0;
+		actionParams.ClearActionDirs();
+		actionParams.ClearElements();
+		enableAllElements();
+		emit toolReset();
+	}
+
+	// The knife's before-copies must match the restored meshes.
+	if (knifeSession) { knifeBegin(); }
+
+	makeCurrent();
+	renderer.UpdateGeometry();
+	renderer.UpdateTransforms();
+	renderer.UpdateSelection(selectionManager);
+	renderer.ClearHover();
+	updateGizmos();
+	update();
+
+	emit meshCountChanged(scene.MeshCount());
+	emit elementChanged(element);
+	emit selectionChanged(-1);
+	for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+		if (!item.isReferenceImage() && item.meshId < scene.MeshCount()) {
+			emit selectionChanged(static_cast<int>(item.meshId));
+		}
+	}
+	emitSelectionChanged();
+	emit displaySettingsChanged();
+}
+
+int Viewport::getMeshCount() {
+	return scene.MeshCount();
+}
+
+const std::vector<string>& Viewport::getNames() const {
+	return scene.Names();
+}
+
+void Viewport::setName(int index, std::string name) {
+	scene.setName(index, name);
 }

@@ -1,6 +1,9 @@
 
 #include "ABC3D.h"
 
+#include <QLocale>
+#include <QMessageBox>
+
 ABC3D::ABC3D(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -11,7 +14,7 @@ ABC3D::ABC3D(QWidget *parent)
     ui.posInput->setEnabled(false);
     ui.scaleInput->setEnabled(false);
     ui.rotInput->setEnabled(false);
-    ui.topRightPanels->setCurrentIndex(1);
+    ui.topRightPanels->setCurrentIndex(2);
     
     // Makes the model and tree used to view all the help documents
     QString helpPath = "assets/help documents";
@@ -43,33 +46,126 @@ ABC3D::ABC3D(QWidget *parent)
     ui.tutorialBrowser->setReadOnly(true);
     QObject::connect(ui.tutorialTree, &QTreeView::pressed, this, &ABC3D::tutorialRowClicked);
 
-    // Menu button for the camera panel - does the same thing as the toolbar
-    QAction* actionCamera = new QAction("Camera", ui.menuBar);
-    ui.menuBar->addAction(actionCamera);
-    QObject::connect(actionCamera, &QAction::triggered, this, &ABC3D::showCameraPanel);
+    QObject::connect(
+        ui.actionImage,
+        &QAction::triggered,
+        this,
+        &ABC3D::imageFileDialog
+    );
 
+    QObject::connect(ui.shaderComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+        ui.viewport, &Viewport::SetMeshShader);
+
+    // AI-generated code: Adds mutually exclusive UI actions for standard and simple rendering modes.
     // Menu button for standard mode, selected by default
     QAction* actionStandardMode = new QAction("Standard Mode", ui.menuBar);
+    actionStandardMode->setCheckable(true);
+    actionStandardMode->setChecked(true);
     ui.menuBar->addAction(actionStandardMode);
-    //QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
+    QObject::connect(actionStandardMode, &QAction::triggered, this, &ABC3D::showStandardMode);
 
     // Menu button for simple mode
     QAction* actionSimpleMode = new QAction("Simple Mode", ui.menuBar);
+    actionSimpleMode->setCheckable(true);
     ui.menuBar->addAction(actionSimpleMode);
-    //QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+    QObject::connect(actionSimpleMode, &QAction::triggered, this, &ABC3D::showSimpleMode);
+    QActionGroup* rendererModes = new QActionGroup(this);
+    rendererModes->setExclusive(true);
+    rendererModes->addAction(actionStandardMode);
+    rendererModes->addAction(actionSimpleMode);
+    // AI-generated code: Reflects rejected or automatic viewport mode changes in the menu actions.
+    QObject::connect(ui.viewport, &Viewport::simpleModeChanged, this,
+        [actionStandardMode, actionSimpleMode](bool simpleMode) {
+            if (simpleMode) actionSimpleMode->setChecked(true);
+            else actionStandardMode->setChecked(true);
+        });
+    // AI-generated code: Reflects Simple Mode's automatic orbit-camera switch in the camera controls.
+    QObject::connect(ui.viewport, &Viewport::orbitCameraActivated, this, [this]() {
+        ui.orbitButton->setChecked(true);
+        });
+
+    // Search Bar for documents
+    QLineEdit* searchBar = new QLineEdit();    
+    searchBar->setPlaceholderText("Search Help Documents");
+    searchBar->setFixedHeight(30);
+    searchBar->setContentsMargins(5, 0, 5, 0);
+    ui.verticalLayout_13->addWidget(searchBar);
+
+    QStringList searchList;
+    searchList << "Beveling" << "Camera Movement" << "Controls" << "Elements" << "Extrusion" 
+        << "Knife Tool" << "Loop Cutting" << "Merging" << "Refinement" << "Scene" 
+        << "Selection" << "Shapes" << "Simple Mode" << "Translation";
+    QCompleter* searchCompleter = new QCompleter(searchList, this);
+
+    searchCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    searchCompleter->setFilterMode(Qt::MatchContains);
+    searchBar->setCompleter(searchCompleter);
+
+    QObject::connect(searchBar, &QLineEdit::editingFinished, this, [=]() {
+        updateSearchBar(searchBar->text());
+        });
 
     // Connections based on key-presses
-    QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, &Viewport::deleteSelection);
-    QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, &Viewport::setAdditiveSelection);
-    QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, &Viewport::setSingleSelection);
+    QObject::connect(this, &ABC3D::deleteKeyPressed, ui.viewport, [=]() {
+        ui.viewport->deleteSelection();
+        });
+
+    QObject::connect(this, &ABC3D::ctrlKeyPressed, ui.viewport, [=]() {
+        ui.viewport->setAdditiveSelection();
+        sceneGroup->setExclusive(false);
+    });
+    QObject::connect(this, &ABC3D::ctrlKeyReleased, ui.viewport, [=]() {
+        ui.viewport->setSingleSelection();
+        sceneGroup->setExclusive(true);
+    });
 
     QObject::connect(ui.knifeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionKnife);
+    QObject::connect(ui.loopCutToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionLoopCut);
     QObject::connect(ui.mergeToolButton, &QPushButton::released, ui.viewport, &Viewport::setActionMerge);
 
     // Pulls up subdivide panel
     QObject::connect(ui.subdivideToolButton, &QPushButton::released, this, [=]() { 
         ui.bottomRightPanels->setCurrentIndex(2);
         emit elementChanged(ui.viewport->getActiveElement());
+        });
+
+    // Decimate blocks the UI, so ask first when it would take noticeably long
+    QObject::connect(ui.decimateButton, &QPushButton::released, this, [=]() {
+        const int percent = ui.decimateRatioSpinner->value();
+        const Viewport::DecimateEstimate estimate = ui.viewport->estimateDecimate(percent);
+        if (estimate.objects == 0) { return; }
+
+        // Ask from about the size of a cube subdivided four times (6 * 4^4 quads = 3072 triangles), where the pause
+        // starts to be noticeable, or whenever the measured rate says it will take a second or more
+        constexpr uint CONFIRM_TRIANGLES = 3072;
+        constexpr double CONFIRM_SECONDS = 1.0;
+        if (estimate.triangles >= CONFIRM_TRIANGLES || estimate.seconds >= CONFIRM_SECONDS) {
+            QString duration;
+            if (estimate.seconds < 1.0) {
+                duration = "less than a second";
+            }
+            else if (estimate.seconds < 60.0) {
+                const int seconds = qRound(estimate.seconds);
+                duration = QString("about %1 second%2").arg(seconds).arg(seconds == 1 ? "" : "s");
+            }
+            else {
+                const int minutes = qRound(estimate.seconds / 60.0);
+                duration = QString("about %1 minute%2").arg(minutes).arg(minutes == 1 ? "" : "s");
+            }
+            const QString objects = estimate.objects == 1 ? "1 object" : QString("%1 objects").arg(estimate.objects);
+
+            QMessageBox confirm(QMessageBox::Warning, "Decimate",
+                QString("Decimating %1 triangles (%2) down to %3% may take %4.")
+                    .arg(QLocale().toString(estimate.triangles), objects).arg(percent).arg(duration),
+                QMessageBox::NoButton, this);
+            confirm.setInformativeText("ABC3D will not respond until it finishes. Decimate anyway?");
+            QPushButton* decimate = confirm.addButton("Decimate", QMessageBox::AcceptRole);
+            confirm.setDefaultButton(confirm.addButton(QMessageBox::Cancel));
+            confirm.exec();
+            if (confirm.clickedButton() != decimate) { return; }
+        }
+
+        ui.viewport->decimateSelection(percent);
         });
 
     // Pulls up shape panel
@@ -85,15 +181,104 @@ ABC3D::ABC3D(QWidget *parent)
 
     // Emits signal for when to create shapes (with resolutions)
     QObject::connect(ui.torusButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadTorus(ui.torusSlider->value());
+            QDialog torusResolution(this, Qt::FramelessWindowHint);
+
+            QGridLayout* torusLayout = new QGridLayout();
+            QPushButton* create = new QPushButton("Create");
+            QPushButton* cancel = new QPushButton("Cancel");
+            QLabel* latitudeLabel = new QLabel("Set Latitude");
+            QDoubleSpinBox* latitude = new QDoubleSpinBox();
+            latitude->setMinimum(3);
+            latitude->setValue(40);
+            QLabel* longitudeLabel = new QLabel("Set Longitude");
+            QDoubleSpinBox* longitude = new QDoubleSpinBox();
+            longitude->setMinimum(3);
+            longitude->setValue(20);
+            QLabel* outsideRadiusLabel = new QLabel("Set Outer Radius");
+            QDoubleSpinBox* outsideRadius = new QDoubleSpinBox();
+            outsideRadius->setValue(1);
+            QLabel* insideRadiosLabel = new QLabel("Set Inner Radius");
+            QDoubleSpinBox* insideRadius = new QDoubleSpinBox();
+            insideRadius->setValue(.3);
+
+            connect(create, &QPushButton::released, &torusResolution, &QDialog::accept);
+            connect(cancel, &QPushButton::released, &torusResolution, &QDialog::reject);
+
+            torusLayout->addWidget(latitude, 0, 0);
+            torusLayout->addWidget(latitudeLabel, 0, 1);
+            torusLayout->addWidget(longitude, 1, 0);
+            torusLayout->addWidget(longitudeLabel, 1, 1);
+            torusLayout->addWidget(outsideRadius, 2, 0);
+            torusLayout->addWidget(outsideRadiusLabel, 2, 1);
+            torusLayout->addWidget(insideRadius, 3, 0);
+            torusLayout->addWidget(insideRadiosLabel, 3, 1);
+            torusLayout->addWidget(cancel, 4, 0);
+            torusLayout->addWidget(create, 4, 1);
+
+            torusResolution.setLayout(torusLayout);
+            
+            if (torusResolution.exec() == QDialog::Accepted) {
+                ui.viewport->loadTorus(latitude->value(), longitude->value());
+            }
         });
 
     QObject::connect(ui.cylinderButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadCylinder(ui.cylinderSlider->value());
+        QDialog cylinderResolution(this, Qt::FramelessWindowHint);
+
+        QGridLayout* cylinderLayout = new QGridLayout();
+        QPushButton* create = new QPushButton("Create");
+        QPushButton* cancel = new QPushButton("Cancel");
+        QLabel* resolutionLabel = new QLabel("Set Resolution");
+        QDoubleSpinBox* resolution = new QDoubleSpinBox();
+        resolution->setMinimum(3);
+        resolution->setValue(12);
+
+        connect(create, &QPushButton::released, &cylinderResolution, &QDialog::accept);
+        connect(cancel, &QPushButton::released, &cylinderResolution, &QDialog::reject);
+
+        cylinderLayout->addWidget(resolution, 0, 0);
+        cylinderLayout->addWidget(resolutionLabel, 0, 1);
+        cylinderLayout->addWidget(cancel, 1, 0);
+        cylinderLayout->addWidget(create, 1, 1);
+
+        cylinderResolution.setLayout(cylinderLayout);
+
+        if (cylinderResolution.exec() == QDialog::Accepted) {
+            ui.viewport->loadCylinder(resolution->value());
+        }
         });
 
     QObject::connect(ui.uvSphereButton_5, &QPushButton::released, this, [=]() {
-            ui.viewport->loadUvSphere(ui.uvSphereSlider->value());
+        QDialog uvResolution(this, Qt::FramelessWindowHint);
+
+        QGridLayout* uvLayout = new QGridLayout();
+        QPushButton* create = new QPushButton("Create");
+        QPushButton* cancel = new QPushButton("Cancel");
+        QLabel* latitudeLabel = new QLabel("Set Latitude");
+        QDoubleSpinBox* latitude = new QDoubleSpinBox();
+        latitude->setMinimum(2);
+        latitude->setValue(10);
+        QDoubleSpinBox* longitude = new QDoubleSpinBox();
+        QLabel* longitudeLabel = new QLabel("Set Longitude");
+        longitude->setMinimum(3);
+        longitude->setValue(10);
+
+
+        connect(create, &QPushButton::released, &uvResolution, &QDialog::accept);
+        connect(cancel, &QPushButton::released, &uvResolution, &QDialog::reject);
+
+        uvLayout->addWidget(latitude, 0, 0);
+        uvLayout->addWidget(latitudeLabel, 0, 1);
+        uvLayout->addWidget(longitude, 1, 0);
+        uvLayout->addWidget(longitudeLabel, 1, 1);
+        uvLayout->addWidget(cancel, 2, 0);
+        uvLayout->addWidget(create, 2, 1);
+
+        uvResolution.setLayout(uvLayout);
+
+        if (uvResolution.exec() == QDialog::Accepted) {
+            ui.viewport->loadUvSphere(latitude->value(), longitude->value());
+        }
         });
 
     // The main Move tool defaults to Free translation. Its toolbar button and
@@ -130,23 +315,569 @@ ABC3D::ABC3D(QWidget *parent)
         QFile::copy(filePath, "assets/tutorials/" + fileName);
         });
 
-    // TODO: Fix FOV slider
-    QObject::connect(ui.fovSlider, &QSlider::sliderMoved, this, [=](int fov) {
-        ui.viewport->updateCameraFOV(fov);
+
+    /* Creates & connects the right - click menus for all the tool buttons 
+    * Each tool button has a help action in the menu that brings up their respective document*/
+    QObject::connect(ui.selectToolButton, &QPushButton::customContextMenuRequested, ui.selectToolButton, [=]() {
+        QMenu selectMenu(this);
+        QAction* helpAction = selectMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Selection.html"));
         });
+        selectMenu.exec(QCursor::pos());
+    });
+
+    QObject::connect(ui.cameraToolButton, &QPushButton::customContextMenuRequested, ui.cameraToolButton, [=]() {
+        QMenu cameraMenu(this);
+        QAction* helpAction = cameraMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Camera Movement.html"));
+            });
+        cameraMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.translateToolButton, &QPushButton::customContextMenuRequested, ui.translateToolButton, [=]() {
+        QMenu translateMenu(this);
+        QAction* helpAction = translateMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        translateMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.scaleToolButton, &QPushButton::customContextMenuRequested, ui.scaleToolButton, [=]() {
+        QMenu scaleMenu(this);
+        QAction* helpAction = scaleMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        scaleMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.rotateToolButton, &QPushButton::customContextMenuRequested, ui.rotateToolButton, [=]() {
+        QMenu rotateMenu(this);
+        QAction* helpAction = rotateMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Translation.html"));
+            });
+        rotateMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.shapeToolButton, &QPushButton::customContextMenuRequested, ui.shapeToolButton, [=]() {
+        QMenu shapeMenu(this);
+        QAction* helpAction = shapeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Shapes.html"));
+            });
+        shapeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.extrudeToolButton, &QPushButton::customContextMenuRequested, ui.extrudeToolButton, [=]() {
+        QMenu extrudeMenu(this);
+        QAction* helpAction = extrudeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Extrusion.html"));
+            });
+        extrudeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.subdivideToolButton, &QPushButton::customContextMenuRequested, ui.subdivideToolButton, [=]() {
+        QMenu subdivideMenu(this);
+        QAction* helpAction = subdivideMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Subdivision.html"));
+            });
+        subdivideMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.bevelToolButton, &QPushButton::customContextMenuRequested, ui.bevelToolButton, [=]() {
+        QMenu bevelMenu(this);
+        QAction* helpAction = bevelMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Beveling.html"));
+            });
+        bevelMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.knifeToolButton, &QPushButton::customContextMenuRequested, ui.knifeToolButton, [=]() {
+        QMenu knifeMenu(this);
+        QAction* helpAction = knifeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Knife Tool.html"));
+            });
+        knifeMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.loopCutToolButton, &QPushButton::customContextMenuRequested, ui.loopCutToolButton, [=]() {
+        QMenu loopCutMenu(this);
+        QAction* helpAction = loopCutMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Loop Cut.html"));
+            });
+        loopCutMenu.exec(QCursor::pos());
+        });
+
+    QObject::connect(ui.mergeToolButton, &QPushButton::customContextMenuRequested, ui.mergeToolButton, [=]() {
+        QMenu mergeMenu(this);
+        QAction* helpAction = mergeMenu.addAction("Help");
+        QObject::connect(helpAction, &QAction::triggered, this, [=]() {
+            ui.topRightPanels->setCurrentIndex(0);
+            ui.helpStack->setCurrentIndex(0);
+            ui.helpBrowser->setSource(QUrl("assets/help documents/Merging.html"));
+            });
+        mergeMenu.exec(QCursor::pos());
+        });
+
+    ui.viewport->SetFaceColor(ui.faceColorButton->GetColorF());
+    ui.viewport->SetEdgeColor(ui.edgeColorButton->GetColorF());
+    ui.viewport->SetVertexColor(ui.vertexColorButton->GetColorF());
+    ui.viewport->SetBackgroundColor(ui.backgroundColorButton->GetColorF());
+    ui.viewport->SetSelectColor(ui.selectColorButton->GetColorF());
+    ui.viewport->SetHoverColor(ui.hoverColorButton->GetColorF());
+
+    ui.sceneTree->header()->hide();
+    ui.sceneTree->setDragEnabled(true);
+    ui.sceneTree->setAcceptDrops(true);
+    ui.sceneTree->setDropIndicatorShown(true);
+    ui.sceneTree->setDragDropMode(QTreeView::InternalMove);
+
+    sceneModel = new QStandardItemModel(this);
+    sceneModel->setColumnCount(1);
+    sceneModel->setHorizontalHeaderLabels(QStringList());
+    sceneModel->setVerticalHeaderLabels(QStringList());
+
+    ui.sceneTree->setModel(sceneModel);
+    sceneGroup->setExclusive(true);
+
+    for (int i = 0; i < ui.viewport->getMeshCount(); i++) {
+        createSceneButton(i, "Cube");
+    }
+
+    // Undo / Redo. Added to the window too so the shortcuts work wherever focus is.
+    ui.actionUndo->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Z));
+    ui.actionRedo->setShortcuts({ QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z), QKeySequence(Qt::CTRL | Qt::Key_Y) });
+    addAction(ui.actionUndo);
+    addAction(ui.actionRedo);
+    QObject::connect(ui.actionUndo, &QAction::triggered, ui.viewport, &Viewport::undo);
+    QObject::connect(ui.actionRedo, &QAction::triggered, ui.viewport, &Viewport::redo);
+    QObject::connect(ui.viewport, &Viewport::historyChanged, this, &ABC3D::refreshUndoActions);
+    QObject::connect(ui.viewport, &Viewport::displaySettingsChanged, this, &ABC3D::refreshDisplayWidgets);
+    QObject::connect(ui.viewport, &Viewport::toolReset, this, &ABC3D::showSelectTool);
+
+    // The startup color setup above is not a user edit.
+    ui.viewport->clearHistory();
+
+    // Wait for the main application to process so it registers the controller
+    for (int i = 0; i < 10 && controllerManager->connectedGamepads().isEmpty(); i++) {
+        QCoreApplication::processEvents();
+    }
+
+    devices = controllerManager->connectedGamepads();
+    analogTimer->setInterval(16);
+    dPadTimer->setInterval(16);
+ 
+    // Create the first controller on start
+    if (!devices.isEmpty()) {
+        createGamepad(devices.first()); 
+    }
+
+    // AI-assisted
+    // Handles gamepads connected after start 
+    connect(controllerManager, &QGamepadManager::gamepadConnected, this, [this](int id) {
+        if (!controller) {
+            createGamepad(id);
+        }
+    });
+
+    // Handles gamepads being disconnected
+    connect(controllerManager, &QGamepadManager::gamepadDisconnected, this, [this](int id) {
+        if (controller) {
+            QObject::disconnect(controller, nullptr, this, nullptr);
+            controller->deleteLater();
+            controller = nullptr;
+
+            analogTimer->stop();
+            dPadTimer->stop();
+            L2pressed = false;
+            R2pressed = false;
+        }
+    });
+}
+
+void ABC3D::refreshUndoActions() {
+    const bool canUndo = ui.viewport->canUndo();
+    const bool canRedo = ui.viewport->canRedo();
+    ui.actionUndo->setEnabled(canUndo);
+    ui.actionRedo->setEnabled(canRedo);
+    ui.actionUndo->setText(canUndo ? QString("Undo %1").arg(ui.viewport->undoLabel()) : QString("Undo"));
+    ui.actionRedo->setText(canRedo ? QString("Redo %1").arg(ui.viewport->redoLabel()) : QString("Redo"));
+}
+
+void ABC3D::refreshDisplayWidgets() {
+    // Show the viewport's settings without the widgets sending them back as new edits.
+    const DisplaySettings& d = ui.viewport->getDisplaySettings();
+    auto setColor = [](ColorButton* button, const Vec3f& clr) {
+        const QSignalBlocker block(button);
+        button->SetColor(QColor::fromRgbF(clr.x, clr.y, clr.z));
+    };
+    auto setChecked = [](QAbstractButton* box, bool checked) {
+        const QSignalBlocker block(box);
+        box->setChecked(checked);
+    };
+    auto setValue = [](QDoubleSpinBox* spinner, double value) {
+        const QSignalBlocker block(spinner);
+        spinner->setValue(value);
+    };
+	const QSignalBlocker shaderBlock(ui.shaderComboBox);
+
+    setColor(ui.faceColorButton, d.faceColor);
+    setColor(ui.edgeColorButton, d.edgeColor);
+    setColor(ui.vertexColorButton, d.vertexColor);
+    setColor(ui.backgroundColorButton, d.backgroundColor);
+    setColor(ui.selectColorButton, d.selectColor);
+    setColor(ui.hoverColorButton, d.hoverColor);
+    setChecked(ui.checkBox, d.surfacesVisible);
+    setChecked(ui.checkBox_2, d.edgesVisible);
+    setChecked(ui.gridVisibilityBox, d.gridVisible);
+    setChecked(ui.vertexVisibilityBox, d.verticesAlwaysVisible);
+    setValue(ui.edgeRadiusSpinner, d.edgeRadius);
+    setValue(ui.vertexScaleSpinner, d.vertexScale);
+    ui.shaderComboBox->setCurrentIndex(static_cast<int>(d.meshShader));
+}
+
+void ABC3D::showSelectTool() {
+    ui.bottomRightPanels->setCurrentIndex(0);
+    ui.selectToolButton->setChecked(true);
+}
+
+void ABC3D::createGamepad(int id) {
+    controller = new QGamepad(id, this);
+
+    // Analog Sticks
+    // updateAxis AI-assisted
+    auto updateAxis = [this](double& axisMember, double rawValue) {
+        axisMember = (std::abs(rawValue) < 0.15) ? 0.0 : rawValue;
+
+        bool anyActive = (leftX != 0.0 || leftY != 0.0 || rightX != 0.0 || rightY != 0.0);
+        if (anyActive) {
+            if (!analogTimer->isActive()) {
+                analogTimer->start();
+            }
+        }
+        else {
+            analogTimer->stop();
+        }
+    };
+
+    connect(controller, &QGamepad::axisLeftXChanged, this, [=](double value) { updateAxis(leftX, value); });
+    connect(controller, &QGamepad::axisLeftYChanged, this, [=](double value) { updateAxis(leftY, value); });
+    connect(controller, &QGamepad::axisRightXChanged, this, [=](double value) { updateAxis(rightX, value); });
+    connect(controller, &QGamepad::axisRightYChanged, this, [=](double value) { updateAxis(rightY, value); });
+
+    // AI-assisted
+    // Timer for holding down the analog sticks
+    connect(analogTimer, &QTimer::timeout, this, [this]() {
+        if (leftX != 0.0) {
+
+        }
+
+        if (leftY != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (leftY > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+                else { emit cameraKeyPressed(Axis::Z); }
+            }
+        }
+
+        if (rightX != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (rightX > 0) { emit cameraKeyPressed(Axis::X); }
+                else { emit cameraKeyPressed(Axis::X_NEG); }
+            }
+            else {
+                if (rightX > 0) { emit cameraKeyPressed(Axis::X_NEG); }
+                else { emit cameraKeyPressed(Axis::X); }
+            }
+        }
+
+        if (rightY != 0.0) {
+            if (ui.viewport->getCameraType() == ORBIT) {
+                if (rightY > 0) { emit cameraKeyPressed(Axis::Y); }
+                else { emit cameraKeyPressed(Axis::Y_NEG); }
+            }
+            else {
+                if (rightY > 0) { emit cameraKeyPressed(Axis::Z_NEG); }
+                else { emit cameraKeyPressed(Axis::Z); }
+            }
+        }
+    });
+
+    // AI-assisted
+    auto updateDPad = [this](bool& buttonState, bool pressed) {
+        buttonState = pressed;
+
+        bool anyPressed = (dPadUp || dPadDown || dPadLeft || dPadRight);
+        if (anyPressed) {
+            if (!dPadTimer->isActive()) {
+                dPadTimer->start();
+            }
+        }
+        else {
+            dPadTimer->stop();
+        }
+    };
+
+    connect(controller, &QGamepad::buttonUpChanged, this, [=](bool pressed) { updateDPad(dPadUp, pressed); });
+    connect(controller, &QGamepad::buttonDownChanged, this, [=](bool pressed) { updateDPad(dPadDown, pressed); });
+    connect(controller, &QGamepad::buttonLeftChanged, this, [=](bool pressed) { updateDPad(dPadLeft, pressed); });
+    connect(controller, &QGamepad::buttonRightChanged, this, [=](bool pressed) { updateDPad(dPadRight, pressed); });
+
+    // AI-assisted
+    connect(dPadTimer, &QTimer::timeout, this, [this]() {
+        int dx = 0;
+        int dy = 0;
+        const int step = 10;
+
+        if (dPadUp)    dy -= step;
+        if (dPadDown)  dy += step;
+        if (dPadLeft)  dx -= step;
+        if (dPadRight) dx += step;
+
+        if (dx != 0 || dy != 0) {
+            QCursor::setPos(QCursor::pos() + QPoint(dx, dy));
+        }
+    });
+
+
+    // Controller Buttons
+    // A button: selects the button, mesh, or whatever else it's hovering over
+    connect(controller, &QGamepad::buttonAChanged, this, [this](bool pressed) {
+        QWidget* target = QApplication::widgetAt(QCursor::pos());
+        QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+        if (pressed) {
+            QMouseEvent* pressEvent = new QMouseEvent(QEvent::MouseButtonPress, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QApplication::postEvent(target, pressEvent);
+        }
+
+        else {
+            QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QApplication::postEvent(target, releaseEvent);
+        }
+    });
+
+    // B button: deselects current selection
+    connect(controller, &QGamepad::buttonBChanged, this, [this](bool pressed) {
+        QWidget* target = QApplication::widgetAt(QCursor::pos());
+        QPoint localPosition = target->mapFromGlobal(QCursor::pos());
+        if (pressed) {
+            QMouseEvent* event = new QMouseEvent(QEvent::MouseButtonDblClick, localPosition, QCursor::pos(), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            ui.viewport->controllerToMouseRelease(event);
+            QApplication::postEvent(target, event);
+        }
+    });
+
+    // X Button: triggers redo
+    connect(controller, &QGamepad::buttonXChanged, this, [this](bool pressed) {
+        if (pressed) {
+            ui.actionUndo->trigger();
+        }
+    });
+
+    // Y Button: triggers undo
+    connect(controller, &QGamepad::buttonYChanged, this, [this](bool pressed) {
+        if (pressed) {
+            ui.actionRedo->trigger();
+        }
+    });
+
+    // Shoulder bumpers and triggers
+    // Moves the selected left-toolbar button backward one
+    connect(controller, &QGamepad::buttonL1Changed, this, [this](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; ++i) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the last button if the first was selected
+                    if (i == 0) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(ui.verticalLayout->count() - 2)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    // Selects the previous button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i - 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected left-toolbar button forward one
+    connect(controller, &QGamepad::buttonR1Changed, this, [this](bool pressed) {
+        if (pressed) {
+            for (int i = 0; i < ui.verticalLayout->count() - 1; i++) {
+                QPushButton* btn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i)->widget());
+                if (btn->isChecked()) {
+                    // Selects the first button if it reaches the end
+                    if (i == ui.verticalLayout->count() - 2) {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(0)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    // Selects the next button otherwise
+                    else {
+                        QPushButton* newBtn = qobject_cast<QPushButton*>(ui.verticalLayout->itemAt(i + 1)->widget());
+                        newBtn->setChecked(true);
+                        newBtn->released();
+                    }
+                    return;
+                }
+            }
+        }
+    });
+
+    // Moves the selected element backward one
+    connect(controller, &QGamepad::buttonL2Changed, this, [this](bool pressed) {
+        if (pressed == L2pressed) { return; }
+        L2pressed = pressed;
+
+        if (pressed) { ui.viewport->cyclePrev(); }
+        });
+
+
+    // Moves the selected element forward one
+    connect(controller, &QGamepad::buttonR2Changed, this, [this](bool pressed) {
+        if (pressed == R2pressed) { return; }
+        R2pressed = pressed;
+
+        if (pressed) { ui.viewport->cycleNext(); }
+    });
+
+    // Maps to right click and pulls up the corresponding menu
+    connect(controller, &QGamepad::buttonR3Changed, this, [this](bool pressed) {
+        if (pressed) {
+            QContextMenuEvent* event = new QContextMenuEvent(QContextMenuEvent::Mouse, QCursor::pos(), QCursor::pos(), Qt::NoModifier);
+            ui.viewport->controllerToContextMenu(event);
+        }
+    });
+
+    // Home, Select, & Start
+    connect(controller, &QGamepad::buttonCenterChanged, this, [this](bool pressed) {
+        if (pressed) { showStart(); }
+    });
+
+    connect(controller, &QGamepad::buttonStartChanged, this, [this](bool pressed) {
+        if (pressed) { saveProject(); }
+    });
+
+    connect(controller, &QGamepad::buttonSelectChanged, this, [this](bool pressed) {
+        if (pressed) { this->close(); }
+    });
+}
+
+void ABC3D::createSceneButton(uint i, QString name) {
+    sceneModel->insertRow(i);
+    sceneModelIndex = sceneModel->index(i, 0);
+    sceneModel->setData(sceneModelIndex, name);
+
+    QPushButton* initButton = new QPushButton(QString::fromStdString(ui.viewport->getNames()[i]));
+    initButton->setStyleSheet("QPushButton:checked { background-color: red; }");
+    initButton->setCheckable(true);
+    sceneGroup->addButton(initButton);
+    sceneButtons.push_back(initButton);
+    QObject::connect(sceneButtons.back(), &QPushButton::released, this, [this, i]() { 
+        if (sceneGroup->exclusive()) {
+            for (int i = 0; i < sceneButtons.size(); i++) {
+                sceneButtons[i]->setChecked(false);
+            }
+            this->ui.viewport->setSelection(i);
+        }
+
+        else {
+            this->ui.viewport->addSelection(i);
+        }
+        sceneButtons[i]->setChecked(true);
+    });
+    
+    ui.sceneTree->setIndexWidget(sceneModelIndex, initButton);
 }
 
 void ABC3D::keyPressEvent(QKeyEvent* event) {
     bool ctrl = event->modifiers().testFlag(Qt::ControlModifier);
+    bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
     switch (event->key()) {
     case Qt::Key_Control:
-            event->accept();
-            emit ctrlKeyPressed();
-            break;
+        event->accept();
+        emit ctrlKeyPressed();
+        break;
+    // WASD & Arrow keys
+    case Qt::Key_W:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z);
+        break;
+    case Qt::Key_S:
+        event->accept();
+        // Save - CTRL + S
+        if (ctrl && shift) { saveAsProject(); }
+        if (ctrl) { saveProject(); }
+
+        emit cameraKeyPressed(Axis::Z_NEG);
+        break;
+    case Qt::Key_A:
+        event->accept();
+        emit cameraKeyPressed(Axis::X);
+        break;
     // Duplicate - CTRL + D
     case Qt::Key_D:
-        if (ctrl) { ui.viewport->duplicateSelection(); }
+        event->accept();
+        if (ctrl) { 
+            ui.viewport->duplicateSelection();
+        }
+
+        emit cameraKeyPressed(Axis::X_NEG);
         break;
+
+    case Qt::Key_Up:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z);
+        break;
+    case Qt::Key_Down:
+        event->accept();
+        emit cameraKeyPressed(Axis::Z_NEG);
+        break;
+    case Qt::Key_Left:
+        event->accept();
+        emit cameraKeyPressed(Axis::X);
+        break;
+    case Qt::Key_Right:
+        event->accept();
+        emit cameraKeyPressed(Axis::X_NEG);
+        break;
+
     // Escape - Cancels the knife cut, or leaves the knife. Otherwise closes program
     case Qt::Key_Escape:
         event->accept();
@@ -156,6 +887,12 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
                 ui.bottomRightPanels->setCurrentIndex(0);
                 ui.selectToolButton->setChecked(true);
             }
+            break;
+        }
+        if (ui.viewport->loopCutActive()) {
+            ui.viewport->setActionSelect();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.selectToolButton->setChecked(true);
             break;
         }
         this->close();
@@ -168,9 +905,15 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
             ui.viewport->knifeConfirm();
         }
         break;
-    // Knife
+    // Knife - toggles. Leaving goes back to select, so a mesh can be clicked and then cut.
     case Qt::Key_K:
         event->accept();
+        if (ui.viewport->knifeActive()) {
+            ui.viewport->setActionSelect();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.selectToolButton->setChecked(true);
+            break;
+        }
         ui.viewport->setActionKnife();
         ui.knifeToolButton->setChecked(true);
         break;
@@ -179,6 +922,32 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         if (ui.viewport->knifeActive()) {
             event->accept();
             ui.viewport->toggleKnifeCutThrough();
+        }
+        break;
+    // Loop Cut
+    case Qt::Key_L:
+        event->accept();
+        ui.viewport->setActionLoopCut();
+        ui.loopCutToolButton->setChecked(true);
+        break;
+    // Loop cut: more or fewer parallel cuts
+    case Qt::Key_Plus:
+    case Qt::Key_Equal:
+        if (ui.viewport->loopCutActive()) {
+            event->accept();
+            ui.viewport->changeLoopCutCount(1);
+        }
+        // Scale if Loop Cut isn't active
+        else {
+            ui.viewport->setActionScale();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.scaleToolButton->setChecked(true);
+        }
+        break;
+    case Qt::Key_Minus:
+        if (ui.viewport->loopCutActive()) {
+            event->accept();
+            ui.viewport->changeLoopCutCount(-1);
         }
         break;
     // Delete Selction
@@ -240,17 +1009,6 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.translateToolButton->setChecked(true);
         break;
-    // Scale
-    case Qt::Key_S:
-        event->accept();
-        // Save - CTRL + S
-        if (ctrl) { saveProject(); }
-        else {
-            ui.viewport->setActionScale();
-            ui.bottomRightPanels->setCurrentIndex(0);
-            ui.scaleToolButton->setChecked(true);
-        }
-        break;
     // Rotate
     case Qt::Key_R:
         event->accept();
@@ -273,6 +1031,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         break;
     // Subdivide
     case Qt::Key_Z:
+        if (ctrl) { break; } // Ctrl+Z is Undo (handled by the Edit menu action)
         event->accept();
         ui.bottomRightPanels->setCurrentIndex(2);
         ui.subdivideToolButton->setChecked(true);
@@ -290,6 +1049,7 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
         ui.mergeModeButton->setChecked(true);
         ui.bottomRightPanels->setCurrentIndex(0);
         ui.mergeToolButton->setChecked(true);
+        break;
     default:
         QMainWindow::keyPressEvent(event);
         return;
@@ -327,16 +1087,68 @@ void ABC3D::helpRowClicked(const QModelIndex& index) {
     ui.helpBrowser->setSource(QUrl::fromLocalFile(file));
 }
 
+void ABC3D::meshCountChanged(uint meshCount) {
+    uint btnCount = uint(sceneButtons.size());
+
+    // Removes scene buttons if the number of meshes is less than the number of buttons
+    if (meshCount < btnCount) {
+        // iterate btnCount - meshCount times
+        for (uint i = meshCount; i < btnCount; ++i) {
+            QPushButton* button = sceneButtons.back();
+            sceneButtons.pop_back();
+            sceneGroup->removeButton(button);
+            button->deleteLater(); // will be removed from layout and de-allocated by qt safely
+            sceneModel->removeRow(sceneModel->rowCount() - 1);
+            selectionChanged(-1);
+        }
+
+        // You will need to update all names (ids shifted)
+        for (uint i = 0; i < meshCount; ++i) {
+            QString updatedName = QString::fromStdString(ui.viewport->getNames()[i]);
+            sceneButtons[i]->setText(updatedName);
+            sceneModel->setData(sceneModel->index(i, 0), updatedName);
+        }
+    }
+
+    // Creates scene buttons if there's a mismatch between mesh and button count
+    else if (meshCount != btnCount) {
+        // Undoing a delete puts meshes back in the middle, so existing ids can change names too
+        for (uint i = 0; i < btnCount; ++i) {
+            QString updatedName = QString::fromStdString(ui.viewport->getNames()[i]);
+            sceneButtons[i]->setText(updatedName);
+            sceneModel->setData(sceneModel->index(i, 0), updatedName);
+        }
+        for (uint i = btnCount; i < meshCount; ++i) {
+            //ui.viewport->setName(i, ui.viewport->getNames()[i]);
+            createSceneButton(i, QString::fromStdString(ui.viewport->getNames()[i]));
+        }
+    }
+}
+
+/// <summary>
+/// Slot for when the selection is changed in the viewport
+/// Sent -1 as the index if the selection is cleared/nothing is selected
+/// </summary>
+/// <param name="index"> index of the button to select, corresponding to the mesh that was selected </param>
+void ABC3D::selectionChanged(int index) {
+    std::cout << " selection Changed" << std::endl;
+    if (index == -1) {
+        sceneGroup->setExclusive(false);
+        for (int i = 0; i < sceneButtons.size(); i++) {
+            sceneButtons[i]->setChecked(false);
+        }
+        sceneGroup->setExclusive(true);
+    }
+    else {
+        sceneButtons[index]->setChecked(true);
+    }
+    return;
+}
+
 void ABC3D::elementChanged(Element element) {
     if (ui.bottomRightPanels->currentIndex() == 2 || ui.bottomRightPanels->currentIndex() == 0) {
         switch (element) {
         case VERTEX:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -344,14 +1156,10 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case EDGE:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(true);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -359,14 +1167,10 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.flipButton->setEnabled(true);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case FACE:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(true);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
-
             // Subdivision panel
             ui.subdivisionButton->setEnabled(false);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
@@ -374,14 +1178,10 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case OBJECT:
-            // Translation Modes
-            ui.edgeModeTranslationButton->setEnabled(false);
-            ui.edgeModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-            ui.outModeTranslationButton->setEnabled(false);
-            ui.outModeTranslationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
-
             // Subdivision Panel
             ui.subdivisionButton->setEnabled(true);
             ui.subdivisionButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
@@ -389,6 +1189,8 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(true);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             break;
         }
     }

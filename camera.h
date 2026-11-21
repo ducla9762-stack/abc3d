@@ -24,10 +24,13 @@ public:
 	}
 
 	virtual Vec3f right() const { Vec3f r = WORLD_Y.Cross(forward()); r.Normalize(); return r; }
+	virtual Vec3f right(Vec3f& f) const { f = forward(); Vec3f r = WORLD_Y.Cross(f); r.Normalize(); return r; }
 	virtual Vec3f up() const { Vec3f f, u, r; directions(f, u, r); return u; }
+	virtual Vec3f up(Vec3f& f, Vec3f& r) const { Vec3f u; directions(f, u, r); return u; }
 
 	virtual void mouseDrag(const Vec2f& drag) = 0;
 	virtual void mouseWheel(float dx, float dy) = 0;
+	virtual void keyPress(Axis button) = 0;
 };
 
 class OrbitCamera : public Camera {
@@ -40,6 +43,7 @@ public:
 	OrbitCamera() { }
 
 	void setOrigin(const Vec3f& origin) { this->origin = origin; }
+	Vec3f getOrigin() const { return origin; }
 	void setSphericalPosition(const Vec3f& pos) {
 		spherical = pos;
 		cartesian = sphericalToCartesian(pos);
@@ -79,6 +83,22 @@ public:
 
 		cartesian = sphericalToCartesian(spherical);
 	}
+
+	void keyPress(Axis button) override {
+		constexpr float RADIUS_INC = 0.1f;
+		constexpr float ANGLE_INC = 2.0f;
+		if (button == X) { spherical.x += ANGLE_INC; }
+		else if (button == X_NEG) { spherical.x -= ANGLE_INC;  }
+
+		if (button == Y) { spherical.y += ANGLE_INC; }
+		else if (button == Y_NEG) { spherical.y -= ANGLE_INC; }
+
+		if (button == Z) { spherical.z -= RADIUS_INC; }
+		else if (button == Z_NEG) { spherical.z += RADIUS_INC; }
+
+		cartesian = sphericalToCartesian(spherical);
+		// orbit: change radius with w & s (spherical.z), A&D change first angle (spherical.x)
+	}
 };
 
 class FreeCamera : public Camera {
@@ -112,11 +132,29 @@ public:
 	}
 
 	void mouseWheel(float dx, float dy) override {
-		Vec3f f, u, r;
-		directions(f, u, r);
+		Vec3f f = forward();
+
+		Vec3f r = WORLD_Y.Cross(f);
+		r.Normalize();
 
 		pos += r * dx;
-		pos += u * dy;
+		pos += f * -dy;
+	}
+
+	void keyPress(Axis button) override {
+		constexpr float DIST = 0.1f;
+		// Free: get direction from camera, move along directions
+		if (button & X) {
+			Vec3f r = right();
+			if (button & NEG) { r = -r; }
+			pos += r * DIST;
+		}
+		else if (button & Z) {
+			Vec3f f = forward();
+			if (button & NEG) { f = -f; }
+			pos += f * DIST;
+		}
+		// Add a way to change direction
 	}
 };
 
