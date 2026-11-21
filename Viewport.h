@@ -32,6 +32,7 @@
 #include "MeshBeveler.h"
 #include "MeshKnife.h"
 #include "MeshLoopCut.h"
+#include "MeshDecimator.h"
 #include "undoHistory.h"
 #include "sceneCommands.h"
 #include "StraightSkeleton.h"
@@ -977,6 +978,30 @@ public slots:
 
 		// 10/16/26 - Update to public API
 		// Update geometry as topology changes, update selection as well.
+		renderer.UpdateGeometry();
+		renderer.UpdateSelection(selectionManager);
+
+		update();
+	}
+
+	/// <summary>
+	/// Reduces each selected object to `percent` of its triangle count with quadric error edge collapse.
+	/// The result is all triangles. The whole mesh is copied for undo.
+	/// </summary>
+	void decimateSelection(int percent) {
+		if (selectionManager.getActiveElement() != OBJECT || selectionManager.itemCount() == 0) { return; }
+		StepScope step(this, "Decimate");
+		touchSelectedMeshes(true);
+
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; }
+			HalfEdgeMeshDecimator decimator(*scene[item.meshId]);
+			if (!decimator.DecimateToRatio(float(percent) / 100.0f)) {
+				std::cout << "Decimate rejected: " << decimator.error << std::endl;
+			}
+		}
+
+		makeCurrent();
 		renderer.UpdateGeometry();
 		renderer.UpdateSelection(selectionManager);
 

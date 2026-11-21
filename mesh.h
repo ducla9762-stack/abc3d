@@ -125,6 +125,7 @@ class HalfEdgeMeshBeveler;
 class InsetBuilder;
 class HalfEdgeMeshKnife; 
 class HalfEdgeMeshLoopCutter; 
+class HalfEdgeMeshDecimator;
 
 class HalfEdgeMesh {
 
@@ -169,6 +170,7 @@ private:
 	friend class HalfEdgeMeshBeveler;
 	friend class HalfEdgeMeshKnife; 
 	friend class HalfEdgeMeshLoopCutter; 
+	friend class HalfEdgeMeshDecimator;
 
 #ifdef CGAL_AVAILABLE
 	friend class InsetBuilder;

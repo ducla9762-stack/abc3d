@@ -60,6 +60,7 @@ add_library(abc3d_core STATIC
     MeshBeveler.h
     MeshKnife.h
     MeshLoopCut.h
+    MeshDecimator.h
     helper.h
     shapes.h
     scene.h

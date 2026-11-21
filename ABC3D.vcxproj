@@ -148,6 +148,7 @@
     <ClInclude Include="helper.h" />
     <ClInclude Include="MeshKnife.h" />
     <ClInclude Include="MeshLoopCut.h" />
+    <ClInclude Include="MeshDecimator.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
     <ClInclude Include="renderBufferBuilder.h" />

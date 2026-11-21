@@ -126,6 +126,10 @@ ABC3D::ABC3D(QWidget *parent)
         emit elementChanged(ui.viewport->getActiveElement());
         });
 
+    QObject::connect(ui.decimateButton, &QPushButton::released, this, [=]() {
+        ui.viewport->decimateSelection(ui.decimateRatioSpinner->value());
+        });
+
     // Pulls up shape panel
     QObject::connect(ui.shapeToolButton, &QPushButton::released, this, [=]() {
         ui.bottomRightPanels->setCurrentIndex(1);
@@ -1112,6 +1116,8 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case EDGE:
             // Subdivision Panel
@@ -1121,6 +1127,8 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             ui.flipButton->setEnabled(true);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case FACE:
             // Subdivision panel
@@ -1130,6 +1138,8 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(false);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
             break;
         case OBJECT:
             // Subdivision Panel
@@ -1139,6 +1149,8 @@ void ABC3D::elementChanged(Element element) {
             ui.triangulationButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             ui.flipButton->setEnabled(false);
             ui.flipButton->setStyleSheet("QPushButton { background-color: #1c1c1c;}");
+            ui.decimateButton->setEnabled(true);
+            ui.decimateButton->setStyleSheet("QPushButton { background-color: #646464; color: white; } QPushButton:checked{ background-color: red; }");
             break;
         }
     }

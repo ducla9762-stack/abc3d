@@ -2305,7 +2305,7 @@ QPushButton { background-color: #646464; }
                 <x>0</x>
                 <y>0</y>
                 <width>168</width>
-                <height>148</height>
+                <height>216</height>
                </rect>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -2407,6 +2407,68 @@ li.checked::marker { content: &quot;\2612&quot;; }
                  </property>
                  <property name="text">
                   <string>Flip Edge</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="decimateRatioSpinner">
+                 <property name="minimumSize">
+                  <size>
+                   <width>150</width>
+                   <height>28</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>150</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Share of the object's triangles that Decimate keeps&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
+                 </property>
+                 <property name="prefix">
+                  <string>Keep </string>
+                 </property>
+                 <property name="suffix">
+                  <string>%</string>
+                 </property>
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>99</number>
+                 </property>
+                 <property name="value">
+                  <number>50</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="decimateButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>150</width>
+                   <height>28</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>150</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Decimate&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Reduces the selected object to fewer triangles while keeping its shape&lt;/p&gt;&lt;p&gt;The result is all triangles, so quad edge loops are lost&lt;/p&gt;&lt;p&gt;Restricted to objects&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true"/>
+                 </property>
+                 <property name="text">
+                  <string>Decimate</string>
                  </property>
                 </widget>
                </item>
