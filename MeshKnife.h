@@ -117,6 +117,112 @@ private:
 };
 
 /// <summary>
+/// The screen footprint of some meshes, used to tell when a knife segment passes over one of them.
+/// It ignores what is in front of what, so it answers "is the line over this mesh", not "would it be cut".
+/// </summary>
+class KnifeScreenCover {
+	struct Tri { Vec3f a, b, c; };
+	struct Poly {
+		Vec2f lo, hi;
+		int count = 0;
+		Vec2f pts[4]; // a triangle clipped to the near plane has at most 4 corners
+	};
+	std::vector<Tri> tris;
+	std::vector<Poly> polys;
+
+	static float Cross2(const Vec2f& a, const Vec2f& b) { return a.x * b.y - a.y * b.x; }
+
+	static bool Inside(const Poly& poly, const Vec2f& p) {
+		bool pos = false, neg = false;
+		for (int i = 0; i < poly.count; ++i) {
+			const float c = Cross2(poly.pts[(i + 1) % poly.count] - poly.pts[i], p - poly.pts[i]);
+			pos |= c > 0.0f;
+			neg |= c < 0.0f;
+		}
+		return !(pos && neg);
+	}
+
+	static bool SegmentsCross(const Vec2f& a, const Vec2f& b, const Vec2f& c, const Vec2f& d) {
+		const Vec2f r = b - a, s = d - c;
+		const float den = Cross2(r, s);
+		if (std::abs(den) < 1e-20f) { return false; }
+		const float t = Cross2(c - a, s) / den;
+		const float u = Cross2(c - a, r) / den;
+		return t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f;
+	}
+
+public:
+	/// <summary>Adds all faces of a mesh, in world space.</summary>
+	void Add(const HalfEdgeMesh& mesh) {
+		std::vector<Vec3f> world;
+		mesh.GetWorldVertexPositions(world);
+		std::vector<Vec3u> faceTris;
+		for (uint f = 0; f < mesh.FaceCount(); ++f) {
+			faceTris.clear();
+			mesh.GetTriangulation(f, faceTris);
+			for (const Vec3u& t : faceTris) { tris.push_back({ world[t.x], world[t.y], world[t.z] }); }
+		}
+	}
+
+	bool Empty() const { return tris.empty(); }
+
+	/// <summary>Projects the triangles to the screen. Call again whenever the camera moves.</summary>
+	void Project(const Matrix4f& viewProj) {
+		polys.clear();
+		auto clip = [&](const Vec3f& p) {
+			const Matrix4f& m = viewProj;
+			return Vec4f(
+				m(0, 0) * p.x + m(0, 1) * p.y + m(0, 2) * p.z + m(0, 3),
+				m(1, 0) * p.x + m(1, 1) * p.y + m(1, 2) * p.z + m(1, 3),
+				m(2, 0) * p.x + m(2, 1) * p.y + m(2, 2) * p.z + m(2, 3),
+				m(3, 0) * p.x + m(3, 1) * p.y + m(3, 2) * p.z + m(3, 3));
+		};
+
+		for (const Tri& tri : tris) {
+			const Vec4f c[3] = { clip(tri.a), clip(tri.b), clip(tri.c) };
+
+			// Clip to the near plane (z + w > 0), so triangles that pass behind the camera still count
+			Vec4f kept[4];
+			int n = 0;
+			for (int i = 0; i < 3; ++i) {
+				const Vec4f& p = c[i];
+				const Vec4f& q = c[(i + 1) % 3];
+				const float dp = p.z + p.w, dq = q.z + q.w;
+				if (dp > 0.0f) { kept[n++] = p; }
+				if ((dp > 0.0f) != (dq > 0.0f)) { kept[n++] = p + (q - p) * (dp / (dp - dq)); }
+			}
+			if (n < 3) { continue; }
+
+			Poly poly;
+			poly.count = n;
+			poly.lo = Vec2f(std::numeric_limits<float>::max());
+			poly.hi = Vec2f(std::numeric_limits<float>::lowest());
+			for (int i = 0; i < n; ++i) {
+				const float w = std::max(kept[i].w, 1e-6f);
+				poly.pts[i] = Vec2f(kept[i].x / w, kept[i].y / w);
+				poly.lo.x = std::min(poly.lo.x, poly.pts[i].x); poly.lo.y = std::min(poly.lo.y, poly.pts[i].y);
+				poly.hi.x = std::max(poly.hi.x, poly.pts[i].x); poly.hi.y = std::max(poly.hi.y, poly.pts[i].y);
+			}
+			polys.push_back(poly);
+		}
+	}
+
+	/// <returns>True if the screen segment a-b (NDC) touches any projected triangle.</returns>
+	bool Crosses(const Vec2f& a, const Vec2f& b) const {
+		const Vec2f lo(std::min(a.x, b.x), std::min(a.y, b.y));
+		const Vec2f hi(std::max(a.x, b.x), std::max(a.y, b.y));
+		for (const Poly& poly : polys) {
+			if (hi.x < poly.lo.x || lo.x > poly.hi.x || hi.y < poly.lo.y || lo.y > poly.hi.y) { continue; }
+			if (Inside(poly, a) || Inside(poly, b)) { return true; }
+			for (int i = 0; i < poly.count; ++i) {
+				if (SegmentsCross(a, b, poly.pts[i], poly.pts[(i + 1) % poly.count])) { return true; }
+			}
+		}
+		return false;
+	}
+};
+
+/// <summary>
 /// Cuts a half-edge mesh along a line drawn on the screen (Blender style knife tool).
 ///
 /// The cut path is a polyline in normalized device coordinates. For each face, the path is clipped against the
@@ -180,6 +286,7 @@ class HalfEdgeMeshKnife {
 	const KnifeOccluders* occluders = nullptr;
 	bool cutThrough = false;
 	std::vector<Vec2f> path;
+	std::vector<char> segmentHit; // per segment of `path`, whether it made a chord
 	std::vector<Vec3f> world;     // world position of every mesh vertex (kept in step with the mesh)
 	std::vector<CutVertex> cuts;
 	std::vector<FacePlan> plans;
@@ -442,6 +549,7 @@ class HalfEdgeMeshKnife {
 				}
 
 				plan.chords.push_back({ a, b, p0 + r * ta, p0 + r * tb });
+				segmentHit[i] = 1;
 			}
 		}
 	}
@@ -733,18 +841,29 @@ public:
 	/// <param name="screenPath">The path's points in normalized device coordinates (-1 to 1, y up). At least 2.</param>
 	/// <param name="cutThroughAll">When true, hidden geometry is cut too.</param>
 	/// <param name="hidden">What can hide the mesh. Ignored when cutting through.</param>
+	/// <param name="segmentsCut">
+	/// Optional. Sized to one entry per segment of `screenPath`; entries are set to 1 where that segment cuts the
+	/// mesh and left alone elsewhere, so several meshes can share one array.
+	/// </param>
 	/// <returns>True if the mesh was changed. On false the mesh is exactly as it was.</returns>
-	bool Cut(const KnifeCamera& camera, const std::vector<Vec2f>& screenPath, bool cutThroughAll, const KnifeOccluders& hidden) {
+	bool Cut(const KnifeCamera& camera, const std::vector<Vec2f>& screenPath, bool cutThroughAll, const KnifeOccluders& hidden,
+		std::vector<char>* segmentsCut = nullptr) {
 		error.clear();
+		if (segmentsCut) { segmentsCut->resize(screenPath.size() < 2 ? 0 : screenPath.size() - 1, 0); }
 		if (screenPath.size() < 2 || mesh.FaceCount() == 0) { return false; }
 
 		cam = camera;
 		// Points on top of each other (a double click) would be two separate vertices in the same spot
 		path.clear();
-		for (const Vec2f& p : screenPath) {
-			if (path.empty() || (p - path.back()).Length() >= SNAP) { path.push_back(p); }
+		std::vector<size_t> source; // index in screenPath of each kept point
+		for (size_t k = 0; k < screenPath.size(); ++k) {
+			if (path.empty() || (screenPath[k] - path.back()).Length() >= SNAP) {
+				path.push_back(screenPath[k]);
+				source.push_back(k);
+			}
 		}
 		if (path.size() < 2) { return false; }
+		segmentHit.assign(path.size() - 1, 0);
 		cutThrough = cutThroughAll;
 		occluders = &hidden;
 		cuts.clear();
@@ -761,6 +880,14 @@ public:
 		const uint faceCount = mesh.FaceCount();
 		for (uint f = 0; f < faceCount; ++f) { CollectChords(f); }
 		for (uint f = 0; f < faceCount; ++f) { ResolveCrossings(f); }
+
+		if (segmentsCut) {
+			// A kept segment stands for every original segment between its two points
+			for (size_t i = 0; i < segmentHit.size(); ++i) {
+				if (!segmentHit[i]) { continue; }
+				for (size_t k = source[i]; k < source[i + 1]; ++k) { (*segmentsCut)[k] = 1; }
+			}
+		}
 
 		bool any = false;
 		for (uint f = 0; f < faceCount; ++f) {

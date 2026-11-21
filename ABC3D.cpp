@@ -867,9 +867,15 @@ void ABC3D::keyPressEvent(QKeyEvent* event) {
             ui.viewport->knifeConfirm();
         }
         break;
-    // Knife
+    // Knife - toggles. Leaving goes back to select, so a mesh can be clicked and then cut.
     case Qt::Key_K:
         event->accept();
+        if (ui.viewport->knifeActive()) {
+            ui.viewport->setActionSelect();
+            ui.bottomRightPanels->setCurrentIndex(0);
+            ui.selectToolButton->setChecked(true);
+            break;
+        }
         ui.viewport->setActionKnife();
         ui.knifeToolButton->setChecked(true);
         break;

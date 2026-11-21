@@ -2,6 +2,7 @@
 #include "shapes.h"
 #include <qpushbutton.h>
 #include <QMenu>
+#include <QFontMetricsF>
 #include <QPainter>
 #include <unordered_map>
 #include <unordered_set>
@@ -2239,6 +2240,8 @@ void Viewport::knifeBegin() {
 	knifeHasCursor = false;
 	knifeOriginals.clear();
 	knifeOccluders = KnifeOccluders();
+	knifeUnselected = KnifeScreenCover();
+	knifeSegmentBlocked.clear();
 
 	// Only selected meshes are cut, but any mesh can hide them
 	std::unordered_set<uint> selected;
@@ -2247,7 +2250,10 @@ void Viewport::knifeBegin() {
 			knifeOriginals.emplace_back(item.meshId, *scene[item.meshId]);
 		}
 	}
-	for (uint i = 0; i < scene.MeshCount(); ++i) { knifeOccluders.Add(*scene[i]); }
+	for (uint i = 0; i < scene.MeshCount(); ++i) {
+		knifeOccluders.Add(*scene[i]);
+		if (!selected.count(i)) { knifeUnselected.Add(*scene[i]); }
+	}
 }
 
 void Viewport::knifeRestoreOriginals() {
@@ -2264,16 +2270,27 @@ void Viewport::knifeRecompute() {
 	std::vector<Vec2f> path = knifePath;
 	if (knifeHasCursor) { path.push_back(knifeCursor); }
 
+	knifeSegmentBlocked.clear();
 	if (path.size() >= 2) {
 		KnifeCamera camera;
 		camera.viewProj = renderer.ViewProjection();
 		camera.position = renderer.GetCamera()->position();
 
+		std::vector<char> segmentCut(path.size() - 1, 0);
 		for (auto& original : knifeOriginals) {
 			if (original.first >= scene.MeshCount()) { continue; }
 			// Cut() leaves the mesh untouched when nothing was hit or the result was not valid
 			HalfEdgeMeshKnife knife(*scene[original.first]);
-			knife.Cut(camera, path, knifeCutThrough, knifeOccluders);
+			knife.Cut(camera, path, knifeCutThrough, knifeOccluders, &segmentCut);
+		}
+
+		// A segment that cuts nothing but lies over an unselected mesh is most likely meant for that mesh
+		knifeSegmentBlocked.assign(path.size() - 1, 0);
+		if (!knifeUnselected.Empty()) {
+			knifeUnselected.Project(camera.viewProj);
+			for (size_t i = 0; i + 1 < path.size(); ++i) {
+				knifeSegmentBlocked[i] = !segmentCut[i] && knifeUnselected.Crosses(path[i], path[i + 1]);
+			}
 		}
 	}
 
@@ -2290,6 +2307,8 @@ void Viewport::knifeFinish() {
 	knifePath.clear();
 	knifeOriginals.clear();
 	knifeOccluders = KnifeOccluders();
+	knifeUnselected = KnifeScreenCover();
+	knifeSegmentBlocked.clear();
 
 	if (renderer.Initialized()) {
 		renderer.UpdateGeometry();
@@ -2345,25 +2364,82 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 		return QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
 	};
 
-	painter.setPen(QPen(QColor(255, 220, 60), 2.0));
+	// Yellow cuts. Gray is over a mesh that isn't selected, so nothing there is cut.
+	const QColor cutColor(255, 220, 60);
+	const QColor blockedColor(150, 150, 150);
+	auto blocked = [this](size_t segment) {
+		return segment < knifeSegmentBlocked.size() && knifeSegmentBlocked[segment];
+	};
+	bool anyBlocked = false;
+
 	for (size_t i = 0; i + 1 < knifePath.size(); ++i) {
+		anyBlocked |= blocked(i);
+		painter.setPen(QPen(blocked(i) ? blockedColor : cutColor, 2.0));
 		painter.drawLine(toWidget(knifePath[i]), toWidget(knifePath[i + 1]));
 	}
 
 	if (knifeHasCursor && !knifePath.empty()) {
-		painter.setPen(QPen(QColor(255, 220, 60, 150), 1.0, Qt::DashLine));
+		const size_t cursorSegment = knifePath.size() - 1;
+		anyBlocked |= blocked(cursorSegment);
+		QColor color = blocked(cursorSegment) ? blockedColor : cutColor;
+		color.setAlpha(150);
+		painter.setPen(QPen(color, 1.0, Qt::DashLine));
 		painter.drawLine(toWidget(knifePath.back()), toWidget(knifeCursor));
 	}
 
+	// A point is gray when every segment touching it is
 	painter.setPen(Qt::NoPen);
-	painter.setBrush(QColor(255, 220, 60));
-	for (const Vec2f& p : knifePath) { painter.drawEllipse(toWidget(p), 4.0, 4.0); }
+	const size_t segmentCount = knifePath.empty() ? 0 : knifePath.size() - 1 + (knifeHasCursor ? 1 : 0);
+	for (size_t i = 0; i < knifePath.size(); ++i) {
+		const bool before = i > 0, after = i < segmentCount;
+		const bool gray = (before || after) && (!before || blocked(i - 1)) && (!after || blocked(i));
+		painter.setBrush(gray ? blockedColor : cutColor);
+		painter.drawEllipse(toWidget(knifePath[i]), 4.0, 4.0);
+	}
 
 	painter.setPen(QColor(255, 255, 255));
 	QString hint = "Knife: click to cut, Enter to confirm, Esc to cancel, X cut through: ";
 	hint += knifeCutThrough ? "on" : "off";
 	if (knifeOriginals.empty()) { hint += "   (select a mesh to cut)"; }
 	painter.drawText(QPointF(12.0, 20.0), hint);
+
+	if (anyBlocked) { drawKnifeNotSelectedHint(painter); }
+}
+
+void Viewport::drawKnifeNotSelectedHint(QPainter& painter) {
+	// A box along the bottom edge, out of the way of the cut
+	const QString title = "This object can't be cut because it isn't selected.";
+	const QString detail = "Press K to leave the knife tool, click the object to select it, then press K again to cut.";
+
+	const QFont detailFont = painter.font();
+	QFont titleFont = detailFont;
+	titleFont.setBold(true);
+	const QFontMetricsF titleMetrics(titleFont);
+	const QFontMetricsF detailMetrics(detailFont);
+
+	const qreal pad = 10.0;
+	const qreal gap = 4.0;
+	const qreal textWidth = std::max(titleMetrics.horizontalAdvance(title), detailMetrics.horizontalAdvance(detail));
+	const qreal boxWidth = std::min(textWidth + 2.0 * pad, width() - 24.0);
+	const qreal boxHeight = titleMetrics.height() + gap + detailMetrics.height() + 2.0 * pad;
+	const QRectF box((width() - boxWidth) * 0.5, height() - boxHeight - 24.0, boxWidth, boxHeight);
+
+	painter.save();
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setPen(QPen(QColor(150, 150, 150, 200), 1.0));
+	painter.setBrush(QColor(20, 20, 20, 190));
+	painter.drawRoundedRect(box, 6.0, 6.0);
+
+	const QRectF inner = box.adjusted(pad, pad, -pad, -pad);
+	painter.setPen(QColor(255, 255, 255));
+	painter.setFont(titleFont);
+	painter.drawText(QRectF(inner.left(), inner.top(), inner.width(), titleMetrics.height()),
+		Qt::AlignHCenter | Qt::AlignVCenter, titleMetrics.elidedText(title, Qt::ElideRight, inner.width()));
+	painter.setFont(detailFont);
+	painter.setPen(QColor(210, 210, 210));
+	painter.drawText(QRectF(inner.left(), inner.top() + titleMetrics.height() + gap, inner.width(), detailMetrics.height()),
+		Qt::AlignHCenter | Qt::AlignVCenter, detailMetrics.elidedText(detail, Qt::ElideRight, inner.width()));
+	painter.restore();
 }
 
 // ---------------------------------------------------------------------------------------------

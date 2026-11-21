@@ -260,3 +260,66 @@ TEST(Knife, RandomPathsAlwaysLeaveAValidMesh) {
 	// Make sure the test is cutting things, not just missing
 	EXPECT_GT(changedCount, 100);
 }
+
+TEST(Knife, ReportsWhichSegmentsCut) {
+	HalfEdgeMesh mesh = Cube();
+	KnifeOccluders occluders;
+	occluders.Add(mesh);
+
+	// Down the front face, then off to the side where there is nothing
+	std::vector<char> segments;
+	HalfEdgeMeshKnife knife(mesh);
+	ASSERT_TRUE(knife.Cut(CameraAt(Vec3f(0.0f, 0.0f, 3.0f)),
+		{ Vec2f(0.1f, -0.9f), Vec2f(0.1f, 0.9f), Vec2f(0.9f, 0.9f) }, false, occluders, &segments));
+	EXPECT_EQ(segments, std::vector<char>({ 1, 0 }));
+}
+
+TEST(Knife, SegmentReportIsSharedBetweenMeshes) {
+	// Two cubes side by side, each path segment over a different one
+	HalfEdgeMesh left = Cube(), right = Cube();
+	left.Pos(Vec3f(-3.0f, 0.0f, 0.0f));
+	right.Pos(Vec3f(3.0f, 0.0f, 0.0f));
+	KnifeOccluders occluders;
+	occluders.Add(left);
+	occluders.Add(right);
+
+	const KnifeCamera cam = CameraAt(Vec3f(0.0f, 0.0f, 10.0f));
+	const std::vector<Vec2f> path = { Vec2f(-0.3f, -0.9f), Vec2f(-0.3f, 0.9f), Vec2f(0.3f, 0.9f), Vec2f(0.3f, -0.9f) };
+
+	std::vector<char> segments;
+	HalfEdgeMeshKnife(left).Cut(cam, path, false, occluders, &segments);
+	EXPECT_EQ(segments, std::vector<char>({ 1, 0, 0 }));
+	HalfEdgeMeshKnife(right).Cut(cam, path, false, occluders, &segments);
+	EXPECT_EQ(segments, std::vector<char>({ 1, 0, 1 })); // adds to what the left cube reported
+}
+
+TEST(KnifeScreenCover, TellsWhenASegmentIsOverTheMesh) {
+	KnifeScreenCover cover;
+	cover.Add(Cube());
+	cover.Project(CameraAt(Vec3f(0.0f, 0.0f, 3.0f)).viewProj);
+
+	EXPECT_TRUE(cover.Crosses(Vec2f(-0.9f, 0.0f), Vec2f(0.9f, 0.0f)));   // across the face
+	EXPECT_TRUE(cover.Crosses(Vec2f(-0.1f, 0.1f), Vec2f(0.1f, -0.1f)));  // inside the face, touching no edge
+	EXPECT_FALSE(cover.Crosses(Vec2f(0.7f, -0.9f), Vec2f(0.7f, 0.9f)));  // beside it
+}
+
+TEST(KnifeScreenCover, CountsTrianglesThatPassBehindTheCamera) {
+	// A wide floor under the camera that runs past it
+	HalfEdgeMesh floor = Cube();
+	floor.Scale(Vec3f(100.0f, 1.0f, 100.0f));
+	floor.Pos(Vec3f(0.0f, -2.0f, 0.0f));
+
+	KnifeScreenCover cover;
+	cover.Add(floor);
+	cover.Project(CameraAt(Vec3f(0.0f, 0.0f, 3.0f)).viewProj);
+
+	EXPECT_TRUE(cover.Crosses(Vec2f(-0.1f, -0.9f), Vec2f(0.1f, -0.9f)));
+	EXPECT_FALSE(cover.Crosses(Vec2f(-0.1f, 0.9f), Vec2f(0.1f, 0.9f)));
+}
+
+TEST(KnifeScreenCover, EmptyCoversNothing) {
+	KnifeScreenCover cover;
+	EXPECT_TRUE(cover.Empty());
+	cover.Project(CameraAt(Vec3f(0.0f, 0.0f, 3.0f)).viewProj);
+	EXPECT_FALSE(cover.Crosses(Vec2f(-1.0f, -1.0f), Vec2f(1.0f, 1.0f)));
+}

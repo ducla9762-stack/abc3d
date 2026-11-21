@@ -310,6 +310,10 @@ private:
 	Vec2f knifeCursor = Vec2f(0.0f);
 	std::vector<std::pair<uint, HalfEdgeMesh>> knifeOriginals; // selected meshes as they were before the cut
 	KnifeOccluders knifeOccluders; // every mesh in the scene, before the cut
+	KnifeScreenCover knifeUnselected; // meshes the knife won't cut, to warn when the path is over one
+	// Per segment of the path (cursor segment last): over an unselected mesh without cutting anything.
+	// Drawn gray, with a hint on how to select the mesh.
+	std::vector<char> knifeSegmentBlocked;
 
 	Vec2f knifeToNdc(const QPointF& pos) const;
 	void knifeBegin();
@@ -317,6 +321,7 @@ private:
 	void knifeRecompute();
 	void knifeFinish();
 	void drawKnifeOverlay(QPainter& painter);
+	void drawKnifeNotSelectedHint(QPainter& painter);
 	OverlayWidget* knifeOverlay = nullptr;
 	// AI-generated code: Stores the overlay used to visually divide the simple-mode quadrants.
 	OverlayWidget* simpleModeBorderOverlay = nullptr;
