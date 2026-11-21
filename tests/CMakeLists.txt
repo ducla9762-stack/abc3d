@@ -6,6 +6,7 @@ add_executable(abc3d_tests
     test_knife.cpp
     test_loopcut.cpp
     test_undo.cpp
+    test_decimate.cpp
     #test_selection.cpp
 )
 
