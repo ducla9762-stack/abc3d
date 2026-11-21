@@ -311,7 +311,8 @@ private:
 	std::vector<std::pair<uint, HalfEdgeMesh>> knifeOriginals; // selected meshes as they were before the cut
 	KnifeOccluders knifeOccluders; // every mesh in the scene, before the cut
 	KnifeScreenCover knifeUnselected; // meshes the knife won't cut, to warn when the path is over one
-	// Per segment of the path (cursor segment last): over an unselected mesh without cutting anything.
+	// Per segment of the path (cursor segment last): cuts nothing because no mesh is selected, or is over an
+	// unselected mesh without cutting anything.
 	// Drawn gray, with a hint on how to select the mesh.
 	std::vector<char> knifeSegmentBlocked;
 

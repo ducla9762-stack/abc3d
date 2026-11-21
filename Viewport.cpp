@@ -2284,9 +2284,10 @@ void Viewport::knifeRecompute() {
 			knife.Cut(camera, path, knifeCutThrough, knifeOccluders, &segmentCut);
 		}
 
-		// A segment that cuts nothing but lies over an unselected mesh is most likely meant for that mesh
-		knifeSegmentBlocked.assign(path.size() - 1, 0);
-		if (!knifeUnselected.Empty()) {
+		// With nothing selected nothing can be cut, so the whole path is gray. Otherwise a segment that cuts
+		// nothing but lies over an unselected mesh is most likely meant for that mesh.
+		knifeSegmentBlocked.assign(path.size() - 1, knifeOriginals.empty() ? 1 : 0);
+		if (!knifeOriginals.empty() && !knifeUnselected.Empty()) {
 			knifeUnselected.Project(camera.viewProj);
 			for (size_t i = 0; i + 1 < path.size(); ++i) {
 				knifeSegmentBlocked[i] = !segmentCut[i] && knifeUnselected.Crosses(path[i], path[i + 1]);
@@ -2364,7 +2365,7 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 		return QPointF((ndc.x * 0.5f + 0.5f) * width(), (1.0f - (ndc.y * 0.5f + 0.5f)) * height());
 	};
 
-	// Yellow cuts. Gray is over a mesh that isn't selected, so nothing there is cut.
+	// Yellow cuts. Gray cuts nothing: no mesh is selected, or it is over a mesh that isn't.
 	const QColor cutColor(255, 220, 60);
 	const QColor blockedColor(150, 150, 150);
 	auto blocked = [this](size_t segment) {
@@ -2407,18 +2408,22 @@ void Viewport::drawKnifeOverlay(QPainter& painter) {
 }
 
 void Viewport::drawKnifeNotSelectedHint(QPainter& painter) {
-	// A box along the bottom edge, out of the way of the cut
-	const QString title = "This object can't be cut because it isn't selected.";
+	// A warning panel along the bottom edge, out of the way of the cut. It brings its own dark backing, so the
+	// red title reads on any background color, and red stays clear of the yellow cut line and green selection.
+	const QString title = "WARNING: Knife tool can't be used on current mesh as it is NOT selected";
 	const QString detail = "Press K to leave the knife tool, click the object to select it, then press K again to cut.";
+	const QColor warningColor(255, 85, 85);
 
 	const QFont detailFont = painter.font();
 	QFont titleFont = detailFont;
 	titleFont.setBold(true);
+	if (titleFont.pointSizeF() > 0.0) { titleFont.setPointSizeF(titleFont.pointSizeF() * 1.35); }
+	else if (titleFont.pixelSize() > 0) { titleFont.setPixelSize(static_cast<int>(titleFont.pixelSize() * 1.35)); }
 	const QFontMetricsF titleMetrics(titleFont);
 	const QFontMetricsF detailMetrics(detailFont);
 
-	const qreal pad = 10.0;
-	const qreal gap = 4.0;
+	const qreal pad = 14.0;
+	const qreal gap = 6.0;
 	const qreal textWidth = std::max(titleMetrics.horizontalAdvance(title), detailMetrics.horizontalAdvance(detail));
 	const qreal boxWidth = std::min(textWidth + 2.0 * pad, width() - 24.0);
 	const qreal boxHeight = titleMetrics.height() + gap + detailMetrics.height() + 2.0 * pad;
@@ -2426,17 +2431,17 @@ void Viewport::drawKnifeNotSelectedHint(QPainter& painter) {
 
 	painter.save();
 	painter.setRenderHint(QPainter::Antialiasing, true);
-	painter.setPen(QPen(QColor(150, 150, 150, 200), 1.0));
-	painter.setBrush(QColor(20, 20, 20, 190));
+	painter.setPen(QPen(warningColor, 2.0));
+	painter.setBrush(QColor(15, 15, 15, 230));
 	painter.drawRoundedRect(box, 6.0, 6.0);
 
 	const QRectF inner = box.adjusted(pad, pad, -pad, -pad);
-	painter.setPen(QColor(255, 255, 255));
+	painter.setPen(warningColor);
 	painter.setFont(titleFont);
 	painter.drawText(QRectF(inner.left(), inner.top(), inner.width(), titleMetrics.height()),
 		Qt::AlignHCenter | Qt::AlignVCenter, titleMetrics.elidedText(title, Qt::ElideRight, inner.width()));
 	painter.setFont(detailFont);
-	painter.setPen(QColor(210, 210, 210));
+	painter.setPen(QColor(235, 235, 235));
 	painter.drawText(QRectF(inner.left(), inner.top() + titleMetrics.height() + gap, inner.width(), detailMetrics.height()),
 		Qt::AlignHCenter | Qt::AlignVCenter, detailMetrics.elidedText(detail, Qt::ElideRight, inner.width()));
 	painter.restore();
