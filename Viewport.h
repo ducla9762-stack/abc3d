@@ -7,6 +7,7 @@
 #include <optional>
 #include <unordered_map>
 #include <algorithm>
+#include <chrono>
 
 #include <QOpenGLWidget>
 #include <QOpenGLContext>
@@ -17,6 +18,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QMessageBox>
+#include <QGuiApplication>
 
 #include <QtGamepadLegacy/QGamepad>
 #include <QtGamepadLegacy/QGamepadManager>
@@ -172,6 +174,28 @@ public:
 	void controllerToContextMenu(QContextMenuEvent* event);
 	CameraType getCameraMode();
 
+	struct DecimateEstimate {
+		uint objects = 0;
+		uint triangles = 0;
+		double work = 0.0;    // HalfEdgeMeshDecimator::EstimateWork summed over the objects
+		double seconds = 0.0;
+	};
+
+	/// <summary>What decimateSelection(percent) would process, and roughly how long it would take.</summary>
+	DecimateEstimate estimateDecimate(int percent) const {
+		DecimateEstimate estimate;
+		if (selectionManager.getActiveElement() != OBJECT) { return estimate; }
+		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+			if (item.meshId >= scene.MeshCount()) { continue; } // also skips reference images
+			const uint triangles = HalfEdgeMeshDecimator::TriangleCount(*scene[item.meshId]);
+			++estimate.objects;
+			estimate.triangles += triangles;
+			estimate.work += HalfEdgeMeshDecimator::EstimateWork(triangles, float(percent) / 100.0f);
+		}
+		estimate.seconds = estimate.work * decimateSecondsPerWork;
+		return estimate;
+	}
+
 private:
 
 	friend class ViewportMenu;
@@ -201,6 +225,9 @@ private:
 	IconRenderer iconRenderer;
 	ImageRenderer imageRenderer;
 	Scene scene;
+	// Seconds per HalfEdgeMeshDecimator::EstimateWork unit, replaced by the measured rate after each long enough
+	// decimate so estimates fit this machine and build (Debug is much slower than the Release default)
+	double decimateSecondsPerWork = HalfEdgeMeshDecimator::SecondsPerWorkUnit;
 	HalfEdgeMeshBeveler* beveler = nullptr;
 #ifdef CGAL_AVAILABLE
 	InsetBuilder* insetter;
@@ -997,22 +1024,36 @@ public slots:
 	/// </summary>
 	void decimateSelection(int percent) {
 		if (selectionManager.getActiveElement() != OBJECT || selectionManager.itemCount() == 0) { return; }
-		StepScope step(this, "Decimate");
-		touchSelectedMeshes(true);
+		const double work = estimateDecimate(percent).work;
+		const auto start = std::chrono::steady_clock::now();
+		// The UI is blocked until this returns
+		QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 
-		for (const SelectionItem& item : selectionManager.getSelectedItems()) {
-			if (item.meshId >= scene.MeshCount()) { continue; }
-			HalfEdgeMeshDecimator decimator(*scene[item.meshId]);
-			if (!decimator.DecimateToRatio(float(percent) / 100.0f)) {
-				std::cout << "Decimate rejected: " << decimator.error << std::endl;
+		{
+			StepScope step(this, "Decimate");
+			touchSelectedMeshes(true);
+
+			for (const SelectionItem& item : selectionManager.getSelectedItems()) {
+				if (item.meshId >= scene.MeshCount()) { continue; }
+				HalfEdgeMeshDecimator decimator(*scene[item.meshId]);
+				if (!decimator.DecimateToRatio(float(percent) / 100.0f)) {
+					std::cout << "Decimate rejected: " << decimator.error << std::endl;
+				}
 			}
+
+			makeCurrent();
+			renderer.UpdateGeometry();
+			renderer.UpdateSelection(selectionManager);
 		}
 
-		makeCurrent();
-		renderer.UpdateGeometry();
-		renderer.UpdateSelection(selectionManager);
+		// Paint now instead of later so the render buffer rebuild, which can take as long as the decimate itself,
+		// happens under the wait cursor and is counted in the timing below
+		repaint();
+		QGuiApplication::restoreOverrideCursor();
 
-		update();
+		// Learn this machine's speed. Short runs are mostly fixed overhead, so they would skew the rate.
+		const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+		if (work > 0.0 && seconds >= 0.1) { decimateSecondsPerWork = seconds / work; }
 	}
 
 	void triangulateSelection() {
