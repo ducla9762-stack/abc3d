@@ -7,6 +7,7 @@
 build/
 build-asan/
 out/
+external/qtgamepadlegacy/install/
 bin/
 lib/
 *.o
@@ -47,6 +48,7 @@ CMakePresets.json
 *.sln.docstates
 *.VC.db
 *.VC.opendb
+*.vcxproj.user
 
 # =========================
 

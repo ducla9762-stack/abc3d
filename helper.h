@@ -25,12 +25,36 @@ typedef Vec4<uint> Vec4u;
 
 #define MAX_UINT std::numeric_limits<uint>::max()
 #define GIZMO_IDENTIFIER std::numeric_limits<uint>::max() - 1
+#define REFERENCE_IMAGE_IDENTIFIER std::numeric_limits<uint>::max() - 2
+
+// for std140 packing rules
+struct CompactTransform140 {
+	Vec3f rotCol1;
+	float translateX;
+	Vec3f rotCol2;
+	float translateY;
+	Vec3f rotCol3;
+	float translateZ;
+	Vec3f scale;
+	float padding;
+};
 
 // Useful constants
 const Vec3f WORLD_Y = Vec3f(0.0f, 1.0f, 0.0f);
 const Vec3f WORLD_X = Vec3f(1.0f, 0.0f, 0.0f);
 const Vec3f WORLD_Z = Vec3f(0.0f, 0.0f, 1.0f);
 const Vec3f ORIGIN = Vec3f(0.0f);
+
+enum Axis : uint8_t { X = 0b001, Y = 0b010, Z = 0b100, X_NEG = 0b1001, Y_NEG = 0b1010, Z_NEG = 0b1100, NEG = 0b1000  };
+
+// Compute distance of a point (pt) from a line (linePt + t * lineDir) 
+// using Lagrange's identity
+inline float DistToLine(const Vec3f& pt, const Vec3f& linePt, const Vec3f& lineDir) {
+	Vec3f relPt = pt - linePt;
+	float dot = relPt.Dot(lineDir);
+	float dSqrd = relPt.LengthSquared() - ((dot * dot) / lineDir.LengthSquared());
+	return std::sqrt(dSqrd);
+}
 
 /// <summary> Convert degrees to radians </summary>
 /// <param name="degrees"> An angle in degrees </param>
@@ -239,6 +263,35 @@ inline Vec3f axisAngleToEulerAngle(const Vec3f& axis, float angle) {
 
 inline Vec3f vectorProj(const Vec3f& v, const Vec3f& u) {
 	return (u != Vec3f(0.0f)) ? (v.Dot(u) / u.LengthSquared()) * u : u;
+}
+
+inline void planeBases(const Vec3f& n, Vec3f& u, Vec3f& v) {
+	uint component = abs(n.y) < 0.9f ? 1 : 0;
+	u.Set(0.0f);
+	u[component] = 1.0f;
+
+	u = n.Cross(u);
+	u.Normalize();
+
+	v = n.Cross(u);
+}
+
+inline Vec2f projectToUV(const Vec3f& p, const Vec3f& uBasis, const Vec3f& vBasis) {
+	return Vec2f(p.Dot(uBasis), p.Dot(vBasis));
+}
+
+inline Vec3f projectFromUV(const Vec2f& p, const Vec3f& offset, const Vec3f& u, const Vec3f& v) {
+	return offset + (p.x * u) + (p.y * v);
+}
+
+inline Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p, Vec3f& uBasis, Vec3f& vBasis) {
+	planeBases(n, uBasis, vBasis);
+	return projectToUV(p, uBasis, vBasis);
+}
+
+inline Vec2f projectToLocalPlane(const Vec3f& n, const Vec3f& p) {
+	Vec3f u, v;
+	return projectToLocalPlane(n, p, u, v);
 }
 
 

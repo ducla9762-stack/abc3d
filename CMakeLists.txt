@@ -59,12 +59,16 @@ add_library(abc3d_core STATIC
     mesh.h
     MeshBeveler.h
     MeshKnife.h
+    MeshLoopCut.h
+    MeshDecimator.h
     helper.h
     shapes.h
     scene.h
     sceneFile.h
     selectionManager.h
     renderBufferBuilder.h
+    undoHistory.h
+    sceneCommands.h
 )
 
 #PUBLIC to allow inheritance of these paths

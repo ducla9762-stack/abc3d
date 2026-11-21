@@ -53,10 +53,12 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(QtMsBuild)\Qt.props" />
+    <Import Project="QtGamepadLegacy.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(QtMsBuild)\Qt.props" />
+    <Import Project="QtGamepadLegacy.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -119,11 +121,15 @@
     </QtMoc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ColorButton.cpp" />
     <ClCompile Include="mesh.cpp" />
-    <ClCompile Include="render.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SimpleModeRenderer.cpp" />
+    <ClCompile Include="GizmoRenderer.cpp" />
     <ClCompile Include="scene.cpp" />
     <ClCompile Include="sceneFile.cpp" />
     <ClCompile Include="StartMenu.cpp" />
+    <ClCompile Include="StraightSkeleton.h" />
     <ClCompile Include="VectorInput.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <QtMoc Include="StartMenu.h" />
@@ -135,17 +141,25 @@
     <ClCompile Include="ABC3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="camera.h" />
+    <QtMoc Include="ColorButton.h" />
+    <ClInclude Include="CGAL.h" />
     <ClInclude Include="Gizmo.h" />
+    <ClInclude Include="GizmoRenderer.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="MeshKnife.h" />
+    <ClInclude Include="MeshLoopCut.h" />
+    <ClInclude Include="MeshDecimator.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="MeshBeveler.h" />
-    <ClInclude Include="render.h" />
     <ClInclude Include="renderBufferBuilder.h" />
+    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SimpleModeRenderer.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="sceneFile.h" />
     <ClInclude Include="selectionManager.h" />
     <ClInclude Include="shapes.h" />
+    <ClInclude Include="undoHistory.h" />
+    <ClInclude Include="sceneCommands.h" />
     <QtUic Include="StartMenu.ui" />
     <QtUic Include="VectorInput.ui" />
   </ItemGroup>
@@ -153,10 +167,24 @@
     <None Include="assets\shaders\Arrow.vert" />
     <None Include="assets\shaders\ArrowBasic.vert" />
     <None Include="assets\shaders\ArrowColor.frag" />
+    <None Include="assets\shaders\GizmoColor.frag" />
+    <None Include="assets\shaders\GizmoPick.frag" />
     <None Include="assets\shaders\BlinnPhong.frag" />
     <None Include="assets\shaders\GeomNormals.geom" />
     <None Include="assets\shaders\Grid.frag" />
     <None Include="assets\shaders\Grid.vert" />
+    <None Include="assets\shaders\BasicLightPass.frag" />
+    <None Include="assets\shaders\BasicLightPass.vert" />
+    <None Include="assets\shaders\Cube.vert" />
+    <None Include="assets\shaders\EdgeDraw.frag" />
+    <None Include="assets\shaders\EdgeDraw.vert" />
+    <None Include="assets\shaders\GeomPass.frag" />
+    <None Include="assets\shaders\GeomPass.vert" />
+    <None Include="assets\shaders\Icon.frag" />
+    <None Include="assets\shaders\Icon.vert" />
+    <None Include="assets\shaders\Image.frag" />
+    <None Include="assets\shaders\ImagePick.frag" />
+    <None Include="assets\shaders\Image.vert" />
     <None Include="assets\shaders\Hoop.vert" />
     <None Include="assets\shaders\Hoop.frag" />
     <None Include="assets\shaders\RotationRing.vert" />
@@ -165,6 +193,10 @@
     <None Include="assets\shaders\Mesh.vert" />
     <None Include="assets\shaders\PointDrawing.vert" />
     <None Include="assets\shaders\StaticColor.frag" />
+    <None Include="assets\shaders\PixelShader.frag" />
+    <None Include="assets\shaders\Mace.vert" />
+    <None Include="assets\shaders\VertexDraw.frag" />
+    <None Include="assets\shaders\VertexDraw.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
