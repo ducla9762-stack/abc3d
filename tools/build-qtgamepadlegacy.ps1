@@ -45,9 +45,22 @@ if (-not $generator) {
 $buildDir = Join-Path $sourceDir "out\build\vs-$Configuration"
 $installDir = Join-Path $sourceDir "install\$Configuration"
 
-cmake -S $sourceDir -B $buildDir -G $generator -A x64 -T v143 `
+# $ErrorActionPreference does not stop on a failing native command, so check each exit code.
+function Invoke-CMake {
+    & cmake @args
+    if ($LASTEXITCODE -ne 0) {
+        throw "cmake $($args -join ' ') failed with exit code $LASTEXITCODE."
+    }
+}
+
+# Qt module builds force CMAKE_CONFIGURATION_TYPES to "RelWithDebInfo;Debug" to match the Qt kit
+# (Qt6BuildInternals\QtBuildInternalsExtra.cmake), so there is no Release configuration.
+# RelWithDebInfo is the optimized build and installs the same unsuffixed library names.
+$cmakeConfig = if ($Configuration -eq 'Release') { 'RelWithDebInfo' } else { $Configuration }
+
+Invoke-CMake -S $sourceDir -B $buildDir -G $generator -A x64 -T v143 `
     "-DCMAKE_PREFIX_PATH=$QtRoot" `
     "-DCMAKE_INSTALL_PREFIX=$installDir"
 
-cmake --build $buildDir --config $Configuration
-cmake --install $buildDir --config $Configuration
+Invoke-CMake --build $buildDir --config $cmakeConfig
+Invoke-CMake --install $buildDir --config $cmakeConfig
