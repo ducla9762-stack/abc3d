@@ -135,10 +135,16 @@ ABC3D::ABC3D(QWidget *parent)
         const Viewport::DecimateEstimate estimate = ui.viewport->estimateDecimate(percent);
         if (estimate.objects == 0) { return; }
 
+        // Ask from about the size of a cube subdivided four times (6 * 4^4 quads = 3072 triangles), where the pause
+        // starts to be noticeable, or whenever the measured rate says it will take a second or more
+        constexpr uint CONFIRM_TRIANGLES = 3072;
         constexpr double CONFIRM_SECONDS = 1.0;
-        if (estimate.seconds >= CONFIRM_SECONDS) {
+        if (estimate.triangles >= CONFIRM_TRIANGLES || estimate.seconds >= CONFIRM_SECONDS) {
             QString duration;
-            if (estimate.seconds < 60.0) {
+            if (estimate.seconds < 1.0) {
+                duration = "less than a second";
+            }
+            else if (estimate.seconds < 60.0) {
                 const int seconds = qRound(estimate.seconds);
                 duration = QString("about %1 second%2").arg(seconds).arg(seconds == 1 ? "" : "s");
             }

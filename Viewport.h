@@ -1039,13 +1039,14 @@ public slots:
 			renderer.UpdateSelection(selectionManager);
 		}
 
+		// Paint now instead of later so the render buffer rebuild, which can take as long as the decimate itself,
+		// happens under the wait cursor and is counted in the timing below
+		repaint();
 		QGuiApplication::restoreOverrideCursor();
 
 		// Learn this machine's speed. Short runs are mostly fixed overhead, so they would skew the rate.
 		const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
 		if (work > 0.0 && seconds >= 0.1) { decimateSecondsPerWork = seconds / work; }
-
-		update();
 	}
 
 	void triangulateSelection() {
